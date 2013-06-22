@@ -13,3 +13,8 @@ cat example.gwf
 @target touch
 :output foo
 touch foo
+
+@target cat2
+:input foo
+:output bar
+cat foo
