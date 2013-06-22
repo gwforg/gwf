@@ -69,6 +69,9 @@ if __name__ == '__main__':
     workflow = parse(sys.argv[1])
 
     print 'Workflow contains %d targets:' % len(workflow.targets)
+    print
     for name,target in workflow.targets.items():
         print target
-    print
+        target.get_dependencies().print_dependency_graph()
+        print
+

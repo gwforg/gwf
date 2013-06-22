@@ -3,6 +3,7 @@
 # FIXME: handle errors
 
 import os.path, time
+from dependency_graph import Node, DependencyGraph
 
 def _file_exists(fname):
     return os.path.exists(fname)
@@ -70,6 +71,30 @@ class Target:
 
         return in_timestamp > out_timestamp
 
+    def get_dependencies(self):
+        '''Extract the dependency graph.'''
+        dag = DependencyGraph()
+
+        print self.dependencies
+
+        def dfs(target):
+            '''Get the dependency graph for "target"'s dependencies.'''
+            dependencies = []
+            for _,dep in target.dependencies:
+                if dag.has_node(dep.name):
+                    dependencies.append(dag.get_node(dep.name))
+                else:
+                    dependencies.append(dag.add_node(dep.name, dep,
+                                            dfs(dep)))
+
+            return dependencies
+
+
+        deps = dfs(self)
+        root = dag.add_node(self.name, self, deps)
+        dag.set_root(root)
+        
+        return dag
 
     def __str__(self):
         sf = ''

@@ -1,3 +1,4 @@
 *.pyc
 tests/foo
 tests/bar
+build

@@ -18,3 +18,17 @@ touch foo
 :input foo
 :output bar
 cat foo
+
+@target twoout
+:output file1 file2
+touch file1
+touch file2
+
+@target twoin
+:input file1 file2
+:output xx
+cat file1 file2 > xx
+
+@target catxx
+:input xx
+cat xx
