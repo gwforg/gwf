@@ -65,9 +65,9 @@ class Target:
                 return True
 
         # if we have all input and output files, check time stamps
-        in_timestamp = min(_get_file_timestamp(self.working_dir+'/'+inf)
+        in_timestamp = max(_get_file_timestamp(self.working_dir+'/'+inf)
                            for inf in self.input)
-        out_timestamp = min(_get_file_timestamp(self.working_dir+'/'+outf)
+        out_timestamp = max(_get_file_timestamp(self.working_dir+'/'+outf)
                             for outf in self.output)
 
         return in_timestamp > out_timestamp
@@ -112,11 +112,14 @@ class Target:
         f = open('%s/%s' % (self.script_dir(), self.name), 'w')
         print >> f, self.code
 
+    def local_execution_script(self):
+        return 'cd %s && sh %s > /dev/null' % \
+                  (self.working_dir, self.script_name())
+
     def execute_locally(self):
         '''Execute the target code locally (i.e. not submitting it
         to the grid).'''
-        os.system('cd %s && sh %s > /dev/null' % \
-                  (self.working_dir, self.script_name()))
+        os.system(self.local_execution_script())
         
 
     def __str__(self):

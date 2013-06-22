@@ -63,6 +63,7 @@ class DependencyGraph:
                     dfs(dep)
                 schedule.append(node)
                 scheduled.add(node)
-        
-        dfs(self.root)
+
+        if self.root.target.should_run():
+            dfs(self.root)
         return schedule
