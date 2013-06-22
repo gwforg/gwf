@@ -1,0 +1,15 @@
+Example of a simple workflow. Everything before the first upcode (@)
+is considered a comment/documentation of the workflow and is not
+interpreted by gwf.
+
+@target echo
+# everything from here to the next @ is considered a shell script.
+echo "hello, world!"
+
+@target cat
+:input example.gwf
+cat example.gwf
+
+@target touch
+:output foo
+touch foo
