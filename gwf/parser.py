@@ -75,3 +75,13 @@ if __name__ == '__main__':
         target.get_dependencies().print_dependency_graph()
         print
 
+    print
+    for name,target in workflow.targets.items():
+        print "schedule for", name
+        schedule = target.get_dependencies().schedule()
+        print [node.target.name for node in schedule]
+        print
+
+        print 'executing...'
+        for node in schedule:
+            node.target.execute_locally()

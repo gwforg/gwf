@@ -47,3 +47,22 @@ class DependencyGraph:
 
         dfs(self.root)
                 
+
+    def schedule(self):
+        '''Linearize the targets to be run.'''
+        
+        assert self.root is not None
+        scheduled = set()
+        schedule = []
+        
+        def dfs(node):
+            if node in scheduled:
+                return
+            if node.target.should_run():
+                for dep in node.dependencies:
+                    dfs(dep)
+                schedule.append(node)
+                scheduled.add(node)
+        
+        dfs(self.root)
+        return schedule

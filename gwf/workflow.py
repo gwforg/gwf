@@ -2,7 +2,8 @@
 
 # FIXME: handle errors
 
-import os.path, time
+import os, os.path
+import time
 from dependency_graph import Node, DependencyGraph
 
 def _file_exists(fname):
@@ -75,8 +76,6 @@ class Target:
         '''Extract the dependency graph.'''
         dag = DependencyGraph()
 
-        print self.dependencies
-
         def dfs(target):
             '''Get the dependency graph for "target"'s dependencies.'''
             dependencies = []
@@ -96,8 +95,32 @@ class Target:
         
         return dag
 
+    def script_dir(self):
+        return self.working_dir+'/.scripts'
+    def script_name(self):
+        return self.script_dir()+'/'+self.name
+
+    def make_script_dir(self):
+        script_dir = self.script_dir()
+        if _file_exists(script_dir):
+            return
+        os.makedirs(script_dir)
+
+    def write_script(self):
+        '''Write the code to a script that can be executed.'''
+        self.make_script_dir()
+        f = open('%s/%s' % (self.script_dir(), self.name), 'w')
+        print >> f, self.code
+
+    def execute_locally(self):
+        '''Execute the target code locally (i.e. not submitting it
+        to the grid).'''
+        os.system('cd %s && sh %s > /dev/null' % \
+                  (self.working_dir, self.script_name()))
+        
+
     def __str__(self):
-        sf = ''
+        sf =''
         dep = ''
         if self.system_files:
             sf = '%s must be present on the file server' % \
