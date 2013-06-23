@@ -15,10 +15,11 @@ def _get_file_timestamp(fname):
 class Target:
     '''Class handling targets. Stores the info for executing them.'''
     
-    def __init__(self, name, input, output, code, wd):
+    def __init__(self, name, input, output, pbs_options, code, wd):
         self.name = name
         self.input = input
         self.output = output
+        self.pbs_options = pbs_options
         self.code = code
         self.working_dir = wd
 
@@ -112,6 +113,12 @@ class Target:
         self.make_script_dir()
         
         f = open('%s/%s' % (self.script_dir(), self.name), 'w')
+        
+        # Put PBS options at the top
+        for options in self.pbs_options:
+            print >> f, '#PBS', options
+        print >> f
+        
         print >> f, '# GWF generated code ...'
         print >> f, 'cd %s' % self.working_dir
         print >> f

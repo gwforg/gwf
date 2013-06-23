@@ -14,6 +14,7 @@ def parse_target(target_code, working_dir):
 
     input = []
     output = []
+    pbs = []
 
     for i in xrange(1,len(lines)):
         line = lines[i]
@@ -26,6 +27,10 @@ def parse_target(target_code, working_dir):
             elif line.startswith(':output'):
                 files = line.split()[1:]
                 output.extend(files)
+                
+            elif line.startswith(':pbs'):
+                options = line.split()[1:]
+                pbs.append(' '.join(options))
 
             else:
                 assert False, 'Unknown opcode %s' % line
@@ -35,7 +40,7 @@ def parse_target(target_code, working_dir):
             code = '\n'.join(lines[i:])
             break
                 
-    return Target(name, input, output, code, working_dir)
+    return Target(name, input, output, pbs, code, working_dir)
 
 PARSERS = {'target': parse_target}
 

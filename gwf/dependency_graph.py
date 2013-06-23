@@ -64,6 +64,8 @@ class DependencyGraph:
                 schedule.append(node)
                 scheduled.add(node)
 
+        # FIXME: this will check the root twice since the check is 
+        # also checked in the dfs call. Figure out an invariant and avoid this.
         if self.root.target.should_run():
             dfs(self.root)
         return schedule
