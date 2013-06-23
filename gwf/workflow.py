@@ -44,14 +44,11 @@ class Target:
         if len(self.output) == 0:
             return True # If we don't provide output, assume we always
                         # need to run.
-        if len(self.input) == 0:
-            return True # If we don't have any input, we also assume
-                        # we have to run
 
-        # If we have both input and output, we need to run if any of
-        # the input files are newer than any of the output
-        # files... and if any of the output or inputs are missing, we
-        # definitely have to run.
+        # We need to run if any input or output files are missing
+        # Obviously for the output, but for the input we have to assume
+        # that we have a dependency that will generate it ...
+        # FIXME: probably should have a test for this
         
         for outf in self.output:
             # FIXME: Handle absolute paths...
@@ -65,7 +62,17 @@ class Target:
                     "There is no target providing %s. It must be present!" % inf
                 return True
 
-        # if we have all input and output files, check time stamps
+        # If no file is missing, it comes down to the time stamps.
+        # If we only have output and no input, we assume the output is up to date.
+        # Touching files and adding input can fix this behaviour from the user side
+        # but if we have a program that just creates files we don't want to run it
+        # whenever someone needs that output just because we don't have
+        # time stamped input.
+
+        if len(self.input) == 0:
+            return False
+
+        # if we have both input and output files, check time stamps
         in_timestamp = max(_get_file_timestamp(self.working_dir+'/'+inf)
                            for inf in self.input)
         out_timestamp = max(_get_file_timestamp(self.working_dir+'/'+outf)
@@ -198,7 +205,8 @@ class Workflow:
 
             name = job.target.name
             dependent_tasks = set(node.target.name
-                                  for node in job.dependencies)
+                                  for node in job.dependencies
+                                  if node.target.should_run())
             if len(dependent_tasks) > 0:
                 depend = '-W depend=afterok:$%s' % \
                     ':$'.join(dependent_tasks)
