@@ -108,8 +108,15 @@ class Target:
 
     def write_script(self):
         '''Write the code to a script that can be executed.'''
+
         self.make_script_dir()
+        
         f = open('%s/%s' % (self.script_dir(), self.name), 'w')
+        print >> f, '# GWF generated code ...'
+        print >> f, 'cd %s' % self.working_dir
+        print >> f
+
+        print >> f, '# Script from workflow'
         print >> f, self.code
 
     def local_execution_script(self):
@@ -177,6 +184,11 @@ class Workflow:
             # collect the dependencies (in a set since we can have
             # the same task multiple times if it produces more than
             # one output file).
+
+            # make sure we have the scripts for the jobs we want to
+            # execute!
+            job.target.write_script()
+
             name = job.target.name
             dependent_tasks = set(node.target.name
                                   for node in job.dependencies)
@@ -186,13 +198,11 @@ class Workflow:
             else:
                 depend = ''
 
-            work_dir = job.target.working_dir
             script = job.target.script_name()
 
             command = ' '.join([
                 '%s=`' % name,
                 'qsub -N %s' % name,
-                '-D %s' % work_dir,
                 depend,
                 script,
                 '`'])

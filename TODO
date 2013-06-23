@@ -6,3 +6,6 @@
  - The testing is pretty shitty as well. I have just been testing
    while writing the code. I need some properly thought out tests to
    make sure this doesn't bite me at some point...
+
+ - Add some nicer scripts for displaying workflows and the jobs that
+   will be run for a given task.
