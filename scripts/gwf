@@ -1,5 +1,6 @@
 #!/Users/mailund/anaconda/bin/python
 
+import os
 import sys
 from gwf.parser import parse
 
@@ -25,3 +26,4 @@ print 'Executing script:'
 print
 print script
 print
+

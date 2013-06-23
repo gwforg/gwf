@@ -186,13 +186,13 @@ class Workflow:
 
     def get_local_execution_script(self, target_name):
         target = self.targets[target_name]
-        schedule = target.get_dependencies().schedule()
+        schedule, _ = target.get_dependencies().schedule()
         return '\n'.join(job.target.local_execution_script()
                          for job in schedule)
 
     def get_submission_script(self, target_name):
         target = self.targets[target_name]
-        schedule = target.get_dependencies().schedule()
+        schedule, scheduled_tasks = target.get_dependencies().schedule()
         script_commands = []
         for job in schedule:
             # collect the dependencies (in a set since we can have
@@ -206,7 +206,7 @@ class Workflow:
             name = job.target.name
             dependent_tasks = set(node.target.name
                                   for node in job.dependencies
-                                  if node.target.should_run())
+                                  if node.target.name in scheduled_tasks)
             if len(dependent_tasks) > 0:
                 depend = '-W depend=afterok:$%s' % \
                     ':$'.join(dependent_tasks)

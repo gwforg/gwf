@@ -28,9 +28,14 @@ class DependencyGraph:
         return self.nodes[name]
 
     def set_root(self, node):
+        '''Make "node" the root of the graph. The root is used when computing
+        the scheduled scripts.'''
         self.root = node
 
     def print_dependency_graph(self):
+        '''Prints the graph to stdout.  A very simple function mostly useful
+        for debugging and not really for user output.'''
+        
         assert self.root is not None
         printed = set()
         def dfs(node, indent=''):
@@ -49,7 +54,14 @@ class DependencyGraph:
                 
 
     def schedule(self):
-        '''Linearize the targets to be run.'''
+        '''Linearize the targets to be run.
+        
+        Returns a list of tasks to be run (in the order they should run or
+        be submitted to the cluster to make sure dependences are handled
+        correctly) and a set of the names of tasks that will be scheduled
+        (to make sure dependency flags are set in the qsub command).
+        
+        '''
         
         assert self.root is not None
         
@@ -84,4 +96,4 @@ class DependencyGraph:
 
         dfs(self.root)
             
-        return schedule
+        return schedule, scheduled
