@@ -52,20 +52,36 @@ class DependencyGraph:
         '''Linearize the targets to be run.'''
         
         assert self.root is not None
+        
+        processed = set()
         scheduled = set()
         schedule = []
         
         def dfs(node):
-            if node in scheduled:
-                return
-            if node.target.should_run():
-                for dep in node.dependencies:
-                    dfs(dep)
-                schedule.append(node)
-                scheduled.add(node)
+            if node in processed:
+                # we have already processed the node, and
+                # if we should run the target name is scheduled
+                # otherwise it isn't.
+                return node.target.name in scheduled
+            
+            # Process dependencies and find out if any upstream tasks
+            # needs to run.
+            upstream_runs = False
+            for dep in node.dependencies:
+                upstream_runs |= dfs(dep)
+            
+            # If this task needs to run, then schedule it
 
-        # FIXME: this will check the root twice since the check is 
-        # also checked in the dfs call. Figure out an invariant and avoid this.
-        if self.root.target.should_run():
-            dfs(self.root)
+            if upstream_runs or node.target.should_run():
+                schedule.append(node)
+                scheduled.add(node.target.name)
+                to_run = True
+            else:
+                to_run = False
+                
+            processed.add(node)
+            return to_run
+
+        dfs(self.root)
+            
         return schedule

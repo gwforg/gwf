@@ -1,4 +1,9 @@
 
+BUGS
+
+
+FEATURES
+
  - There's currently no propper error handling. If you are lucky, an
    assertion is broking and the script is terminated. To make this
    useful, a lot more error checking and error handling is needed.
