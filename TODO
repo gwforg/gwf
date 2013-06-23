@@ -1,0 +1,8 @@
+
+ - There's currently no propper error handling. If you are lucky, an
+   assertion is broking and the script is terminated. To make this
+   useful, a lot more error checking and error handling is needed.
+
+ - The testing is pretty shitty as well. I have just been testing
+   while writing the code. I need some properly thought out tests to
+   make sure this doesn't bite me at some point...

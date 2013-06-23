@@ -116,11 +116,6 @@ class Target:
         return 'cd %s && sh %s > /dev/null' % \
                   (self.working_dir, self.script_name())
 
-    def execute_locally(self):
-        '''Execute the target code locally (i.e. not submitting it
-        to the grid).'''
-        os.system(self.local_execution_script())
-        
 
     def __str__(self):
         sf =''
@@ -167,3 +162,47 @@ class Workflow:
                     system_files.append(input_file)
             target.dependencies = dependencies
             target.system_files = system_files
+
+    def get_local_execution_script(self, target_name):
+        target = self.targets[target_name]
+        schedule = target.get_dependencies().schedule()
+        return '\n'.join(job.target.local_execution_script()
+                         for job in schedule)
+
+    def get_submission_script(self, target_name):
+        target = self.targets[target_name]
+        schedule = target.get_dependencies().schedule()
+        script_commands = []
+        for job in schedule:
+            # collect the dependencies (in a set since we can have
+            # the same task multiple times if it produces more than
+            # one output file).
+            name = job.target.name
+            dependent_tasks = set(node.target.name
+                                  for node in job.dependencies)
+            if len(dependent_tasks) > 0:
+                depend = '-W depend=afterok:$%s' % \
+                    ':$'.join(dependent_tasks)
+            else:
+                depend = ''
+
+            work_dir = job.target.working_dir
+            script = job.target.script_name()
+
+            command = ' '.join([
+                '%s=`' % name,
+                'qsub -N %s' % name,
+                '-D %s' % work_dir,
+                depend,
+                script,
+                '`'])
+            script_commands.append(command)
+
+        return '\n'.join(script_commands)
+
+if __name__ == '__main__':
+    import sys
+    from parser import parse
+    workflow = parse(sys.argv[1])
+    script = workflow.get_submission_script(sys.argv[2])
+    print script
