@@ -1,0 +1,27 @@
+#!/Users/mailund/anaconda/bin/python
+
+import sys
+from gwf.parser import parse
+
+# FIXME: some options and option parsing, but for now we simply do
+# this...
+
+if len(sys.argv) == 3:
+    workflow_file = sys.argv[1]
+    target = sys.argv[2]
+
+elif len(sys.argv) == 2:
+    workflow_file = 'workflow.gwf' # default name
+    target = sys.argv[1]
+
+else:
+    print "You need to specify the target to run."
+    sys.exit(2)
+
+workflow = parse(workflow_file)
+script = workflow.get_submission_script(target)
+
+print 'Executing script:'
+print
+print script
+print

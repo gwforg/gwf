@@ -19,6 +19,7 @@ setup(
     keywords = "qsub make",
     url = "https://github.com/mailund/gwf",
     packages=['gwf', 'tests'],
+    scripts=['scripts/gwf'],
     long_description=read('README'),
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
