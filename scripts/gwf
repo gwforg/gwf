@@ -4,26 +4,32 @@ import os
 import sys
 from gwf.parser import parse
 
-# FIXME: some options and option parsing, but for now we simply do
-# this...
 
-if len(sys.argv) == 3:
-    workflow_file = sys.argv[1]
-    target = sys.argv[2]
+import argparse
 
-elif len(sys.argv) == 2:
-    workflow_file = 'workflow.gwf' # default name
-    target = sys.argv[1]
+parser = argparse.ArgumentParser(description='Submit a workflow to the grid.')
+
+parser.add_argument('-f', '--file', 
+                    default='workflow.gwf', dest='workflow_file',
+                    help='Workflow file if not the default (workflow.gwf).')
+parser.add_argument('-d', '--dry-run', default=False, action='store_true',
+                    help='The submit script will be printed but not executed.')
+
+parser.add_argument('target', nargs=1,
+                    help='The target to process.')
+
+args = parser.parse_args()
+
+workflow = parse(args.workflow_file)
+script = workflow.get_submission_script(args.target[0])
+
+if args.dry_run:
+    print 'When run, the following script will be executed:'
+    print
+    print script
+    print
 
 else:
-    print "You need to specify the target to run."
-    sys.exit(2)
-
-workflow = parse(workflow_file)
-script = workflow.get_submission_script(target)
-
-print 'Executing script:'
-print
-print script
-print
-
+    print 'Submitting jobs to queue...'
+    os.system(script)
+    print 'Done'
