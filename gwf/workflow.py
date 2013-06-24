@@ -124,21 +124,10 @@ class Target:
 
 
     def __str__(self):
-        sf =''
-        dep = ''
-        if self.system_files:
-            sf = '%s must be present on the file server' % \
-                ', '.join(self.system_files)
-        if self.dependencies:
-            dep = ','.join([('target %s should provide %s ' % (tg.name,of))
-                            for of,tg in self.dependencies])
-        return '@target %s, input(%s) -> output(%s), %s [%s; %s] %s' % (
+        return '@target %s, input(%s) -> output(%s)' % (
             self.name,
             ' '.join(self.input),
-            ' '.join(self.output),
-            '%d lines of code' % len(self.code.split('\n')),
-            sf, dep,
-            'Should run' if self.should_run() else "Doesn't need to run"
+            ' '.join(self.output)
             )
     __repr__ = __str__ # not really the correct use of __repr__ but easy 
     				   # for printing output when testing...
