@@ -32,3 +32,34 @@ cat file1 file2 > xx
 @target catxx
 :input xx
 cat xx
+
+
+@target step1
+:output step1
+touch step1
+
+@target step2
+:input step1
+:output step2
+touch step2
+
+@target step3
+:input step2
+:output step3.1 step3.2
+touch step3.1
+touch step3.2
+
+@target step4.1
+:input step3.1
+:output step4.1
+touch step4.1
+
+@target step4.2
+:input step3.2
+:output step4.2
+touch step4.2
+
+@target step5
+:input step4.1 step4.2
+:output step5
+touch step5

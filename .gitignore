@@ -6,6 +6,7 @@ tests/file2
 tests/xx
 build
 tests/.scripts
+tests/step*
 dist/*
 gwf.egg*
 workflow.dot

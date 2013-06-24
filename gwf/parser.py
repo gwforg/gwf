@@ -66,7 +66,7 @@ def parse(fname):
             assert cmd.name not in targets
             targets[cmd.name] = cmd
 
-    return Workflow(targets)
+    return Workflow(targets, working_dir)
 
 if __name__ == '__main__':
     # FIXME: make a better test...
