@@ -22,6 +22,7 @@ class SystemFile:
         self.dependencies = []
         self.working_dir = wd
 
+    @property
     def file_exists(self):
         '''Check if the file exists. It is usually considered a major
         error if it doesn't since no target generates it.'''
@@ -48,7 +49,7 @@ class Target:
         self.system_files = None # will be filled in by Workflow
 
 
-
+    @property
     def should_run(self):
         '''Test if this target needs to be run based on whether input
         and output files exist and on their time stamps. Doesn't check
@@ -92,13 +93,16 @@ class Target:
         return in_timestamp > out_timestamp
 
 
+    @property
     def script_dir(self):
         return self.working_dir+'/.scripts'
+    
+    @property
     def script_name(self):
-        return self.script_dir()+'/'+self.name
+        return self.script_dir+'/'+self.name
 
     def make_script_dir(self):
-        script_dir = self.script_dir()
+        script_dir = self.script_dir
         if _file_exists(script_dir):
             return
         os.makedirs(script_dir)
@@ -108,7 +112,7 @@ class Target:
 
         self.make_script_dir()
         
-        f = open('%s/%s' % (self.script_dir(), self.name), 'w')
+        f = open(self.script_name, 'w')
         
         # Put PBS options at the top
         for options in self.pbs_options:
@@ -190,11 +194,11 @@ class Workflow:
             else:
                 depend = ''
 
-            script = job.target.script_name()
+            script = job.target.script_name
 
             command = ' '.join([
-                '%s=`' % node.name,
-                'qsub -N %s' % node.name,
+                '%s=`' % job.name,
+                'qsub -N %s' % job.name,
                 depend,
                 script,
                 '`'])

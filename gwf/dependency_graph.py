@@ -13,10 +13,11 @@ class Node:
         
         # The node needs to be run if what it contains needs to be run
         # or any of the upstream nodes need to be run...
-        self.should_run = self.node_should_run() or \
+        self.should_run = self.task_should_run or \
                 any(dep.should_run for _,dep in dependencies)
     
-    def node_should_run(self):
+    @property
+    def task_should_run(self):
         raise NotImplementedError() # Must be defined in concrete classes
         
     def print_graphviz(self, out):
@@ -29,13 +30,14 @@ class TargetNode(Node):
         # the constructor for Node...
         self.target = target
         Node.__init__(self, target.name, dependencies)
-        
-    def node_should_run(self):
-        return self.target.should_run()
+    
+    @property
+    def task_should_run(self):
+        return self.target.should_run
 
     def print_graphviz(self, out):
     
-        if self.target.should_run():
+        if self.target.should_run:
             col = 'color = red, style=bold'
         elif self.should_run:
             col = 'color = red'
@@ -57,12 +59,13 @@ class FileNode(Node):
         self.sysfile = sysfile
         Node.__init__(self, sysfile.name, [])
 
-    def node_should_run(self):
-        return not self.sysfile.file_exists()
+    @property
+    def task_should_run(self):
+        return not self.sysfile.file_exists
 
     def print_graphviz(self, out):
     
-        if self.sysfile.file_exists():
+        if self.sysfile.file_exists:
             col = 'color = darkgreen'
         else:
             col = 'color = red, style=bold'
