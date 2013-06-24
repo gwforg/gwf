@@ -62,12 +62,12 @@ class Target:
                     "There is no target providing %s. It must be present!" % inf
                 return True
 
-        # If no file is missing, it comes down to the time stamps.
-        # If we only have output and no input, we assume the output is up to date.
-        # Touching files and adding input can fix this behaviour from the user side
-        # but if we have a program that just creates files we don't want to run it
-        # whenever someone needs that output just because we don't have
-        # time stamped input.
+        # If no file is missing, it comes down to the time stamps. If we
+        # only have output and no input, we assume the output is up to
+        # date. Touching files and adding input can fix this behaviour
+        # from the user side but if we have a program that just creates
+        # files we don't want to run it whenever someone needs that
+        # output just because we don't have time stamped input.
 
         if len(self.input) == 0:
             return False
