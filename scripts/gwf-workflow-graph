@@ -24,29 +24,4 @@ workflow = parse(args.workflow_file)
 # FIXME: ERROR HANDLING
 out = open(args.output, 'w')
 
-print >> out, 'digraph workflow {'
-
-# Handle nodes
-for name,target in workflow.targets.items():
-	print >> out, name, ';'
-
-# Handle system files
-for name,target in workflow.targets.items():
-	for infile in target.input:
-		if infile not in workflow.providers:
-			print >> out, '"file : %s"' % infile,
-			print >> out, '[style=filled, color=gray]';
-		
-# Handle dependency edges	
-for name,target in workflow.targets.items():
-	for infile in target.input:
-		if infile in workflow.providers:
-			print >> out, name, '->', workflow.providers[infile].name, 
-			print >> out, '[label="%s"]' % infile,
-			print >> out, ';'
-		else:
-			print >> out, name, '->', '"file : %s"' % infile
-			print >> out, '[label="%s"]' % infile,
-			print >> out, ';'
-	
-print >> out, '}' # end of the graph.
+workflow.dependency_graph.print_workflow_graph(out)

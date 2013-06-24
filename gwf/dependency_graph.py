@@ -6,20 +6,41 @@ class Node:
     def __init__(self, target, dependencies):
         self.target = target
         self.dependencies = dependencies
+        
+        self.should_run = target.should_run() or \
+        					any(dep.should_run for dep in dependencies)
 
         
 
 class DependencyGraph:
     '''A complete dependency graph, with code for scheduling a workflow.'''
 
-    def __init__(self):
+    def __init__(self, workflow):
         self.nodes = dict()
-        self.root = None
 
-    def add_node(self, name, target, dependencies):
+        for name, target in workflow.targets.items():
+            if name not in self.nodes:
+                self.nodes[name] = self.build_DAG(target)
+    
+    def add_node(self, target, dependencies):
         node = Node(target, dependencies)
-        self.nodes[name] = node
+        self.nodes[target.name] = node
         return node
+    
+    def build_DAG(self, target):
+        '''Run through all the dependencies for "target" and build the
+        nodes that are needed into the graph, returning a new node with
+        dependencies.'''
+        
+        def dfs(targ):
+            if targ.name in self.nodes:
+                return self.get_node(targ.name)
+            else:
+                deps = [(fname, dfs(dep)) 
+                        for fname, dep in targ.dependencies]
+                return self.add_node(targ, deps)
+        
+        return dfs(target)
 
     def has_node(self, name):
         return name in self.nodes
@@ -27,33 +48,30 @@ class DependencyGraph:
     def get_node(self, name):
         return self.nodes[name]
 
-    def set_root(self, node):
-        '''Make "node" the root of the graph. The root is used when computing
-        the scheduled scripts.'''
-        self.root = node
+    def print_workflow_graph(self, out):
+    	'''Print the workflow to file object out in graphviz format.'''
+    	
+    	print >> out, 'digraph workflow {'
+    	
+    	# Handle nodes
+    	for node in self.nodes.values():
+    		print >> out, node.target.name, ';' # FIXME annotate with run info
+    		
+    	# FIXME: handle system files ... can't right here yet
+    	
+    	for src in self.nodes.values():
+    	    for fname,dst in src.dependencies:
+    	        print >> out, src.target.name, '->', dst.target.name,
+    	        print >> out, '[label="%s"]' % fname,
+    	        print >> out, ';'
+    	
+    	print >> out, '}'
+    	
+    	
+    	
+    	
 
-    def print_dependency_graph(self):
-        '''Prints the graph to stdout.  A very simple function mostly useful
-        for debugging and not really for user output.'''
-        
-        assert self.root is not None
-        printed = set()
-        def dfs(node, indent=''):
-            print indent, node.target.name, node.target.should_run(),
-            if node in printed:
-                print '[...]'
-                return
-            else:
-                print # add newline if we recurse...
-                
-            printed.add(node)
-            for dep in node.dependencies:
-                dfs(dep, indent+'\t')
-
-        dfs(self.root)
-                
-
-    def schedule(self):
+    def schedule(self, target_name):
         '''Linearize the targets to be run.
         
         Returns a list of tasks to be run (in the order they should run or
@@ -63,7 +81,9 @@ class DependencyGraph:
         
         '''
         
-        assert self.root is not None
+        # FIXME: After refactoring, this code can be simplified
+        
+        root = self.nodes[target_name]
         
         processed = set()
         scheduled = set()
@@ -79,7 +99,7 @@ class DependencyGraph:
             # Process dependencies and find out if any upstream tasks
             # needs to run.
             upstream_runs = False
-            for dep in node.dependencies:
+            for _,dep in node.dependencies:
                 upstream_runs |= dfs(dep)
             
             # If this task needs to run, then schedule it
@@ -94,6 +114,6 @@ class DependencyGraph:
             processed.add(node)
             return to_run
 
-        dfs(self.root)
+        dfs(root)
             
         return schedule, scheduled

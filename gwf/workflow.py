@@ -39,7 +39,10 @@ class Target:
            "There is no target providing %s. It must be present!" % sysfile
 
     def should_run(self):
-        '''Test if this target needs to be run.'''
+        '''Test if this target needs to be run based on whether input
+        and output files exist and on their time stamps. Doesn't check
+        if upstream targets need to run, only this task; upstream tasks
+        are handled by the dependency graph. '''
         
         if len(self.output) == 0:
             return True # If we don't provide output, assume we always
@@ -49,7 +52,7 @@ class Target:
         # Obviously for the output, but for the input we have to assume
         # that we have a dependency that will generate it ...
         # FIXME: probably should have a test for this
-        
+               
         for outf in self.output:
             # FIXME: Handle absolute paths...
             if not _file_exists(self.working_dir+'/'+outf):
@@ -80,28 +83,6 @@ class Target:
 
         return in_timestamp > out_timestamp
 
-    def get_dependencies(self):
-        '''Extract the dependency graph.'''
-        dag = DependencyGraph()
-
-        def dfs(target):
-            '''Get the dependency graph for "target"'s dependencies.'''
-            dependencies = []
-            for _,dep in target.dependencies:
-                if dag.has_node(dep.name):
-                    dependencies.append(dag.get_node(dep.name))
-                else:
-                    dependencies.append(dag.add_node(dep.name, dep,
-                                            dfs(dep)))
-
-            return dependencies
-
-
-        deps = dfs(self)
-        root = dag.add_node(self.name, self, deps)
-        dag.set_root(root)
-        
-        return dag
 
     def script_dir(self):
         return self.working_dir+'/.scripts'
@@ -133,10 +114,6 @@ class Target:
         print >> f, '# Script from workflow'
         print >> f, self.code
 
-    def local_execution_script(self):
-        return 'cd %s && sh %s > /dev/null' % \
-                  (self.working_dir, self.script_name())
-
 
     def __str__(self):
         sf =''
@@ -155,7 +132,8 @@ class Target:
             sf, dep,
             'Should run' if self.should_run() else "Doesn't need to run"
             )
-    __repr__ = __str__ # not really the correct use of __repr__ but easy for printing output when testing...
+    __repr__ = __str__ # not really the correct use of __repr__ but easy 
+    				   # for printing output when testing...
 
 
 class Workflow:
@@ -183,16 +161,21 @@ class Workflow:
                     system_files.append(input_file)
             target.dependencies = dependencies
             target.system_files = system_files
+        
+        # build the dependency graph    
+        self.dependency_graph = DependencyGraph(self)
 
-    def get_local_execution_script(self, target_name):
-        target = self.targets[target_name]
-        schedule, _ = target.get_dependencies().schedule()
-        return '\n'.join(job.target.local_execution_script()
-                         for job in schedule)
+
+
 
     def get_submission_script(self, target_name):
+    	
+    	# FIXME: After refactoring the dependency graph, I think this code
+    	# can be simplified.
+    	
         target = self.targets[target_name]
-        schedule, scheduled_tasks = target.get_dependencies().schedule()
+        schedule, scheduled_tasks = self.dependency_graph.schedule(target.name)
+        
         script_commands = []
         for job in schedule:
             # collect the dependencies (in a set since we can have
@@ -205,7 +188,7 @@ class Workflow:
 
             name = job.target.name
             dependent_tasks = set(node.target.name
-                                  for node in job.dependencies
+                                  for _,node in job.dependencies
                                   if node.target.name in scheduled_tasks)
             if len(dependent_tasks) > 0:
                 depend = '-W depend=afterok:$%s' % \
