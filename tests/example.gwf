@@ -49,12 +49,12 @@ touch step2
 touch step3.1
 touch step3.2
 
-@target step4.1
+@target step4_1
 :input step3.1
 :output step4.1
 touch step4.1
 
-@target step4.2
+@target step4_2
 :input step3.2
 :output step4.2
 touch step4.2

@@ -171,8 +171,6 @@ class DependencyGraph:
         
         '''
         
-        # FIXME: After refactoring, this code can be simplified
-        
         root = self.nodes[target_name]
         
         processed = set()
@@ -184,25 +182,18 @@ class DependencyGraph:
                 # we have already processed the node, and
                 # if we should run the target name is scheduled
                 # otherwise it isn't.
-                return node.target.name in scheduled
-            
-            # Process dependencies and find out if any upstream tasks
-            # needs to run.
-            upstream_runs = False
+                return node.name in scheduled
+
+            # schedule all dependencies before we schedule this task
             for _,dep in node.dependencies:
-                upstream_runs |= dfs(dep)
+                dfs(dep)
             
             # If this task needs to run, then schedule it
-
-            if upstream_runs or node.target.should_run():
+            if node.should_run:
                 schedule.append(node)
                 scheduled.add(node.target.name)
-                to_run = True
-            else:
-                to_run = False
                 
             processed.add(node)
-            return to_run
 
         dfs(root)
             
