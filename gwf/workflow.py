@@ -177,9 +177,7 @@ class Workflow:
 
 
     def get_submission_script(self, target_name):
-    	
-    	# FIXME: After refactoring the dependency graph, I think this code
-    	# can be simplified.
+        '''Generate the script used to submit the tasks.'''
     	
         target = self.targets[target_name]
         schedule, scheduled_tasks = self.dependency_graph.schedule(target.name)
@@ -192,12 +190,11 @@ class Workflow:
 
             # make sure we have the scripts for the jobs we want to
             # execute!
-            job.target.write_script()
+            job.target.write_script() # FIXME: this assumes that node is a target ... we don't necessarily know this!
 
-            name = job.target.name
-            dependent_tasks = set(node.target.name
+            dependent_tasks = set(node.name
                                   for _,node in job.dependencies
-                                  if node.target.name in scheduled_tasks)
+                                  if node.name in scheduled_tasks)
             if len(dependent_tasks) > 0:
                 depend = '-W depend=afterok:$%s' % \
                     ':$'.join(dependent_tasks)
@@ -207,8 +204,8 @@ class Workflow:
             script = job.target.script_name()
 
             command = ' '.join([
-                '%s=`' % name,
-                'qsub -N %s' % name,
+                '%s=`' % node.name,
+                'qsub -N %s' % node.name,
                 depend,
                 script,
                 '`'])

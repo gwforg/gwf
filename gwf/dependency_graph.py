@@ -19,7 +19,6 @@ class Node:
     def node_should_run(self):
         raise NotImplementedError() # Must be defined in concrete classes
         
-    
     def print_graphviz(self, out):
         pass
     
@@ -74,6 +73,7 @@ class FileNode(Node):
         print >> out, ']',
         print >> out, ';'
         
+
 
 class DependencyGraph:
     '''A complete dependency graph, with code for scheduling a workflow.'''
@@ -146,9 +146,7 @@ class DependencyGraph:
     	# Handle nodes
     	for node in self.nodes.values():
     	    node.print_graphviz(out)
-    		
-    	# FIXME: handle system files ... can't right here yet
-    	
+    		    	
     	for src in self.nodes.values():
     	    for fname,dst in src.dependencies:
     	        print >> out, '"%s"'%src.name, '->', '"%s"'%dst.name,
