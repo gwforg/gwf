@@ -4,7 +4,7 @@
 
 import os, os.path
 import time
-from dependency_graph import Node, DependencyGraph
+from dependency_graph import DependencyGraph
 
 def _file_exists(fname):
     return os.path.exists(fname)
