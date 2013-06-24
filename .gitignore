@@ -8,3 +8,4 @@ build
 tests/.scripts
 dist/*
 gwf.egg*
+workflow.dot
