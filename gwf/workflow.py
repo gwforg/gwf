@@ -118,7 +118,10 @@ class Target(ExecutableTask):
         if upstream targets need to run, only this task; upstream tasks
         are handled by the dependency graph. '''
         
+        
         if len(self.output) == 0:
+            self.reason_to_run = \
+                'Sinks (targets without output) should always run'
             return True # If we don't provide output, assume we always
                         # need to run.
 
@@ -130,10 +133,14 @@ class Target(ExecutableTask):
         for outf in self.output:
             # FIXME: Handle absolute paths...
             if not _file_exists(self.working_dir+'/'+outf):
+                self.reason_to_run = \
+                    'Output file "%s" is missing' % outf
                 return True
 
         for inf in self.input:
             if not _file_exists(self.working_dir+'/'+inf):
+                self.reason_to_run = \
+                    'Input file "%s" is missing' % outf
                 return True
 
         # If no file is missing, it comes down to the time stamps. If we
@@ -144,16 +151,45 @@ class Target(ExecutableTask):
         # output just because we don't have time stamped input.
 
         if len(self.input) == 0:
+            self.reason_to_run = "We shouldn't run"
             return False
 
         # if we have both input and output files, check time stamps
-        in_timestamp = max(_get_file_timestamp(self.working_dir+'/'+inf)
-                           for inf in self.input)
-        out_timestamp = max(_get_file_timestamp(self.working_dir+'/'+outf)
-                            for outf in self.output)
+        
+        youngest_in_timestamp = None
+        youngest_in_filename = None
+        for inf in self.input:
+            timestamp = _get_file_timestamp(self.working_dir+'/'+inf)
+            if youngest_in_timestamp is None \
+                    or youngest_in_timestamp < timestamp:
+                youngest_in_filename = inf
+                youngest_in_timestamp = timestamp
+        assert youngest_in_timestamp is not None
 
-        return in_timestamp > out_timestamp
-
+        oldest_out_timestamp = None
+        oldest_out_filename = None
+        for outf in self.output:
+            timestamp = _get_file_timestamp(self.working_dir+'/'+outf)
+            if oldest_out_timestamp is None \
+                    or oldest_out_timestamp > timestamp:
+                oldest_out_filename = outf
+                oldest_out_timestamp = timestamp
+        assert oldest_out_timestamp is not None
+        
+        # The youngest in should be older than the oldest out
+        if youngest_in_timestamp >= oldest_out_timestamp:
+            # we have a younger in file than an outfile
+            self.reason_to_run = 'Infile "%s" is younger than outfile "%s"' %\
+                (youngest_in_filename, oldest_out_filename)
+            return True
+        else:
+            self.reason_to_run = 'Youngest infile "%s" is older than '\
+                                 'the oldest outfile "%s"' % \
+                (youngest_in_filename, oldest_out_filename)
+            return False    
+            
+        assert False, "We shouldn't get here"
+        
 
     @property
     def script_dir(self):

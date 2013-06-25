@@ -1,0 +1,31 @@
+
+@target source
+:output source
+
+touch source
+
+@target sink
+:input sink
+
+cat sink
+
+@target pipe
+:input file1
+:output file2
+
+cat file1 > file2
+
+
+@target twoin
+:input in1 in2
+:output out
+
+echo hello, world
+
+
+@target twoout
+:input in
+:output out1 out2
+
+echo hello, world
+
