@@ -35,11 +35,11 @@ cat xx
 
 
 @target step1
-:output step1
+:output step1 
 touch step1
 
 @target step2
-:input step1
+:input step1 missing-systems-file
 :output step2
 touch step2
 

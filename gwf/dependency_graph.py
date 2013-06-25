@@ -1,43 +1,23 @@
 '''Graph for dependency relationships of targets.'''
 
-from exceptions import NotImplementedError
-
-import workflow
 
 class Node:
     '''A node in the dependencies DAG.'''
     
-    def __init__(self, name, dependencies):
+    def __init__(self, name, task, dependencies):
         self.name = name
+        self.task = task
         self.dependencies = dependencies
         
         # The node needs to be run if what it contains needs to be run
         # or any of the upstream nodes need to be run...
-        self.should_run = self.task_should_run or \
+        self.should_run = self.task.should_run or \
                 any(dep.should_run for _,dep in dependencies)
     
-    @property
-    def task_should_run(self):
-        raise NotImplementedError() # Must be defined in concrete classes
-        
-    def print_graphviz(self, out):
-        pass
-    
-
-class TargetNode(Node):
-    def __init__(self, target, dependencies):
-        # unconventional order, but I need what I refer to when calling
-        # the constructor for Node...
-        self.target = target
-        Node.__init__(self, target.name, dependencies)
-    
-    @property
-    def task_should_run(self):
-        return self.target.should_run
-
     def print_graphviz(self, out):
     
-        if self.target.should_run:
+        shape = 'shape = %s' % self.task.graphviz_shape
+        if self.task.should_run:
             col = 'color = red, style=bold'
         elif self.should_run:
             col = 'color = red'
@@ -46,37 +26,10 @@ class TargetNode(Node):
 
         print >> out, '"%s"'%self.name, 
         print >> out, '[',
-        print >> out, ','.join(['shape = doubleoctagon', col]),
+        print >> out, ','.join([shape, col]),
         print >> out, ']',
         print >> out, ';'
-
-
-        
-class FileNode(Node):
-    def __init__(self, sysfile):
-        # unconventional order, but I need what I refer to when calling
-        # the constructor for Node...
-        self.sysfile = sysfile
-        Node.__init__(self, sysfile.name, [])
-
-    @property
-    def task_should_run(self):
-        return not self.sysfile.file_exists
-
-    def print_graphviz(self, out):
     
-        if self.sysfile.file_exists:
-            col = 'color = darkgreen'
-        else:
-            col = 'color = red, style=bold'
-    
-        print >> out, '"%s"'%self.name, 
-        print >> out, '[',
-        print >> out, ','.join(['shape = note', col]),
-        print >> out, ']',
-        print >> out, ';'
-        
-
 
 class DependencyGraph:
     '''A complete dependency graph, with code for scheduling a workflow.'''
@@ -100,18 +53,9 @@ class DependencyGraph:
         nodes in the dependency DAG and the execution logic in the
         objects they refer to.'''
         
-        # FIXME: find a better, OO, way of dispatching based on type,
-        # 'cause this is definitely ugly and is not going to work once I start
-        # making new types of tasks!
-        
-        if isinstance(task, workflow.Target):
-            node = TargetNode(task, dependencies)
-            self.nodes[task.name] = node
-            return node
-        elif isinstance(task, workflow.SystemFile):
-            node = FileNode(task)
-            self.nodes[task.name] = node
-            return node
+        node = Node(task.name, task, dependencies)
+        self.nodes[task.name] = node
+        return node
         
     
     def build_DAG(self, task):
@@ -192,7 +136,7 @@ class DependencyGraph:
             # If this task needs to run, then schedule it
             if node.should_run:
                 schedule.append(node)
-                scheduled.add(node.target.name)
+                scheduled.add(node.name)
                 
             processed.add(node)
 
