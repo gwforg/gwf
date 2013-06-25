@@ -1,0 +1,11 @@
+A test file for template tasks.
+
+@template cat file1 file2
+:input file1
+:output file2
+
+cat {file1} > {file2}
+
+#@template-target cat-foo-bar file1='cat' file2='bar'
+
+

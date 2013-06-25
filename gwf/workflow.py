@@ -11,6 +11,24 @@ def _file_exists(fname):
 def _get_file_timestamp(fname):
     return time.ctime(os.path.getmtime(fname))
 
+class Template:
+    def __init__(self, name, wd, parameters, template):
+        self.name = name
+        self.working_dir = wd
+        self.parameters = parameters
+        self.template = template
+        
+    def __str__(self):
+        return '@template %s %s [%s...]' % (
+            self.name,
+            self.parameters,
+            self.template[:80].replace('\n',' ')
+            )
+    __repr__ = __str__ # not really the correct use of __repr__ but easy 
+    				   # for printing output when testing...
+        
+    
+
 class Task:
     '''Abstract class for items in the workflow.'''
     def __init__(self, name, dependencies, wd):
@@ -239,7 +257,8 @@ class Target(ExecutableTask):
 class Workflow:
     '''Class representing a workflow.'''
 
-    def __init__(self, targets, wd):
+    def __init__(self, templates, targets, wd):
+        self.templates = templates
         self.targets = targets
         self.working_dir = wd
 
