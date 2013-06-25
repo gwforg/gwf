@@ -4,6 +4,8 @@ import os, os.path
 import time
 from exceptions import NotImplementedError
 from dependency_graph import DependencyGraph
+import parser # need this to re-parse instantiated templates
+
 
 def _file_exists(fname):
     return os.path.exists(fname)
@@ -34,7 +36,11 @@ class TemplateTarget:
         self.working_dir = wd
         self.template = template
         self.assignments = parameter_assignments
-        
+    
+    def instantiate_target_code(self, template_code):
+        '''Instantiate a target from the template'''
+        return 'target %s\n%s' % (self.name, template_code.format(**self.assignments))                    
+    
     def __str__(self):
         return '@template-target %s %s %s' % (
             self.name,
@@ -278,6 +284,17 @@ class Workflow:
         self.targets = targets
         self.template_targets = template_targets
         self.working_dir = wd
+
+        # handle templates and template instantiations
+        for name, tt in self.template_targets.items():
+            template = self.templates[tt.template]
+            target_code = tt.instantiate_target_code(template.template)
+            target = parser.parse_target(target_code, tt.working_dir)
+            if target.name in self.targets:
+                print 'Instantiated template %s has the same name as an existing target' %\
+                    target.name
+                sys.exit(2)
+            self.targets[target.name] = target
 
         # collect the output files so we know who can build them.
         self.providers = dict()

@@ -63,7 +63,12 @@ def parse_template_target(code, working_dir):
     name = header_objects[1]
     template = header_objects[2]
     parameter_assignments = header_objects[3:]
-    return TemplateTarget(name, working_dir, template, parameter_assignments)
+    assignments = dict()
+    for assignment in parameter_assignments:
+        key, val = assignment.split('=')
+        assignments[key.strip()] = val.strip()
+        
+    return TemplateTarget(name, working_dir, template, assignments)
 
 
 PARSERS = {'target': parse_target,
