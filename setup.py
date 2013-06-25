@@ -12,16 +12,22 @@ def read(fname):
 setup(
     name = "gwf",
     version = "0.0.1",
+
     author = "Thomas Mailund",
     author_email = "mailund@birc.au.dk",
+
     description = ("Grid WorkFlow - a make-like system for"
                    "submitting jobs through qsub."),
-    license = "GNU GPLv3",
+    long_description=read('README'),
     keywords = "qsub make",
+    license = "GNU GPLv3",
     url = "https://github.com/mailund/gwf",
+
     packages=['gwf', 'tests'],
     scripts=['scripts/gwf', 'scripts/gwf-workflow-graph'],
-    long_description=read('README'),
+
+    test_suite='tests',
+
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Environment :: Console",

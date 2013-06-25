@@ -1,0 +1,16 @@
+
+Test comment at top.
+
+@target SingleSource
+:output some_file
+touch some_file
+
+@target SinglePipe
+:input some_file
+:output some_other_file
+cat some_file > some_other_file
+
+@target SingleSink
+:input some_other_file
+cat some_other_file
+

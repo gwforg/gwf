@@ -254,7 +254,7 @@ class Workflow:
         
             # make sure we have the scripts for the jobs we want to
             # execute!
-            job.task.write_script() # FIXME: should all tasks write scripts?
+            job.task.write_script()
 
             dependent_tasks = set(node.name
                                   for _,node in job.dependencies
