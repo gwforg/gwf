@@ -27,7 +27,20 @@ class TemplateTester(unittest.TestCase):
         self.assertEqual('bar',tt.assignments['file2'])
         
     def test_targets(self):
-        self.assertEqual(len(self.workflow.targets), 1)
-        target = self.workflow.targets['cat-foo-bar']
-        self.assertItemsEqual(['foo'],target.input)
-        self.assertItemsEqual(['bar'],target.output)
+        targets = self.workflow.targets
+        self.assertEqual(len(targets), 3)
+        self.assertItemsEqual(['cat-foo-bar','make-foo','eat-bar'], targets)
+        
+        template_target = targets['cat-foo-bar']
+        self.assertItemsEqual(['foo'],template_target.input)
+        self.assertItemsEqual(['bar'],template_target.output)
+        
+        foo = targets['make-foo']
+        bar = targets['eat-bar']
+        
+        self.assertEqual(len(template_target.dependencies), 1)
+        self.assertEqual(template_target.dependencies[0], ('foo',foo))
+        
+        self.assertEqual(len(bar.dependencies), 1)
+        self.assertEqual(bar.dependencies[0], ('bar',template_target))
+        
