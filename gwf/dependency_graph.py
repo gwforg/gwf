@@ -96,6 +96,7 @@ class DependencyGraph:
     	for node in self.nodes.values():
     	    node.print_graphviz(out)
     		    	
+    	# Handle edges
     	for src in self.nodes.values():
     	    for fname,dst in src.dependencies:
     	        print >> out, '"%s"'%src.name, '->', '"%s"'%dst.name,

@@ -1,7 +1,5 @@
 '''Classes representing a workflow.'''
 
-# FIXME: handle errors
-
 import os, os.path
 import time
 from exceptions import NotImplementedError
@@ -125,20 +123,15 @@ class Target(ExecutableTask):
             return True # If we don't provide output, assume we always
                         # need to run.
 
-        # We need to run if any input or output files are missing
-        # Obviously for the output, but for the input we have to assume
-        # that we have a dependency that will generate it ...
-        # FIXME: probably should have a test for this
                
         for outf in self.output:
-            # FIXME: Handle absolute paths...
-            if not _file_exists(self.working_dir+'/'+outf):
+            if not _file_exists(os.path.join(self.working_dir, outf)):
                 self.reason_to_run = \
                     'Output file "%s" is missing' % outf
                 return True
 
         for inf in self.input:
-            if not _file_exists(self.working_dir+'/'+inf):
+            if not _file_exists(os.path.join(self.working_dir,inf)):
                 self.reason_to_run = \
                     'Input file "%s" is missing' % outf
                 return True
@@ -159,7 +152,7 @@ class Target(ExecutableTask):
         youngest_in_timestamp = None
         youngest_in_filename = None
         for inf in self.input:
-            timestamp = _get_file_timestamp(self.working_dir+'/'+inf)
+            timestamp = _get_file_timestamp(os.path.join(self.working_dir,inf))
             if youngest_in_timestamp is None \
                     or youngest_in_timestamp < timestamp:
                 youngest_in_filename = inf
@@ -193,11 +186,11 @@ class Target(ExecutableTask):
 
     @property
     def script_dir(self):
-        return self.working_dir+'/.scripts'
+        return os.path.join(self.working_dir,'.scripts')
     
     @property
     def script_name(self):
-        return self.script_dir+'/'+self.name
+        return os.path.join(self.script_dir,self.name)
 
     def make_script_dir(self):
         script_dir = self.script_dir
