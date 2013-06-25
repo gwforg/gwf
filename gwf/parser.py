@@ -37,9 +37,10 @@ def parse_target(target_code, working_dir):
                 # FIXME: Proper error handling
         else:
             # assumes everything after the opcodes is the script
-            code = '\n'.join(lines[i:])
             break
                 
+    code = '\n'.join(lines[i:])
+            
     return Target(name, input, output, pbs, code, working_dir)
 
 PARSERS = {'target': parse_target}

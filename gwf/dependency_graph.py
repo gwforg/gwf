@@ -15,8 +15,10 @@ class Node:
                 any(dep.should_run for _,dep in dependencies)
     
     def print_graphviz(self, out):
+        '''Print the graphviz description of this node to "out".'''
     
         shape = 'shape = %s' % self.task.graphviz_shape
+        
         if self.task.should_run:
             col = 'color = red, style=bold'
         elif self.should_run:

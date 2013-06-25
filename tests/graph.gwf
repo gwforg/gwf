@@ -1,0 +1,32 @@
+
+
+@target n1
+:output e1
+
+touch e1
+
+
+@target n2
+:input e1
+:output e21 e22
+
+touch e21 e22
+
+
+@target n31
+:input e21
+:output e31
+touch e31
+
+
+@target n32
+:input e22
+:output e32
+
+touch e32
+
+@target n4
+:input e31 e32
+:output final
+
+touch final
