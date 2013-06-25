@@ -1,5 +1,6 @@
 '''Functionality for parsing a workflow specification file.'''
 
+import sys
 import os.path
 import re
 from workflow import Target, Workflow
