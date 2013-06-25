@@ -6,6 +6,6 @@ A test file for template tasks.
 
 cat {file1} > {file2}
 
-#@template-target cat-foo-bar file1='cat' file2='bar'
+@template-target cat-foo-bar cat file1='cat' file2='bar'
 
 

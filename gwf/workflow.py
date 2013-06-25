@@ -28,6 +28,22 @@ class Template:
     				   # for printing output when testing...
         
     
+class TemplateTarget:
+    def __init__(self, name, wd, template, parameter_assignments):
+        self.name = name
+        self.working_dir = wd
+        self.template = template
+        self.assignments = parameter_assignments
+        
+    def __str__(self):
+        return '@template-target %s %s %s' % (
+            self.name,
+            self.template,
+            self.assignments
+            )
+    __repr__ = __str__ # not really the correct use of __repr__ but easy 
+    				   # for printing output when testing...
+
 
 class Task:
     '''Abstract class for items in the workflow.'''
@@ -257,9 +273,10 @@ class Target(ExecutableTask):
 class Workflow:
     '''Class representing a workflow.'''
 
-    def __init__(self, templates, targets, wd):
+    def __init__(self, templates, targets, template_targets, wd):
         self.templates = templates
         self.targets = targets
+        self.template_targets = template_targets
         self.working_dir = wd
 
         # collect the output files so we know who can build them.

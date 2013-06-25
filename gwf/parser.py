@@ -3,7 +3,7 @@
 import sys
 import os.path
 import re
-from workflow import Template, Target, Workflow
+from workflow import Template, TemplateTarget, Target, Workflow
 
 # working dir is provided to the parse in case we want to allow
 # recursive workflows or something in the future... and I need it for
@@ -57,10 +57,18 @@ def parse_template(template_code, working_dir):
         
     return Template(name, working_dir, parameters, code)
 
+def parse_template_target(code, working_dir):
+    header, fluff = code.split('\n',1)
+    header_objects = header.split()
+    name = header_objects[1]
+    template = header_objects[2]
+    parameter_assignments = header_objects[3:]
+    return TemplateTarget(name, working_dir, template, parameter_assignments)
 
 
 PARSERS = {'target': parse_target,
-           'template': parse_template}
+           'template': parse_template,
+           'template-target': parse_template_target}
 
 def parse(fname):
     '''Parse up the workflow in "fname".'''
@@ -81,6 +89,7 @@ def parse(fname):
 
     templates = dict()
     targets = dict()
+    template_targets = dict()
     for cmd in parsed_commands:
         # FIXME: probably shouldn't hardwire a test for the type of task here!
         
@@ -91,6 +100,14 @@ def parse(fname):
                 
             templates[cmd.name] = cmd
         
+        if isinstance(cmd, TemplateTarget):
+            if cmd.name in template_targets:
+                print 'Template target %s appears more than once in the worlflow.' % \
+                    cmd.name
+                sys.exit(2)
+                
+            template_targets[cmd.name] = cmd
+        
         if isinstance(cmd, Target):
 
             if cmd.name in targets:
@@ -99,5 +116,5 @@ def parse(fname):
             
             targets[cmd.name] = cmd
 
-    return Workflow(templates, targets, working_dir)
+    return Workflow(templates, targets, template_targets, working_dir)
 
