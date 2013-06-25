@@ -8,4 +8,10 @@ cat {file1} > {file2}
 
 @template-target cat-foo-bar cat file1=foo file2=bar
 
+@target make-foo
+:output foo
+touch foo
 
+@target eat-bar
+:input bar
+cat bar
