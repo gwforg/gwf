@@ -16,15 +16,19 @@ setup(
     author_email = "mailund@birc.au.dk",
     description = ("Grid WorkFlow - a make-like system for"
                    "submitting jobs through qsub."),
-    license = "Free for all purposes",
+    license = "GNU GPLv3",
     keywords = "qsub make",
     url = "https://github.com/mailund/gwf",
     packages=['gwf', 'tests'],
-    scripts=['scripts/gwf.py'],
+    scripts=['scripts/gwf', 'scripts/gwf-workflow-graph'],
     long_description=read('README'),
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Environment :: Console",
         "Topic :: Utilities",
+        "Topic :: System :: Distributed Computing",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: GNU General Public License (GPLv3)",
+        "Programming Language :: Python",
     ],
 )
