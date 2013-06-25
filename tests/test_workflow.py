@@ -2,16 +2,16 @@ import unittest
 import os 
 
 from gwf.parser import parse
-testdir = os.path.dirname(__file__)
+testdir = os.path.dirname(os.path.realpath(__file__))
 
 
 class SimpleWorkflowTester(unittest.TestCase):
 
     def setUp(self):
-        self.workflow = parse(testdir+'/simple_pipe.gwf')
+        self.workflow = parse(os.path.join(testdir,'simple_pipe.gwf'))
         
     def test_working_dir(self):
-        assert self.workflow.working_dir == testdir
+        self.assertTrue(os.path.samefile(self.workflow.working_dir, testdir))
         
     def test_targets(self):
         targets = self.workflow.targets
@@ -66,7 +66,7 @@ class SimpleWorkflowTester(unittest.TestCase):
         # an exception or something if it doesn't work.
         for target in self.workflow.targets.values():
             target.write_script()
-            self.assertTrue(target.script_name.startswith(testdir+'/.scripts'))
+            self.assertTrue(target.script_name.startswith(os.path.join(testdir,'.scripts')))
 
     def test_dependencies(self):
         targets = self.workflow.targets
@@ -87,12 +87,12 @@ class SimpleWorkflowTester(unittest.TestCase):
 class SystemFileWorkflowTester(unittest.TestCase):
 
     def setUp(self):
-        self.workflow = parse(testdir+'/system_files.gwf')
+        self.workflow = parse(os.path.join(testdir,'system_files.gwf'))
         # create one of the two system files
-        open(testdir+'/sysfile1','a').close()
+        open(os.path.join(testdir,'sysfile1'),'a').close()
         
     def tearDown(self):
-        os.remove(testdir+'/sysfile1')
+        os.remove(os.path.join(testdir,'sysfile1'))
         
     def test_system_files_input(self):
         target = self.workflow.targets['Target']

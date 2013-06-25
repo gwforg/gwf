@@ -1,12 +1,12 @@
 import unittest
-import os 
+import os, os.path
 
 from gwf.parser import parse
 testdir = os.path.dirname(__file__)
 
 class SourceMissing(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
     
     def test_source_should_run(self):
         source = self.workflow.targets['source']
@@ -16,11 +16,11 @@ class SourceMissing(unittest.TestCase):
 
 class SourceExisting(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
-        open(testdir+'/source','a').close()
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
+        open(os.path.join(testdir,'source'),'a').close()
         
     def tearDown(self):
-        os.remove(testdir+'/source')
+        os.remove(os.path.join(testdir,'source'))
     
     def test_source_should_run(self):
         source = self.workflow.targets['source']
@@ -31,7 +31,7 @@ class SourceExisting(unittest.TestCase):
                          
 class SinkMissing(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
     def test_sink_should_run(self):
         sink = self.workflow.targets['sink']
         self.assertTrue(sink.should_run, "A sink should always run!")
@@ -39,10 +39,10 @@ class SinkMissing(unittest.TestCase):
 
 class SinkExisting(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
-        open(testdir+'/sink','a').close()
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
+        open(os.path.join(testdir,'sink'),'a').close()
     def tearDown(self):
-        os.remove(testdir+'/sink')
+        os.remove(os.path.join(testdir,'sink'))
     def test_sink_should_run(self):
         sink = self.workflow.targets['sink']
         self.assertTrue(sink.should_run, "A sink should always run!")
@@ -50,7 +50,7 @@ class SinkExisting(unittest.TestCase):
 
 class PipeBothMissing(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
     def tearDown(self):
         pass
     def test_pipe_should_run(self):
@@ -59,33 +59,33 @@ class PipeBothMissing(unittest.TestCase):
 
 class PipeInMissing(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
-        open(testdir+'/file1','a').close()
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
+        open(os.path.join(testdir,'file1'),'a').close()
     def tearDown(self):
-        os.remove(testdir+'/file1')
+        os.remove(os.path.join(testdir,'file1'))
     def test_pipe_should_run(self):
         pipe = self.workflow.targets['pipe']
         self.assertTrue(pipe.should_run, "Files are missing so we should run!")
 
 class PipeOutMissing(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
-        open(testdir+'/file2','a').close()
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
+        open(os.path.join(testdir,'file2'),'a').close()
     def tearDown(self):
-        os.remove(testdir+'/file2')
+        os.remove(os.path.join(testdir,'file2'))
     def test_pipe_should_run(self):
         pipe = self.workflow.targets['pipe']
         self.assertTrue(pipe.should_run, "Files are missing so we should run!")
 
 class PipeInYoungest(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
-        open(testdir+'/file2','a').close()
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
+        open(os.path.join(testdir,'file2'),'a').close()
         os.system('sleep 1') # make sure they have different time stamps
-        open(testdir+'/file1','a').close()
+        open(os.path.join(testdir,'file1'),'a').close()
     def tearDown(self):
-        os.remove(testdir+'/file1')
-        os.remove(testdir+'/file2')
+        os.remove(os.path.join(testdir,'file1'))
+        os.remove(os.path.join(testdir,'file2'))
     def test_pipe_should_run(self):
         pipe = self.workflow.targets['pipe']
         self.assertTrue(pipe.should_run, 
@@ -94,13 +94,13 @@ class PipeInYoungest(unittest.TestCase):
 
 class PipeOutYoungest(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
-        open(testdir+'/file1','a').close()
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
+        open(os.path.join(testdir,'file1'),'a').close()
         os.system('sleep 1') # make sure they have different time stamps
-        open(testdir+'/file2','a').close()
+        open(os.path.join(testdir,'file2'),'a').close()
     def tearDown(self):
-        os.remove(testdir+'/file1')
-        os.remove(testdir+'/file2')
+        os.remove(os.path.join(testdir,'file1'))
+        os.remove(os.path.join(testdir,'file2'))
     def test_pipe_should_run(self):
         pipe = self.workflow.targets['pipe']
         self.assertFalse(pipe.should_run, 
@@ -111,17 +111,17 @@ class PipeOutYoungest(unittest.TestCase):
 
 class TwoIn_12o(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
-        open(testdir+'/in1','a').close()
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
+        open(os.path.join(testdir,'in1'),'a').close()
         os.system('sleep 1')
-        open(testdir+'/in2','a').close()
+        open(os.path.join(testdir,'in2'),'a').close()
         os.system('sleep 1')
-        open(testdir+'/out','a').close()
+        open(os.path.join(testdir,'out'),'a').close()
         
     def tearDown(self):
-        os.remove(testdir+'/in1')
-        os.remove(testdir+'/in2')
-        os.remove(testdir+'/out')
+        os.remove(os.path.join(testdir,'in1'))
+        os.remove(os.path.join(testdir,'in2'))
+        os.remove(os.path.join(testdir,'out'))
         
     def test_should_run(self):
         target = self.workflow.targets['twoin']
@@ -129,17 +129,17 @@ class TwoIn_12o(unittest.TestCase):
 
 class TwoIn_1o2(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
-        open(testdir+'/in1','a').close()
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
+        open(os.path.join(testdir,'in1'),'a').close()
         os.system('sleep 1')
-        open(testdir+'/out','a').close()
+        open(os.path.join(testdir,'out'),'a').close()
         os.system('sleep 1')
-        open(testdir+'/in2','a').close()
+        open(os.path.join(testdir,'in2'),'a').close()
         
     def tearDown(self):
-        os.remove(testdir+'/in1')
-        os.remove(testdir+'/in2')
-        os.remove(testdir+'/out')
+        os.remove(os.path.join(testdir,'in1'))
+        os.remove(os.path.join(testdir,'in2'))
+        os.remove(os.path.join(testdir,'out'))
         
     def test_should_run(self):
         target = self.workflow.targets['twoin']
@@ -147,17 +147,17 @@ class TwoIn_1o2(unittest.TestCase):
 
 class TwoIn_o12(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
-        open(testdir+'/out','a').close()
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
+        open(os.path.join(testdir,'out'),'a').close()
         os.system('sleep 1')
-        open(testdir+'/in1','a').close()
+        open(os.path.join(testdir,'in1'),'a').close()
         os.system('sleep 1')
-        open(testdir+'/in2','a').close()
+        open(os.path.join(testdir,'in2'),'a').close()
         
     def tearDown(self):
-        os.remove(testdir+'/in1')
-        os.remove(testdir+'/in2')
-        os.remove(testdir+'/out')
+        os.remove(os.path.join(testdir,'in1'))
+        os.remove(os.path.join(testdir,'in2'))
+        os.remove(os.path.join(testdir,'out'))
         
     def test_should_run(self):
         target = self.workflow.targets['twoin']
@@ -167,17 +167,17 @@ class TwoIn_o12(unittest.TestCase):
 
 class TwoOut_i12(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
-        open(testdir+'/in','a').close()
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
+        open(os.path.join(testdir,'in'),'a').close()
         os.system('sleep 1')
-        open(testdir+'/out1','a').close()
+        open(os.path.join(testdir,'out1'),'a').close()
         os.system('sleep 1')
-        open(testdir+'/out2','a').close()
+        open(os.path.join(testdir,'out2'),'a').close()
         
     def tearDown(self):
-        os.remove(testdir+'/in')
-        os.remove(testdir+'/out1')
-        os.remove(testdir+'/out2')
+        os.remove(os.path.join(testdir,'in'))
+        os.remove(os.path.join(testdir,'out1'))
+        os.remove(os.path.join(testdir,'out2'))
         
     def test_should_run(self):
         target = self.workflow.targets['twoout']
@@ -185,17 +185,17 @@ class TwoOut_i12(unittest.TestCase):
 
 class TwoOut_1i2(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
-        open(testdir+'/out1','a').close()
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
+        open(os.path.join(testdir,'out1'),'a').close()
         os.system('sleep 1')
-        open(testdir+'/in','a').close()
+        open(os.path.join(testdir,'in'),'a').close()
         os.system('sleep 1')
-        open(testdir+'/out2','a').close()
+        open(os.path.join(testdir,'out2'),'a').close()
         
     def tearDown(self):
-        os.remove(testdir+'/in')
-        os.remove(testdir+'/out1')
-        os.remove(testdir+'/out2')
+        os.remove(os.path.join(testdir,'in'))
+        os.remove(os.path.join(testdir,'out1'))
+        os.remove(os.path.join(testdir,'out2'))
         
     def test_should_run(self):
         target = self.workflow.targets['twoout']
@@ -203,17 +203,17 @@ class TwoOut_1i2(unittest.TestCase):
 
 class TwoOut_12i(unittest.TestCase):
     def setUp(self):
-        self.workflow = parse(testdir+'/timestamps.gwf')
-        open(testdir+'/out1','a').close()
+        self.workflow = parse(os.path.join(testdir,'timestamps.gwf'))
+        open(os.path.join(testdir,'out1'),'a').close()
         os.system('sleep 1')
-        open(testdir+'/out2','a').close()
+        open(os.path.join(testdir,'out2'),'a').close()
         os.system('sleep 1')
-        open(testdir+'/in','a').close()
+        open(os.path.join(testdir,'in'),'a').close()
         
     def tearDown(self):
-        os.remove(testdir+'/in')
-        os.remove(testdir+'/out1')
-        os.remove(testdir+'/out2')
+        os.remove(os.path.join(testdir,'in'))
+        os.remove(os.path.join(testdir,'out1'))
+        os.remove(os.path.join(testdir,'out2'))
         
     def test_should_run(self):
         target = self.workflow.targets['twoout']
