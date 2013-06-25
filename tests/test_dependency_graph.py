@@ -1,5 +1,5 @@
 import unittest
-import os 
+import os, os.path
 
 from gwf.parser import parse
 testdir = os.path.dirname(__file__)
@@ -7,20 +7,20 @@ testdir = os.path.dirname(__file__)
 class DependencyGraphTest(unittest.TestCase):
 
     def setUp(self):
-        self.workflow = parse(testdir+'/graph.gwf')
+        open(os.path.join(testdir,'e21'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'e22'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'e31'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'e32'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'final'),'a').close()
+        self.workflow = parse(os.path.join(testdir,'graph.gwf'))
         self.graph = self.workflow.dependency_graph
-        open(testdir+'/e21','a').close() ; os.system('sleep 1')
-        open(testdir+'/e22','a').close() ; os.system('sleep 1')
-        open(testdir+'/e31','a').close() ; os.system('sleep 1')
-        open(testdir+'/e32','a').close() ; os.system('sleep 1')
-        open(testdir+'/final','a').close()
         
     def tearDown(self):
-        os.remove(testdir+'/e21')
-        os.remove(testdir+'/e22')
-        os.remove(testdir+'/e31')
-        os.remove(testdir+'/e32')
-        os.remove(testdir+'/final')
+        os.remove(os.path.join(testdir,'e21'))
+        os.remove(os.path.join(testdir,'e22'))
+        os.remove(os.path.join(testdir,'e31'))
+        os.remove(os.path.join(testdir,'e32'))
+        os.remove(os.path.join(testdir,'final'))
         
     def test_nodes(self):
         nodes = self.graph.nodes
@@ -69,3 +69,95 @@ class DependencyGraphTest(unittest.TestCase):
         self.assertFalse(n4.task.should_run, n4.task.reason_to_run)
         self.assertTrue(n4.should_run)
         
+class ScheduleTest1(unittest.TestCase):
+
+    def setUp(self):
+        open(os.path.join(testdir,'e21'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'e22'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'e31'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'e32'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'final'),'a').close()
+        self.workflow = parse(os.path.join(testdir,'graph.gwf'))
+        self.graph = self.workflow.dependency_graph
+        
+    def tearDown(self):
+        os.remove(os.path.join(testdir,'e21'))
+        os.remove(os.path.join(testdir,'e22'))
+        os.remove(os.path.join(testdir,'e31'))
+        os.remove(os.path.join(testdir,'e32'))
+        os.remove(os.path.join(testdir,'final'))
+        
+    def test_schedule(self):
+        schedule, scheduled = self.graph.schedule('n4')
+        self.assertEqual(len(schedule), 5)
+        self.assertItemsEqual(['n1','n2','n31','n32','n4'], scheduled)
+        
+        n1 = self.graph.nodes['n1']
+        n2 = self.graph.nodes['n2']
+        n31 = self.graph.nodes['n31']
+        n32 = self.graph.nodes['n32']
+        n4 = self.graph.nodes['n4']
+        self.assertItemsEqual([n1,n2,n31,n32,n4], schedule)
+        self.assertLess(schedule.index(n1),schedule.index(n2))
+        self.assertLess(schedule.index(n2),schedule.index(n31))
+        self.assertLess(schedule.index(n2),schedule.index(n32))
+        self.assertLess(schedule.index(n31),schedule.index(n4))
+        self.assertLess(schedule.index(n32),schedule.index(n4))
+
+class ScheduleTest2(unittest.TestCase):
+
+    def setUp(self):
+        open(os.path.join(testdir,'e1'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'e22'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'e31'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'e32'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'final'),'a').close()
+        self.workflow = parse(os.path.join(testdir,'graph.gwf'))
+        self.graph = self.workflow.dependency_graph
+        
+    def tearDown(self):
+        os.remove(os.path.join(testdir,'e1'))
+        os.remove(os.path.join(testdir,'e22'))
+        os.remove(os.path.join(testdir,'e31'))
+        os.remove(os.path.join(testdir,'e32'))
+        os.remove(os.path.join(testdir,'final'))
+        
+    def test_schedule(self):
+        schedule, scheduled = self.graph.schedule('n4')
+        self.assertEqual(len(schedule), 4)
+        self.assertItemsEqual(['n2','n31','n32','n4'], scheduled)
+        
+        n2 = self.graph.nodes['n2']
+        n31 = self.graph.nodes['n31']
+        n32 = self.graph.nodes['n32']
+        n4 = self.graph.nodes['n4']
+        self.assertItemsEqual([n2,n31,n32,n4], schedule)
+        self.assertLess(schedule.index(n2),schedule.index(n31))
+        self.assertLess(schedule.index(n2),schedule.index(n32))
+        self.assertLess(schedule.index(n31),schedule.index(n4))
+        self.assertLess(schedule.index(n32),schedule.index(n4))
+
+
+class ScheduleTest3(unittest.TestCase):
+
+    def setUp(self):
+        open(os.path.join(testdir,'e1'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'e21'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'e22'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'e31'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'e32'),'a').close() ; os.system('sleep 1')
+        open(os.path.join(testdir,'final'),'a').close()
+        self.workflow = parse(os.path.join(testdir,'graph.gwf'))
+        self.graph = self.workflow.dependency_graph
+        
+    def tearDown(self):
+        os.remove(os.path.join(testdir,'e1'))
+        os.remove(os.path.join(testdir,'e21'))
+        os.remove(os.path.join(testdir,'e22'))
+        os.remove(os.path.join(testdir,'e31'))
+        os.remove(os.path.join(testdir,'e32'))
+        os.remove(os.path.join(testdir,'final'))
+        
+    def test_schedule(self):
+        schedule, scheduled = self.graph.schedule('n4')
+        self.assertEqual(len(schedule), 0)
