@@ -20,3 +20,6 @@ cat {x} > {y}
 
 @template-target one-{x} one x=@list1
 @template-target two-{x}-{y} two x=@list1 y=@list2
+
+@list list3 a b c
+@template-target two-single-{y} two x=single y=@list3

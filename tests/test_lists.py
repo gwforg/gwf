@@ -11,7 +11,7 @@ class ListTester(unittest.TestCase):
         self.workflow = parse(os.path.join(testdir,'lists.gwf'))
 
     def test_lists(self):
-        self.assertItemsEqual(['singleton','list1','list2'],
+        self.assertItemsEqual(['singleton','list1','list2','list3'],
                               self.workflow.lists)
                               
         singleton = self.workflow.lists['singleton']
@@ -29,6 +29,7 @@ class ListTester(unittest.TestCase):
     def test_targets(self):
         self.assertItemsEqual(['singleton',
                                 'one-elm1','one-elm2','one-elm3',
+                                'two-single-a','two-single-b','two-single-c',
                                 'two-elm1-x','two-elm2-y','two-elm3-z'],
                               self.workflow.targets)
                               
