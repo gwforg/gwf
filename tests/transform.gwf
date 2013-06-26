@@ -1,0 +1,5 @@
+
+Test of regex transformations.
+
+@list foos foo1 foo2 foo3
+@transform bars foo(.*) bar\1 foos

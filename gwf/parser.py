@@ -6,10 +6,10 @@ import re
 import glob
 import subprocess
 from workflow import List
-from workflow import Glob, Shell
+from workflow import Glob, Shell, Transform
 from workflow import Template, TemplateTarget
 from workflow import Target
-from workflow import  Workflow
+from workflow import Workflow
 
 # working dir is provided to the parse in case we want to allow
 # recursive workflows or something in the future... and I need it for
@@ -102,10 +102,29 @@ def parse_shell(code, working_dir):
     shell_result = subprocess.check_output(command, shell=True).split()
     return Shell(name, command, shell_result)
     
+def parse_transform(code, working_dir):
+    elements = code.split('\n')[0].split()
+    if len(elements) != 5:
+        print 'Malformed transform "%s"' % code
+        sys.exit(2)
+    
+    name = elements[1]
+    match_pattern = elements[2]
+    subs_pattern = elements[3]
+    input_list = elements[4]
+    elements = None # we can't transform yet, but the workflow will do it soon!
+    
+    return Transform(name, match_pattern, subs_pattern, input_list, elements)
+    
+    
 PARSERS = {'target': parse_target,
            'template': parse_template,
            'template-target': parse_template_target,
-           'list': parse_list, 'glob': parse_glob, 'shell': parse_shell}
+           'list': parse_list, 
+           'glob': parse_glob,
+           'shell': parse_shell,
+           'transform': parse_transform,
+            }
 
 def parse(fname):
     '''Parse up the workflow in "fname".'''

@@ -3,6 +3,7 @@
 import sys
 import os, os.path
 import time
+import re
 from exceptions import NotImplementedError
 from dependency_graph import DependencyGraph
 import parser # need this to re-parse instantiated templates
@@ -145,6 +146,23 @@ class Shell(List):
         return '@shell %s %s [%s]' % (
             self.name,
             self.shell_command,
+            ' '.join(self.elements)
+            )
+    __repr__ = __str__ # not really the correct use of __repr__ but easy 
+    				   # for printing output when testing...
+
+class Transform(List):
+    def __init__(self, name, match_pattern, subs_pattern, input_list, elements):
+        List.__init__(self, name, elements)
+        self.match_pattern = match_pattern
+        self.subs_pattern = subs_pattern
+        self.input_list = input_list
+
+    def __str__(self):
+        return '@transform %s %s %s %s [%s]' % (
+            self.name,
+            self.match_pattern, self.subs_pattern,
+            self.input_list,
             ' '.join(self.elements)
             )
     __repr__ = __str__ # not really the correct use of __repr__ but easy 
@@ -387,6 +405,20 @@ class Workflow:
         self.targets = targets
         self.template_targets = template_targets
         self.working_dir = wd
+
+        # handle list transformation...
+        for cmd in self.lists.values():
+            if isinstance(cmd, Transform):
+                input_list_name = cmd.input_list
+                if input_list_name not in self.lists:
+                    print "Transformation list %s uses input list %s the doesn't exist."%\
+                        (cmd.name, input_list_name)
+                    sys.exit(2)
+                
+                input_list = self.lists[input_list_name]
+                
+                cmd.elements = [re.sub(cmd.match_pattern,cmd.subs_pattern,input)
+                                for input in input_list.elements]
 
         # handle templates and template instantiations
         for name, tt in self.template_targets.items():
