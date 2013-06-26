@@ -37,8 +37,8 @@ class DependencyGraph:
     '''A complete dependency graph, with code for scheduling a workflow.'''
 
     def __init__(self, workflow):
+        self.workflow = workflow
         self.nodes = dict()
-
         for name, target in workflow.targets.items():
             if name not in self.nodes:
                 self.nodes[name] = self.build_DAG(target)
@@ -99,10 +99,11 @@ class DependencyGraph:
     	# Handle edges
     	for src in self.nodes.values():
     	    for fname,dst in src.dependencies:
-    	        print >> out, '"%s"'%src.name, '->', '"%s"'%dst.name,
+    	        print >> out, '"%s"'%dst.name, '->', '"%s"'%src.name,
     	        print >> out, '[label="%s"]' % fname,
     	        print >> out, ';'
-    	
+    	        
+
     	print >> out, '}'
     	
     	

@@ -1,0 +1,22 @@
+Test of lists
+
+@template one x
+:input {x}
+:output {x}.out
+cat {x} > {x}.out
+
+@template two x y
+:input {x}
+:output {y}
+cat {x} > {y}
+
+@list singleton x
+
+@template-target singleton one x=@singleton
+
+
+@list list1 elm1 elm2 elm3
+@list list2 x y z
+
+@template-target one-{x} one x=@list1
+@template-target two-{x}-{y} two x=@list1 y=@list2

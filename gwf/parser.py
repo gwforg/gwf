@@ -3,7 +3,10 @@
 import sys
 import os.path
 import re
-from workflow import Template, TemplateTarget, Target, Workflow
+from workflow import List
+from workflow import Template, TemplateTarget
+from workflow import Target
+from workflow import  Workflow
 
 # working dir is provided to the parse in case we want to allow
 # recursive workflows or something in the future... and I need it for
@@ -58,7 +61,7 @@ def parse_template(template_code, working_dir):
     return Template(name, working_dir, parameters, code)
 
 def parse_template_target(code, working_dir):
-    header, fluff = code.split('\n',1)
+    header = code.split('\n',1)[0]
     header_objects = header.split()
     name = header_objects[1]
     template = header_objects[2]
@@ -71,9 +74,16 @@ def parse_template_target(code, working_dir):
     return TemplateTarget(name, working_dir, template, assignments)
 
 
+def parse_list(code, working_dir):
+    elements = code.split('\n')[0].split()
+    name = elements[1]
+    values = elements[2:]
+    return List(name, values)
+    
 PARSERS = {'target': parse_target,
            'template': parse_template,
-           'template-target': parse_template_target}
+           'template-target': parse_template_target,
+           'list': parse_list}
 
 def parse(fname):
     '''Parse up the workflow in "fname".'''
@@ -92,17 +102,25 @@ def parse(fname):
 
         parsed_commands.append(PARSERS[opcode](cmd, working_dir))
 
+    lists = dict()
     templates = dict()
     targets = dict()
     template_targets = dict()
     for cmd in parsed_commands:
         # FIXME: probably shouldn't hardwire a test for the type of task here!
         
+        if isinstance(cmd, List):
+            if cmd.name in lists:
+                print 'List %s appears more than once in the workflow.' % \
+                    cmd.name
+                sys.exit(2)
+            lists[cmd.name] = cmd
+        
         if isinstance(cmd, Template):
             if cmd.name in templates:
-                print 'Template %s appears more than once in the workflow.' % cmd.name
+                print 'Template %s appears more than once in the workflow.' % \
+                    cmd.name
                 sys.exit(2)
-                
             templates[cmd.name] = cmd
         
         if isinstance(cmd, TemplateTarget):
@@ -110,16 +128,15 @@ def parse(fname):
                 print 'Template target %s appears more than once in the worlflow.' % \
                     cmd.name
                 sys.exit(2)
-                
             template_targets[cmd.name] = cmd
         
         if isinstance(cmd, Target):
 
             if cmd.name in targets:
-                print 'Task %s appears more than once in the workflow.' % cmd.name
+                print 'Task %s appears more than once in the workflow.' % \
+                    cmd.name
                 sys.exit(2)
-            
             targets[cmd.name] = cmd
 
-    return Workflow(templates, targets, template_targets, working_dir)
+    return Workflow(lists, templates, targets, template_targets, working_dir)
 

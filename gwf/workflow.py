@@ -1,5 +1,6 @@
 '''Classes representing a workflow.'''
 
+import sys
 import os, os.path
 import time
 from exceptions import NotImplementedError
@@ -13,6 +14,7 @@ def _file_exists(fname):
 def _get_file_timestamp(fname):
     return time.ctime(os.path.getmtime(fname))
 
+## TEMPLATES 
 class Template:
     def __init__(self, name, wd, parameters, template):
         self.name = name
@@ -37,9 +39,65 @@ class TemplateTarget:
         self.template = template
         self.assignments = parameter_assignments
     
-    def instantiate_target_code(self, template_code):
-        '''Instantiate a target from the template'''
-        return 'target %s\n%s' % (self.name, template_code.format(**self.assignments))                    
+    def instantiate_target_code(self, workflow):
+        '''Instantiate a target from the template. Uses "workflow" to access
+        variable names like lists and templates.'''
+
+        if self.template not in workflow.templates:
+            print 'Template-target %s refers to unknown template %s' % \
+                (self.name, self.template)
+            sys.exit(2)        
+        template_code = workflow.templates[self.template].template
+        
+        def instance(assignments):
+            return 'target %s\n%s' % (self.name.format(**assignments),
+                                      template_code.format(**assignments))
+
+        # If there are variables in the instantiation we must expand them 
+        # here. If we are dealing with lists we get more than one target.
+
+        has_variables = any(v.startswith('@')
+                            for v in self.assignments.values())
+                            
+        if has_variables:
+            # We have variables, so first we try to expand them.
+            expanded = dict()
+            for key,val in self.assignments.items():
+                if val.startswith('@'):
+                    listname = val[1:]
+                    if listname not in workflow.lists:
+                        print 'Template target %s refers unknown list %s' %\
+                            (self.name, listname)
+                        sys.exit(2)
+                    elements = workflow.lists[listname].elements
+                    expanded[val] = elements
+            
+            # Make sure the expanded lists have the same length...
+            lengths = set(len(elms) for elms in expanded.values())
+            if len(lengths) != 1:
+                print 'The lists used in target template', self.name,
+                print 'have different length.'
+                for name,elms in expanded.items():
+                    print name, '=', elms
+                sys.exit(2)
+            n = lengths.pop()
+            
+            new_assignments = dict()
+            for key,val in self.assignments.items():
+                if val in expanded:
+                    new_assignments[key] = expanded[val]
+                else:
+                    new_assignments[key] = [val] * n
+            
+            targets = []
+            for i in xrange(n):
+                inst_assignments = \
+                    dict((k,v[i]) for k,v in new_assignments.items())
+                targets.append(instance(inst_assignments))
+            return targets
+            
+        else:
+            return [instance(self.assignments)]
     
     def __str__(self):
         return '@template-target %s %s %s' % (
@@ -50,7 +108,22 @@ class TemplateTarget:
     __repr__ = __str__ # not really the correct use of __repr__ but easy 
     				   # for printing output when testing...
 
+## VARIABLES LIST AND SUCH...
+class List:
+    def __init__(self, name, elements):
+        self.name = name
+        self.elements = elements
 
+    def __str__(self):
+        return '@list %s %s' % (
+            self.name,
+            ' '.join(self.elements)
+            )
+    __repr__ = __str__ # not really the correct use of __repr__ but easy 
+    				   # for printing output when testing...
+
+
+## TASKS (TARGETS, FILES, AND ANYTHING THE WORKFLOW ACTUALLY SEES)
 class Task:
     '''Abstract class for items in the workflow.'''
     def __init__(self, name, dependencies, wd):
@@ -260,9 +333,9 @@ class Target(ExecutableTask):
     @property
     def graphviz_shape(self):
         if len(self.input) == 0 and len(self.output) > 0:
-            return 'house'
-        if len(self.output) == 0 and len(self.input) > 0:
             return 'invhouse'
+        if len(self.output) == 0 and len(self.input) > 0:
+            return 'house'
         
         return 'octagon'
 
@@ -276,10 +349,12 @@ class Target(ExecutableTask):
     				   # for printing output when testing...
 
 
+## WRAPPING IT ALL UP IN A WORKFLOW...
 class Workflow:
     '''Class representing a workflow.'''
 
-    def __init__(self, templates, targets, template_targets, wd):
+    def __init__(self, lists, templates, targets, template_targets, wd):
+        self.lists = lists
         self.templates = templates
         self.targets = targets
         self.template_targets = template_targets
@@ -287,14 +362,13 @@ class Workflow:
 
         # handle templates and template instantiations
         for name, tt in self.template_targets.items():
-            template = self.templates[tt.template]
-            target_code = tt.instantiate_target_code(template.template)
-            target = parser.parse_target(target_code, tt.working_dir)
-            if target.name in self.targets:
-                print 'Instantiated template %s has the same name as an existing target' %\
-                    target.name
-                sys.exit(2)
-            self.targets[target.name] = target
+            for target_code in tt.instantiate_target_code(self):
+                target = parser.parse_target(target_code, tt.working_dir)
+                if target.name in self.targets:
+                    print 'Instantiated template %s has the same name as an existing target' %\
+                        target.name
+                    sys.exit(2)
+                self.targets[target.name] = target
 
         # collect the output files so we know who can build them.
         self.providers = dict()
