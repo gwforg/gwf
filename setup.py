@@ -11,7 +11,7 @@ def read(fname):
 
 setup(
     name = "gwf",
-    version = "0.0.4",
+    version = "0.0.5",
 
     author = "Thomas Mailund",
     author_email = "mailund@birc.au.dk",
@@ -29,7 +29,7 @@ setup(
     test_suite='tests',
 
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
+        "Development Status :: 3 - Alpha",
         "Environment :: Console",
         "Topic :: Utilities",
         "Topic :: System :: Distributed Computing",
