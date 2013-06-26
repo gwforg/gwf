@@ -122,6 +122,22 @@ class List:
     __repr__ = __str__ # not really the correct use of __repr__ but easy 
     				   # for printing output when testing...
 
+class Glob(List):
+    def __init__(self, name, glob_pattern, elements):
+        List.__init__(self, name, elements)
+        self.glob_pattern = glob_pattern
+
+    def __str__(self):
+        return '@glob %s %s [%s]' % (
+            self.name,
+            self.glob_pattern,
+            ' '.join(self.elements)
+            )
+    __repr__ = __str__ # not really the correct use of __repr__ but easy 
+    				   # for printing output when testing...
+
+
+
 
 ## TASKS (TARGETS, FILES, AND ANYTHING THE WORKFLOW ACTUALLY SEES)
 class Task:

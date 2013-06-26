@@ -3,7 +3,9 @@
 import sys
 import os.path
 import re
+import glob
 from workflow import List
+from workflow import Glob
 from workflow import Template, TemplateTarget
 from workflow import Target
 from workflow import  Workflow
@@ -80,10 +82,24 @@ def parse_list(code, working_dir):
     values = elements[2:]
     return List(name, values)
     
+def parse_glob(code, working_dir):
+    elements = code.split('\n')[0].split()
+    if len(elements) != 3:
+        print 'Malformed glob "%s"' % code
+        sys.exit(2)
+    
+    name = elements[1]
+    pattern = elements[2]
+    glob_pattern = os.path.join(working_dir,pattern)
+    elements = glob.glob(glob_pattern)
+    
+    return Glob(name, glob_pattern, elements)
+
+    
 PARSERS = {'target': parse_target,
            'template': parse_template,
            'template-target': parse_template_target,
-           'list': parse_list}
+           'list': parse_list, 'glob': parse_glob}
 
 def parse(fname):
     '''Parse up the workflow in "fname".'''

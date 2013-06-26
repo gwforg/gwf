@@ -1,0 +1,9 @@
+Test of glob lists.
+
+@glob globs glob.*
+
+@template rm x
+:input {x}
+rm {x}
+
+@template-target rm-{x} rm x=@globs
