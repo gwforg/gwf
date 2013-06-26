@@ -14,6 +14,9 @@ parser.add_argument('-f', '--file',
                     help='Workflow file if not the default (workflow.gwf).')
 parser.add_argument('-d', '--dry-run', default=False, action='store_true',
                     help='The submit script will be printed but not executed.')
+parser.add_argument('-l', '--local', default=False, action='store_true',
+                    help='Run the scripts locally. Mostly useful for debugging'
+                    'your workflows.')
 
 parser.add_argument('target', nargs=1,
                     help='The target to process.')
@@ -25,16 +28,32 @@ target = args.target[0]
 if target not in workflow.targets:
     print 'Target %s not found in workflow.' % target
     sys.exit(2)
-    
-script = workflow.get_submission_script(target)
 
-if args.dry_run:
-    print 'When run, the following script will be executed:'
-    print
-    print script
-    print
+
+
+if args.local:
+    script = workflow.get_local_execution_script(target)
+    if args.dry_run:
+        print 'When run, the following script will be executed:'
+        print
+        print script
+        print
+
+    else:
+        print 'Running script'
+        print script
+        os.system(script)
+        print 'Done'    
 
 else:
-    print 'Submitting jobs to queue...'
-    os.system(script)
-    print 'Done'
+    script = workflow.get_submission_script(target)
+    if args.dry_run:
+        print 'When run, the following script will be executed:'
+        print
+        print script
+        print
+
+    else:
+        print 'Submitting jobs to queue...'
+        os.system(script)
+        print 'Done'

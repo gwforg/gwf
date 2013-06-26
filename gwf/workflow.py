@@ -453,8 +453,6 @@ class Workflow:
         self.dependency_graph = DependencyGraph(self)
 
 
-
-
     def get_submission_script(self, target_name):
         '''Generate the script used to submit the tasks.'''
     	
@@ -492,6 +490,31 @@ class Workflow:
             script_commands.append(command)
 
         return '\n'.join(script_commands)
+
+
+    def get_local_execution_script(self, target_name):
+        '''Generate the script needed to execute a target locally.'''
+    	
+        target = self.targets[target_name]
+        schedule, scheduled_tasks = self.dependency_graph.schedule(target.name)
+        
+        script_commands = []
+        for job in schedule:
+        
+            if not job.task.can_execute:
+                print job.task.execution_error
+                import sys ; sys.exit(2)
+        
+            # make sure we have the scripts for the jobs we want to
+            # execute!
+            job.task.write_script()
+
+            script = open(job.task.script_name, 'r').read()
+            script_commands.append('# computing %s' % job.name)
+            script_commands.append(script)
+
+        return '\n'.join(script_commands)
+
 
 
 if __name__ == '__main__':
