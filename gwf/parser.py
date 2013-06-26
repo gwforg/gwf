@@ -4,8 +4,9 @@ import sys
 import os.path
 import re
 import glob
+import subprocess
 from workflow import List
-from workflow import Glob
+from workflow import Glob, Shell
 from workflow import Template, TemplateTarget
 from workflow import Target
 from workflow import  Workflow
@@ -95,11 +96,16 @@ def parse_glob(code, working_dir):
     
     return Glob(name, glob_pattern, elements)
 
+def parse_shell(code, working_dir):
+    _,name,command = re.split('\s+',code,2)
+    command = command.strip()
+    shell_result = subprocess.check_output(command, shell=True).split()
+    return Shell(name, command, shell_result)
     
 PARSERS = {'target': parse_target,
            'template': parse_template,
            'template-target': parse_template_target,
-           'list': parse_list, 'glob': parse_glob}
+           'list': parse_list, 'glob': parse_glob, 'shell': parse_shell}
 
 def parse(fname):
     '''Parse up the workflow in "fname".'''

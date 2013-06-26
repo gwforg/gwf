@@ -136,7 +136,19 @@ class Glob(List):
     __repr__ = __str__ # not really the correct use of __repr__ but easy 
     				   # for printing output when testing...
 
+class Shell(List):
+    def __init__(self, name, shell_command, elements):
+        List.__init__(self, name, elements)
+        self.shell_command = shell_command
 
+    def __str__(self):
+        return '@shell %s %s [%s]' % (
+            self.name,
+            self.shell_command,
+            ' '.join(self.elements)
+            )
+    __repr__ = __str__ # not really the correct use of __repr__ but easy 
+    				   # for printing output when testing...
 
 
 ## TASKS (TARGETS, FILES, AND ANYTHING THE WORKFLOW ACTUALLY SEES)
