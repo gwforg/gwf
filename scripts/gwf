@@ -21,7 +21,12 @@ parser.add_argument('target', nargs=1,
 args = parser.parse_args()
 
 workflow = parse(args.workflow_file)
-script = workflow.get_submission_script(args.target[0])
+target = args.target[0]
+if target not in workflow.targets:
+    print 'Target %s not found in workflow.' % target
+    sys.exit(2)
+    
+script = workflow.get_submission_script(target)
 
 if args.dry_run:
     print 'When run, the following script will be executed:'

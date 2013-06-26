@@ -20,6 +20,5 @@ args = parser.parse_args()
 
 workflow = parse(args.workflow_file)
 
-# FIXME: handle errors if the workflow fine is not found...
 out = open(args.output, 'w')
 workflow.dependency_graph.print_workflow_graph(out)

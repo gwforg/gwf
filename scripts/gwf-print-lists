@@ -19,7 +19,6 @@ parser.add_argument('-f', '--file',
 
 args = parser.parse_args()
 
-# FIXME: handle errors if the workflow fine is not found...
 workflow = parse(args.workflow_file)
 for lst in workflow.lists.values():
     print lst

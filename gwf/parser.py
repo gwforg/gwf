@@ -130,7 +130,12 @@ def parse(fname):
     '''Parse up the workflow in "fname".'''
 
     working_dir = os.path.dirname(os.path.realpath(fname))
-    workflow_text = open(fname).read()
+    try:
+        workflow_text = open(fname).read()
+    except:
+        print 'Problems opening file %s.' % fname
+        sys.exit(2)
+        
     commands = workflow_text.split('\n@')[1:]
 
     parsed_commands = []
