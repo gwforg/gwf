@@ -116,7 +116,7 @@ class List:
         self.elements = elements
 
     def __str__(self):
-        return '@list %s %s' % (
+        return '@list %s [%s]' % (
             self.name,
             ' '.join(self.elements)
             )

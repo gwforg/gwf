@@ -1,5 +1,9 @@
 #!/Users/mailund/anaconda/bin/python
 
+# This is a simple script for testing if list transformations work as intended.
+# It just prints all the lists in the workflow so the user can test that they are
+# processed they way it was intended.
+
 import os
 import sys
 from gwf.parser import parse
@@ -7,19 +11,15 @@ from gwf.parser import parse
 
 import argparse
 
-parser = argparse.ArgumentParser(description='Show a workflow graph.')
+parser = argparse.ArgumentParser(description='Print processed lists.')
 
 parser.add_argument('-f', '--file', 
                     default='workflow.gwf', dest='workflow_file',
                     help='Workflow file if not the default (workflow.gwf).')
 
-parser.add_argument('output', nargs='?', default='workflow.dot', 
-					help='File to write the workflow graph to.')
-
 args = parser.parse_args()
 
-workflow = parse(args.workflow_file)
-
 # FIXME: handle errors if the workflow fine is not found...
-out = open(args.output, 'w')
-workflow.dependency_graph.print_workflow_graph(out)
+workflow = parse(args.workflow_file)
+for lst in workflow.lists.values():
+    print lst
