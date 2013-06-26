@@ -516,10 +516,3 @@ class Workflow:
         return '\n'.join(script_commands)
 
 
-
-if __name__ == '__main__':
-    import sys
-    from parser import parse
-    workflow = parse(sys.argv[1])
-    script = workflow.get_submission_script(sys.argv[2])
-    print script
