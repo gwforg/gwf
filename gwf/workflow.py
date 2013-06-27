@@ -14,6 +14,12 @@ def _file_exists(fname):
 
 def _get_file_timestamp(fname):
     return time.ctime(os.path.getmtime(fname))
+    
+def _make_absolute_path(working_dir, fname):
+    if fname.startswith('/'):
+        return fname
+    else:
+        return os.path.join(working_dir, fname)
 
 ## TEMPLATES 
 class Template:
@@ -219,7 +225,7 @@ class SystemFile(Task):
     def file_exists(self):
         '''Check if the file exists. It is usually considered a major
         error if it doesn't since no target generates it.'''
-        return _file_exists(self.working_dir + '/' + self.name)
+        return _file_exists(_make_absolute_path(self.working_dir, self.name))
 
     @property
     def should_run(self):
@@ -284,13 +290,13 @@ class Target(ExecutableTask):
 
                
         for outf in self.output:
-            if not _file_exists(os.path.join(self.working_dir, outf)):
+            if not _file_exists(_make_absolute_path(self.working_dir, outf)):
                 self.reason_to_run = \
                     'Output file "%s" is missing' % outf
                 return True
 
         for inf in self.input:
-            if not _file_exists(os.path.join(self.working_dir,inf)):
+            if not _file_exists(_make_absolute_path(self.working_dir,inf)):
                 self.reason_to_run = \
                     'Input file "%s" is missing' % outf
                 return True
@@ -311,7 +317,7 @@ class Target(ExecutableTask):
         youngest_in_timestamp = None
         youngest_in_filename = None
         for inf in self.input:
-            timestamp = _get_file_timestamp(os.path.join(self.working_dir,inf))
+            timestamp = _get_file_timestamp(_make_absolute_path(self.working_dir,inf))
             if youngest_in_timestamp is None \
                     or youngest_in_timestamp < timestamp:
                 youngest_in_filename = inf
@@ -321,7 +327,7 @@ class Target(ExecutableTask):
         oldest_out_timestamp = None
         oldest_out_filename = None
         for outf in self.output:
-            timestamp = _get_file_timestamp(self.working_dir+'/'+outf)
+            timestamp = _get_file_timestamp(_make_absolute_path(self.working_dir,outf))
             if oldest_out_timestamp is None \
                     or oldest_out_timestamp > timestamp:
                 oldest_out_filename = outf
@@ -345,11 +351,11 @@ class Target(ExecutableTask):
 
     @property
     def script_dir(self):
-        return os.path.join(self.working_dir,'.scripts')
+        return _make_absolute_path(self.working_dir,'.scripts')
     
     @property
     def script_name(self):
-        return os.path.join(self.script_dir,self.name)
+        return _make_absolute_path(self.script_dir,self.name)
 
     def make_script_dir(self):
         script_dir = self.script_dir

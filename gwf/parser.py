@@ -90,7 +90,10 @@ def parse_glob(code, working_dir):
     
     name = elements[1]
     pattern = elements[2]
-    glob_pattern = os.path.join(working_dir,pattern)
+    if pattern.startswith('/'):
+        glob_pattern = pattern
+    else:
+        glob_pattern = os.path.join(working_dir,pattern)
     elements = glob.glob(glob_pattern)
     
     return Glob(name, glob_pattern, elements)
