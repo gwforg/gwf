@@ -78,13 +78,13 @@ def parse_template_target(code, working_dir):
 
 
 def parse_list(code, working_dir):
-    elements = code.split('\n')[0].split()
+    elements = code.split()
     name = elements[1]
     values = elements[2:]
     return List(name, values)
     
 def parse_glob(code, working_dir):
-    elements = code.split('\n')[0].split()
+    elements = code.split()
     if len(elements) != 3:
         print 'Malformed glob "%s"' % code
         sys.exit(2)
@@ -103,7 +103,7 @@ def parse_shell(code, working_dir):
     return Shell(name, command, shell_result)
     
 def parse_transform(code, working_dir):
-    elements = code.split('\n')[0].split()
+    elements = code.split()
     if len(elements) != 5:
         print 'Malformed transform "%s"' % code
         sys.exit(2)

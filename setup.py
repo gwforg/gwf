@@ -24,7 +24,8 @@ setup(
     url = "https://github.com/mailund/gwf",
 
     packages=['gwf', 'tests'],
-    scripts=['scripts/gwf', 'scripts/gwf-workflow-graph'],
+    scripts=['scripts/gwf', 'scripts/gwf-workflow-graph',
+             'scripts/gwf-print-lists'],
 
     test_suite='tests',
 
