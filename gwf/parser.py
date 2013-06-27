@@ -26,6 +26,7 @@ def parse_target(target_code, working_dir):
     input = []
     output = []
     pbs = []
+    flags = []
 
     for i in xrange(1,len(lines)):
         line = lines[i]
@@ -43,6 +44,9 @@ def parse_target(target_code, working_dir):
                 options = line.split()[1:]
                 pbs.append(' '.join(options))
 
+            elif line.startswith(':dummy'):
+                flags.append('dummy')
+
             else:
                 print "Unknown opcode %s in target %s." % (line, name)
                 sys.exit(2)
@@ -53,7 +57,7 @@ def parse_target(target_code, working_dir):
                 
     code = '\n'.join(lines[i:])
             
-    return Target(name, input, output, pbs, code, working_dir)
+    return Target(name, input, output, pbs, flags, code, working_dir)
 
 def parse_template(template_code, working_dir):
     header, code = template_code.split('\n',1)

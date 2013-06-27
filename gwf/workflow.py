@@ -182,6 +182,7 @@ class Task:
         self.name = name
         self.dependencies = dependencies
         self.working_dir = wd
+        self.is_dummy = False
 
     @property
     def should_run(self):
@@ -198,6 +199,10 @@ class Task:
         By default the answer is false, so if a task that cannot execute
         is scheduled, we can report an error.'''
         return False
+        
+    @property
+    def dummy(self):
+        return self.is_dummy
         
     @property
     def execution_error(self):
@@ -220,6 +225,7 @@ class SystemFile(Task):
     
     def __init__(self, filename, wd):
         Task.__init__(self, filename, [], wd)
+        self.is_dummy = True
 
     @property
     def file_exists(self):
@@ -266,13 +272,20 @@ class ExecutableTask(Task):
 class Target(ExecutableTask):
     '''Class handling targets. Stores the info for executing them.'''
     
-    def __init__(self, name, input, output, pbs_options, code, wd):
+    def __init__(self, name, input, output, pbs_options, flags, code, wd):
         # passing None as dependencies, 'cause Workflow will fill it in
         Task.__init__(self, name, None, wd)
         self.input = input
         self.output = output
         self.pbs_options = pbs_options
+        self.flags = flags
         self.code = code
+        
+        if 'dummy' in self.flags and len(self.output) > 0:
+            print 'Target %s is marked as a dummy target but has output files.'
+            print 'Dummy targets will never be run so cannot produce output!'
+            sys.exit(2)
+        self.is_dummy = 'dummy' in self.flags
 
     @property
     def should_run(self):
@@ -486,6 +499,10 @@ class Workflow:
         script_commands = []
         for job in schedule:
         
+            # skip dummy tasks that we shouldn't submit...
+            if job.task.dummy:
+                continue
+        
             if not job.task.can_execute:
                 print job.task.execution_error
                 import sys ; sys.exit(2)
@@ -525,6 +542,10 @@ class Workflow:
         script_commands = []
         for job in schedule:
         
+            # skip dummy tasks that we shouldn't submit...
+            if job.task.dummy:
+                continue
+
             if not job.task.can_execute:
                 print job.task.execution_error
                 import sys ; sys.exit(2)
