@@ -16,6 +16,9 @@ from workflow import Workflow
 # the files in Targets() at some point, and I might as well provide it
 # here rather than setting it in the workflow class later...
 
+def parse_comment(code, working_dir):
+    pass
+
 def parse_target(target_code, working_dir):
     lines = target_code.split('\n')
     _, name = lines[0].split()
@@ -126,6 +129,7 @@ PARSERS = {'target': parse_target,
            'glob': parse_glob,
            'shell': parse_shell,
            'transform': parse_transform,
+           'comment': parse_comment,
             }
 
 def parse(fname):
