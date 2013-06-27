@@ -64,11 +64,10 @@ def parse_template(template_code, working_dir):
     return Template(name, working_dir, parameters, code)
 
 def parse_template_target(code, working_dir):
-    header = code.split('\n',1)[0]
-    header_objects = header.split()
-    name = header_objects[1]
-    template = header_objects[2]
-    parameter_assignments = header_objects[3:]
+    elements = code.split()
+    name = elements[1]
+    template = elements[2]
+    parameter_assignments = elements[3:]
     assignments = dict()
     for assignment in parameter_assignments:
         key, val = assignment.split('=')
