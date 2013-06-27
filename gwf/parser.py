@@ -153,7 +153,6 @@ def parse(fname):
     targets = dict()
     template_targets = dict()
     for cmd in parsed_commands:
-        # FIXME: probably shouldn't hardwire a test for the type of task here!
         
         if isinstance(cmd, List):
             if cmd.name in lists:

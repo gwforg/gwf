@@ -429,6 +429,24 @@ class Workflow:
                         target.name
                     sys.exit(2)
                 self.targets[target.name] = target
+                
+        # expand lists in input and output lists for the targets
+        for target in self.targets.values():
+            def expand_lists(lst):
+                new_list = []
+                for elm in lst:
+                    if elm.startswith('@'):
+                        listname = elm[1:]
+                        if listname not in self.lists:
+                            print 'Target %s references unknown list %s.' % \
+                                (target.name, listname)
+                            sys.exit(2)
+                        new_list.extend(self.lists[listname].elements)
+                    else:
+                        new_list.append(elm)
+                return new_list
+            target.input  = expand_lists(target.input)
+            target.output = expand_lists(target.output)
 
         # collect the output files so we know who can build them.
         self.providers = dict()

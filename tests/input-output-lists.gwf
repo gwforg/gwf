@@ -1,0 +1,10 @@
+Tests of lists used as input and output
+
+@list infiles foo bar baz
+@list outfiles qux quux
+
+@target test
+:input @infiles
+:output @outfiles
+
+echo Dummy
