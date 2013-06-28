@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>BBEditDocumentType</key>
+	<string>CodelessLanguageModule</string>
+	<key>BBLMColorsSyntax</key>
+	<true/>
+	<key>BBLMIsCaseSensitive</key>
+	<true/>
+	<key>BBLMKeywordList</key>
+	<array>
+		<string>target</string>
+		<string>template</string>
+		<string>template-target</string>
+		<string>comment</string>
+		<string>list</string>
+		<string>glob</string>
+		<string>shell</string>
+		<string>transform</string>
+	</array>
+	<key>BBLMPredefinedNameList</key>
+	<array>
+		<string>:input</string>
+		<string>:output</string>
+		<string>:pbs</string>
+		<string>:dummy</string>
+	</array>
+	<key>BBLMLanguageCode</key>
+	<string>GWF_</string>
+	<key>BBLMLanguageDisplayName</key>
+	<string>GWF</string>
+	<key>BBLMScansFunctions</key>
+	<true/>
+	<key>BBLMSuffixMap</key>
+	<array>
+		<dict>
+			<key>BBLMLanguageSuffix</key>
+			<string>.gwf</string>
+		</dict>
+	</array>
+	<key>Language Features</key>
+	<dict>
+		<key>Close Strings 1</key>
+		<string>&quot;</string>
+		<key>Close Strings 2</key>
+		<string>&apos;</string>
+		<key>End-of-line Ends Strings 1</key>
+		<false/>
+		<key>End-of-line Ends Strings 2</key>
+		<false/>
+		<key>Escape Char in Strings 1</key>
+		<string>\</string>
+		<key>Escape Char in Strings 2</key>
+		<string>\</string>
+		<key>Identifier and Keyword Characters</key>
+		<string>1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz.</string>
+		<key>Open Statement Blocks</key>
+		<string></string>
+		<key>Open Strings 1</key>
+		<string>&quot;</string>
+		<key>Open Strings 2</key>
+		<string>&apos;</string>
+		<key>Comment Pattern</key>
+		<string>(?x: (?s:\A.*?(?=^@)) | (?s:@comment.*?(?=^@)) | (?s:@comment.*?\Z) )</string>
+		<key>String Pattern</key>
+		<string>(?x:
+			(?&gt;	&quot;			(?s: \\. | [^&quot;] )*?		(?: &quot;			| $)	) |
+			
+			(?&gt;	&apos;			(?s: \\. | [^&apos;] )*?		(?: &apos;			| $)	)
+		)</string>
+		<key>Skip Pattern</key>
+		<string>(?x:
+			(?&gt;
+				(?P&gt;comment) | (?P&gt;string)
+			)
+		)</string>
+		<key>Function Pattern</key>
+		<string>(?P&lt;function&gt;^@(target|template)\s+(?P&lt;function_name&gt;[a-zA-Z0-9_{}]+)\s(?s:.*?)(?=^@|\Z))</string>
+	</dict>
+	<key>BBLMCommentPrefixDefault</key>
+	<string>@comment</string>
+	<key>BBLMCommentSuffixDefault</key>
+	<string>@comment</string>
+</dict>
+</plist>
