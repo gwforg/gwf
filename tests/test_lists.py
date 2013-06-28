@@ -32,33 +32,33 @@ class ListTester(unittest.TestCase):
         
     def test_targets(self):
         self.assertItemsEqual(['singleton',
-                                'one-elm1','one-elm2','one-elm3',
-                                'two-single-a','two-single-b','two-single-c',
-                                'two-elm1-x','two-elm2-y','two-elm3-z'],
+                                'one_elm1','one_elm2','one_elm3',
+                                'two_single_a','two_single_b','two_single_c',
+                                'two_elm1_x','two_elm2_y','two_elm3_z'],
                               self.workflow.targets)
                               
-        one = self.workflow.targets['one-elm1']
+        one = self.workflow.targets['one_elm1']
         self.assertItemsEqual([_fname(self.workflow,'elm1')],one.input)
         self.assertItemsEqual([_fname(self.workflow,'elm1.out')],one.output)
 
-        one = self.workflow.targets['one-elm2']
+        one = self.workflow.targets['one_elm2']
         self.assertItemsEqual([_fname(self.workflow,'elm2')],one.input)
         self.assertItemsEqual([_fname(self.workflow,'elm2.out')],one.output)
 
-        one = self.workflow.targets['one-elm3']
+        one = self.workflow.targets['one_elm3']
         self.assertItemsEqual([_fname(self.workflow,'elm3')],one.input)
         self.assertItemsEqual([_fname(self.workflow,'elm3.out')],one.output)
 
         
-        two = self.workflow.targets['two-elm1-x']
+        two = self.workflow.targets['two_elm1_x']
         self.assertItemsEqual([_fname(self.workflow,'elm1')],two.input)
         self.assertItemsEqual([_fname(self.workflow,'x')],two.output)
         
-        two = self.workflow.targets['two-elm2-y']
+        two = self.workflow.targets['two_elm2_y']
         self.assertItemsEqual([_fname(self.workflow,'elm2')],two.input)
         self.assertItemsEqual([_fname(self.workflow,'y')],two.output)
         
-        two = self.workflow.targets['two-elm3-z']
+        two = self.workflow.targets['two_elm3_z']
         self.assertItemsEqual([_fname(self.workflow,'elm3')],two.input)
         self.assertItemsEqual([_fname(self.workflow,'z')],two.output)
         

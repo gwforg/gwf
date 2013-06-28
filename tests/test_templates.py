@@ -22,8 +22,8 @@ class TemplateTester(unittest.TestCase):
         
     def test_template_targets(self):
         self.assertEqual(len(self.workflow.template_targets), 1)
-        self.assertIn('cat-foo-bar', self.workflow.template_targets)
-        tt = self.workflow.template_targets['cat-foo-bar']
+        self.assertIn('cat_foo_bar', self.workflow.template_targets)
+        tt = self.workflow.template_targets['cat_foo_bar']
         self.assertEqual(tt.template, 'cat')
         self.assertItemsEqual(['file1','file2'], tt.assignments.keys())
         self.assertItemsEqual(['foo','bar'], tt.assignments.values())
@@ -33,14 +33,14 @@ class TemplateTester(unittest.TestCase):
     def test_targets(self):
         targets = self.workflow.targets
         self.assertEqual(len(targets), 3)
-        self.assertItemsEqual(['cat-foo-bar','make-foo','eat-bar'], targets)
+        self.assertItemsEqual(['cat_foo_bar','make_foo','eat_bar'], targets)
         
-        template_target = targets['cat-foo-bar']
+        template_target = targets['cat_foo_bar']
         self.assertItemsEqual([_fname(self.workflow,'foo')],template_target.input)
         self.assertItemsEqual([_fname(self.workflow,'bar')],template_target.output)
         
-        foo = targets['make-foo']
-        bar = targets['eat-bar']
+        foo = targets['make_foo']
+        bar = targets['eat_bar']
         
         self.assertEqual(len(template_target.dependencies), 1)
         self.assertEqual(template_target.dependencies[0], (_fname(self.workflow,'foo'),foo))

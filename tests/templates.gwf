@@ -6,12 +6,12 @@ A test file for template tasks.
 
 cat {file1} > {file2}
 
-@template-target cat-foo-bar cat file1=foo file2=bar
+@template-target cat_foo_bar cat file1=foo file2=bar
 
-@target make-foo
+@target make_foo
 :output foo
 touch foo
 
-@target eat-bar
+@target eat_bar
 :input bar
 cat bar
