@@ -14,14 +14,14 @@ def _escape_file_name(fname):
     return ''.join(c for c in fname if c in valid_chars)
     
 def _escape_job_name(jobname):
-    valid_chars = "-_%s%s" % (string.ascii_letters, string.digits)
+    valid_chars = "_%s%s" % (string.ascii_letters, string.digits)
     return ''.join(c for c in jobname if c in valid_chars)
 
 def _file_exists(fname):
     return os.path.exists(fname)
 
 def _get_file_timestamp(fname):
-    return time.ctime(os.path.getmtime(fname))
+    return os.path.getmtime(fname)
     
 def _make_absolute_path(working_dir, fname):
     if os.path.isabs(fname):
@@ -315,13 +315,13 @@ class Target(ExecutableTask):
         for outf in self.output:
             if not _file_exists(_make_absolute_path(self.working_dir, outf)):
                 self.reason_to_run = \
-                    'Output file "%s" is missing' % outf
+                    'Output file %s is missing' % outf
                 return True
 
         for inf in self.input:
             if not _file_exists(_make_absolute_path(self.working_dir,inf)):
                 self.reason_to_run = \
-                    'Input file "%s" is missing' % outf
+                    'Input file %s is missing' % outf
                 return True
 
         # If no file is missing, it comes down to the time stamps. If we
@@ -360,12 +360,12 @@ class Target(ExecutableTask):
         # The youngest in should be older than the oldest out
         if youngest_in_timestamp >= oldest_out_timestamp:
             # we have a younger in file than an outfile
-            self.reason_to_run = 'Infile "%s" is younger than outfile "%s"' %\
+            self.reason_to_run = 'Infile %s is younger than outfile %s' %\
                 (youngest_in_filename, oldest_out_filename)
             return True
         else:
-            self.reason_to_run = 'Youngest infile "%s" is older than '\
-                                 'the oldest outfile "%s"' % \
+            self.reason_to_run = 'Youngest infile %s is older than '\
+                                 'the oldest outfile %s' % \
                 (youngest_in_filename, oldest_out_filename)
             return False    
             
