@@ -4,6 +4,10 @@ import os
 from gwf.parser import parse
 testdir = os.path.dirname(os.path.realpath(__file__))
 
+def _fname(workflow, fname):
+    return os.path.normpath(os.path.join(workflow.working_dir, fname))
+
+
 
 class SimpleWorkflowTester(unittest.TestCase):
 
@@ -76,11 +80,11 @@ class SimpleWorkflowTester(unittest.TestCase):
         
         pipe = targets['SinglePipe']
         self.assertEqual(len(pipe.dependencies), 1)
-        self.assertEqual(pipe.dependencies[0], ('some_file', source))
+        self.assertEqual(pipe.dependencies[0], (_fname(self.workflow,'some_file'), source))
         
         sink = targets['SingleSink']
         self.assertEqual(len(sink.dependencies), 1)
-        self.assertEqual(sink.dependencies[0], ('some_other_file', pipe))
+        self.assertEqual(sink.dependencies[0], (_fname(self.workflow,'some_other_file'), pipe))
         
         
         
@@ -98,16 +102,16 @@ class SystemFileWorkflowTester(unittest.TestCase):
         target = self.workflow.targets['Target']
         self.assertEqual(len(target.dependencies), 2)
         deps_table = dict(target.dependencies)
-        self.assertIn('sysfile1', deps_table)
-        self.assertIn('sysfile2', deps_table)
+        self.assertIn(_fname(self.workflow,'sysfile1'), deps_table)
+        self.assertIn(_fname(self.workflow,'sysfile2'), deps_table)
         
-        sysfile1 = deps_table['sysfile1']
+        sysfile1 = deps_table[_fname(self.workflow,'sysfile1')]
         self.assertTrue(sysfile1.file_exists, 
                         'We created it so it should be there')
         self.assertFalse(sysfile1.should_run,
                          'By convension this is false if the file exists')
         
-        sysfile2 = deps_table['sysfile2']
+        sysfile2 = deps_table[_fname(self.workflow,'sysfile2')]
         self.assertFalse(sysfile2.file_exists, 
                          'We did not created it so it should not be there')
         self.assertTrue(sysfile2.should_run,

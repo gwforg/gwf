@@ -25,9 +25,10 @@ def _get_file_timestamp(fname):
     
 def _make_absolute_path(working_dir, fname):
     if os.path.isabs(fname):
-        return fname
+        abspath = fname
     else:
-        return os.path.join(working_dir, fname)
+        abspath = os.path.join(working_dir, fname)
+    return os.path.normpath(abspath)
 
 ## TEMPLATES 
 class Template:
@@ -294,6 +295,7 @@ class Target(ExecutableTask):
             print 'Dummy targets will never be run so cannot produce output!'
             sys.exit(2)
         self.is_dummy = 'dummy' in self.flags
+        
 
     @property
     def should_run(self):
@@ -476,6 +478,15 @@ class Workflow:
                 return new_list
             target.input  = expand_lists(target.input)
             target.output = expand_lists(target.output)
+
+            # make all files absolute and normalised so different ways of
+            # referring to the same file actually works.
+            # For obvious reasons this has to go after list expansion...
+            target.input = [_make_absolute_path(target.working_dir, fname)
+                            for fname in target.input]
+            target.output = [_make_absolute_path(target.working_dir, fname)
+                             for fname in target.output]
+
 
         # collect the output files so we know who can build them.
         self.providers = dict()

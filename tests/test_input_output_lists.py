@@ -4,6 +4,10 @@ import os
 from gwf.parser import parse
 testdir = os.path.dirname(os.path.realpath(__file__))
 
+def _fname(workflow, fname):
+    return os.path.normpath(os.path.join(workflow.working_dir, fname))
+
+
 
 class ListTester(unittest.TestCase):
 
@@ -17,5 +21,7 @@ class ListTester(unittest.TestCase):
         self.assertItemsEqual(['test'], self.workflow.targets)
         test = self.workflow.targets['test']
 
-        self.assertItemsEqual(['foo','bar','baz'], test.input)
-        self.assertItemsEqual(['qux','quux'], test.output)
+        self.assertItemsEqual([_fname(self.workflow,fn) for fn in ['foo','bar','baz']],
+                              test.input)
+        self.assertItemsEqual([_fname(self.workflow,fn) for fn in ['qux','quux']],
+                              test.output)

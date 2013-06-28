@@ -4,6 +4,10 @@ import os, os.path
 from gwf.parser import parse
 testdir = os.path.dirname(__file__)
 
+def _fname(workflow, fname):
+    return os.path.normpath(os.path.join(workflow.working_dir, fname))
+
+
 class DependencyGraphTest(unittest.TestCase):
 
     def setUp(self):
@@ -22,6 +26,7 @@ class DependencyGraphTest(unittest.TestCase):
         os.remove(os.path.join(testdir,'e32'))
         os.remove(os.path.join(testdir,'final'))
         
+        
     def test_nodes(self):
         nodes = self.graph.nodes
         targets = self.workflow.targets
@@ -37,7 +42,7 @@ class DependencyGraphTest(unittest.TestCase):
         
         n2 = nodes['n2']
         self.assertEqual(len(n2.dependencies), 1)
-        self.assertEqual(n2.dependencies[0], ('e1',n1))
+        self.assertEqual(n2.dependencies[0], (_fname(self.workflow,'e1'),n1))
         self.assertEqual(n2.name, 'n2')
         self.assertEqual(n2.task, targets['n2'])
         self.assertTrue(n2.task.should_run)
@@ -45,7 +50,7 @@ class DependencyGraphTest(unittest.TestCase):
         
         n31 = nodes['n31']
         self.assertEqual(len(n31.dependencies), 1)
-        self.assertEqual(n31.dependencies[0], ('e21',n2))
+        self.assertEqual(n31.dependencies[0], (_fname(self.workflow,'e21'),n2))
         self.assertEqual(n31.name, 'n31')
         self.assertEqual(n31.task, targets['n31'])
         self.assertFalse(n31.task.should_run, n31.task.reason_to_run)
@@ -53,7 +58,7 @@ class DependencyGraphTest(unittest.TestCase):
         
         n32 = nodes['n32']
         self.assertEqual(len(n32.dependencies), 1)
-        self.assertEqual(n32.dependencies[0], ('e22',n2))
+        self.assertEqual(n32.dependencies[0], (_fname(self.workflow,'e22'),n2))
         self.assertEqual(n32.name, 'n32')
         self.assertEqual(n32.task, targets['n32'])
         self.assertFalse(n32.task.should_run, n32.task.reason_to_run)
@@ -62,8 +67,8 @@ class DependencyGraphTest(unittest.TestCase):
         n4 = nodes['n4']
         self.assertEqual(len(n4.dependencies), 2)
         deps = dict(n4.dependencies)
-        self.assertEqual(deps['e31'], n31)
-        self.assertEqual(deps['e32'], n32)
+        self.assertEqual(deps[_fname(self.workflow,'e31')], n31)
+        self.assertEqual(deps[_fname(self.workflow,'e32')], n32)
         self.assertEqual(n4.name, 'n4')
         self.assertEqual(n4.task, targets['n4'])
         self.assertFalse(n4.task.should_run, n4.task.reason_to_run)

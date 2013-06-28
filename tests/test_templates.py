@@ -4,6 +4,10 @@ import os
 from gwf.parser import parse
 testdir = os.path.dirname(os.path.realpath(__file__))
 
+def _fname(workflow, fname):
+    return os.path.normpath(os.path.join(workflow.working_dir, fname))
+
+
 
 class TemplateTester(unittest.TestCase):
 
@@ -32,15 +36,15 @@ class TemplateTester(unittest.TestCase):
         self.assertItemsEqual(['cat-foo-bar','make-foo','eat-bar'], targets)
         
         template_target = targets['cat-foo-bar']
-        self.assertItemsEqual(['foo'],template_target.input)
-        self.assertItemsEqual(['bar'],template_target.output)
+        self.assertItemsEqual([_fname(self.workflow,'foo')],template_target.input)
+        self.assertItemsEqual([_fname(self.workflow,'bar')],template_target.output)
         
         foo = targets['make-foo']
         bar = targets['eat-bar']
         
         self.assertEqual(len(template_target.dependencies), 1)
-        self.assertEqual(template_target.dependencies[0], ('foo',foo))
+        self.assertEqual(template_target.dependencies[0], (_fname(self.workflow,'foo'),foo))
         
         self.assertEqual(len(bar.dependencies), 1)
-        self.assertEqual(bar.dependencies[0], ('bar',template_target))
+        self.assertEqual(bar.dependencies[0], (_fname(self.workflow,'bar'),template_target))
         
