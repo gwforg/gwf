@@ -25,7 +25,8 @@ setup(
 
     packages=['gwf', 'tests'],
     scripts=['scripts/gwf', 'scripts/gwf-workflow-graph',
-             'scripts/gwf-print-lists'],
+             'scripts/gwf-print-lists',
+             'scripts/gwf-print-targets'],
 
     test_suite='tests',
 

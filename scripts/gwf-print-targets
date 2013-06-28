@@ -1,0 +1,40 @@
+#!/Users/mailund/anaconda/bin/python
+
+import os
+import sys
+from gwf.parser import parse
+from gwf.workflow import Target
+
+import argparse
+
+parser = argparse.ArgumentParser(description='Print targets with status.')
+
+parser.add_argument('-f', '--file', 
+                    default='workflow.gwf', dest='workflow_file',
+                    help='Workflow file if not the default (workflow.gwf).')
+
+
+args = parser.parse_args()
+
+workflow = parse(args.workflow_file)
+dag = workflow.dependency_graph
+
+for name, node in dag.nodes.items():
+    if isinstance(node.task, Target):
+        target = node.task
+        print 'Target', name
+        print 'Input files:'
+        for fname in target.input:
+            print '\t', fname
+        print 'Output files:'
+        for fname in target.output:
+            print '\t', fname
+        if node.should_run:
+            print 'Should run:'
+            if target.should_run:
+                print '\t', target.reason_to_run
+            else:
+                print '\t', 'Dependencies needs to run.'
+        else:
+            print 'Is up to date.'
+        print
