@@ -4,10 +4,18 @@ import sys
 import os, os.path
 import time
 import re
+import string
 from exceptions import NotImplementedError
 from dependency_graph import DependencyGraph
 import parser # need this to re-parse instantiated templates
 
+def _escape_file_name(fname):
+    valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
+    return ''.join(c for c in fname if c in valid_chars)
+    
+def _escape_job_name(jobname):
+    valid_chars = "-_%s%s" % (string.ascii_letters, string.digits)
+    return ''.join(c for c in jobname if c in valid_chars)
 
 def _file_exists(fname):
     return os.path.exists(fname)
@@ -16,7 +24,7 @@ def _get_file_timestamp(fname):
     return time.ctime(os.path.getmtime(fname))
     
 def _make_absolute_path(working_dir, fname):
-    if fname.startswith('/'):
+    if os.path.isabs(fname):
         return fname
     else:
         return os.path.join(working_dir, fname)
@@ -57,7 +65,7 @@ class TemplateTarget:
         template_code = workflow.templates[self.template].template
         
         def instance(assignments):
-            return 'target %s\n%s' % (self.name.format(**assignments),
+            return 'target %s\n%s' % (_escape_job_name(self.name.format(**assignments)),
                                       template_code.format(**assignments))
 
         # If there are variables in the instantiation we must expand them 
@@ -368,7 +376,9 @@ class Target(ExecutableTask):
     
     @property
     def script_name(self):
-        return _make_absolute_path(self.script_dir,self.name)
+        # Escape name to make a file name...
+        escaped_name = _escape_file_name(self.name)
+        return _make_absolute_path(self.script_dir, escaped_name)
 
     def make_script_dir(self):
         script_dir = self.script_dir
