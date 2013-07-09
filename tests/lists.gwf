@@ -23,3 +23,5 @@ cat {x} > {y}
 
 @list list3 a b c
 @template-target two_single_{y} two x=single y=@list3
+
+@list concat @list2 @list3

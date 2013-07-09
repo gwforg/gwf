@@ -451,6 +451,24 @@ class Workflow:
                 cmd.elements = [re.sub(cmd.match_pattern,cmd.subs_pattern,input)
                                 for input in input_list.elements]
 
+        # handle list expansions in other lists
+        for cmd in self.lists.values():
+            def expand_lists(lst):
+                new_list = []
+                for elm in lst:
+                    if elm.startswith('@'):
+                        listname = elm[1:]
+                        if listname not in self.lists:
+                            print 'List %s references unknown list %s.' % \
+                                (cmd.name, listname)
+                            sys.exit(2)
+                        new_list.extend(self.lists[listname].elements)
+                    else:
+                        new_list.append(elm)
+                return new_list
+            cmd.elements = expand_lists(cmd.elements)
+
+
         # handle templates and template instantiations
         for name, tt in self.template_targets.items():
             for target_code in tt.instantiate_target_code(self):
