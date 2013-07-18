@@ -11,7 +11,7 @@ def read(fname):
 
 setup(
     name = "gwf",
-    version = "0.0.6",
+    version = "0.1.0",
 
     author = "Thomas Mailund",
     author_email = "mailund@birc.au.dk",
@@ -24,14 +24,15 @@ setup(
     url = "https://github.com/mailund/gwf",
 
     packages=['gwf', 'tests'],
-    scripts=['scripts/gwf', 'scripts/gwf-workflow-graph',
+    scripts=['scripts/gwf', 
+             'scripts/gwf-workflow-graph',
              'scripts/gwf-print-lists',
              'scripts/gwf-print-targets'],
 
     test_suite='tests',
 
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Environment :: Console",
         "Topic :: Utilities",
         "Topic :: System :: Distributed Computing",

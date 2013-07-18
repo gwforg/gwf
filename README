@@ -2,3 +2,4 @@ This is just a small utility to specify workflows for execution on our
 computer grid. It lets you specify simple workflows and automatically
 submit them to the grid through qsub.
 
+For an example workflow, check out the "example" directory.
