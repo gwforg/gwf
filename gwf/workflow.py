@@ -268,6 +268,11 @@ class ExecutableTask(Task):
     def script_name(self):
         '''Where is the script for executing the task located?'''
         raise NotImplementedError()
+
+    @property
+    def job_name(self):
+        '''Where is job-id file located if the task is executing?'''
+        raise NotImplementedError()
     
     def write_script(self):
         '''Write the script for executing the task to disk.'''
@@ -377,10 +382,20 @@ class Target(ExecutableTask):
         return _make_absolute_path(self.working_dir,'.scripts')
     
     @property
+    def jobs_dir(self):
+        return _make_absolute_path(self.working_dir,'.jobs')
+
+    @property
     def script_name(self):
         # Escape name to make a file name...
         escaped_name = _escape_file_name(self.name)
         return _make_absolute_path(self.script_dir, escaped_name)
+
+    @property
+    def job_name(self):
+        # Escape name to make a file name...
+        escaped_name = _escape_file_name(self.name)
+        return _make_absolute_path(self.jobs_dir, escaped_name)
 
     def make_script_dir(self):
         script_dir = self.script_dir
@@ -388,10 +403,17 @@ class Target(ExecutableTask):
             return
         os.makedirs(script_dir)
 
+    def make_jobs_dir(self):
+        jobs_dir = self.jobs_dir
+        if _file_exists(jobs_dir):
+            return
+        os.makedirs(jobs_dir)
+
     def write_script(self):
         '''Write the code to a script that can be executed.'''
 
         self.make_script_dir()
+        self.make_jobs_dir()
         
         f = open(self.script_name, 'w')
         
@@ -568,6 +590,8 @@ class Workflow:
                 script,
                 '`'])
             script_commands.append(command)
+            script_commands.append(' '.join([
+                'echo', ('$%s'%job.name), '>', job.task.job_name]))
 
         return '\n'.join(script_commands)
 
