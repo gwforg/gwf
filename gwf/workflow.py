@@ -451,7 +451,6 @@ class Target(ExecutableTask):
                                     stdout=subprocess.PIPE)
             for line in stat.stdout:
                 line = line.strip()
-                print line
                 if line.startswith('job_state'):
                     return True
             return False
@@ -610,7 +609,8 @@ class Workflow:
                     '%s=`' % job.name,
                     'cat', job.task.job_name,
                     '`'])
-        
+                script_commands.append(command)
+                
             else:
                 # make sure we have the scripts for the jobs we want to
                 # execute!
