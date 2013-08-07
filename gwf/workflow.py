@@ -202,6 +202,11 @@ class Task:
         raise NotImplementedError()
 
     @property
+    def job_in_queue(self):
+        '''Test if this task is a job already submitted to the queue'''
+        raise NotImplementedError()
+
+    @property
     def can_execute(self):
         '''Flag used to indicate that a task can be executed.
         
@@ -248,6 +253,11 @@ class SystemFile(Task):
         '''We should never actually run a system file, but we say yes when
         the file is missing so this is displayed in output.'''
         return not self.file_exists
+        
+    @property
+    def job_in_queue(self):
+        '''A file is never submitted to the queue...'''
+        return False
 
     @property
     def execution_error(self):
@@ -592,31 +602,39 @@ class Workflow:
             if not job.task.can_execute:
                 print job.task.execution_error
                 import sys ; sys.exit(2)
+
+            # If the job is already in the queue, just get the ID
+            # into the shell command used later for dependencies...
+            if job.task.job_in_queue:
+                command = ' '.join([
+                    '%s=`' % job.name,
+                    'cat', % job.task.job_name,
+                    '`'])
         
-            # make sure we have the scripts for the jobs we want to
-            # execute!
-            job.task.write_script()
-
-            dependent_tasks = set(node.name
-                                  for _,node in job.dependencies
-                                  if node.name in scheduled_tasks)
-            if len(dependent_tasks) > 0:
-                depend = '-W depend=afterok:$%s' % \
-                    ':$'.join(dependent_tasks)
             else:
-                depend = ''
+                # make sure we have the scripts for the jobs we want to
+                # execute!
+                job.task.write_script()
 
-            script = job.task.script_name
+                dependent_tasks = set(node.name
+                                      for _,node in job.dependencies
+                                      if node.name in scheduled_tasks)
+                if len(dependent_tasks) > 0:
+                    depend = '-W depend=afterok:$%s' % \
+                        ':$'.join(dependent_tasks)
+                else:
+                    depend = ''
 
-            command = ' '.join([
-                '%s=`' % job.name,
-                'qsub -N %s' % job.name,
-                depend,
-                script,
-                '`'])
-            script_commands.append(command)
-            script_commands.append(' '.join([
-                'echo', ('$%s'%job.name), '>', job.task.job_name]))
+                script = job.task.script_name
+                command = ' '.join([
+                    '%s=`' % job.name,
+                    'qsub -N %s' % job.name,
+                    depend,
+                    script,
+                    '`'])
+                script_commands.append(command)
+                script_commands.append(' '.join([
+                    'echo', ('$%s'%job.name), '>', job.task.job_name]))
 
         return '\n'.join(script_commands)
 
