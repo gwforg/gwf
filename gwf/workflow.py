@@ -608,7 +608,7 @@ class Workflow:
             if job.task.job_in_queue:
                 command = ' '.join([
                     '%s=`' % job.name,
-                    'cat', % job.task.job_name,
+                    'cat', job.task.job_name,
                     '`'])
         
             else:
