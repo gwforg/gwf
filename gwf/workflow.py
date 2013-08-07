@@ -5,6 +5,7 @@ import os, os.path
 import time
 import re
 import string
+import subprocess
 from exceptions import NotImplementedError
 from dependency_graph import DependencyGraph
 import parser # need this to re-parse instantiated templates
