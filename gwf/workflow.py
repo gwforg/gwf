@@ -443,7 +443,6 @@ class Target(ExecutableTask):
                 line = line.strip()
                 print line
                 if line.startswith('job_state'):
-                    print line.split()[2]
                     return True
             return False
     
