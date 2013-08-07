@@ -430,6 +430,22 @@ class Target(ExecutableTask):
         print >> f, self.code
 
     @property
+    def job_in_queue(self):
+        if not _file_exists(self.job_name):
+            return False
+        else:
+            # FIXME: check status
+            return True
+    
+    @property
+    def jobID(self):
+        if _file_exists(self.job_name):
+            return int(open(self.job_name).read())
+        else:
+            return None
+        
+
+    @property
     def graphviz_shape(self):
         if len(self.input) == 0 and len(self.output) > 0:
             return 'invhouse'
