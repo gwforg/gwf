@@ -440,6 +440,7 @@ class Target(ExecutableTask):
             stat = subprocess.Popen(['qstat','-f'],stdout=subprocess.PIPE)
             for line in stat.stdout:
                 line = line.strip()
+                print line
                 if line.startswith('job_state'):
                     print line.split()[2]
                     return True
