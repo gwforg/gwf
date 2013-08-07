@@ -437,7 +437,8 @@ class Target(ExecutableTask):
         else:
             # FIXME: check status
             jobid = self.jobID
-            stat = subprocess.Popen(['qstat','-f'],stdout=subprocess.PIPE)
+            stat = subprocess.Popen(['qstat','-f',jobid],
+                                    stdout=subprocess.PIPE)
             for line in stat.stdout:
                 line = line.strip()
                 print line
