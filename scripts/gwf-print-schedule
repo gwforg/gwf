@@ -33,16 +33,14 @@ schedule.reverse()
 
 for job in schedule:
     task = job.task
-    if task.job_in_queue:
-        print task.name, 'IN QUEUE:', 
-        print '(%s : %s)' % (task.jobID, task.job_queue_status)
-        
-        continue
-        
     dependent_tasks = set(node.name for _,node in job.dependencies
                           if node.name in scheduled_tasks)
-
-    print task.name,
-    if task.should_run:
-        print 'OUT OF DATE',
+                          
+    if task.job_in_queue:
+        print task.name, 'IN QUEUE:', 
+        print '(%s : %s)' % (task.jobID, task.job_queue_status),
+    else:
+        print task.name,
+        if task.should_run:
+            print 'OUT OF DATE',
     print '[%s]' % ' '.join([dep for dep in dependent_tasks])
