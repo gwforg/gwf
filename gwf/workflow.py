@@ -447,7 +447,7 @@ class Target(ExecutableTask):
         else:
             # FIXME: check status
             jobid = self.jobID
-            qstat = subprocess.check_otuput(['qstat','-f',jobid])
+            qstat = subprocess.check_output(['qstat','-f',jobid])
             for line in qstat.split('\n'):
                 line = line.strip()
                 if line.startswith('job_state'):
