@@ -449,6 +449,15 @@ class Target(ExecutableTask):
         else:
             return None
 
+    def get_existing_outfiles(self):
+        '''Get list of output files that already exists.'''
+        result = []
+        for outf in self.output:
+            fname = _make_absolute_path(self.working_dir, outf)
+            if _file_exists(fname):
+                result.append(fname)
+        return result
+
     def __str__(self):
         return '@target %s, input(%s) -> output(%s)' % (
             self.name,
