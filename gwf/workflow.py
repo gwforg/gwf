@@ -449,7 +449,7 @@ class Target(ExecutableTask):
             jobid = self.jobID
             stat = subprocess.Popen(['qstat','-f',jobid],
                                     stdout=subprocess.PIPE,
-                                    stderr=None)
+                                    stderr=subprocess.STDOUT)
             for line in stat.stdout:
                 line = line.strip()
                 if line.startswith('job_state'):
