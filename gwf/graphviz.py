@@ -72,7 +72,6 @@ def print_graphviz_dependencies(graph, target, out):
             dfs(dep)
     dfs(target)
        
-    print dependencies
     print >> out, 'digraph workflow {'
     	
     # Handle nodes
