@@ -23,8 +23,10 @@ def print_node(node, out):
     '''Print the graphviz description of this node to "out".'''
     
     shape = 'shape = %s' % task_shape(node.task)
-        
-    if node.task.should_run:
+    
+    if node.task.job_in_queue:
+        col = 'color = orange, style=bold'
+    elif node.task.should_run:
         col = 'color = red, style=bold'
     elif node.should_run:
         col = 'color = red'
