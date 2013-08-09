@@ -57,4 +57,31 @@ def print_graphviz(graph, out):
     	        
 
     print >> out, '}'
+
+def print_graphviz_dependencies(graph, target, out):
+    '''Print the dependency graph for a given target.'''
+    
+    # collect the dependencies
+    dependencies = set()
+    def dfs(node):
+        if node in dependencies:
+            return # already processed
+        
+        dependencies.add(node)
+        for _,dep in node.dependencies:
+            dfs(dep)
+    dfs(target)
+       
+    print dependencies
+    print >> out, 'digraph workflow {'
+    	
+    # Handle nodes
+    for src in dependencies:
+        print_node(src, out)
+        for fname,dst in src.dependencies:
+            print >> out, '"%s"'%dst.name, '->', '"%s"'%src.name,
+            print >> out, '[label="%s"]' % fname,
+            print >> out, ';'
+
+    print >> out, '}'
     

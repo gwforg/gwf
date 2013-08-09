@@ -431,9 +431,7 @@ class Target(ExecutableTask):
         if not _file_exists(self.job_name):
             return False
         else:
-            # FIXME: check status
-            jobid = self.jobID
-            stat = subprocess.Popen(['qstat','-f',jobid],
+            stat = subprocess.Popen(['qstat','-f',self.jobID],
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT)
             for line in stat.stdout:
