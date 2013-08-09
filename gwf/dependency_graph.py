@@ -13,25 +13,7 @@ class Node:
         # or any of the upstream nodes need to be run...
         self.should_run = self.task.should_run or \
                 any(dep.should_run for _,dep in dependencies)
-    
-    def print_graphviz(self, out):
-        '''Print the graphviz description of this node to "out".'''
-    
-        shape = 'shape = %s' % self.task.graphviz_shape
         
-        if self.task.should_run:
-            col = 'color = red, style=bold'
-        elif self.should_run:
-            col = 'color = red'
-        else:
-            col = 'color = darkgreen'
-
-        print >> out, '"%s"'%self.name, 
-        print >> out, '[',
-        print >> out, ','.join([shape, col]),
-        print >> out, ']',
-        print >> out, ';'
-    
 
 class DependencyGraph:
     '''A complete dependency graph, with code for scheduling a workflow.'''
@@ -86,27 +68,7 @@ class DependencyGraph:
 
     def get_node(self, name):
         return self.nodes[name]
-
-    def print_workflow_graph(self, out):
-    	'''Print the workflow to file object out in graphviz format.'''
-    	
-    	print >> out, 'digraph workflow {'
-    	
-    	# Handle nodes
-    	for node in self.nodes.values():
-    	    node.print_graphviz(out)
-    		    	
-    	# Handle edges
-    	for src in self.nodes.values():
-    	    for fname,dst in src.dependencies:
-    	        print >> out, '"%s"'%dst.name, '->', '"%s"'%src.name,
-    	        print >> out, '[label="%s"]' % fname,
-    	        print >> out, ';'
-    	        
-
-    	print >> out, '}'
-    	
-    	
+   	
     	
     	
 
