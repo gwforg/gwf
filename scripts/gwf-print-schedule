@@ -1,0 +1,43 @@
+#!/Users/mailund/anaconda/bin/python
+
+import os
+import sys
+from gwf.parser import parse
+
+
+import argparse
+
+parser = argparse.ArgumentParser(description='Submit a workflow to the grid.')
+
+parser.add_argument('-f', '--file', 
+                    default='workflow.gwf', dest='workflow_file',
+                    help='Workflow file if not the default (workflow.gwf).')
+
+parser.add_argument('target', nargs=1,
+                    help='The target to process.')
+
+args = parser.parse_args()
+workflow = parse(args.workflow_file)
+target = args.target[0]
+if target not in workflow.targets:
+    print 'Target %s not found in workflow.' % target
+    sys.exit(2)
+
+schedule, scheduled_tasks = workflow.dependency_graph.schedule(target)
+schedule.reverse()
+
+for job in schedule:
+    task = job.task
+    if task.job_in_queue:
+        print task.name, 'IN QUEUE:', 
+        print '(%s : %s)' % (task.jobID, task.job_queue_status)
+        
+        continue
+        
+    dependent_tasks = set(node.name for _,node in job.dependencies
+                          if node.name in scheduled_tasks)
+
+    print task.name,
+    if task.should_run:
+        print 'OUT OF DATE',
+    print '[%s]' % ' '.join([dep for dep in dependent_tasks])
