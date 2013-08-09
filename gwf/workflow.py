@@ -5,6 +5,7 @@ import os, os.path
 import time
 import re
 import string
+import subprocess
 from exceptions import NotImplementedError
 from dependency_graph import DependencyGraph
 import parser # need this to re-parse instantiated templates
@@ -201,6 +202,11 @@ class Task:
         raise NotImplementedError()
 
     @property
+    def job_in_queue(self):
+        '''Test if this task is a job already submitted to the queue'''
+        raise NotImplementedError()
+
+    @property
     def can_execute(self):
         '''Flag used to indicate that a task can be executed.
         
@@ -247,6 +253,11 @@ class SystemFile(Task):
         '''We should never actually run a system file, but we say yes when
         the file is missing so this is displayed in output.'''
         return not self.file_exists
+        
+    @property
+    def job_in_queue(self):
+        '''A file is never submitted to the queue...'''
+        return False
 
     @property
     def execution_error(self):
@@ -267,6 +278,11 @@ class ExecutableTask(Task):
     @property
     def script_name(self):
         '''Where is the script for executing the task located?'''
+        raise NotImplementedError()
+
+    @property
+    def job_name(self):
+        '''Where is job-id file located if the task is executing?'''
         raise NotImplementedError()
     
     def write_script(self):
@@ -377,10 +393,20 @@ class Target(ExecutableTask):
         return _make_absolute_path(self.working_dir,'.scripts')
     
     @property
+    def jobs_dir(self):
+        return _make_absolute_path(self.working_dir,'.jobs')
+
+    @property
     def script_name(self):
         # Escape name to make a file name...
         escaped_name = _escape_file_name(self.name)
         return _make_absolute_path(self.script_dir, escaped_name)
+
+    @property
+    def job_name(self):
+        # Escape name to make a file name...
+        escaped_name = _escape_file_name(self.name)
+        return _make_absolute_path(self.jobs_dir, escaped_name)
 
     def make_script_dir(self):
         script_dir = self.script_dir
@@ -388,10 +414,17 @@ class Target(ExecutableTask):
             return
         os.makedirs(script_dir)
 
+    def make_jobs_dir(self):
+        jobs_dir = self.jobs_dir
+        if _file_exists(jobs_dir):
+            return
+        os.makedirs(jobs_dir)
+
     def write_script(self):
         '''Write the code to a script that can be executed.'''
 
         self.make_script_dir()
+        self.make_jobs_dir()
         
         f = open(self.script_name, 'w')
         
@@ -406,6 +439,30 @@ class Target(ExecutableTask):
 
         print >> f, '# Script from workflow'
         print >> f, self.code
+
+    @property
+    def job_in_queue(self):
+        if not _file_exists(self.job_name):
+            return False
+        else:
+            # FIXME: check status
+            jobid = self.jobID
+            stat = subprocess.Popen(['qstat','-f',jobid],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+            for line in stat.stdout:
+                line = line.strip()
+                if line.startswith('job_state'):
+                    return True
+            return False
+    
+    @property
+    def jobID(self):
+        if _file_exists(self.job_name):
+            return open(self.job_name).read().strip()
+        else:
+            return None
+        
 
     @property
     def graphviz_shape(self):
@@ -545,29 +602,40 @@ class Workflow:
             if not job.task.can_execute:
                 print job.task.execution_error
                 import sys ; sys.exit(2)
-        
-            # make sure we have the scripts for the jobs we want to
-            # execute!
-            job.task.write_script()
 
-            dependent_tasks = set(node.name
-                                  for _,node in job.dependencies
-                                  if node.name in scheduled_tasks)
-            if len(dependent_tasks) > 0:
-                depend = '-W depend=afterok:$%s' % \
-                    ':$'.join(dependent_tasks)
+            # If the job is already in the queue, just get the ID
+            # into the shell command used later for dependencies...
+            if job.task.job_in_queue:
+                command = ' '.join([
+                    '%s=`' % job.name,
+                    'cat', job.task.job_name,
+                    '`'])
+                script_commands.append(command)
+                
             else:
-                depend = ''
+                # make sure we have the scripts for the jobs we want to
+                # execute!
+                job.task.write_script()
 
-            script = job.task.script_name
+                dependent_tasks = set(node.name
+                                      for _,node in job.dependencies
+                                      if node.name in scheduled_tasks)
+                if len(dependent_tasks) > 0:
+                    depend = '-W depend=afterok:$%s' % \
+                        ':$'.join(dependent_tasks)
+                else:
+                    depend = ''
 
-            command = ' '.join([
-                '%s=`' % job.name,
-                'qsub -N %s' % job.name,
-                depend,
-                script,
-                '`'])
-            script_commands.append(command)
+                script = job.task.script_name
+                command = ' '.join([
+                    '%s=`' % job.name,
+                    'qsub -N %s' % job.name,
+                    depend,
+                    script,
+                    '`'])
+                script_commands.append(command)
+                script_commands.append(' '.join([
+                    'echo', ('$%s'%job.name), '>', job.task.job_name]))
 
         return '\n'.join(script_commands)
 
