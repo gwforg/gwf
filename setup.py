@@ -11,7 +11,7 @@ def read(fname):
 
 setup(
     name = "gwf",
-    version = "0.2.0",
+    version = "0.2.1",
 
     author = "Thomas Mailund",
     author_email = "mailund@birc.au.dk",
@@ -26,6 +26,7 @@ setup(
     packages=['gwf', 'tests'],
     scripts=['scripts/gwf', 
              'scripts/gwf-workflow-graph',
+             'scripts/gwf-print-schedule',
              'scripts/gwf-print-lists',
              'scripts/gwf-print-targets'],
 

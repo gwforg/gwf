@@ -23,8 +23,10 @@ def print_node(node, out):
     '''Print the graphviz description of this node to "out".'''
     
     shape = 'shape = %s' % task_shape(node.task)
-        
-    if node.task.should_run:
+    
+    if node.task.job_in_queue:
+        col = 'color = orange, style=bold'
+    elif node.task.should_run:
         col = 'color = red, style=bold'
     elif node.should_run:
         col = 'color = red'
@@ -53,6 +55,32 @@ def print_graphviz(graph, out):
             print >> out, '[label="%s"]' % fname,
             print >> out, ';'
     	        
+
+    print >> out, '}'
+
+def print_graphviz_dependencies(graph, target, out):
+    '''Print the dependency graph for a given target.'''
+    
+    # collect the dependencies
+    dependencies = set()
+    def dfs(node):
+        if node in dependencies:
+            return # already processed
+        
+        dependencies.add(node)
+        for _,dep in node.dependencies:
+            dfs(dep)
+    dfs(target)
+       
+    print >> out, 'digraph workflow {'
+    	
+    # Handle nodes
+    for src in dependencies:
+        print_node(src, out)
+        for fname,dst in src.dependencies:
+            print >> out, '"%s"'%dst.name, '->', '"%s"'%src.name,
+            print >> out, '[label="%s"]' % fname,
+            print >> out, ';'
 
     print >> out, '}'
     
