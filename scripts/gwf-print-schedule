@@ -7,7 +7,12 @@ from gwf.parser import parse
 
 import argparse
 
-parser = argparse.ArgumentParser(description='Submit a workflow to the grid.')
+parser = argparse.ArgumentParser(description='''Print the jobs needed to complete a task.
+
+The schedule is written out in reverse order, following dependencies for the
+task, since this is easier to read, but the actual schedule if it is submitted
+of course submits in the other order.
+''')
 
 parser.add_argument('-f', '--file', 
                     default='workflow.gwf', dest='workflow_file',
