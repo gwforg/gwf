@@ -439,8 +439,25 @@ class Target(ExecutableTask):
             for line in stat.stdout:
                 line = line.strip()
                 if line.startswith('job_state'):
+                    self.JOB_QUEUE_STATUS = line.split()[2]
                     return True
             return False
+    
+    @property
+    def job_queue_status(self):
+        '''Get the job status if the job is in the queue.'''
+        # First check if it is cached
+        if hasattr(self, 'JOB_QUEUE_STATUS'):
+            return self.JOB_QUEUE_STATUS
+        
+        # If it isn't, get the job status implicitly by checking
+        # its queue status
+        self.job_in_queue
+        # and now return if it that worked, or just return None
+        if hasattr(self, 'JOB_QUEUE_STATUS'):
+            return self.JOB_QUEUE_STATUS
+        else:
+            return None
     
     @property
     def jobID(self):
