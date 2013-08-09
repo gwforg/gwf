@@ -1,8 +1,28 @@
 
+from workflow import SystemFile, Target
+
+def task_shape(task):
+    '''Dispatching types of tasks to graphviz shapes...
+    
+    There's a tight coupling here that I'm not totally happy about,
+    but the alternative is to have tasks contain code for giving the shapes.
+    '''
+    if isinstance(task, SystemFile):
+        return 'note'
+    
+    if isinstance(task, Target):
+        if len(task.input) == 0 and len(task.output) > 0:
+            return 'invhouse'
+        if len(task.output) == 0 and len(task.input) > 0:
+            return 'house'
+        return 'octagon'
+        
+    return 'box'
+
 def print_node(node, out):
     '''Print the graphviz description of this node to "out".'''
     
-    shape = 'shape = %s' % node.task.graphviz_shape
+    shape = 'shape = %s' % task_shape(node.task)
         
     if node.task.should_run:
         col = 'color = red, style=bold'
