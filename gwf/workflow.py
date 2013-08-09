@@ -447,13 +447,13 @@ class Target(ExecutableTask):
         else:
             # FIXME: check status
             jobid = self.jobID
-            stat = subprocess.Popen(['qstat','-f',jobid],
-                                    stdout=subprocess.PIPE)
-            for line in stat.stdout:
+            qstat = subprocess.check_otuput(['qstat','-f',jobid])
+            for line in qstat.split('\n'):
                 line = line.strip()
                 if line.startswith('job_state'):
                     return True
             return False
+            
     
     @property
     def jobID(self):
