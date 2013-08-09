@@ -42,7 +42,7 @@ for name, node in dag.nodes.items():
                 print '\t', fname
             if node.should_run:
                 print 'Should run:'
-                if target.should_run:
-                    print '\t', target.reason_to_run
+                if node.should_run:
+                    print '\t', node.reason_to_run
                 else:
                     print '\t', 'Dependencies needs to run.'
