@@ -457,6 +457,11 @@ class Target(ExecutableTask):
             if _file_exists(fname):
                 result.append(fname)
         return result
+        
+    def clean_target(self):
+        '''Delete all existing outfiles.'''
+        for fname in self.get_existing_outfiles():
+            os.remove(fname)
 
     def __str__(self):
         return '@target %s, input(%s) -> output(%s)' % (

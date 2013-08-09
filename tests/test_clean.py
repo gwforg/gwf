@@ -49,5 +49,7 @@ class ListTester(unittest.TestCase):
         expected = [qux,quux]
         self.assertItemsEqual(existing, expected)
 
-        os.remove(qux)
-        os.remove(quux)
+        test.clean_target()
+        existing = test.get_existing_outfiles()
+        expected = []
+        self.assertItemsEqual(existing, expected)
