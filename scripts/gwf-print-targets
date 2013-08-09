@@ -12,7 +12,8 @@ parser = argparse.ArgumentParser(description='Print targets with status.')
 parser.add_argument('-f', '--file', 
                     default='workflow.gwf', dest='workflow_file',
                     help='Workflow file if not the default (workflow.gwf).')
-
+parser.add_argument('-v', '--verbose', default=False, action='store_true',
+                    help='Verbose output.')
 
 args = parser.parse_args()
 
@@ -22,19 +23,26 @@ dag = workflow.dependency_graph
 for name, node in dag.nodes.items():
     if isinstance(node.task, Target):
         target = node.task
-        print 'Target', name
-        print 'Input files:'
-        for fname in target.input:
-            print '\t', fname
-        print 'Output files:'
-        for fname in target.output:
-            print '\t', fname
-        if node.should_run:
-            print 'Should run:'
-            if target.should_run:
-                print '\t', target.reason_to_run
-            else:
-                print '\t', 'Dependencies needs to run.'
+        
+        print 'Target', name,
+        if target.job_in_queue:
+            print 'in queue... ', target.jobID
+        elif node.should_run:
+            print 'should run'
         else:
-            print 'Is up to date.'
-        print
+            print 'is up to date'        
+        
+        
+        if args.verbose:
+            print 'Input files:'
+            for fname in target.input:
+                print '\t', fname
+            print 'Output files:'
+            for fname in target.output:
+                print '\t', fname
+            if node.should_run:
+                print 'Should run:'
+                if target.should_run:
+                    print '\t', target.reason_to_run
+                else:
+                    print '\t', 'Dependencies needs to run.'
