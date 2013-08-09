@@ -26,7 +26,7 @@ for name, node in dag.nodes.items():
         
         print 'Target', name,
         if target.job_in_queue:
-            print 'in queue... ', target.jobID
+            print target.job_queue_status, '(ID: %s)' % target.jobID
         elif node.should_run:
             print 'should run'
         else:
