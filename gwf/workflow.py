@@ -438,7 +438,12 @@ class Target(ExecutableTask):
                 line = line.strip()
                 if line.startswith('job_state'):
                     self.JOB_QUEUE_STATUS = line.split()[2]
-                    return True
+                    if self.JOB_QUEUE_STATUS == 'E':
+                        # We don't consider a failed job as being
+                        # in the queue
+                        return False
+                    else:
+                        return True
             return False
     
     @property
