@@ -43,6 +43,6 @@ for name, node in dag.nodes.items():
             if node.should_run:
                 print 'Should run:'
                 if node.should_run:
-                    print '\t', node.reason_to_run
+                    print '\t', node.task.reason_to_run
                 else:
                     print '\t', 'Dependencies needs to run.'
