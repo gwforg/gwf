@@ -11,7 +11,7 @@ def read(fname):
 
 setup(
     name = "gwf",
-    version = "0.2.2",
+    version = "0.2.3",
 
     author = "Thomas Mailund",
     author_email = "mailund@birc.au.dk",
