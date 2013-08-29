@@ -31,6 +31,16 @@ def _make_absolute_path(working_dir, fname):
         abspath = os.path.join(working_dir, fname)
     return os.path.normpath(abspath)
 
+## Temporary node to represent textual include
+class SubGraph:
+    def __init__(self, filename):
+        self.filename = filename
+        
+    def __str__(self):
+        return '@subgraph %s ' % self.filename
+    __repr__ = __str__ # not really the correct use of __repr__ but easy 
+    				   # for printing output when testing...
+
 ## TEMPLATES 
 class Template:
     def __init__(self, name, wd, parameters, template):
