@@ -6,7 +6,7 @@ import re
 import glob
 import subprocess
 from workflow import List
-from workflow import Glob, Shell, Transform
+from workflow import Glob, Shell, Transform, SubGraph
 from workflow import Template, TemplateTarget
 from workflow import Target
 from workflow import Workflow
@@ -124,6 +124,13 @@ def parse_transform(code, working_dir):
     elements = None # we can't transform yet, but the workflow will do it soon!
     
     return Transform(name, match_pattern, subs_pattern, input_list, elements)
+
+def parse_subgraph(code, working_dir):
+    elements = code.split()
+    if len(elements) != 2:
+        print 'Malformed subgraph "%s"' % code
+        sys.exit(2)
+    return SubGraph(elements[1].strip())
     
     
 PARSERS = {'target': parse_target,
@@ -134,21 +141,19 @@ PARSERS = {'target': parse_target,
            'shell': parse_shell,
            'transform': parse_transform,
            'comment': parse_comment,
+           'subgraph': parse_subgraph,
             }
 
-def parse(fname):
-    '''Parse up the workflow in "fname".'''
-
+def command_iter(fname):
+    '''Iterator for the commands in a file.'''
     working_dir = os.path.dirname(os.path.realpath(fname))
     try:
         workflow_text = open(fname).read()
     except:
-        print 'Problems opening file %s.' % fname
+        print "Problems opening file '%s'." % fname
         sys.exit(2)
         
     commands = workflow_text.split('\n@')[1:]
-
-    parsed_commands = []
     for cmd in commands:
         opcode,_ = re.split('\s',cmd,1)
         
@@ -156,13 +161,22 @@ def parse(fname):
             print 'Unknown task type @%s.' % opcode
             sys.exit(2)
 
-        parsed_commands.append(PARSERS[opcode](cmd, working_dir))
+        next_parsed_cmd = PARSERS[opcode](cmd, working_dir)
+        if isinstance(next_parsed_cmd, SubGraph):
+            for sub_cmd in command_iter(os.path.join(working_dir, next_parsed_cmd.filename)):
+                yield sub_cmd
+        else:
+            yield next_parsed_cmd
+
+def parse(fname):
+    '''Parse up the workflow in "fname".'''
+    working_dir = os.path.dirname(os.path.realpath(fname))
 
     lists = dict()
     templates = dict()
     targets = dict()
     template_targets = dict()
-    for cmd in parsed_commands:
+    for cmd in command_iter(fname):
         
         if isinstance(cmd, List):
             if cmd.name in lists:
