@@ -25,3 +25,35 @@ cat {x} > {y}
 @template-target two_single_{y} two x=single y=@list3
 
 @list concat @list2 @list3
+
+@comment  New Mako approach...
+
+@target singleton_new
+:input ${'x'}_new
+:output ${'x'}_new.out
+cat ${'x'}_new > ${'x'}_new.out
+
+<%!
+list1 = ['elm1','elm2','elm3']
+list2 = ['x','y','z']
+list3 = ['a','b','c']
+concat = list2 + list3
+%>
+
+% for x in list1:
+
+@target one_${x}_new
+:input ${x}_new
+:output ${x}_new.out
+cat ${x} > ${x}.out
+
+% endfor
+
+% for x,y in zip(list2,list3):
+
+@target two_${x}_${y}_new
+:input ${x}_new
+:output ${y}_new.out
+cat ${x} > ${y}.out
+
+% endfor

@@ -8,3 +8,18 @@ Tests of lists used as input and output
 :output @outfiles
 
 echo Dummy
+
+@comment new approach...
+
+<%!
+
+infiles = ['foo_new','bar_new','baz_new']
+outfiles = ['qux_new','quux_new']
+
+%>
+
+@target test_new
+:input  ${ ' '.join(infiles) }
+:output ${ ' '.join(outfiles) }
+
+echo Dummy

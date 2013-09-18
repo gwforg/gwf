@@ -18,10 +18,17 @@ class ListTester(unittest.TestCase):
         self.assertItemsEqual(['infiles','outfiles'], self.workflow.lists)
         
     def test_target(self):
-        self.assertItemsEqual(['test'], self.workflow.targets)
+        self.assertItemsEqual(['test','test_new'], self.workflow.targets)
         test = self.workflow.targets['test']
 
         self.assertItemsEqual([_fname(self.workflow,fn) for fn in ['foo','bar','baz']],
                               test.input)
         self.assertItemsEqual([_fname(self.workflow,fn) for fn in ['qux','quux']],
+                              test.output)
+                              
+        test = self.workflow.targets['test_new']
+
+        self.assertItemsEqual([_fname(self.workflow,fn) for fn in ['foo_new','bar_new','baz_new']],
+                              test.input)
+        self.assertItemsEqual([_fname(self.workflow,fn) for fn in ['qux_new','quux_new']],
                               test.output)
