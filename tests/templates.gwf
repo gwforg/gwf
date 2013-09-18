@@ -8,6 +8,22 @@ cat {file1} > {file2}
 
 @template-target cat_foo_bar cat file1=foo file2=bar
 
+@comment
+
+The solution below would be the new solution
+
+<%!
+file1 = 'foo'
+file2 = 'bar'
+%>
+
+@comment @target cat
+@comment :input  ${file1}
+@comment :output ${file2}
+
+@comment cat ${file1} > ${file2}
+
+
 @target make_foo
 :output foo
 touch foo
