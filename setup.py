@@ -28,6 +28,7 @@ setup(
              'scripts/gwf-workflow-graph',
              'scripts/gwf-print-schedule',
              'scripts/gwf-print-lists',
+             'scripts/gwf-print-preprocessed',
              'scripts/gwf-print-targets'],
 
     test_suite='tests',
