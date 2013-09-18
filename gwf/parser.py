@@ -16,6 +16,14 @@ from workflow import Workflow
 # the files in Targets() at some point, and I might as well provide it
 # here rather than setting it in the workflow class later...
 
+dep_warnings_warned = set()
+def dep_warning(feature, msg):
+    if feature not in dep_warnings_warned:
+        print >> sys.stderr, 'WARNING:', feature, 'is depricated.'
+        print >> sys.stderr, msg
+        print >> sys.stderr
+        dep_warnings_warned.add(feature)
+
 def parse_comment(code, working_dir):
     pass
 
@@ -60,6 +68,10 @@ def parse_target(target_code, working_dir):
     return Target(name, input, output, pbs, flags, code, working_dir)
 
 def parse_template(template_code, working_dir):
+
+    dep_warning('@template', 'Templates will be removed. '
+    'Text preprocessing using Mako markup will replace this feature.')
+
     header, code = template_code.split('\n',1)
     header_objects = header.split()
     name = header_objects[1]
@@ -71,6 +83,9 @@ def parse_template(template_code, working_dir):
     return Template(name, working_dir, parameters, code)
 
 def parse_template_target(code, working_dir):
+    dep_warning('@template-target', 'Templates will be removed. '
+    'Text preprocessing using Mako markup will replace this feature.')
+
     elements = code.split()
     name = elements[1]
     template = elements[2]
@@ -84,12 +99,18 @@ def parse_template_target(code, working_dir):
 
 
 def parse_list(code, working_dir):
+    dep_warning('@list', 'Lists will be removed. '
+    'Text preprocessing using Mako markup will replace this feature.')
+
     elements = code.split()
     name = elements[1]
     values = elements[2:]
     return List(name, values)
     
 def parse_glob(code, working_dir):
+    dep_warning('@glob', 'Lists will be removed and so will globs. '
+    'Text preprocessing using Mako markup will replace this feature.')
+
     elements = code.split()
     if len(elements) != 3:
         print 'Malformed glob "%s"' % code
@@ -106,12 +127,18 @@ def parse_glob(code, working_dir):
     return Glob(name, glob_pattern, elements)
 
 def parse_shell(code, working_dir):
+    dep_warning('@shell', 'Lists will be removed and so will shell. '
+    'Text preprocessing using Mako markup will replace this feature.')
+
     _,name,command = re.split('\s+',code,2)
     command = command.strip()
     shell_result = subprocess.check_output(command, shell=True).split()
     return Shell(name, command, shell_result)
     
 def parse_transform(code, working_dir):
+    dep_warning('@transform', 'Lists will be removed and so will transforms. '
+    'Text preprocessing using Mako markup will replace this feature.')
+
     elements = code.split()
     if len(elements) != 5:
         print 'Malformed transform "%s"' % code
