@@ -7,3 +7,14 @@ Test of glob lists.
 rm {x}
 
 @template-target rm-{x} rm x=@globs
+
+
+@comment New approach...
+
+% for x in glob('glob.*'):
+@target rm-${x}_new
+:input ${x}_new
+rm ${x}_new
+
+% endfor
+

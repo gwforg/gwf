@@ -31,10 +31,13 @@ class ListTester(unittest.TestCase):
         self.assertItemsEqual(['x','y','z'], list2.elements)
         
     def test_targets(self):
-        self.assertItemsEqual(['singleton',
+        self.assertItemsEqual(['singleton','singleton_new',
                                 'one_elm1','one_elm2','one_elm3',
+                                'one_elm1_new','one_elm2_new','one_elm3_new',
                                 'two_single_a','two_single_b','two_single_c',
-                                'two_elm1_x','two_elm2_y','two_elm3_z'],
+                                'two_elm1_x','two_elm2_y','two_elm3_z',
+                                'two_x_a_new','two_y_b_new','two_z_c_new',
+                                ],
                               self.workflow.targets)
                               
         one = self.workflow.targets['one_elm1']

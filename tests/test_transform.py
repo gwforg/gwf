@@ -12,10 +12,15 @@ class ShellTester(unittest.TestCase):
 
         
     def test_lists(self):
-        self.assertItemsEqual(['foos','bars'], self.workflow.lists)
+        self.assertItemsEqual(['foos','foos2','bars','bars2'],
+                              self.workflow.lists)
+                              
         foos = self.workflow.lists['foos']
         bars = self.workflow.lists['bars']
-        
         self.assertItemsEqual(['foo1','foo2','foo3'], foos.elements)
         self.assertItemsEqual(['bar1','bar2','bar3'], bars.elements)
         
+        foos = self.workflow.lists['foos2']
+        bars = self.workflow.lists['bars2']
+        self.assertItemsEqual(['foo1','foo2','foo3'], foos.elements)
+        self.assertItemsEqual(['bar1','bar2','bar3'], bars.elements)

@@ -144,11 +144,12 @@ PARSERS = {'target': parse_target,
            'subgraph': parse_subgraph,
             }
 
+from workflow_preprocessor import preprocess
 def command_iter(fname):
     '''Iterator for the commands in a file.'''
     working_dir = os.path.dirname(os.path.realpath(fname))
     try:
-        workflow_text = open(fname).read()
+        workflow_text = preprocess(fname)
     except:
         print "Problems opening file '%s'." % fname
         sys.exit(2)
