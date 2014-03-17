@@ -1,9 +1,9 @@
 
 # This is an example workflow for read mapping using bwa and samtools.
 
-from gwfp import *
-from gwfp.bwa import *
-from gwfp.samtools import *
+from gwf import *
+from gwf.bwa import *
+from gwf.samtools import *
 
 target('IndexGenome') << bwa_index(refGenome='ponAbe2')
 

@@ -1,7 +1,7 @@
 
 # This is an example workflow for read mapping using bwa and samtools.
 
-from gwfp import *
+from gwf import *
 
 bwa_index = template(input='{refGenome}.fa.gz', 
                      output=['{refGenome}.amb', '{refGenome}.ann', '{refGenome}.pac']) \
