@@ -6,6 +6,8 @@ import inspect
 import glob as _glob
 import subprocess
 
+import gwf_workflow
+
 ## Useful helper functions...
 
 def glob(pattern):
@@ -76,19 +78,19 @@ class target(object):
         self.name = name
         self.options = options
         
-    def __lshift__(self, _spec_):
+    def __lshift__(self, spec):
         ## FIXME: Should build a node for the workflow graph instead of outputting a textual target
         
-        namespace = dict()
-        namespace['_target_name_'] = self.name
-        namespace['_spec_'] = _spec_
         options = self.options
-        
-        if isinstance(_spec_, _TemplateInstance):
-            namespace['_spec_'] = _spec_.spec
-            options = dict(options.items() + _spec_.options.items())
+        if isinstance(spec, _TemplateInstance):
+            spec = spec.spec
+            options = dict(options.items() + spec.options.items())
     
-        namespace['_formatted_options_'] = _format_options(options)
-                                                                         
-        print '@target {_target_name_}\n{_formatted_options_}\n{_spec_}\n'.format(**namespace)
+        if self.name in gwf_workflow.ALL_TARGETS:
+            print 'Warning: Target', self.name, 'defined more than once.'
+        new_target = gwf_workflow.Target(self.name, options, spec)
+        gwf_workflow.ALL_TARGETS[self.name] = new_target
+    
+        #namespace['_formatted_options_'] = _format_options(options)
+        #print '@target {_target_name_}\n{_formatted_options_}\n{_spec_}\n'.format(**namespace)
 
