@@ -53,34 +53,12 @@ class template(object):
 
      
 # Targets...
-
-def _format_options(options):
-    # FIXME: Check if the options are valid!
-    options_list = []
-    for key, value in options.items():
-        # FIXME: format the value based on type
-        if hasattr(value, '__iter__'):
-            # Any list or such we assume should just be space separated strings
-            value = ' '.join(map(str, value))
-        
-        if type(value) == bool:
-            # booleans should be set as flags if True and ignored otherwise
-            if value:
-                value = ''  # becomes the empty string in the ":foo" syntax
-            else:
-                continue    # no :foo set at all
-            
-        options_list.append(':{key} {value}'.format(key=key, value=value))
-    return '\n'.join(options_list)
-
 class target(object):
     def __init__(self, name, **options):
         self.name = name
         self.options = options
         
     def __lshift__(self, spec):
-        ## FIXME: Should build a node for the workflow graph instead of outputting a textual target
-        
         options = self.options
         if isinstance(spec, _TemplateInstance):
             spec = spec.spec
@@ -91,6 +69,3 @@ class target(object):
         new_target = gwf_workflow.Target(self.name, options, spec)
         gwf_workflow.ALL_TARGETS[self.name] = new_target
     
-        #namespace['_formatted_options_'] = _format_options(options)
-        #print '@target {_target_name_}\n{_formatted_options_}\n{_spec_}\n'.format(**namespace)
-

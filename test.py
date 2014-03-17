@@ -12,7 +12,7 @@ bwa index -p ponabe2-bwaidx -a bwtsw ponAbe2.fa.gz
 '''
 
 target('MapReads', 
-       input=['Masala_R1.fastq.gz Masala_R2.fastq.gz', 
+       input=['Masala_R1.fastq.gz', 'Masala_R2.fastq.gz', 
               'ponabe2-bwaidx.amb', 'ponabe2-bwaidx.ann', 'ponabe2-bwaidx.pac'],
        output='Masala.unsorted.bam', 
        pbs=['-l nodes=1:ppn=16', '-l walltime=1:0:0']) << '''
@@ -28,4 +28,5 @@ samtools sort -o Masala.unsorted.bam /scratch/$PBS_JOBID/Masala | \
 '''
 
 import gwf_workflow
-print gwf_workflow.ALL_TARGETS
+for targ in gwf_workflow.ALL_TARGETS.values():
+    print targ
