@@ -15,3 +15,7 @@ for sample in samples:
     bamfile = '{name}.bam'.format(name=sample)
     target('Map'+sample)  << bwa_map(refGenome='ponAbe2', R1=R1, R2=R2, bamfile=bamfile)
     target('Sort'+sample) << samtools_sort(name=sample)
+
+
+from gwf_workflow.workflow import build_workflow
+build_workflow()

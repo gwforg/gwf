@@ -7,8 +7,8 @@ bwa_index = template(input='{refGenome}.fa.gz',
                      output=['{refGenome}.amb', '{refGenome}.ann', '{refGenome}.pac']) \
     << 'bwa index -p {refGenome} -a bwtsw {refGenome}.fa.gz'
                      
-bwa_map = template(input=['{name}_R1.fastq.gz {name}_R2.fastq.gz', 
-                          '{refGenome}.amb {refGenome}.ann {refGenome}.pac'],
+bwa_map = template(input=['{name}_R1.fastq.gz', '{name}_R2.fastq.gz', 
+                          '{refGenome}.amb', '{refGenome}.ann', '{refGenome}.pac'],
                    output='{name}.unsorted.bam',
                    pbs=['-l nodes=1:ppn=16', '-l walltime=1:0:0']) << '''
 
@@ -28,3 +28,10 @@ samtools sort -o {name}.unsorted.bam /scratch/$PBS_JOBID/{name} | \
 target('IndexGenome') << bwa_index(refGenome='ponAbe2')
 target('MapReads')    << bwa_map(refGenome='ponAbe2', name='Masala')
 target('SortBAM')     << samtools_sort(name='Masala')
+
+
+from gwf_workflow.workflow import build_workflow, schedule
+workflow = build_workflow()
+print workflow.get_submission_script('SortBAM')
+print
+print workflow.get_local_execution_script('SortBAM')

@@ -3,7 +3,6 @@
 import sys
 import os
 import os.path
-import re
 import string
 import subprocess
 
@@ -150,7 +149,7 @@ class Node(object):
         os.makedirs(jobs_dir)
 
     def write_script(self):
-        '''Write the code to a script that can be executed.'''
+        """Write the code to a script that can be executed."""
 
         self.make_script_dir()
         self.make_jobs_dir()
@@ -232,6 +231,116 @@ class Node(object):
     # for printing output when testing...
 
 
+def schedule(nodes, target_name):
+        """Linearize the targets to be run.
+
+        Returns a list of tasks to be run (in the order they should run or
+        be submitted to the cluster to make sure dependences are handled
+        correctly) and a set of the names of tasks that will be scheduled
+        (to make sure dependency flags are set in the qsub command).
+
+        """
+
+        root = nodes[target_name]
+
+        processed = set()
+        scheduled = set()
+        schedule = []
+
+        def dfs(node):
+            if node in processed:
+                # we have already processed the node, and
+                # if we should run the target name is scheduled
+                # otherwise it isn't.
+                return node.name in scheduled
+
+            # schedule all dependencies before we schedule this task
+            for dep in node.depends_on:
+                dfs(dep)
+
+            # If this task needs to run, then schedule it
+            if node.should_run or node.target.job_in_queue:
+                schedule.append(node)
+                scheduled.add(node.target.name)
+
+            processed.add(node)
+
+        dfs(root)
+
+        return schedule, scheduled
+
+
+## WRAPPING IT ALL UP IN A WORKFLOW...
+class Workflow:
+    """Class representing a workflow."""
+
+    def __init__(self, targets):
+        self.targets = targets
+
+    def get_submission_script(self, target_name):
+        """Generate the script used to submit the tasks."""
+
+        execution_schedule, scheduled_tasks = schedule(self.targets, target_name)
+
+        script_commands = []
+        for job in execution_schedule:
+
+            # If the job is already in the queue, just get the ID
+            # into the shell command used later for dependencies...
+            if job.job_in_queue:
+                command = ' '.join([
+                    '%s=`' % job.target.name,
+                    'cat', job.job_name,
+                    '`'])
+                script_commands.append(command)
+
+            else:
+                # make sure we have the scripts for the jobs we want to
+                # execute!
+                job.write_script()
+
+                dependent_tasks = set(node.target.name
+                                      for node in job.depends_on
+                                      if node.target.name in scheduled_tasks)
+                if len(dependent_tasks) > 0:
+                    depend = '-W depend=afterok:$%s' % \
+                             ':$'.join(dependent_tasks)
+                else:
+                    depend = ''
+
+                script = job.script_name
+                command = ' '.join([
+                    '%s=`' % job.target.name,
+                    'qsub -N %s' % job.target.name,
+                    depend,
+                    script,
+                    '`'])
+                script_commands.append(command)
+                script_commands.append(' '.join([
+                    'echo', ('$%s' % job.target.name), '>', job.job_name]))
+
+        return '\n'.join(script_commands)
+
+
+    def get_local_execution_script(self, target_name):
+        '''Generate the script needed to execute a target locally.'''
+
+        execution_schedule, scheduled_tasks = schedule(self.targets, target_name)
+
+        script_commands = []
+        for job in execution_schedule:
+
+            # make sure we have the scripts for the jobs we want to
+            # execute!
+            job.write_script()
+
+            script = open(job.script_name, 'r').read()
+            script_commands.append('# computing %s' % job.target.name)
+            script_commands.append(script)
+
+        return '\n'.join(script_commands)
+
+
 def build_workflow():
     """Collect all the targets and build up their dependencies."""
 
@@ -263,197 +372,4 @@ def build_workflow():
                     print 'Aborting'
                     sys.exit(2)
 
-    print [n.target.name for n in nodes.values() if len(n.depends_on) == 0]
-    print [n.target.name for n in nodes.values() if len(n.dependents) == 0]
-
-## WRAPPING IT ALL UP IN A WORKFLOW...
-class Workflow:
-    '''Class representing a workflow.'''
-
-    def __init__(self, lists, templates, targets, template_targets, wd):
-        self.lists = lists
-        self.templates = templates
-        self.targets = targets
-        self.template_targets = template_targets
-        self.working_dir = wd
-
-        # handle list transformation...
-        for cmd in self.lists.values():
-            if isinstance(cmd, Transform):
-                input_list_name = cmd.input_list
-                if input_list_name not in self.lists:
-                    print "Transformation list %s uses input list %s the doesn't exist." % \
-                          (cmd.name, input_list_name)
-                    sys.exit(2)
-
-                input_list = self.lists[input_list_name]
-
-                cmd.elements = [re.sub(cmd.match_pattern, cmd.subs_pattern, input)
-                                for input in input_list.elements]
-
-        # handle list expansions in other lists
-        for cmd in self.lists.values():
-            def expand_lists(lst):
-                new_list = []
-                for elm in lst:
-                    if elm.startswith('@'):
-                        listname = elm[1:]
-                        if listname not in self.lists:
-                            print 'List %s references unknown list %s.' % \
-                                  (cmd.name, listname)
-                            sys.exit(2)
-                        new_list.extend(self.lists[listname].elements)
-                    else:
-                        new_list.append(elm)
-                return new_list
-
-            cmd.elements = expand_lists(cmd.elements)
-
-
-        # handle templates and template instantiations
-        for name, tt in self.template_targets.items():
-            for target_code in tt.instantiate_target_code(self):
-                target = parser.parse_target(target_code, tt.working_dir)
-                if target.name in self.targets:
-                    print 'Instantiated template %s has the same name as an existing target' % \
-                          target.name
-                    sys.exit(2)
-                self.targets[target.name] = target
-
-        # expand lists in input and output lists for the targets
-        for target in self.targets.values():
-            def expand_lists(lst):
-                new_list = []
-                for elm in lst:
-                    if elm.startswith('@'):
-                        listname = elm[1:]
-                        if listname not in self.lists:
-                            print 'Target %s references unknown list %s.' % \
-                                  (target.name, listname)
-                            sys.exit(2)
-                        new_list.extend(self.lists[listname].elements)
-                    else:
-                        new_list.append(elm)
-                return new_list
-
-            target.input = expand_lists(target.input)
-            target.output = expand_lists(target.output)
-
-            # make all files absolute and normalised so different ways of
-            # referring to the same file actually works.
-            # For obvious reasons this has to go after list expansion...
-            target.input = [_make_absolute_path(target.working_dir, fname)
-                            for fname in target.input]
-            target.output = [_make_absolute_path(target.working_dir, fname)
-                             for fname in target.output]
-
-
-        # collect the output files so we know who can build them.
-        self.providers = dict()
-        for target in self.targets.values():
-            for output_file in target.output:
-                assert output_file not in self.providers
-                self.providers[output_file] = target
-
-        # now get dependencies for each target...
-        for target in self.targets.values():
-            dependencies = []
-            for input_file in target.input:
-                if input_file in self.providers:
-                    dependencies.append((input_file,
-                                         self.providers[input_file]))
-                else:
-                    sysfile = SystemFile(input_file, self.working_dir)
-                    dependencies.append((input_file, sysfile))
-            target.dependencies = dependencies
-
-        # build the dependency graph    
-        self.dependency_graph = DependencyGraph(self)
-
-
-    def get_submission_script(self, target_name):
-        '''Generate the script used to submit the tasks.'''
-
-        target = self.targets[target_name]
-        schedule, scheduled_tasks = self.dependency_graph.schedule(target.name)
-
-        script_commands = []
-        for job in schedule:
-
-            # skip dummy tasks that we shouldn't submit...
-            if job.task.dummy:
-                continue
-
-            if not job.task.can_execute:
-                print job.task.execution_error
-                import sys;
-
-                sys.exit(2)
-
-            # If the job is already in the queue, just get the ID
-            # into the shell command used later for dependencies...
-            if job.task.job_in_queue:
-                command = ' '.join([
-                    '%s=`' % job.name,
-                    'cat', job.task.job_name,
-                    '`'])
-                script_commands.append(command)
-
-            else:
-                # make sure we have the scripts for the jobs we want to
-                # execute!
-                job.task.write_script()
-
-                dependent_tasks = set(node.name
-                                      for _, node in job.dependencies
-                                      if node.name in scheduled_tasks)
-                if len(dependent_tasks) > 0:
-                    depend = '-W depend=afterok:$%s' % \
-                             ':$'.join(dependent_tasks)
-                else:
-                    depend = ''
-
-                script = job.task.script_name
-                command = ' '.join([
-                    '%s=`' % job.name,
-                    'qsub -N %s' % job.name,
-                    depend,
-                    script,
-                    '`'])
-                script_commands.append(command)
-                script_commands.append(' '.join([
-                    'echo', ('$%s' % job.name), '>', job.task.job_name]))
-
-        return '\n'.join(script_commands)
-
-
-    def get_local_execution_script(self, target_name):
-        '''Generate the script needed to execute a target locally.'''
-
-        target = self.targets[target_name]
-        schedule, scheduled_tasks = self.dependency_graph.schedule(target.name)
-
-        script_commands = []
-        for job in schedule:
-
-            # skip dummy tasks that we shouldn't submit...
-            if job.task.dummy:
-                continue
-
-            if not job.task.can_execute:
-                print job.task.execution_error
-                import sys;
-
-                sys.exit(2)
-
-            # make sure we have the scripts for the jobs we want to
-            # execute!
-            job.task.write_script()
-
-            script = open(job.task.script_name, 'r').read()
-            script_commands.append('# computing %s' % job.name)
-            script_commands.append(script)
-
-        return '\n'.join(script_commands)
-
-
+    return Workflow(nodes)

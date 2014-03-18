@@ -1,4 +1,4 @@
-from gwfp import *
+from gwf import *
 
 samtools_sort = template(input='{name}.unsorted.bam', output='{name}.sorted.rmdup.bam',
                          pbs='-l walltime=1:0:0') << '''
