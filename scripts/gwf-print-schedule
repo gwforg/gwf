@@ -1,8 +1,6 @@
 #!/Users/mailund/anaconda/bin/python
 
 import sys
-
-
 import argparse
 
 parser = argparse.ArgumentParser(description='''Print the jobs needed to complete a task.

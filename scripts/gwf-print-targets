@@ -1,7 +1,6 @@
 #!/Users/mailund/anaconda/bin/python
 
 import argparse
-import importlib
 
 
 parser = argparse.ArgumentParser(description='Print targets with status.')

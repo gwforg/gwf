@@ -2,8 +2,6 @@
 
 import os
 import sys
-
-
 import argparse
 
 parser = argparse.ArgumentParser(description='Submit a workflow to the grid.')
@@ -19,53 +17,62 @@ parser.add_argument('-l', '--local', default=False, action='store_true',
                     help='Run the scripts locally. Mostly useful for debugging'
                     ' your workflows.')
 
-parser.add_argument('target', nargs=1,
-                    help='The target to process.')
+parser.add_argument('targets', nargs='*',
+                    help='The targets to process.')
 
 args = parser.parse_args()
 execfile(args.workflow_file)
 from gwf_workflow.workflow import build_workflow, schedule
 workflow = build_workflow()
 
-target = args.target[0]
-if target not in workflow.targets:
-    print 'Target %s not found in workflow.' % target
-    sys.exit(2)
-
-
 if args.clean:
+    if len(args.targets) == 0:
+        print 'No targets specified to clean.'
+        print 'To avoid horrible mistakes gwf will not clean default targets.'
+        sys.exit(1)
+
     if args.dry_run:
-        print 'Cleaning', target, 'will delete the following files:'
-        print workflow.targets[target].get_existing_outfiles()
-        print
+        for target in args.targets:
+            print 'Cleaning', target, 'will delete the following files:'
+            print workflow.targets[target].get_existing_outfiles()
+            print
     else:
-        workflow.targets[target].clean_target()
+        for target in args.targets:
+            workflow.targets[target].clean_target()
         
     sys.exit(0)
 
-if args.local:
-    script = workflow.get_local_execution_script(target)
-    if args.dry_run:
-        print 'When run, the following script will be executed:'
-        print
-        print script
-        print
+if len(args.targets) > 0:
+    all_targets = args.targets
+else:
+    # take all terminal nodes as default targets
+    all_targets = [n.target.name for n in workflow.targets.values() if len(n.dependents) == 0]
 
-    else:
-        print 'Running script'
-        print script
-        os.system(script)
-        print 'Done'    
+
+# Executing work flow!
+if args.local:
+    for target in all_targets:
+        script = workflow.get_local_execution_script(target)
+        if args.dry_run:
+            print 'When run, the following script will be executed:'
+            print
+            print script
+            print
+        else:
+            print 'Running script'
+            print script
+            os.system(script)
+            print 'Done'
 
 else:
-    script = workflow.get_submission_script(target)
-    if args.dry_run:
-        print 'When run, the following script will be executed:'
-        print
-        print script
-        print
-
-    else:
-        print 'Submitting jobs to queue...'
-        os.system(script)
-        print 'Done'
+    for target in all_targets:
+        script = workflow.get_submission_script(target)
+        if args.dry_run:
+            print 'When run, the following script will be executed:'
+            print
+            print script
+            print
+        else:
+            print 'Submitting jobs to queue...'
+            os.system(script)
+            print 'Done'
