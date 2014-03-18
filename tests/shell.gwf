@@ -1,3 +1,0 @@
-Using shell commands to create lists.
-
-@shell list1 echo {1..5}

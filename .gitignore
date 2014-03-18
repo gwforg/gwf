@@ -4,3 +4,14 @@ tests/.scripts
 dist/*
 gwf.egg*
 workflow.dot
+.idea/.name
+.idea/encodings.xml
+.idea/gwf.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/scopes/scope_settings.xml
+.idea/vcs.xml
+.idea/workspace.xml
+example/.scripts/IndexGenome
+example/.scripts/MapReads
+example/.scripts/SortBAM

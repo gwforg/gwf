@@ -1,48 +1,31 @@
 #!/Users/mailund/anaconda/bin/python
 
-import os
-import sys
-from gwf.parser import parse
-from gwf.workflow import Target
-
 import argparse
+import importlib
+
 
 parser = argparse.ArgumentParser(description='Print targets with status.')
 
 parser.add_argument('-f', '--file', 
-                    default='workflow.gwf', dest='workflow_file',
-                    help='Workflow file if not the default (workflow.gwf).')
+                    default='workflow.py', dest='workflow_file',
+                    help='Workflow file if not the default (workflow.py).')
 parser.add_argument('-v', '--verbose', default=False, action='store_true',
                     help='Verbose output.')
 
 args = parser.parse_args()
 
-workflow = parse(args.workflow_file)
-dag = workflow.dependency_graph
 
-for name, node in dag.nodes.items():
-    if isinstance(node.task, Target):
-        target = node.task
-        
-        print 'Target', name,
-        if target.job_in_queue:
-            print target.job_queue_status, '(ID: %s)' % target.jobID
-        elif node.should_run:
-            print 'should run'
-        else:
-            print 'is up to date'        
-        
-        
-        if args.verbose:
-            print 'Input files:'
-            for fname in target.input:
-                print '\t', fname
-            print 'Output files:'
-            for fname in target.output:
-                print '\t', fname
-            if node.should_run:
-                print 'Should run:'
-                if node.should_run:
-                    print '\t', node.task.reason_to_run
-                else:
-                    print '\t', 'Dependencies needs to run.'
+
+execfile(args.workflow_file)
+from gwf_workflow.workflow import build_workflow
+workflow = build_workflow()
+nodes = workflow.targets
+
+for name, node in nodes.items():
+    print 'Target', name,
+    if node.job_in_queue:
+        print node.job_queue_status, '(ID: %s)' % node.jobID
+    elif node.should_run:
+        print 'should run'
+    else:
+        print 'is up to date'
