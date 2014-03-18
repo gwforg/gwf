@@ -15,3 +15,6 @@ workflow.dot
 example/.scripts/IndexGenome
 example/.scripts/MapReads
 example/.scripts/SortBAM
+example/.jobs/IndexGenome
+example/.jobs/MapReads
+example/.jobs/SortBAM
