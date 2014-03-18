@@ -27,5 +27,3 @@ samtools sort -o Masala.unsorted.bam /scratch/$PBS_JOBID/Masala | \
 	 samtools rmdup -s - Masala.sorted.rmdup.bam
 '''
 
-from gwf_workflow.workflow import build_workflow
-build_workflow()

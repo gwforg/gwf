@@ -17,5 +17,3 @@ for sample in samples:
     target('Sort'+sample) << samtools_sort(name=sample)
 
 
-from gwf_workflow.workflow import build_workflow
-build_workflow()

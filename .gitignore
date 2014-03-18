@@ -12,3 +12,6 @@ workflow.dot
 .idea/scopes/scope_settings.xml
 .idea/vcs.xml
 .idea/workspace.xml
+example/.scripts/IndexGenome
+example/.scripts/MapReads
+example/.scripts/SortBAM

@@ -29,9 +29,3 @@ target('IndexGenome') << bwa_index(refGenome='ponAbe2')
 target('MapReads')    << bwa_map(refGenome='ponAbe2', name='Masala')
 target('SortBAM')     << samtools_sort(name='Masala')
 
-
-from gwf_workflow.workflow import build_workflow, schedule
-workflow = build_workflow()
-print workflow.get_submission_script('SortBAM')
-print
-print workflow.get_local_execution_script('SortBAM')

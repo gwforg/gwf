@@ -1,8 +1,6 @@
 #!/Users/mailund/anaconda/bin/python
 
-import os
 import sys
-from gwf.parser import parse
 
 
 import argparse
@@ -15,32 +13,32 @@ of course submits in the other order.
 ''')
 
 parser.add_argument('-f', '--file', 
-                    default='workflow.gwf', dest='workflow_file',
-                    help='Workflow file if not the default (workflow.gwf).')
+                    default='workflow.py', dest='workflow_file',
+                    help='Workflow file if not the default (workflow.py).')
 
 parser.add_argument('target', nargs=1,
                     help='The target to process.')
 
 args = parser.parse_args()
-workflow = parse(args.workflow_file)
+execfile(args.workflow_file)
+from gwf_workflow.workflow import build_workflow, schedule
+workflow = build_workflow()
+nodes = workflow.targets
+
 target = args.target[0]
-if target not in workflow.targets:
+if target not in nodes:
     print 'Target %s not found in workflow.' % target
     sys.exit(2)
 
-schedule, scheduled_tasks = workflow.dependency_graph.schedule(target)
-schedule.reverse()
+execution_schedule, scheduled_tasks = schedule(nodes, target)
+execution_schedule.reverse()
 
-for job in schedule:
-    task = job.task
-    dependent_tasks = set(node.name for _,node in job.dependencies
-                          if node.name in scheduled_tasks)
-                          
-    if task.job_in_queue:
-        print task.name, 'IN QUEUE:', 
-        print '(%s : %s)' % (task.jobID, task.job_queue_status),
+for job in execution_schedule:
+    if job.job_in_queue:
+        print job.target.name, 'IN QUEUE:',
+        print '(%s : %s)' % (job.jobID, job.job_queue_status),
     else:
-        print task.name,
-        if task.should_run:
+        print job.target.name,
+        if job.should_run:
             print 'OUT OF DATE',
-    print '[%s]' % ' '.join([dep for dep in dependent_tasks])
+    print '[%s]' % ' '.join([dep.target.name for dep in job.depends_on])
