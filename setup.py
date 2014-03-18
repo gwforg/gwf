@@ -19,7 +19,6 @@ setup(
     packages = find_packages(where='src'),
     package_dir = {'': 'src'},
     scripts=['scripts/gwf', 
-             'scripts/gwf-workflow-graph',
              'scripts/gwf-print-schedule',
              'scripts/gwf-print-targets'],
 
