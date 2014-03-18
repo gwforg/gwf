@@ -259,7 +259,7 @@ def schedule(nodes, target_name):
                 dfs(dep)
 
             # If this task needs to run, then schedule it
-            if node.should_run or node.target.job_in_queue:
+            if node.should_run or node.job_in_queue:
                 schedule.append(node)
                 scheduled.add(node.target.name)
 
