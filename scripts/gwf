@@ -2,7 +2,6 @@
 
 import os
 import sys
-from gwf.parser import parse
 
 
 import argparse
@@ -10,8 +9,8 @@ import argparse
 parser = argparse.ArgumentParser(description='Submit a workflow to the grid.')
 
 parser.add_argument('-f', '--file', 
-                    default='workflow.gwf', dest='workflow_file',
-                    help='Workflow file if not the default (workflow.gwf).')
+                    default='workflow.py', dest='workflow_file',
+                    help='Workflow file if not the default (workflow.py).')
 parser.add_argument('-d', '--dry-run', default=False, action='store_true',
                     help='The submit script will be printed but not executed.')
 parser.add_argument('-c', '--clean', default=False, action='store_true',
@@ -24,12 +23,15 @@ parser.add_argument('target', nargs=1,
                     help='The target to process.')
 
 args = parser.parse_args()
+execfile(args.workflow_file)
+from gwf_workflow.workflow import build_workflow, schedule
+workflow = build_workflow()
 
-workflow = parse(args.workflow_file)
 target = args.target[0]
 if target not in workflow.targets:
     print 'Target %s not found in workflow.' % target
     sys.exit(2)
+
 
 if args.clean:
     if args.dry_run:

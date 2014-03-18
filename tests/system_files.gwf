@@ -1,6 +1,0 @@
-
-
-@target Target
-:input sysfile1 sysfile2
-
-touch sysfile1 sysfile2
