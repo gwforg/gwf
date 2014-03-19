@@ -14,13 +14,11 @@ def read(fname):
 
 setup(
     name = "gwf",
-    version = "0.4.0",
+    version = "0.4.1",
 
     packages = find_packages(where='src'),
     package_dir = {'': 'src'},
-    scripts=['scripts/gwf', 
-             'scripts/gwf-print-schedule',
-             'scripts/gwf-print-targets'],
+    scripts=['scripts/gwf'],
 
     test_suite='tests',
 

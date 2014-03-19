@@ -173,20 +173,24 @@ class Node(object):
         if not _file_exists(self.job_name):
             return False
         else:
-            stat = subprocess.Popen(['qstat', '-f', self.jobID],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT)
-            for line in stat.stdout:
-                line = line.strip()
-                if line.startswith('job_state'):
-                    self.JOB_QUEUE_STATUS = line.split()[2]
-                    if self.JOB_QUEUE_STATUS == 'E':
-                        # We don't consider a failed job as being
-                        # in the queue
-                        return False
-                    else:
-                        return True
-            return False
+            try:
+                stat = subprocess.Popen(['qstat', '-f', self.jobID],
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.STDOUT)
+                for line in stat.stdout:
+                    line = line.strip()
+                    if line.startswith('job_state'):
+                        self.JOB_QUEUE_STATUS = line.split()[2]
+                        if self.JOB_QUEUE_STATUS == 'E':
+                            # We don't consider a failed job as being
+                            # in the queue
+                            return False
+                        else:
+                            return True
+            except:
+                return False
+
+        return False
 
     @property
     def job_queue_status(self):
@@ -252,7 +256,7 @@ def schedule(nodes, target_name):
                 # we have already processed the node, and
                 # if we should run the target name is scheduled
                 # otherwise it isn't.
-                return node.name in scheduled
+                return node.target.name in scheduled
 
             # schedule all dependencies before we schedule this task
             for dep in node.depends_on:
