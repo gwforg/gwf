@@ -256,7 +256,7 @@ def schedule(nodes, target_name):
                 # we have already processed the node, and
                 # if we should run the target name is scheduled
                 # otherwise it isn't.
-                return node.name in scheduled
+                return node.target.name in scheduled
 
             # schedule all dependencies before we schedule this task
             for dep in node.depends_on:
