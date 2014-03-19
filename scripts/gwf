@@ -87,23 +87,23 @@ if args.status:
     for node in up_to_data:
         status = 'is up to date'
         print '{target} {status}'.format(
-            target=(COLORS['bold']+node.target.name[:25]+CLEAR+'...'*50)[:50].ljust(50),
+            target=(COLORS['bold']+node.target.name[:35]+CLEAR+'...'*50)[:50].ljust(50),
             status=COLORS['green']+status+CLEAR)
     for node in not_scheduled:
         status = 'not scheduled for target(s)'
         print '{target} {status}'.format(
-            target=(COLORS['bold']+node.target.name[:25]+CLEAR+'...'*50)[:50].ljust(50),
+            target=(COLORS['bold']+node.target.name[:35]+CLEAR+'...'*50)[:50].ljust(50),
             status=COLORS['yellow']+status+CLEAR)
 
     for node in in_queue:
         status = 'in queue (%s: %s)' % (node.job_queue_status, node.jobID)
         print '{target} {status}'.format(
-            target=(COLORS['bold']+node.target.name[:25]+CLEAR+'...'*50)[:50].ljust(50),
+            target=(COLORS['bold']+node.target.name[:35]+CLEAR+'...'*50)[:50].ljust(50),
             status=COLORS['blue']+status+CLEAR)
     for node in scheduled:
         status = 'should be scheduled to run'
         print '{target} {status}'.format(
-            target=(COLORS['bold']+node.target.name[:25]+CLEAR+'...'*50)[:50].ljust(50),
+            target=(COLORS['bold']+node.target.name[:35]+CLEAR+'...'*50)[:50].ljust(50),
             status=COLORS['red']+status+CLEAR)
 
     sys.exit(0)
