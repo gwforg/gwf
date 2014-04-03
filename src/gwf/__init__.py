@@ -44,7 +44,7 @@ class template(object):
                 return s
 
         formatted_options = [(key, substitute(val)) for key, val in self.options.items()]
-        options = dict(self.options.items() + formatted_options)
+        options = dict(formatted_options)
         return (options, self.spec.format(**substitutions))
 
 
