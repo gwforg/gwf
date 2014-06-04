@@ -92,7 +92,8 @@ if args.status:
 
         # FIXME: This is a hack to avoid qstat'ing jobs that are no longer in queue. It isn't a pretty way to
         # handle this, but it will work until we get the new back-end.
-        print dir(node.target)
+        print type(node.target), dir(node.target)
+        print type(node), dir(node)
 
     for node in not_scheduled:
         status = 'not scheduled for target(s)'
