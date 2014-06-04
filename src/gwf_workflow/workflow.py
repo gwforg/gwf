@@ -48,6 +48,12 @@ class Node(object):
         self.depends_on = set()
         self.dependents = set()
 
+        self.script_dir = _make_absolute_path(self.target.working_dir, '.scripts')
+        self.jobs_dir = _make_absolute_path(self.target.working_dir, '.jobs')
+        escaped_name = _escape_file_name(self.target.name)
+        self.script_name = _make_absolute_path(self.script_dir, escaped_name)
+        self.job_name = _make_absolute_path(self.jobs_dir, escaped_name)
+
     @property
     def should_run(self):
         """Test if this target needs to be run based on whether input
@@ -119,27 +125,6 @@ class Node(object):
             return False
 
         assert False, "We shouldn't get here"
-
-
-    @property
-    def script_dir(self):
-        return _make_absolute_path(self.target.working_dir, '.scripts')
-
-    @property
-    def jobs_dir(self):
-        return _make_absolute_path(self.target.working_dir, '.jobs')
-
-    @property
-    def script_name(self):
-        # Escape name to make a file name...
-        escaped_name = _escape_file_name(self.target.name)
-        return _make_absolute_path(self.script_dir, escaped_name)
-
-    @property
-    def job_name(self):
-        # Escape name to make a file name...
-        escaped_name = _escape_file_name(self.target.name)
-        return _make_absolute_path(self.jobs_dir, escaped_name)
 
     def make_script_dir(self):
         script_dir = self.script_dir
