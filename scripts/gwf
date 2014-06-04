@@ -103,7 +103,7 @@ if args.status:
             target=(COLORS['bold']+node.target.name[:35]+CLEAR+'...'*50)[:50].ljust(50),
             status=COLORS['green']+status+CLEAR)
 
-        # FIXME: This is a hack to avoid qstat'ing jobs that are no longer in queue. It isn't a pretty way to
+        # FIXME: This is a hack to avoid qstat'ing jobs that are no longer in the queue. It isn't a pretty way to
         # handle this, but it will work until we get the new back-end.
         if os.path.exists(node.job_name):
             os.remove(node.job_name)
