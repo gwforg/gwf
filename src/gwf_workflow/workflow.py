@@ -231,7 +231,7 @@ def schedule(nodes, target_name):
         """Linearize the targets to be run.
 
         Returns a list of tasks to be run (in the order they should run or
-        be submitted to the cluster to make sure dependences are handled
+        be submitted to the cluster to make sure dependencies are handled
         correctly) and a set of the names of tasks that will be scheduled
         (to make sure dependency flags are set in the qsub command).
 
