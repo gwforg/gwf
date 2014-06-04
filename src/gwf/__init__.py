@@ -25,12 +25,6 @@ def shell(command):
 
 
 ## Templates
-class _TemplateInstance(object):
-    def __init__(self, spec, options):
-        self.spec = spec
-        self.options = options
-
-
 class template(object):
     def __init__(self, **options):
         self.spec = None
@@ -50,8 +44,8 @@ class template(object):
                 return s
 
         formatted_options = [(key, substitute(val)) for key, val in self.options.items()]
-        options = dict(self.options.items() + formatted_options)
-        return _TemplateInstance(self.spec.format(**substitutions), options)
+        options = dict(formatted_options)
+        return (options, self.spec.format(**substitutions))
 
 
 # Targets...
@@ -62,12 +56,14 @@ class target(object):
 
     def __lshift__(self, spec):
         options = self.options
-        if isinstance(spec, _TemplateInstance):
-            options = dict(options.items() + spec.options.items())
-            spec = spec.spec
+
+        if isinstance(spec, tuple):
+            options = dict(options.items() + spec[0].items())
+            spec = spec[1]
 
         if self.name in gwf_workflow.ALL_TARGETS:
             print 'Warning: Target', self.name, 'defined more than once.'
+
         new_target = gwf_workflow.Target(self.name, options, spec)
         gwf_workflow.ALL_TARGETS[self.name] = new_target
 

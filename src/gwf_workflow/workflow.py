@@ -19,12 +19,17 @@ def _escape_job_name(job_name):
     return ''.join(c for c in job_name if c in valid_chars)
 
 
+_remembered_files = {}  # cache to avoid too much stat'ing
 def _file_exists(filename):
-    return os.path.exists(filename)
+    if filename not in _remembered_files:
+        _remembered_files[filename] = os.path.exists(filename)
+    return _remembered_files[filename]
 
-
+_remembered_timestamps = {}  # Use this to avoid too many stats that slows down the script
 def _get_file_timestamp(filename):
-    return os.path.getmtime(filename)
+    if filename not in _remembered_timestamps:
+        _remembered_timestamps[filename] = os.path.getmtime(filename)
+    return _remembered_timestamps[filename]
 
 
 def _make_absolute_path(working_dir, filename):
@@ -42,6 +47,12 @@ class Node(object):
         self.target = target
         self.depends_on = set()
         self.dependents = set()
+
+        self.script_dir = _make_absolute_path(self.target.working_dir, '.scripts')
+        self.jobs_dir = _make_absolute_path(self.target.working_dir, '.jobs')
+        escaped_name = _escape_file_name(self.target.name)
+        self.script_name = _make_absolute_path(self.script_dir, escaped_name)
+        self.job_name = _make_absolute_path(self.jobs_dir, escaped_name)
 
     @property
     def should_run(self):
@@ -114,27 +125,6 @@ class Node(object):
             return False
 
         assert False, "We shouldn't get here"
-
-
-    @property
-    def script_dir(self):
-        return _make_absolute_path(self.target.working_dir, '.scripts')
-
-    @property
-    def jobs_dir(self):
-        return _make_absolute_path(self.target.working_dir, '.jobs')
-
-    @property
-    def script_name(self):
-        # Escape name to make a file name...
-        escaped_name = _escape_file_name(self.target.name)
-        return _make_absolute_path(self.script_dir, escaped_name)
-
-    @property
-    def job_name(self):
-        # Escape name to make a file name...
-        escaped_name = _escape_file_name(self.target.name)
-        return _make_absolute_path(self.jobs_dir, escaped_name)
 
     def make_script_dir(self):
         script_dir = self.script_dir
