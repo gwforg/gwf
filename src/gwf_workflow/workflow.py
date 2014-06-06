@@ -260,69 +260,6 @@ class Workflow:
         execution_schedule, scheduled_tasks = schedule(self.targets, target_name)
         return execution_schedule, scheduled_tasks
 
-    def get_submission_script(self, target_name):
-        """Generate the script used to submit the tasks."""
-
-        execution_schedule, scheduled_tasks = schedule(self.targets, target_name)
-
-        script_commands = []
-        for job in execution_schedule:
-
-            # If the job is already in the queue, just get the ID
-            # into the shell command used later for dependencies...
-            if job.job_in_queue:
-                command = ' '.join([
-                    '%s=`' % job.target.name,
-                    'cat', job.job_name,
-                    '`'])
-                script_commands.append(command)
-
-            else:
-                # make sure we have the scripts for the jobs we want to
-                # execute!
-                job.write_script()
-
-                dependent_tasks = set(node.target.name
-                                      for node in job.depends_on
-                                      if node.target.name in scheduled_tasks)
-                if len(dependent_tasks) > 0:
-                    depend = '-W depend=afterok:$%s' % \
-                             ':$'.join(dependent_tasks)
-                else:
-                    depend = ''
-
-                script = job.script_name
-                command = ' '.join([
-                    '%s=`' % job.target.name,
-                    'qsub -N %s' % job.target.name,
-                    depend,
-                    script,
-                    '`'])
-                script_commands.append(command)
-                script_commands.append(' '.join([
-                    'echo', ('$%s' % job.target.name), '>', job.job_name]))
-
-        return '\n'.join(script_commands)
-
-
-    def get_local_execution_script(self, target_name):
-        '''Generate the script needed to execute a target locally.'''
-
-        execution_schedule, scheduled_tasks = schedule(self.targets, target_name)
-
-        script_commands = []
-        for job in execution_schedule:
-
-            # make sure we have the scripts for the jobs we want to
-            # execute!
-            job.write_script()
-
-            script = open(job.script_name, 'r').read()
-            script_commands.append('# computing %s' % job.target.name)
-            script_commands.append(script)
-
-        return '\n'.join(script_commands)
-
 
 def build_workflow():
     """Collect all the targets and build up their dependencies."""
