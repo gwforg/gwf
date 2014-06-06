@@ -38,6 +38,7 @@ class JobsDatabase(object):
                 # It is no longer in the queue so it shouldn't be in the jobs db
                 print 'deleting', job_name
                 del self.db[job_name]
+                self.db.sync()
             else:
                 print job_name, 'has status', job_status
                 self.status_db[job_name] = job_status
