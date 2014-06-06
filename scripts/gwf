@@ -123,7 +123,9 @@ else:
     # Executing work flow!
     for target in all_targets:
         schedule = workflow.get_execution_schedule(target)
-        print schedule
+        for job in schedule:
+            print dir(job)
+            print job.name
     import sys ; sys.exit()
 
     if args.local:
