@@ -56,6 +56,7 @@ class JobsDatabase(object):
         self.status_db[target_name] = 'Q' # It starts out as a queued object...
 
     def in_queue(self, job_name):
+        return job_name in self.status_db
         return job_name in self.db
 
     def get_job_status(self, job_name):
