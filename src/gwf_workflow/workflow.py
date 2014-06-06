@@ -7,6 +7,7 @@ import string
 import subprocess
 
 import gwf_workflow
+from gwf_workflow.jobs import JOBS_QUEUE
 
 
 def _escape_file_name(filename):
@@ -164,47 +165,11 @@ class Node(object):
 
     @property
     def job_in_queue(self):
-        if not _file_exists(self.job_name):
-            return False
-        else:
-            try:
-                stat = subprocess.Popen(['qstat', '-f', self.jobID], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                for line in stat.stdout:
-                    line = line.strip()
-                    if line.startswith('job_state'):
-                        self.JOB_QUEUE_STATUS = line.split()[2]
-                        if self.JOB_QUEUE_STATUS == 'E':
-                            # The job is exiting, this *could* be completed but I have mostly seen this being an error
-                            return False
-                        else:
-                            return True
-            except:
-                return False
-
-        return False
+        return JOBS_QUEUE.get_database(self.target.working_dir).in_queue(self.target.name)
 
     @property
     def job_queue_status(self):
-        '''Get the job status if the job is in the queue.'''
-        # First check if it is cached
-        if hasattr(self, 'JOB_QUEUE_STATUS'):
-            return self.JOB_QUEUE_STATUS
-
-        # If it isn't, get the job status implicitly by checking
-        # its queue status
-        self.job_in_queue
-        # and now return if it that worked, or just return None
-        if hasattr(self, 'JOB_QUEUE_STATUS'):
-            return self.JOB_QUEUE_STATUS
-        else:
-            return None
-
-    @property
-    def jobID(self):
-        if _file_exists(self.job_name):
-            return open(self.job_name).read().strip()
-        else:
-            return None
+        return JOBS_QUEUE.get_database(self.target.working_dir).get_job_status(self.target.name)
 
     def get_existing_outfiles(self):
         """Get list of output files that already exists."""
