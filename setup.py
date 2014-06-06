@@ -14,7 +14,7 @@ def read(fname):
 
 setup(
     name = "gwf",
-    version = "0.4.2",
+    version = "0.5.0",
 
     packages = find_packages(where='src'),
     package_dir = {'': 'src'},
@@ -28,8 +28,7 @@ setup(
     license = "GPLv3",
     keywords = "grid computing workflow",
     url = "https://github.com/mailund/gwf",
-    description = ("Grid WorkFlow - a make-like system for"
-                   "submitting jobs through qsub."),
+    description = ("Grid WorkFlow - a make-like system for grid systems."),
     long_description = read('README'),
 
     classifiers=[
