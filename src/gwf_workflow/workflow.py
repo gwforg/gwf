@@ -7,6 +7,7 @@ import string
 import subprocess
 
 import gwf_workflow
+from gwf_workflow.jobs import JOBS_QUEUE
 
 
 def _escape_file_name(filename):
@@ -46,12 +47,7 @@ class Node(object):
         self.dependents = set()
 
         self.script_dir = _make_absolute_path(self.target.working_dir, '.scripts')
-        escaped_name = _escape_file_name(self.target.name)
-        self.script_name = _make_absolute_path(self.script_dir, escaped_name)
-
-        # FIXME: Get rid of this way of accessing job status
-        self.jobs_dir = _make_absolute_path(self.target.working_dir, '.jobs')
-        self.job_name = _make_absolute_path(self.jobs_dir, escaped_name)
+        self.script_name = _make_absolute_path(self.script_dir, _escape_file_name(self.target.name))
 
         self.cached_should_run = None
         self.reason_to_run = None
@@ -120,8 +116,7 @@ class Node(object):
         # The youngest in should be older than the oldest out
         if youngest_in_timestamp >= oldest_out_timestamp:
             # we have a younger in file than an outfile
-            self.reason_to_run = 'Infile %s is younger than outfile %s' % \
-                                 (youngest_in_filename, oldest_out_filename)
+            self.reason_to_run = 'Infile %s is younger than outfile %s' %  (youngest_in_filename, oldest_out_filename)
             self.cached_should_run = True
             return True
         else:
@@ -137,18 +132,10 @@ class Node(object):
             return
         os.makedirs(script_dir)
 
-    def make_jobs_dir(self):
-        jobs_dir = self.jobs_dir
-        if _file_exists(jobs_dir):
-            return
-        os.makedirs(jobs_dir)
-
     def write_script(self):
         """Write the code to a script that can be executed."""
 
         self.make_script_dir()
-        self.make_jobs_dir()
-
         f = open(self.script_name, 'w')
 
         # Put PBS options at the top
@@ -165,47 +152,37 @@ class Node(object):
 
     @property
     def job_in_queue(self):
-        if not _file_exists(self.job_name):
-            return False
-        else:
-            try:
-                stat = subprocess.Popen(['qstat', '-f', self.jobID], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                for line in stat.stdout:
-                    line = line.strip()
-                    if line.startswith('job_state'):
-                        self.JOB_QUEUE_STATUS = line.split()[2]
-                        if self.JOB_QUEUE_STATUS == 'E':
-                            # The job is exiting, this *could* be completed but I have mostly seen this being an error
-                            return False
-                        else:
-                            return True
-            except:
-                return False
-
-        return False
+        return JOBS_QUEUE.get_database(self.target.working_dir).in_queue(self.target.name)
 
     @property
     def job_queue_status(self):
-        '''Get the job status if the job is in the queue.'''
-        # First check if it is cached
-        if hasattr(self, 'JOB_QUEUE_STATUS'):
-            return self.JOB_QUEUE_STATUS
-
-        # If it isn't, get the job status implicitly by checking
-        # its queue status
-        self.job_in_queue
-        # and now return if it that worked, or just return None
-        if hasattr(self, 'JOB_QUEUE_STATUS'):
-            return self.JOB_QUEUE_STATUS
-        else:
-            return None
+        return JOBS_QUEUE.get_database(self.target.working_dir).get_job_status(self.target.name)
 
     @property
-    def jobID(self):
-        if _file_exists(self.job_name):
-            return open(self.job_name).read().strip()
+    def job_id(self):
+        if self.job_in_queue:
+            return JOBS_QUEUE.get_database(self.target.working_dir).get_job_id(self.target.name)
         else:
             return None
+
+    def set_job_id(self, job_id):
+        JOBS_QUEUE.get_database(self.target.working_dir).set_job_id(self.target.name, job_id)
+
+    def submit(self, dependents):
+        if self.job_in_queue:
+            return self.job_id
+
+        self.write_script()
+        command = ['qsub', '-N', self.target.name, self.script_name]
+        dependents_ids = [dependent.job_id for dependent in dependents]
+        if len(dependents_ids) > 0:
+            command.append('-W depend=afterok:{}'.format(':'.join(dependents_ids)))
+
+        qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        job_id = qsub.stdout.read().strip()
+        self.set_job_id(job_id)
+        return job_id
+
 
     def get_existing_outfiles(self):
         """Get list of output files that already exists."""
@@ -239,6 +216,12 @@ def schedule(nodes, target_name):
 
         root = nodes[target_name]
 
+        # If the target is already in the queue we just dismiss the scheduling
+        # right away... this because we need to handle dependent nodes in the
+        # queue differently, since for those we need wait for completion.
+        if root.job_in_queue:
+            return [], set()
+
         processed = set()
         scheduled = set()
         schedule = []
@@ -255,7 +238,7 @@ def schedule(nodes, target_name):
                 dfs(dep)
 
             # If this task needs to run, then schedule it
-            if node.should_run or node.job_in_queue:
+            if node.job_in_queue or node.should_run:
                 schedule.append(node)
                 scheduled.add(node.target.name)
 
@@ -273,68 +256,9 @@ class Workflow:
     def __init__(self, targets):
         self.targets = targets
 
-    def get_submission_script(self, target_name):
-        """Generate the script used to submit the tasks."""
-
+    def get_execution_schedule(self, target_name):
         execution_schedule, scheduled_tasks = schedule(self.targets, target_name)
-
-        script_commands = []
-        for job in execution_schedule:
-
-            # If the job is already in the queue, just get the ID
-            # into the shell command used later for dependencies...
-            if job.job_in_queue:
-                command = ' '.join([
-                    '%s=`' % job.target.name,
-                    'cat', job.job_name,
-                    '`'])
-                script_commands.append(command)
-
-            else:
-                # make sure we have the scripts for the jobs we want to
-                # execute!
-                job.write_script()
-
-                dependent_tasks = set(node.target.name
-                                      for node in job.depends_on
-                                      if node.target.name in scheduled_tasks)
-                if len(dependent_tasks) > 0:
-                    depend = '-W depend=afterok:$%s' % \
-                             ':$'.join(dependent_tasks)
-                else:
-                    depend = ''
-
-                script = job.script_name
-                command = ' '.join([
-                    '%s=`' % job.target.name,
-                    'qsub -N %s' % job.target.name,
-                    depend,
-                    script,
-                    '`'])
-                script_commands.append(command)
-                script_commands.append(' '.join([
-                    'echo', ('$%s' % job.target.name), '>', job.job_name]))
-
-        return '\n'.join(script_commands)
-
-
-    def get_local_execution_script(self, target_name):
-        '''Generate the script needed to execute a target locally.'''
-
-        execution_schedule, scheduled_tasks = schedule(self.targets, target_name)
-
-        script_commands = []
-        for job in execution_schedule:
-
-            # make sure we have the scripts for the jobs we want to
-            # execute!
-            job.write_script()
-
-            script = open(job.script_name, 'r').read()
-            script_commands.append('# computing %s' % job.target.name)
-            script_commands.append(script)
-
-        return '\n'.join(script_commands)
+        return execution_schedule, scheduled_tasks
 
 
 def build_workflow():

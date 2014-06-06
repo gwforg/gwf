@@ -18,3 +18,5 @@ example/.scripts/SortBAM
 example/.jobs/IndexGenome
 example/.jobs/MapReads
 example/.jobs/SortBAM
+example/.jobs.db
+example/.jobs.db.db
