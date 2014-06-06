@@ -33,10 +33,13 @@ class JobsDatabase(object):
         for job_name in self.db:
             job_id = self.db[job_name]
             job_status = get_job_status(job_id)
+            print job_name
             if job_status is None:
                 # It is no longer in the queue so it shouldn't be in the jobs db
+                print 'deleting', job_name
                 del self.db[job_name]
             else:
+                print job_name, 'has status', job_status
                 self.status_db[job_name] = job_status
 
     def set_job_id(self, target_name, job_id):
