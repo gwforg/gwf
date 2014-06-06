@@ -29,13 +29,6 @@ class JobsDatabase(object):
         self.status_db = {}
         self._read_and_update_status()
 
-    def __del__(self):
-        try:
-            self.db.close()
-        except Exception as e:
-            print e
-            print dir(e)
-
     def _read_and_update_status(self):
         for job_name in self.db:
             job_id = self.db[job_name]
