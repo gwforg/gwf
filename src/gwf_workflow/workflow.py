@@ -179,11 +179,12 @@ class Node(object):
         else:
             depend = ''
 
+        print ['qsub', '-N', self.target.name, depend, self.script_name]
         qsub = subprocess.Popen(['qsub', '-N', self.target.name, depend, self.script_name],
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         job_id = qsub.stdout.read().strip()
         self.set_job_id(job_id)
-        
+
         return job_id
 
 
