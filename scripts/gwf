@@ -124,6 +124,8 @@ else:
     # Executing work flow!
     for target_name in all_targets:
         schedule, scheduled_jobs = workflow.get_execution_schedule(target_name)
+        print scheduled_jobs
+        
         if len(schedule) == 0:
             continue
 
