@@ -47,12 +47,7 @@ class Node(object):
         self.dependents = set()
 
         self.script_dir = _make_absolute_path(self.target.working_dir, '.scripts')
-        escaped_name = _escape_file_name(self.target.name)
-        self.script_name = _make_absolute_path(self.script_dir, escaped_name)
-
-        # FIXME: Get rid of this way of accessing job status
-        self.jobs_dir = _make_absolute_path(self.target.working_dir, '.jobs')
-        self.job_name = _make_absolute_path(self.jobs_dir, escaped_name)
+        self.script_name = _make_absolute_path(self.script_dir, _escape_file_name(self.target.name))
 
         self.cached_should_run = None
         self.reason_to_run = None
@@ -137,18 +132,10 @@ class Node(object):
             return
         os.makedirs(script_dir)
 
-    def make_jobs_dir(self):
-        jobs_dir = self.jobs_dir
-        if _file_exists(jobs_dir):
-            return
-        os.makedirs(jobs_dir)
-
     def write_script(self):
         """Write the code to a script that can be executed."""
 
         self.make_script_dir()
-        self.make_jobs_dir()
-
         f = open(self.script_name, 'w')
 
         # Put PBS options at the top
@@ -219,7 +206,7 @@ def schedule(nodes, target_name):
                 dfs(dep)
 
             # If this task needs to run, then schedule it
-            if node.should_run or node.job_in_queue:
+            if node.job_in_queue or node.should_run:
                 schedule.append(node)
                 scheduled.add(node.target.name)
 
@@ -236,6 +223,10 @@ class Workflow:
 
     def __init__(self, targets):
         self.targets = targets
+
+    def get_execution_schedule(self, target_name):
+        execution_schedule, scheduled_tasks = schedule(self.targets, target_name)
+        return execution_schedule
 
     def get_submission_script(self, target_name):
         """Generate the script used to submit the tasks."""

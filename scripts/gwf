@@ -102,11 +102,6 @@ if args.status:
             target=(COLORS['bold']+node.target.name[:35]+CLEAR+'...'*50)[:50].ljust(50),
             status=COLORS['green']+status+CLEAR)
 
-        # FIXME: This is a hack to avoid qstat'ing jobs that are no longer in the queue. It isn't a pretty way to
-        # handle this, but it will work until we get the new back-end.
-        if os.path.exists(node.job_name):
-            os.remove(node.job_name)
-
     for node in not_scheduled:
         status = 'not scheduled for target(s)'
         print '{target} {status}'.format(
@@ -126,6 +121,11 @@ if args.status:
 
 else:
     # Executing work flow!
+    for target in all_targets:
+        schedule = workflow.get_execution_schedule(target)
+        print schedule
+    import sys ; sys.exit()
+
     if args.local:
         for target in all_targets:
             script = workflow.get_local_execution_script(target)

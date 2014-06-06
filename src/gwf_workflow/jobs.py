@@ -18,8 +18,10 @@ def get_job_status(job_id):
     except:
         return False
 
+
 def make_db_file_name(workflow_directory):
     return os.path.join(workflow_directory, '.jobs')
+
 
 class JobsDatabase(object):
     """Wraps a jobs database for a given working directory."""
@@ -36,11 +38,9 @@ class JobsDatabase(object):
             print job_name
             if job_status is None:
                 # It is no longer in the queue so it shouldn't be in the jobs db
-                print 'deleting', job_name
                 del self.db[job_name]
                 self.db.sync()
             else:
-                print job_name, 'has status', job_status
                 self.status_db[job_name] = job_status
 
     def set_job_id(self, target_name, job_id):
@@ -49,7 +49,6 @@ class JobsDatabase(object):
 
     def in_queue(self, job_name):
         return job_name in self.status_db
-        return self.db.has_key(job_name)
 
     def get_job_status(self, job_name):
         if job_name in self.status_db:
@@ -84,10 +83,8 @@ class JobsDBCollection(object):
 # Global data base access for a running workflow...
 JOBS_QUEUE = JobsDBCollection()
 
-
 # Necessary to close all databases at exit...
 import atexit
-
 @atexit.register
 def close_databases():
     JOBS_QUEUE.close()
