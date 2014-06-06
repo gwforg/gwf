@@ -170,7 +170,7 @@ class Node(object):
             return self.job_id
 
         self.write_script()
-        dependent_tasks = set(dep.target.name for dep in self.target.depends_on)
+        dependent_tasks = set(dep.target.name for dep in self.depends_on)
         print dependent_tasks
         return 'hep!'
 
