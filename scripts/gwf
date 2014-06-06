@@ -123,8 +123,11 @@ else:
     # Executing work flow!
     for target in all_targets:
         schedule = workflow.get_execution_schedule(target)
+        if len(schedule) == 0:
+            continue
+
+        print '{}Scheduling computation of target'.format(COLORS['bold']), target.name, '{}...'.format(CLEAR)
         for job in schedule:
-            print dir(job)
             print job.target.name, job.job_id
     import sys ; sys.exit()
 
