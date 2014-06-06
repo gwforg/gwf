@@ -29,6 +29,9 @@ class JobsDatabase(object):
         self.status_db = {}
         self._read_and_update_status()
 
+    def __del__(self):
+        self.db.close()
+
     def _read_and_update_status(self):
         for job_name in self.db:
             job_id = self.db[job_name]
