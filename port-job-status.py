@@ -21,18 +21,17 @@ jobs_db = shelve.open(os.path.join(workflow_dir, '.jobs'))
 
 for job_name in jobs:
     job_file = os.path.join(jobs_dir, job_name)
-    print 'job file for', job_name, job_file
+    print 'Found job file for', job_name, job_file
 
     try:
-        print open(job_file).read().strip()
-        job_id = int(open(job_file).read().strip())
-        print 'job ID', job_id
+        job_id = open(job_file).read().strip()
         jobs_db[job_name] = job_id
     except:
         pass
 
 jobs_db.close()
 
+print 'New jobs database:'
 jobs_db = shelve.open(os.path.join(workflow_dir, '.jobs'))
 for job_name in jobs_db:
-    print job_name, jobs_db[job_name]
+    print job_name, '->', jobs_db[job_name]
