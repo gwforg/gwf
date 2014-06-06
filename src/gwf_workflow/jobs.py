@@ -42,13 +42,13 @@ class JobsDatabase(object):
             else:
                 print job_name, 'has status', job_status
                 self.status_db[job_name] = job_status
-        
+
     def set_job_id(self, target_name, job_id):
         self.db[target_name] = job_id
         self.status_db[target_name] = 'Q' # It starts out as a queued object...
 
     def in_queue(self, job_name):
-        #return job_name in self.status_db
+        return job_name in self.status_db
         return self.db.has_key(job_name)
 
     def get_job_status(self, job_name):
