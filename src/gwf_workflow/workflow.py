@@ -234,7 +234,7 @@ class Workflow:
 
     def get_execution_schedule(self, target_name):
         execution_schedule, scheduled_tasks = schedule(self.targets, target_name)
-        return execution_schedule
+        return execution_schedule, scheduled_tasks
 
     def get_submission_script(self, target_name):
         """Generate the script used to submit the tasks."""
