@@ -170,9 +170,9 @@ class Node(object):
             return self.job_id
 
         self.write_script()
-        dependents_ids = [dependent.job_id for dependent in dependents]
+        dependents_ids = map(str, [dependent.job_id for dependent in dependents]) # FIXME: remove map
         if len(dependents_ids) > 0:
-            depend = '-W depend=afterok:$%s' % ':$'.join(dependents_ids)
+            depend = '-W depend=afterok:{}'.format(':'.join(dependents_ids))
         else:
             depend = ''
 
