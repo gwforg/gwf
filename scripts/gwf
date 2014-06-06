@@ -145,9 +145,7 @@ else:
                 print
                 continue
 
-            dependents_ids = [dependent.job_id for dependent in dependents]
-            print dependents_ids
-            job_id = job.submit()
+            job_id = job.submit(dependents)
             print job_id
 
 

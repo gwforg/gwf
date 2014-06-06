@@ -165,13 +165,13 @@ class Node(object):
         else:
             return None
 
-    def submit(self):
+    def submit(self, dependents):
         if self.job_in_queue:
             return self.job_id
 
         self.write_script()
-        dependent_tasks = set(dep.target.name for dep in self.depends_on)
-        print dependent_tasks
+        dependents_ids = [dependent.job_id for dependent in dependents]
+        print dependents_ids
         return 'hep!'
 
 
