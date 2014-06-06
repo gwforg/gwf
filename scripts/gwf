@@ -109,7 +109,7 @@ if args.status:
             status=COLORS['yellow']+status+CLEAR)
 
     for node in in_queue:
-        status = 'in queue (%s: %s)' % (node.job_queue_status, node.jobID)
+        status = 'in queue (%s: %s)' % (node.job_queue_status, node.job_id)
         print '{target} {status}'.format(
             target=(COLORS['bold']+node.target.name[:35]+CLEAR+'...'*50)[:50].ljust(50),
             status=COLORS['blue']+status+CLEAR)
