@@ -130,8 +130,8 @@ else:
         print '{}Scheduling computation of target'.format(COLORS['bold']), target_name, '{}...'.format(CLEAR)
         for job in schedule:
             print job.target.name, job.job_id
-            print job.depends_on
-            print [dependent for dependent in job.depends_on if dependent in scheduled_jobs]
+            print [dependent.name for dependent in job.depends_on]
+            print [dependent.name for dependent in job.depends_on if dependent in scheduled_jobs]
             print
 
     import sys ; sys.exit()
