@@ -9,6 +9,18 @@ import pkg_resources
 package_version = pkg_resources.require("gwf")[0].version
 
 
+COLORS = {
+    'red':    '\033[91m',
+    'blue':   '\033[94m',
+    'green':  '\033[32m',
+    'black':  '\033[30m',
+    'yellow': '\033[33m',
+    'bold':   '\033[1m',
+}
+
+CLEAR = '\033[0m'
+
+
 parser = argparse.ArgumentParser(
     version=package_version,
     description="""
@@ -64,17 +76,6 @@ else:
 
 
 if args.status:
-    COLORS = {
-        'red':    '\033[91m',
-        'blue':   '\033[94m',
-        'green':  '\033[32m',
-        'black':  '\033[30m',
-        'yellow': '\033[33m',
-        'bold':   '\033[1m',
-    }
-
-    CLEAR = '\033[0m'
-
     all_scheduled = set()
     for target in all_targets:
         _, scheduled = schedule(workflow.targets, target)
