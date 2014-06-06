@@ -176,9 +176,9 @@ class Node(object):
         else:
             depend = ''
 
-        command = 'qsub -N {} {} {}'.format(job.target.name, depend, self.script_name)
+        command = 'qsub -N {} {} {}'.format(self.target.name, depend, self.script_name)
         return command
-        
+
         print dependents_ids
         return 'hep!'
 
