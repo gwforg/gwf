@@ -57,6 +57,9 @@ class JobsDatabase(object):
         else:
             return None
 
+    def close(self):
+        self.db.close()
+
 
 class JobsDBCollection(object):
     """Collects databases for several working directories."""
@@ -74,5 +77,17 @@ class JobsDBCollection(object):
             self.databases[workflow_directory] = JobsDatabase(make_db_file_name(workflow_directory))
         return self.databases[workflow_directory]
 
+    def close(self):
+        for db in self.databases.values():
+            db.close()
+
 # Global data base access for a running workflow...
 JOBS_QUEUE = JobsDBCollection()
+
+
+# Necessary to close all databases at exit...
+import atexit
+
+@atexit.register
+def close_databases():
+    JOBS_QUEUE.close()

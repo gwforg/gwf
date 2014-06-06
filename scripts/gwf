@@ -5,7 +5,6 @@ import sys
 import argparse
 import pkg_resources
 
-
 # This gets the installed version of gwf that is actually being used by the script.
 package_version = pkg_resources.require("gwf")[0].version
 
@@ -125,33 +124,31 @@ if args.status:
             target=(COLORS['bold']+node.target.name[:35]+CLEAR+'...'*50)[:50].ljust(50),
             status=COLORS['red']+status+CLEAR)
 
-    sys.exit(0)
-
-
-# Executing work flow!
-if args.local:
-    for target in all_targets:
-        script = workflow.get_local_execution_script(target)
-        if args.dry_run:
-            print 'When run, the following script will be executed:'
-            print
-            print script
-            print
-        else:
-            print 'Running script'
-            print script
-            os.system(script)
-            print 'Done'
-
 else:
-    for target in all_targets:
-        script = workflow.get_submission_script(target)
-        if args.dry_run:
-            print 'When run, the following script will be executed:'
-            print
-            print script
-            print
-        else:
-            print 'Submitting jobs to queue...'
-            os.system(script)
-            print 'Done'
+    # Executing work flow!
+    if args.local:
+        for target in all_targets:
+            script = workflow.get_local_execution_script(target)
+            if args.dry_run:
+                print 'When run, the following script will be executed:'
+                print
+                print script
+                print
+            else:
+                print 'Running script'
+                print script
+                os.system(script)
+                print 'Done'
+
+    else:
+        for target in all_targets:
+            script = workflow.get_submission_script(target)
+            if args.dry_run:
+                print 'When run, the following script will be executed:'
+                print
+                print script
+                print
+            else:
+                print 'Submitting jobs to queue...'
+                os.system(script)
+                print 'Done'
