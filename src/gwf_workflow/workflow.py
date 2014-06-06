@@ -165,6 +165,15 @@ class Node(object):
         else:
             return None
 
+    def submit(self):
+        if self.job_in_queue:
+            return self.job_id
+
+        self.write_script()
+        dependent_tasks = set(dep.target.name for dep in self.target.depends_on)
+        print dependent_tasks
+        return 'hep!'
+
 
     def get_existing_outfiles(self):
         """Get list of output files that already exists."""

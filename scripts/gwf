@@ -147,8 +147,8 @@ else:
 
             dependents_ids = [dependent.job_id for dependent in dependents]
             print dependents_ids
-            #job_id = job.submit()
-            print
+            job_id = job.submit()
+            print job_id
 
 
     import sys ; sys.exit()
