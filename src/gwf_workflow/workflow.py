@@ -216,6 +216,12 @@ def schedule(nodes, target_name):
 
         root = nodes[target_name]
 
+        # If the target is already in the queue we just dismiss the scheduling
+        # right away... this because we need to handle dependent nodes in the
+        # queue differently, since for those we need wait for completion.
+        if root.job_in_queue:
+            return [], set()
+
         processed = set()
         scheduled = set()
         schedule = []
