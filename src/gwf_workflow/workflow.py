@@ -165,6 +165,9 @@ class Node(object):
         else:
             return None
 
+    def set_job_id(self, job_id):
+        JOBS_QUEUE.get_database(self.target.working_dir).set_job_id(self.target.name, job_id)
+
     def submit(self, dependents):
         if self.job_in_queue:
             return self.job_id
@@ -176,11 +179,12 @@ class Node(object):
         else:
             depend = ''
 
-        command = 'qsub -N {} {} {}'.format(self.target.name, depend, self.script_name)
-        return command
-
-        print dependents_ids
-        return 'hep!'
+        qsub = subprocess.Popen(['qsub', '-N', self.target.name, depend, self.script_name],
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        job_id = qsub.stdout.read().strip()
+        self.set_job_id(job_id)
+        
+        return job_id
 
 
     def get_existing_outfiles(self):
