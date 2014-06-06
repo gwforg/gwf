@@ -158,6 +158,14 @@ class Node(object):
     def job_queue_status(self):
         return JOBS_QUEUE.get_database(self.target.working_dir).get_job_status(self.target.name)
 
+    @property
+    def job_id(self):
+        if self.job_in_queue:
+            return JOBS_QUEUE.get_database(self.target.working_dir).get_job_id(self.target.name)
+        else:
+            return None
+
+
     def get_existing_outfiles(self):
         """Get list of output files that already exists."""
         result = []

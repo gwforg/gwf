@@ -50,6 +50,9 @@ class JobsDatabase(object):
     def in_queue(self, job_name):
         return job_name in self.status_db
 
+    def get_job_id(self, job_name):
+        return self.db[job_name]
+
     def get_job_status(self, job_name):
         if job_name in self.status_db:
             return self.status_db[job_name]
