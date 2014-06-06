@@ -171,6 +171,14 @@ class Node(object):
 
         self.write_script()
         dependents_ids = [dependent.job_id for dependent in dependents]
+        if len(dependents_ids) > 0:
+            depend = '-W depend=afterok:$%s' % ':$'.join(dependents_ids)
+        else:
+            depend = ''
+
+        command = 'qsub -N {} {} {}'.format(job.target.name, depend, self.script_name)
+        return command
+        
         print dependents_ids
         return 'hep!'
 

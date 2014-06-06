@@ -147,7 +147,7 @@ else:
 
             job_id = job.submit(dependents)
             print job_id
-
+        print
 
     import sys ; sys.exit()
 
