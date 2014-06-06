@@ -131,10 +131,17 @@ else:
 
         print '{}Scheduling computation of target'.format(COLORS['bold']), target_name, '{}...'.format(CLEAR)
         for job in schedule:
-            print job.target.name, job.job_id
-            print [dependent.target.name for dependent in job.depends_on]
-            print [dependent.target.name for dependent in job.depends_on if dependent.target.name in scheduled_jobs]
+            assert job.job_id is None, "We shouldn't submit a job that already has an ID!"
+
+            dependents = [dependent for dependent in job.depends_on if dependent.target.name in scheduled_jobs]
+
+            print "Submitting target", job.target.name,
+            if len(dependents) > 0:
+                print "(depending on %s)".format(', '.join([dependent.target.name for dependent in dependents])),
+            print '...',
+            #job_id = job.submit()
             print
+
 
     import sys ; sys.exit()
 
