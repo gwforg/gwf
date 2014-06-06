@@ -5,6 +5,7 @@ import sys
 import argparse
 import pkg_resources
 
+from gwf_workflow.jobs import JOBS_QUEUE
 
 # This gets the installed version of gwf that is actually being used by the script.
 package_version = pkg_resources.require("gwf")[0].version
@@ -155,3 +156,5 @@ else:
             print 'Submitting jobs to queue...'
             os.system(script)
             print 'Done'
+
+JOBS_QUEUE.close()
