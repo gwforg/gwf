@@ -29,6 +29,13 @@ class JobsDatabase(object):
         self.status_db = {}
         self._read_and_update_status()
 
+    def __del__(self):
+        try:
+            self.db.close()
+        except Exception as e:
+            print e
+            print dir(e)
+
     def _read_and_update_status(self):
         for job_name in self.db:
             job_id = self.db[job_name]
@@ -42,12 +49,14 @@ class JobsDatabase(object):
             else:
                 print job_name, 'has status', job_status
                 self.status_db[job_name] = job_status
+        self.db.close()
 
     def set_job_id(self, target_name, job_id):
         self.db[target_name] = job_id
         self.status_db[target_name] = 'Q' # It starts out as a queued object...
 
     def in_queue(self, job_name):
+        return job_name in self.status_db
         return job_name in self.db
 
     def get_job_status(self, job_name):
@@ -55,9 +64,6 @@ class JobsDatabase(object):
             return self.status_db[job_name]
         else:
             return None
-
-    def close(self):
-        self.db.close()
 
 
 class JobsDBCollection(object):
@@ -75,10 +81,6 @@ class JobsDBCollection(object):
         if workflow_directory not in self.databases:
             self.databases[workflow_directory] = JobsDatabase(make_db_file_name(workflow_directory))
         return self.databases[workflow_directory]
-
-    def close(self):
-        for db in self.databases.values():
-            db.close()
 
 # Global data base access for a running workflow...
 JOBS_QUEUE = JobsDBCollection()
