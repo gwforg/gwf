@@ -174,14 +174,13 @@ class Node(object):
 
         self.write_script()
         command = ['qsub', '-N', self.target.name, self.script_name]
-        dependents_ids = map(str, [dependent.job_id for dependent in dependents]) # FIXME: remove map
+        dependents_ids = [dependent.job_id for dependent in dependents]
         if len(dependents_ids) > 0:
             command.append('-W depend=afterok:{}'.format(':'.join(dependents_ids)))
 
         qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         job_id = qsub.stdout.read().strip()
         self.set_job_id(job_id)
-
         return job_id
 
 
