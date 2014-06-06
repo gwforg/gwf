@@ -30,7 +30,11 @@ class JobsDatabase(object):
         self._read_and_update_status()
 
     def __del__(self):
-        self.db.close()
+        try:
+            self.db.close()
+        except e:
+            print e
+            print dir(e)
 
     def _read_and_update_status(self):
         for job_name in self.db:
