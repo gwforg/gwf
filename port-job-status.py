@@ -24,6 +24,7 @@ for job_name in jobs:
     print 'job file for', job_name, job_file
 
     try:
+        print open(job_file).read().strip()
         job_id = int(open(job_file).read().strip())
         print 'job ID', job_id
         jobs_db[job_name] = job_id
