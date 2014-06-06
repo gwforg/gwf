@@ -32,7 +32,7 @@ class JobsDatabase(object):
     def __del__(self):
         try:
             self.db.close()
-        except e:
+        except Exception as e:
             print e
             print dir(e)
 
