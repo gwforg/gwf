@@ -136,9 +136,17 @@ else:
 
             print "Submitting target", job.target.name,
             if len(dependents) > 0 and args.verbose:
-                dependents_text = ["{}({})".format(dependent.target.name, dependent.job_id) for dependent in dependents]
+                dependents_text = ["{}[{}]".format(dependent.target.name, dependent.job_id) for dependent in dependents]
                 print "(depending on {})".format(', '.join(dependents_text)),
             print '...',
+
+            if args.dry_run:
+                # For a dry run we just finish here...
+                print
+                continue
+
+            dependents_ids = [dependent.job_id for dependent in dependents]
+            print dependents_ids
             #job_id = job.submit()
             print
 
