@@ -49,6 +49,7 @@ class JobsDatabase(object):
             else:
                 print job_name, 'has status', job_status
                 self.status_db[job_name] = job_status
+        self.db.close()
 
     def set_job_id(self, target_name, job_id):
         self.db[target_name] = job_id
