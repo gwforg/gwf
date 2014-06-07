@@ -128,9 +128,9 @@ class Node(object):
 
     def make_script_dir(self):
         script_dir = self.script_dir
-        if _file_exists(script_dir):
-            return
-        os.makedirs(script_dir)
+        # Don't use the _file_exists() function here. It caches its status and that won't work for the script dir.
+        if not os.path.exists(script_dir):
+            os.makedirs(script_dir)
 
     def write_script(self):
         """Write the code to a script that can be executed."""
