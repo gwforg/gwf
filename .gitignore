@@ -20,3 +20,4 @@ example/.jobs/MapReads
 example/.jobs/SortBAM
 example/.jobs.db
 example/.jobs.db.db
+example.tar.gz
