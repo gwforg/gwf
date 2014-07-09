@@ -173,10 +173,12 @@ class Node(object):
             return self.job_id
 
         self.write_script()
-        command = ['qsub', '-N', self.target.name, self.script_name]
+        command = ['qsub', '-N', self.target.name]
         dependents_ids = [dependent.job_id for dependent in dependents]
         if len(dependents_ids) > 0:
-            command.append('-W depend=afterok:{}'.format(':'.join(dependents_ids)))
+            command.append('-W')
+            command.append('depend=afterok:{}'.format(':'.join(dependents_ids)))
+        command.append(self.script_name)
 
         qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         job_id = qsub.stdout.read().strip()
