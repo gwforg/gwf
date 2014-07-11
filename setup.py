@@ -28,7 +28,7 @@ setup(
     license = "GPLv3",
     keywords = "grid computing workflow",
     url = "https://github.com/mailund/gwf",
-    description = ("Grid WorkFlow - a make-like system for grid systems."),
+    description = ("Grid WorkFlow - a make-like system for computer grids."),
     long_description = read('README'),
 
     classifiers=[
