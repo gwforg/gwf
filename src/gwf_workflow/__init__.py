@@ -29,6 +29,7 @@ class Target(object):
             'nodes': 1,
             'cores': 1,
             'memory': "4g",
+            'walltime': '120:00:00',
         }
 
         for k in options.keys():

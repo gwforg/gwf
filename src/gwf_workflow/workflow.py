@@ -142,6 +142,7 @@ class Node(object):
         # FIXME: Replace this with something that works on Slurm as well!
         print >> f, '#PBS -l nodes={}:ppn={}'.format(self.target.options['nodes'], self.target.options['cores'])
         print >> f, '#PBS -l mem={}'.format(self.target.options['memory'])
+        print >> f, '#PBS -l walltime={}'.format(self.target.options['walltime'])
 
         print >> f, '# GWF generated code ...'
         print >> f, 'cd %s' % self.target.working_dir
