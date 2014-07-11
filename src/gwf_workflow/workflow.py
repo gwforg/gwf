@@ -62,18 +62,18 @@ class Node(object):
         if self.cached_should_run is not None:
             return self.cached_should_run
 
-        if len(self.target.output) == 0:
+        if len(self.target.options['output']) == 0:
             self.reason_to_run = 'Sinks (targets without output) should always run'
             self.cached_should_run = True
             return True
 
-        for outfile in self.target.output:
+        for outfile in self.target.options['output']:
             if not _file_exists(_make_absolute_path(self.target.working_dir, outfile)):
                 self.reason_to_run = 'Output file %s is missing' % outfile
                 self.cached_should_run = True
                 return True
 
-        for infile in self.target.input:
+        for infile in self.target.options['input']:
             if not _file_exists(_make_absolute_path(self.target.working_dir, infile)):
                 self.reason_to_run = 'Input file %s is missing' % infile
                 self.cached_should_run = True
@@ -86,7 +86,7 @@ class Node(object):
         # files we don't want to run it whenever someone needs that
         # output just because we don't have time stamped input.
 
-        if len(self.target.input) == 0:
+        if len(self.target.options['input']) == 0:
             self.reason_to_run = "We shouldn't run"
             self.cached_should_run = False
             return False
@@ -95,7 +95,7 @@ class Node(object):
 
         youngest_in_timestamp = None
         youngest_in_filename = None
-        for infile in self.target.input:
+        for infile in self.target.options['input']:
             timestamp = _get_file_timestamp(_make_absolute_path(self.target.working_dir, infile))
             if youngest_in_timestamp is None \
                     or youngest_in_timestamp < timestamp:
@@ -140,9 +140,9 @@ class Node(object):
 
         # Put PBS options at the top
         # FIXME: Replace this with something that works on Slurm as well!
-        for options in self.target.pbs:
-            print >> f, '#PBS', options
-        print >> f
+        print >> f, '#PBS -l nodes={}'.format(self.target.options['nodes'])
+        print >> f, '#PBS -l ppn={}'.format(self.target.options['cores'])
+        print >> f, '#PBS -l mem={}'.format(self.target.options['memory'])
 
         print >> f, '# GWF generated code ...'
         print >> f, 'cd %s' % self.target.working_dir
@@ -270,12 +270,12 @@ def build_workflow():
     nodes = {}
     providing = {}
     for target in gwf_workflow.ALL_TARGETS.values():
-        target.input = [_make_absolute_path(target.working_dir, infile)
-                        for infile in target.input]
-        target.output = [_make_absolute_path(target.working_dir, outfile)
-                         for outfile in target.output]
+        target.options['input'] = [_make_absolute_path(target.working_dir, infile)
+                                   for infile in target.options['input']]
+        target.options['output'] = [_make_absolute_path(target.working_dir, outfile)
+                                    for outfile in target.options['output']]
         node = Node(target)
-        for outfile in target.output:
+        for outfile in target.options['output']:
             if outfile in providing:
                 print 'Warning: File', outfile, 'is provided by both',
                 print target.name, 'and', providing[outfile].target.name
@@ -283,7 +283,7 @@ def build_workflow():
         nodes[target.name] = node
 
     for node in nodes.values():
-        for infile in node.target.input:
+        for infile in node.target.options['input']:
             if infile in providing:
                 provider = providing[infile]
                 node.depends_on.add(provider)
