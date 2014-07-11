@@ -105,7 +105,7 @@ class Node(object):
 
         oldest_out_timestamp = None
         oldest_out_filename = None
-        for outfile in self.target.output:
+        for outfile in self.target.options['output']:
             timestamp = _get_file_timestamp(_make_absolute_path(self.target.working_dir, outfile))
             if oldest_out_timestamp is None \
                     or oldest_out_timestamp > timestamp:
@@ -190,7 +190,7 @@ class Node(object):
     def get_existing_outfiles(self):
         """Get list of output files that already exists."""
         result = []
-        for outfile in self.target.output:
+        for outfile in self.target.options['output']:
             filename = _make_absolute_path(self.target.working_dir, outfile)
             if _file_exists(filename):
                 result.append(filename)
