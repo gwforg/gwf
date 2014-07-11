@@ -44,7 +44,7 @@ class JobsDatabase(object):
 
     def set_job_id(self, target_name, job_id):
         self.db[target_name] = job_id
-        self.status_db[target_name] = 'Q' # It starts out as a queued object...
+        self.status_db[target_name] = 'Q'      # It starts out as a queued object...
 
     def in_queue(self, job_name):
         return job_name in self.status_db
@@ -84,6 +84,7 @@ class JobsDBCollection(object):
 
 # Global data base access for a running workflow...
 JOBS_QUEUE = JobsDBCollection()
+
 
 # Necessary to close all databases at exit...
 import atexit

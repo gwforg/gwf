@@ -14,21 +14,27 @@ def _escape_file_name(filename):
     valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
     return ''.join(c for c in filename if c in valid_chars)
 
+
 def _escape_job_name(job_name):
     valid_chars = "_%s%s" % (string.ascii_letters, string.digits)
     return ''.join(c for c in job_name if c in valid_chars)
 
+
 _remembered_files = {}  # cache to avoid too much stat'ing
+_remembered_timestamps = {}  # Use this to avoid too many stats that slows down the script
+
+
 def _file_exists(filename):
     if filename not in _remembered_files:
         _remembered_files[filename] = os.path.exists(filename)
     return _remembered_files[filename]
 
-_remembered_timestamps = {}  # Use this to avoid too many stats that slows down the script
+
 def _get_file_timestamp(filename):
     if filename not in _remembered_timestamps:
         _remembered_timestamps[filename] = os.path.getmtime(filename)
     return _remembered_timestamps[filename]
+
 
 def _make_absolute_path(working_dir, filename):
     if os.path.isabs(filename):
@@ -116,7 +122,7 @@ class Node(object):
         # The youngest in should be older than the oldest out
         if youngest_in_timestamp >= oldest_out_timestamp:
             # we have a younger in file than an outfile
-            self.reason_to_run = 'Infile %s is younger than outfile %s' %  (youngest_in_filename, oldest_out_filename)
+            self.reason_to_run = 'Infile %s is younger than outfile %s' % (youngest_in_filename, oldest_out_filename)
             self.cached_should_run = True
             return True
         else:
@@ -139,7 +145,7 @@ class Node(object):
         f = open(self.script_name, 'w')
 
         # Put grid options at the top
-        if True: # FIXME: Replace this with a test for which backend we are submitting to
+        if True:  # FIXME: Replace this with a test for which backend we are submitting to
             print >> f, '#PBS -l nodes={}:ppn={}'.format(self.target.options['nodes'], self.target.options['cores'])
             print >> f, '#PBS -l mem={}'.format(self.target.options['memory'])
             print >> f, '#PBS -l walltime={}'.format(self.target.options['walltime'])
@@ -194,7 +200,6 @@ class Node(object):
         self.set_job_id(job_id)
         return job_id
 
-
     def get_existing_outfiles(self):
         """Get list of output files that already exists."""
         result = []
@@ -205,18 +210,19 @@ class Node(object):
         return result
 
     def clean_target(self):
-        '''Delete all existing outfiles.'''
+        """Delete all existing outfiles."""
         for fname in self.get_existing_outfiles():
             os.remove(fname)
 
     def __str__(self):
         return str(self.target)
-    __repr__ = __str__  # not really the correct use of __repr__ but easy 
+
+    __repr__ = __str__  # not really the correct use of __repr__ but easy
     # for printing output when testing...
 
 
 def schedule(nodes, target_name):
-        """Linearize the targets to be run.
+    """Linearize the targets to be run.
 
         Returns a list of tasks to be run (in the order they should run or
         be submitted to the cluster to make sure dependencies are handled
@@ -225,42 +231,42 @@ def schedule(nodes, target_name):
 
         """
 
-        root = nodes[target_name]
+    root = nodes[target_name]
 
-        # If the target is already in the queue we just dismiss the scheduling
-        # right away... this because we need to handle dependent nodes in the
-        # queue differently, since for those we need wait for completion.
-        if root.job_in_queue:
-            return [], set()
+    # If the target is already in the queue we just dismiss the scheduling
+    # right away... this because we need to handle dependent nodes in the
+    # queue differently, since for those we need wait for completion.
+    if root.job_in_queue:
+        return [], set()
 
-        processed = set()
-        scheduled = set()
-        schedule = []
+    processed = set()
+    scheduled = set()
+    job_schedule = []
 
-        def dfs(node):
-            if node in processed:
-                # we have already processed the node, and
-                # if we should run the target name is scheduled
-                # otherwise it isn't.
-                return node.target.name in scheduled
+    def dfs(node):
+        if node in processed:
+            # we have already processed the node, and
+            # if we should run the target name is scheduled
+            # otherwise it isn't.
+            return node.target.name in scheduled
 
-            # schedule all dependencies before we schedule this task
-            for dep in node.depends_on:
-                dfs(dep)
+        # schedule all dependencies before we schedule this task
+        for dep in node.depends_on:
+            dfs(dep)
 
-            # If this task needs to run, then schedule it
-            if node.job_in_queue or node.should_run:
-                schedule.append(node)
-                scheduled.add(node.target.name)
+        # If this task needs to run, then schedule it
+        if node.job_in_queue or node.should_run:
+            job_schedule.append(node)
+            scheduled.add(node.target.name)
 
-            processed.add(node)
+        processed.add(node)
 
-        dfs(root)
+    dfs(root)
 
-        return schedule, scheduled
+    return job_schedule, scheduled
 
 
-## WRAPPING IT ALL UP IN A WORKFLOW...
+# # WRAPPING IT ALL UP IN A WORKFLOW...
 class Workflow:
     """Class representing a workflow."""
 
