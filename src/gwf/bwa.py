@@ -8,7 +8,7 @@ bwa_map = template(input=['{R1}', '{R2}', '{refGenome}.amb', '{refGenome}.ann', 
                    output='{bamfile}',
                    pbs='-l nodes=1:ppn=16') << '''
 
-bwa mem -t 16 {refGenome}.fa {R1} {R2} | \
+bwa mem -t 16 {refGenome} {R1} {R2} | \
     samtools view -Shb - > /scratch/$PBS_JOBID/unsorted.bam
 samtools sort -o /scratch/$PBS_JOBID/unsorted.bam /scratch/$PBS_JOBID/sort | \
     samtools rmdup -s - {bamfile}

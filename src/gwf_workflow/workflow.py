@@ -139,6 +139,7 @@ class Node(object):
         f = open(self.script_name, 'w')
 
         # Put PBS options at the top
+        # FIXME: Replace this with something that works on Slurm as well!
         for options in self.target.pbs:
             print >> f, '#PBS', options
         print >> f
