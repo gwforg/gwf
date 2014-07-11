@@ -143,9 +143,11 @@ class Node(object):
         print >> f, '#PBS -l nodes={}:ppn={}'.format(self.target.options['nodes'], self.target.options['cores'])
         print >> f, '#PBS -l mem={}'.format(self.target.options['memory'])
         print >> f, '#PBS -l walltime={}'.format(self.target.options['walltime'])
+        print >> f
 
         print >> f, '# GWF generated code ...'
         print >> f, 'cd %s' % self.target.working_dir
+        print >> f, 'export GWF_JOBID=$PBS_JOBID'
         print >> f
 
         print >> f, '# Script from workflow'
