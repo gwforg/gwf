@@ -140,8 +140,7 @@ class Node(object):
 
         # Put PBS options at the top
         # FIXME: Replace this with something that works on Slurm as well!
-        print >> f, '#PBS -l nodes={}'.format(self.target.options['nodes'])
-        print >> f, '#PBS -l ppn={}'.format(self.target.options['cores'])
+        print >> f, '#PBS -l nodes={}:ppn={}'.format(self.target.options['nodes'], self.target.options['cores'])
         print >> f, '#PBS -l mem={}'.format(self.target.options['memory'])
 
         print >> f, '# GWF generated code ...'
