@@ -138,11 +138,17 @@ class Node(object):
         self.make_script_dir()
         f = open(self.script_name, 'w')
 
-        # Put PBS options at the top
-        # FIXME: Replace this with something that works on Slurm as well!
-        print >> f, '#PBS -l nodes={}:ppn={}'.format(self.target.options['nodes'], self.target.options['cores'])
-        print >> f, '#PBS -l mem={}'.format(self.target.options['memory'])
-        print >> f, '#PBS -l walltime={}'.format(self.target.options['walltime'])
+        # Put grid options at the top
+        if True: # FIXME: Replace this with a test for which backend we are submitting to
+            print >> f, '#PBS -l nodes={}:ppn={}'.format(self.target.options['nodes'], self.target.options['cores'])
+            print >> f, '#PBS -l mem={}'.format(self.target.options['memory'])
+            print >> f, '#PBS -l walltime={}'.format(self.target.options['walltime'])
+
+        else:
+            print >> f, '#SBATCH -N {}'.format(self.target.options['nodes'])
+            print >> f, '#SBATCH -c {}'.format(self.target.options['cores'])
+            print >> f, '#SBATCH --mem={}'.format(self.target.options['memory'])
+            print >> f, '#SBATCH -t {}'.format(self.target.options['walltime'])
         print >> f
 
         print >> f, '# GWF generated code ...'
