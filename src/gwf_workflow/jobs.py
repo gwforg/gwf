@@ -35,7 +35,7 @@ class JobsDatabase(object):
         for job_name in self.db:
             job_id = self.db[job_name]
             job_status = get_job_status(job_id)
-            if job_status not in ('Q', 'R'):
+            if job_status not in ('Q', 'R', 'H'):
                 # It is no longer in the queue so it shouldn't be in the jobs db
                 del self.db[job_name]
                 self.db.sync()
