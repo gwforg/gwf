@@ -144,6 +144,9 @@ class Node(object):
         self.make_script_dir()
         f = open(self.script_name, 'w')
 
+        # FIXME: I'm not sure about this... possibly should be configurable.
+        print >> f, "#!/bin/bash"
+
         # Put grid options at the top
         from gwf import GWF_BACKEND
         if GWF_BACKEND == "PSB":  # FIXME: Replace this with a test for which backend we are submitting to
