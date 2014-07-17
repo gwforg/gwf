@@ -70,3 +70,6 @@ class target(object):
 
 # This is a bit of a hack for now, but I need a way of specifying the backend
 GWF_BACKEND="PSB"
+def set_backend(backend):
+    global GWF_BACKEND
+    GWF_BACKEND = backend
