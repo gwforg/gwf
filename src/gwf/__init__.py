@@ -67,3 +67,6 @@ class target(object):
         new_target = gwf_workflow.Target(self.name, options, spec)
         gwf_workflow.ALL_TARGETS[self.name] = new_target
 
+
+# This is a bit of a hack for now, but I need a way of specifying the backend
+GWF_BACKEND="PSB"

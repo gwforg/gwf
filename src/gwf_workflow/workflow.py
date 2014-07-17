@@ -145,21 +145,25 @@ class Node(object):
         f = open(self.script_name, 'w')
 
         # Put grid options at the top
-        if True:  # FIXME: Replace this with a test for which backend we are submitting to
+        from gwf import GWF_BACKEND
+        if GWF_BACKEND == "PSB":  # FIXME: Replace this with a test for which backend we are submitting to
             print >> f, '#PBS -l nodes={}:ppn={}'.format(self.target.options['nodes'], self.target.options['cores'])
             print >> f, '#PBS -l mem={}'.format(self.target.options['memory'])
             print >> f, '#PBS -l walltime={}'.format(self.target.options['walltime'])
 
-        else:
+        elif GWF_BACKEND == "SLURM":
             print >> f, '#SBATCH -N {}'.format(self.target.options['nodes'])
             print >> f, '#SBATCH -c {}'.format(self.target.options['cores'])
             print >> f, '#SBATCH --mem={}'.format(self.target.options['memory'])
             print >> f, '#SBATCH -t {}'.format(self.target.options['walltime'])
+        else:
+            print "Unknown backend", GWF_BACKEND
+            import sys; sys.exit(1)
         print >> f
 
         print >> f, '# GWF generated code ...'
         print >> f, 'cd %s' % self.target.working_dir
-        print >> f, 'export GWF_JOBID=$PBS_JOBID'
+        print >> f, 'export GWF_JOBID=$PBS_JOBID'  # FIXME: different for slurm
         print >> f
 
         print >> f, '# Script from workflow'
