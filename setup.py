@@ -14,13 +14,13 @@ def read(fname):
 
 setup(
     name = "gwf",
-    version = "0.5.2",
+    version = "0.6.0",
 
     packages = find_packages(where='src'),
     package_dir = {'': 'src'},
     scripts=['scripts/gwf'],
 
-    test_suite='tests',
+    #test_suite='tests',
 
     # metadata for upload to PyPI
     author = "Thomas Mailund",
