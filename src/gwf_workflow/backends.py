@@ -76,3 +76,9 @@ class SlurmBackend(object):
 
     def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID=$SLURM_JOBID'
+
+
+AVAILABLE_BACKENDS = {
+    'torque': TorqueBackend,
+    'slurm': SlurmBackend,
+}
