@@ -54,7 +54,7 @@ parser.add_argument('--verbose', default=False, action='store_true', help='Verbo
 
 default_backend = config.get('DEFAULT', 'backend')
 parser.add_argument('--backend', default=default_backend,
-                    choices=AVAILABLE_BACKENDS.keys(), dest='backend',
+                    choices=AVAILABLE_BACKENDS.keys(),
                     help='''Grid backend to use. If not specified the default ({default}) will be used.
                     '''.format(default=default_backend))
 
@@ -68,7 +68,7 @@ if not os.path.exists(args.workflow_file):
 
 
 # Set the backend based on defaults or arguments...
-gwf_workflow.BACKEND = AVAILABLE_BACKENDS[parser.backend]()
+gwf_workflow.BACKEND = AVAILABLE_BACKENDS[args.backend]()
 
 
 execfile(args.workflow_file)
