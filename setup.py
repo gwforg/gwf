@@ -20,7 +20,7 @@ setup(
     package_dir = {'': 'src'},
     scripts=['scripts/gwf'],
 
-    test_suite='tests',
+    #test_suite='tests',
 
     # metadata for upload to PyPI
     author = "Thomas Mailund",

@@ -7,6 +7,7 @@ import inspect
 import os.path
 
 
+# Helper function for wrapping singletons in lists
 def _list(x):
     """Wrap x as a singleton in a list if it isn't a list already."""
     if hasattr(x, '__iter__'):
@@ -15,6 +16,7 @@ def _list(x):
         return [x]
 
 
+# Internal representation of targets.
 class Target(object):
     def __init__(self, name, options, spec):
         self.name = name
@@ -42,16 +44,13 @@ class Target(object):
         self.options['input'] = _list(self.options['input'])
         self.options['output'] = _list(self.options['output'])
 
-    def __str__(self):
-        return '''@target {name}\n:input {input}\n:output {output}\n:pbs {pbs}\n\n{spec}'''.format(
-            name=self.name,
-            input=' '.join(self.input), output=' '.join(self.output),
-            pbs=' '.join(self.pbs),
-            spec=self.spec
-        )
 
-    __repr__ = __str__
-
-
+# This global variable will hold all the targets after a workflow script has completed.
+# gwf will use this list for its further processing.
 ALL_TARGETS = {}
 
+
+from backends import *
+
+
+BACKEND = TorqueBackend()
