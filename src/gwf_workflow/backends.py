@@ -9,7 +9,7 @@ class TorqueBackend(object):
     def __init__(self):
         pass
 
-    def get_state_of_jobs(job_ids):
+    def get_state_of_jobs(self, job_ids):
         result = dict((job_id, None) for job_id in job_ids)
         for job_id in job_ids:
             try:
@@ -23,6 +23,11 @@ class TorqueBackend(object):
                 pass
         return result
 
+    def write_script_header(self, f, options):
+        print >> f, '#PBS -l nodes={}:ppn={}'.format(options['nodes'], options['cores'])
+        print >> f, '#PBS -l mem={}'.format(options['memory'])
+        print >> f, '#PBS -l walltime={}'.format(options['walltime'])
+
 
 class SlurmBackend(object):
     """Backend functionality for torque."""
@@ -30,7 +35,7 @@ class SlurmBackend(object):
     def __init__(self):
         pass
 
-    def get_state_of_jobs_slurm(job_ids):
+    def get_state_of_jobs_slurm(self, job_ids):
         result = dict((job_id, False) for job_id in job_ids)
         map_state = {  # see squeue man page under JOB STATE CODES
                        'BF': '?',  # BOOT_FAIL
@@ -59,3 +64,10 @@ class SlurmBackend(object):
         except:
             pass
         return result
+
+    def write_script_header(self, f, options):
+        print >> f, '#SBATCH -N {}'.format(self.target.options['nodes'])
+        print >> f, '#SBATCH -c {}'.format(self.target.options['cores'])
+        print >> f, '#SBATCH --mem={}'.format(self.target.options['memory'])
+        print >> f, '#SBATCH -t {}'.format(self.target.options['walltime'])
+

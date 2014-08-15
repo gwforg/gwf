@@ -147,22 +147,8 @@ class Node(object):
         # FIXME: I'm not sure about this... possibly should be configurable.
         print >> f, "#!/bin/bash"
 
-        # Put grid options at the top
-        from gwf import GWF_BACKEND
-        if GWF_BACKEND == "PSB":  # FIXME: Replace this with a test for which backend we are submitting to
-            print >> f, '#PBS -l nodes={}:ppn={}'.format(self.target.options['nodes'], self.target.options['cores'])
-            print >> f, '#PBS -l mem={}'.format(self.target.options['memory'])
-            print >> f, '#PBS -l walltime={}'.format(self.target.options['walltime'])
-
-        elif GWF_BACKEND == "SLURM":
-            print >> f, '#SBATCH -N {}'.format(self.target.options['nodes'])
-            print >> f, '#SBATCH -c {}'.format(self.target.options['cores'])
-            print >> f, '#SBATCH --mem={}'.format(self.target.options['memory'])
-            print >> f, '#SBATCH -t {}'.format(self.target.options['walltime'])
-        else:
-            print "Unknown backend", GWF_BACKEND
-            import sys; sys.exit(1)
-        print >> f
+        from gwf_workflow import BACKEND
+        BACKEND.write_script_header(f, self.target.options)
 
         print >> f, '# GWF generated code ...'
         print >> f, 'cd %s' % self.target.working_dir

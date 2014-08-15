@@ -53,4 +53,5 @@ ALL_TARGETS = {}
 from backends import *
 
 
+# FIXME: This should be configurable!!!
 BACKEND = TorqueBackend()
