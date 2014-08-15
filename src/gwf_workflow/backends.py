@@ -28,7 +28,7 @@ class TorqueBackend(object):
         print >> f, '#PBS -l mem={}'.format(options['memory'])
         print >> f, '#PBS -l walltime={}'.format(options['walltime'])
 
-    def write_script_variables(self, f, options):
+    def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID=$PBS_JOBID'
 
 
@@ -38,7 +38,7 @@ class SlurmBackend(object):
     def __init__(self):
         pass
 
-    def get_state_of_jobs_slurm(self, job_ids):
+    def get_state_of_jobs(self, job_ids):
         result = dict((job_id, False) for job_id in job_ids)
         map_state = {  # see squeue man page under JOB STATE CODES
                        'BF': '?',  # BOOT_FAIL
@@ -69,10 +69,10 @@ class SlurmBackend(object):
         return result
 
     def write_script_header(self, f, options):
-        print >> f, '#SBATCH -N {}'.format(self.target.options['nodes'])
-        print >> f, '#SBATCH -c {}'.format(self.target.options['cores'])
-        print >> f, '#SBATCH --mem={}'.format(self.target.options['memory'])
-        print >> f, '#SBATCH -t {}'.format(self.target.options['walltime'])
+        print >> f, '#SBATCH -N {}'.format(options['nodes'])
+        print >> f, '#SBATCH -c {}'.format(options['cores'])
+        print >> f, '#SBATCH --mem={}'.format(options['memory'])
+        print >> f, '#SBATCH -t {}'.format(options['walltime'])
 
-    def write_script_variables(self, f, options):
+    def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID=$SLURM_JOBID'

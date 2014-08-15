@@ -50,8 +50,5 @@ class Target(object):
 ALL_TARGETS = {}
 
 
-from backends import *
-
-
-# FIXME: This should be configurable!!!
-BACKEND = TorqueBackend()
+# This will be set in the gwf script and refer to the grid backend used.
+BACKEND = None

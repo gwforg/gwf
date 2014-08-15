@@ -4,6 +4,8 @@ import os
 import sys
 import argparse
 import pkg_resources
+import gwf_workflow
+from gwf_workflow.backends import *
 
 # This gets the installed version of gwf that is actually being used by the script.
 package_version = pkg_resources.require("gwf")[0].version
@@ -47,6 +49,11 @@ parser.add_argument('targets', nargs='*',
 args = parser.parse_args()
 if not os.path.exists(args.workflow_file):
     parser.error("The specified workflow file '{}' does not exist.\n".format(args.workflow_file))
+
+
+#gwf_workflow.BACKEND = TorqueBackend()
+gwf_workflow.BACKEND = SlurmBackend()
+
 
 execfile(args.workflow_file)
 from gwf_workflow.workflow import build_workflow, schedule

@@ -146,13 +146,12 @@ class Node(object):
 
         print >> f, "#!/bin/bash"
 
-        from gwf_workflow import BACKEND
-        BACKEND.write_script_header(f, self.target.options)
-        print >> f,
+        gwf_workflow.BACKEND.write_script_header(f, self.target.options)
+        print >> f
 
         print >> f, '# GWF generated code ...'
         print >> f, 'cd %s' % self.target.working_dir
-        BACKEND.write_script_variables(f, self.target.options)
+        gwf_workflow.BACKEND.write_script_variables(f)
         print >> f
 
         print >> f, '# Script from workflow'
