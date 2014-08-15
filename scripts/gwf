@@ -54,7 +54,7 @@ parser.add_argument('--verbose', default=False, action='store_true', help='Verbo
 
 default_backend = config.get('DEFAULT', 'backend')
 parser.add_argument('--backend', default=default_backend,
-                    choices=AVAILABLE_BACKENDS.keys(),
+                    choices=AVAILABLE_BACKENDS.keys(), dest='backend',
                     help='''Grid backend to use. If not specified the default ({default}) will be used.
                     '''.format(default=default_backend))
 
