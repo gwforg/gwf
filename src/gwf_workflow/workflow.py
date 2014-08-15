@@ -144,15 +144,15 @@ class Node(object):
         self.make_script_dir()
         f = open(self.script_name, 'w')
 
-        # FIXME: I'm not sure about this... possibly should be configurable.
         print >> f, "#!/bin/bash"
 
         from gwf_workflow import BACKEND
         BACKEND.write_script_header(f, self.target.options)
+        print >> f,
 
         print >> f, '# GWF generated code ...'
         print >> f, 'cd %s' % self.target.working_dir
-        print >> f, 'export GWF_JOBID=$PBS_JOBID'  # FIXME: different for slurm
+        BACKEND.write_script_variables(f, self.target.options)
         print >> f
 
         print >> f, '# Script from workflow'
@@ -217,12 +217,11 @@ class Node(object):
 def schedule(nodes, target_name):
     """Linearize the targets to be run.
 
-        Returns a list of tasks to be run (in the order they should run or
-        be submitted to the cluster to make sure dependencies are handled
-        correctly) and a set of the names of tasks that will be scheduled
-        (to make sure dependency flags are set in the qsub command).
-
-        """
+    Returns a list of tasks to be run (in the order they should run or
+    be submitted to the cluster to make sure dependencies are handled
+    correctly) and a set of the names of tasks that will be scheduled
+    (to make sure dependency flags are set in the submission command).
+    """
 
     root = nodes[target_name]
 

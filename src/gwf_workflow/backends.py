@@ -28,6 +28,9 @@ class TorqueBackend(object):
         print >> f, '#PBS -l mem={}'.format(options['memory'])
         print >> f, '#PBS -l walltime={}'.format(options['walltime'])
 
+    def write_script_variables(self, f, options):
+        print >> f, 'export GWF_JOBID=$PBS_JOBID'
+
 
 class SlurmBackend(object):
     """Backend functionality for torque."""
@@ -71,3 +74,5 @@ class SlurmBackend(object):
         print >> f, '#SBATCH --mem={}'.format(self.target.options['memory'])
         print >> f, '#SBATCH -t {}'.format(self.target.options['walltime'])
 
+    def write_script_variables(self, f, options):
+        print >> f, 'export GWF_JOBID=$SLURM_JOBID'
