@@ -31,6 +31,16 @@ class TorqueBackend(object):
     def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID=$PBS_JOBID'
 
+    def build_submit_command(self, target, script_name, dependents_ids):
+        # FIXME: the %j doesn't work for torque
+        command = ['qsub', '-N', target.name, '-o', os.path.join(target.working_dir, target.name+'.%j.out')]
+        if len(dependents_ids) > 0:
+            command.append('-W')
+            command.append('depend=afterok:{}'.format(':'.join(dependents_ids)))
+        command.append(script_name)
+        return command
+
+
 
 class SlurmBackend(object):
     """Backend functionality for torque."""
@@ -76,6 +86,16 @@ class SlurmBackend(object):
 
     def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID=$SLURM_JOBID'
+
+    def build_submit_command(self, target, script_name, dependents_ids):
+        # FIXME: the %j doesn't work for torque
+        command = ['qsub', '-N', target.name, '-o', os.path.join(target.working_dir, target.name+'.%j.out')]
+        if len(dependents_ids) > 0:
+            command.append('-W')
+            command.append('depend=afterok:{}'.format(':'.join(dependents_ids)))
+        command.append(script_name)
+        return command
+
 
 
 AVAILABLE_BACKENDS = {
