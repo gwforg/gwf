@@ -1,6 +1,7 @@
 """Wrappers around code for the grid queue backend."""
 
 import subprocess
+import os.path
 
 
 class TorqueBackend(object):
