@@ -1,6 +1,13 @@
 """Wrappers around code for the grid queue backend."""
 
 import subprocess
+import os
+import os.path
+
+
+def _mkdir_if_not_exist(dirname):
+  if not os.path.exists(dirname):
+    os.makedirs(dirname)
 
 
 class TorqueBackend(object):
@@ -30,6 +37,21 @@ class TorqueBackend(object):
 
     def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID=$PBS_JOBID'
+
+    def build_submit_command(self, target, script_name, dependents_ids):
+        log_dir = os.path.join(target.working_dir, 'gwf_log')
+        _mkdir_if_not_exist(log_dir)
+
+        command = ['qsub', '-N', target.name, 
+                   '-o', os.path.join(log_dir, target.name+'.stdout'),
+                   '-e', os.path.join(log_dir, target.name+'.stderr'),
+                   ]
+        if len(dependents_ids) > 0:
+            command.append('-W')
+            command.append('depend=afterok:{}'.format(':'.join(dependents_ids)))
+        command.append(script_name)
+        return command
+
 
 
 class SlurmBackend(object):
@@ -76,6 +98,21 @@ class SlurmBackend(object):
 
     def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID=$SLURM_JOBID'
+
+    def build_submit_command(self, target, script_name, dependents_ids):
+        log_dir = os.path.join(target.working_dir, 'gwf_log')
+        _mkdir_if_not_exist(log_dir)
+
+        command = ['qsub', '-N', target.name, 
+                   '-o', os.path.join(log_dir, target.name+'.stdout'),
+                   '-e', os.path.join(log_dir, target.name+'.stderr'),
+                   ]
+        if len(dependents_ids) > 0:
+            command.append('-W')
+            command.append('depend=afterok:{}'.format(':'.join(dependents_ids)))
+        command.append(script_name)
+        return command
+
 
 
 AVAILABLE_BACKENDS = {

@@ -8,6 +8,7 @@ import subprocess
 
 import gwf_workflow
 from gwf_workflow.jobs import JOBS_QUEUE
+from gwf_workflow import BACKEND
 
 
 def _escape_file_name(filename):
@@ -180,12 +181,8 @@ class Node(object):
             return self.job_id
 
         self.write_script()
-        command = ['qsub', '-N', self.target.name]
         dependents_ids = [dependent.job_id for dependent in dependents]
-        if len(dependents_ids) > 0:
-            command.append('-W')
-            command.append('depend=afterok:{}'.format(':'.join(dependents_ids)))
-        command.append(self.script_name)
+        command = BACKEND.build_submit_command(self.target, self.script_name, dependents_ids)
 
         qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         job_id = qsub.stdout.read().strip()
