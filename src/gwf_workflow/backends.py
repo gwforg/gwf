@@ -33,8 +33,9 @@ class TorqueBackend(object):
         print >> f, 'export GWF_JOBID=$PBS_JOBID'
 
     def build_submit_command(self, target, script_name, dependents_ids):
-        # FIXME: the %j doesn't work for torque
-        command = ['qsub', '-N', target.name, '-o', os.path.join(target.working_dir, target.name+'.%j.out')]
+        command = ['qsub', '-N', target.name, 
+                   '-o', os.path.join(target.working_dir, 'gwf_log', target.name+'.stdout'),
+                   '-e', os.path.join(target.working_dir, 'gwf_log', target.name+'.stderr'),
         if len(dependents_ids) > 0:
             command.append('-W')
             command.append('depend=afterok:{}'.format(':'.join(dependents_ids)))
@@ -89,8 +90,10 @@ class SlurmBackend(object):
         print >> f, 'export GWF_JOBID=$SLURM_JOBID'
 
     def build_submit_command(self, target, script_name, dependents_ids):
-        # FIXME: the %j doesn't work for torque
-        command = ['qsub', '-N', target.name, '-o', os.path.join(target.working_dir, target.name+'.%j.out')]
+        command = ['qsub', '-N', target.name, 
+                   '-o', os.path.join(target.working_dir, 'gwf_log', target.name+'.stdout'),
+                   '-e', os.path.join(target.working_dir, 'gwf_log', target.name+'.stderr'),
+                   ]
         if len(dependents_ids) > 0:
             command.append('-W')
             command.append('depend=afterok:{}'.format(':'.join(dependents_ids)))
