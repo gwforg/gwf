@@ -55,7 +55,7 @@ class TorqueBackend(object):
 
 
 class SlurmBackend(object):
-    """Backend functionality for torque."""
+    """Backend functionality for slurm."""
 
     def __init__(self):
         pass
