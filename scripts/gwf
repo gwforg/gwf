@@ -8,6 +8,7 @@ import ConfigParser
 import pkg_resources
 import gwf_workflow
 from gwf_workflow.backends import AVAILABLE_BACKENDS
+from gwf_workflow.configurations import read_configurations
 
 # This gets the installed version of gwf that is actually being used by the script.
 package_version = pkg_resources.require("gwf")[0].version
@@ -24,12 +25,7 @@ COLORS = {
 
 CLEAR = '\033[0m'
 
-default_config = {'backend': 'torque'}
-config = ConfigParser.SafeConfigParser(default_config)
-user_config_file = os.path.expanduser("~/.gwfrc")
-local_config_file = '.gwfrc'
-config.read([user_config_file, local_config_file])
-
+config = read_configurations()
 
 parser = argparse.ArgumentParser(
     version=package_version,
@@ -52,7 +48,7 @@ parser.add_argument('-c', '--clean', default=False, action='store_true',
 parser.add_argument('--verbose', default=False, action='store_true', help='Verbose output.')
 
 
-default_backend = config.get('DEFAULT', 'backend')
+default_backend = config.get('gwf', 'backend')
 parser.add_argument('--backend', default=default_backend,
                     choices=AVAILABLE_BACKENDS.keys(),
                     help='''Grid backend to use. If not specified the default ({default}) will be used.

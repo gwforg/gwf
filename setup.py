@@ -18,7 +18,7 @@ setup(
 
     packages = find_packages(where='src'),
     package_dir = {'': 'src'},
-    scripts=['scripts/gwf'],
+    scripts=['scripts/gwf', 'scripts/gwf-config'],
 
     #test_suite='tests',
 

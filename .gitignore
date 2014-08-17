@@ -22,3 +22,4 @@ example/.jobs.db
 example/.jobs.db.db
 example.tar.gz
 UnZipGenome
+.gwfrc
