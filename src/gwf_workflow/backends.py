@@ -36,6 +36,7 @@ class TorqueBackend(object):
         command = ['qsub', '-N', target.name, 
                    '-o', os.path.join(target.working_dir, 'gwf_log', target.name+'.stdout'),
                    '-e', os.path.join(target.working_dir, 'gwf_log', target.name+'.stderr'),
+                   ]
         if len(dependents_ids) > 0:
             command.append('-W')
             command.append('depend=afterok:{}'.format(':'.join(dependents_ids)))
