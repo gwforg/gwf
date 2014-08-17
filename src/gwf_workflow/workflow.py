@@ -180,7 +180,7 @@ class Node(object):
             return self.job_id
 
         self.write_script()
-        command = ['qsub', '-N', self.target.name]
+        command = ['qsub', '-N', self.target.name, '-o', os.path.join(self.target.working_dir, self.target.name+'.%j.out')]
         dependents_ids = [dependent.job_id for dependent in dependents]
         if len(dependents_ids) > 0:
             command.append('-W')
