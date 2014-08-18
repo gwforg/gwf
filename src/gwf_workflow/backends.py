@@ -107,7 +107,7 @@ class SlurmBackend(object):
         log_dir = os.path.join(target.working_dir, 'gwf_log')
         _mkdir_if_not_exist(log_dir)
 
-        command = ['sbatch', '-J', target.name, 
+        command = ['sbatch', '-J', target.name, '--parsable',
                    '-o', os.path.join(log_dir, target.name+'.stdout'),
                    '-e', os.path.join(log_dir, target.name+'.stderr'),
                    ]
