@@ -80,12 +80,16 @@ class SlurmBackend(object):
         try:
             stat = subprocess.Popen(['squeue',
                                      '--noheader',
-                                     '--format=%i;%t',
+                                     '--format=%i;%t;%E',
                                      '--jobs', ",".join(job_ids)],
                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             for line in stat.stdout:
-                job_id, state = line.strip().split(';')
-                result[job_id] = map_state[state]
+                job_id, state, depends = line.strip().split(';')
+                simple_state = map_state[state]
+                if simple_state == 'Q' and depends != '':
+                    result[job_id] = 'H'
+                else
+                    result[job_id] = simple_state
         except:
             pass
         return result
