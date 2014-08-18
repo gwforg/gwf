@@ -103,13 +103,13 @@ class SlurmBackend(object):
         log_dir = os.path.join(target.working_dir, 'gwf_log')
         _mkdir_if_not_exist(log_dir)
 
-        command = ['qsub', '-N', target.name, 
+        command = ['sbatch', '-J', target.name, 
                    '-o', os.path.join(log_dir, target.name+'.stdout'),
                    '-e', os.path.join(log_dir, target.name+'.stderr'),
                    ]
         if len(dependents_ids) > 0:
-            command.append('-W')
-            command.append('depend=afterok:{}'.format(':'.join(dependents_ids)))
+            command.append('-d')
+            command.append('afterok:{}'.format(':'.join(dependents_ids)))
         command.append(script_name)
         return command
 
