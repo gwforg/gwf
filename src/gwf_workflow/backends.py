@@ -88,7 +88,7 @@ class SlurmBackend(object):
                 simple_state = map_state[state]
                 if simple_state == 'Q' and depends != '':
                     result[job_id] = 'H'
-                else
+                else:
                     result[job_id] = simple_state
         except:
             pass
