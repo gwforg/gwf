@@ -9,6 +9,7 @@ import subprocess
 import gwf_workflow
 from gwf_workflow.jobs import JOBS_QUEUE
 from gwf_workflow import BACKEND
+from gwf_workflow.colours import *
 
 
 def _escape_file_name(filename):
@@ -184,9 +185,20 @@ class Node(object):
         dependents_ids = [dependent.job_id for dependent in dependents]
         command = BACKEND.build_submit_command(self.target, self.script_name, dependents_ids)
 
-        qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        job_id = qsub.stdout.read().strip()
-        self.set_job_id(job_id)
+        try:
+            qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            job_id = qsub.stdout.read().strip()
+            self.set_job_id(job_id)
+        except OSError, ex:
+            print
+            print COLORS['red'], COLORS['bold']
+            print 'ERROR:', CLEAR,
+            print "Couldn't execute the submission command {}'{}'{}.".format(COLORS['bold'], ' '.join(command), CLEAR)
+            print ex
+            print COLORS['red']
+            print "Quiting submissions", CLEAR
+            print
+            import sys ; sys.exit(2)
         return job_id
 
     def get_existing_outfiles(self):
