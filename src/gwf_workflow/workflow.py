@@ -236,11 +236,11 @@ def dependencies(nodes, target_name):
         if node in processed:
             return
         else:
-            processed.append(node)
             for dep in node.depends_on:
                 dfs(dep)
+            processed.append(node)
+
     dfs(root)
-    processed.reverse()
     return processed
 
 def schedule(nodes, target_name):
