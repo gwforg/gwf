@@ -9,22 +9,10 @@ import pkg_resources
 import gwf_workflow
 from gwf_workflow.backends import AVAILABLE_BACKENDS
 from gwf_workflow.configurations import read_configurations
+from gwf_workflow.colours import *
 
 # This gets the installed version of gwf that is actually being used by the script.
 package_version = pkg_resources.require("gwf")[0].version
-
-
-COLORS = {
-    'red':    '\033[91m',
-    'blue':   '\033[94m',
-    'green':  '\033[32m',
-    'black':  '\033[30m',
-    'yellow': '\033[33m',
-    'bold':   '\033[1m',
-}
-
-CLEAR = '\033[0m'
-
 config = read_configurations()
 
 parser = argparse.ArgumentParser(
