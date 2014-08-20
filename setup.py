@@ -27,7 +27,7 @@ setup(
     author_email = "mailund@birc.au.dk",
     license = "GPLv3",
     keywords = "grid computing workflow",
-    url = "https://github.com/mailund/gwf",
+    url = "https://mailund.github.io/gwf",
     description = ("Grid WorkFlow - a make-like system for computer grids."),
     long_description = read('README'),
 
