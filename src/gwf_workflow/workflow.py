@@ -221,6 +221,27 @@ class Node(object):
     __repr__ = __str__  # not really the correct use of __repr__ but easy
     # for printing output when testing...
 
+def dependencies(nodes, target_name):
+    """Return all tasks necessary for building the target.
+
+    The set of tasks is just returned as set.
+    """
+    root = nodes[target_name]
+
+    # Working with a list to preserve the order. It makes lookups slower but hopefully these sets
+    # won't be terribly long ... if it becomes a problem it is easy enough to fix it.
+    processed = []
+
+    def dfs(node):
+        if node in processed:
+            return
+        else:
+            processed.append(node)
+            for dep in node.depends_on:
+                dfs(dep)
+    dfs(root)
+    processed.reverse()
+    return processed
 
 def schedule(nodes, target_name):
     """Linearize the targets to be run.
