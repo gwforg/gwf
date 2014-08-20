@@ -110,7 +110,7 @@ if args.status:
                                        COLORS['yellow']+'#'*in_queue_bars,
                                        COLORS['red']+'#'*to_schedule_bars+CLEAR)
         print '{target} [{status}] ({count_done}/{count_queue}/{count_submit})'.format(
-            target=(COLORS['bold']+target[:30]+CLEAR+'.'*35)[:35],
+            target=(COLORS['bold']+target[:25]+CLEAR+'.'*35)[:35],
             status=progress_bar,
             count_done=COLORS['green']+'{}'.format(n_up_to_date).rjust(3)+CLEAR,
             count_queue=COLORS['yellow']+'{}'.format(n_in_queue).rjust(3)+CLEAR,
@@ -120,7 +120,7 @@ if args.status:
             for task in up_to_date:
                 print COLORS['green'], task.target.name, CLEAR
             for task in in_queue:
-                print COLORS['yellow'], task.target.name, CLEAR
+                print COLORS['yellow'], task.target.name, CLEAR, '({}: {})'.format(task.job_id, task.job_queue_status)
             for task in to_schedule:
                 print COLORS['red'], task.target.name, CLEAR
             print
