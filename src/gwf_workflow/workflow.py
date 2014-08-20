@@ -221,6 +221,24 @@ class Node(object):
     __repr__ = __str__  # not really the correct use of __repr__ but easy
     # for printing output when testing...
 
+def dependencies(nodes, target_name):
+    """Return all tasks necessary for building the target.
+
+    The set of tasks is just returned as set.
+    """
+    root = nodes[target_name]
+    processed = set()
+
+    def dfs(node):
+        if node in processed:
+            return
+        else:
+            processed.add(node)
+            for dep in node.depends_on:
+                dfs(dep)
+    dfs(root)
+
+    return processed
 
 def schedule(nodes, target_name):
     """Linearize the targets to be run.
