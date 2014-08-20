@@ -108,8 +108,8 @@ class SlurmBackend(object):
         _mkdir_if_not_exist(log_dir)
 
         command = ['sbatch', '-J', target.name, '--parsable',
-                   '-o', os.path.join(log_dir, target.name+'.stdout'),
-                   '-e', os.path.join(log_dir, target.name+'.stderr'),
+                   '-o', os.path.join(log_dir, target.name+'.%j.stdout'),
+                   '-e', os.path.join(log_dir, target.name+'.%j.stderr'),
                    ]
         if len(dependents_ids) > 0:
             command.append('-d')
