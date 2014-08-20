@@ -8,27 +8,35 @@ import subprocess
 
 import gwf_workflow
 from gwf_workflow.jobs import JOBS_QUEUE
+from gwf_workflow import BACKEND
+from gwf_workflow.colours import *
 
 
 def _escape_file_name(filename):
     valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
     return ''.join(c for c in filename if c in valid_chars)
 
+
 def _escape_job_name(job_name):
     valid_chars = "_%s%s" % (string.ascii_letters, string.digits)
     return ''.join(c for c in job_name if c in valid_chars)
 
+
 _remembered_files = {}  # cache to avoid too much stat'ing
+_remembered_timestamps = {}  # Use this to avoid too many stats that slows down the script
+
+
 def _file_exists(filename):
     if filename not in _remembered_files:
         _remembered_files[filename] = os.path.exists(filename)
     return _remembered_files[filename]
 
-_remembered_timestamps = {}  # Use this to avoid too many stats that slows down the script
+
 def _get_file_timestamp(filename):
     if filename not in _remembered_timestamps:
         _remembered_timestamps[filename] = os.path.getmtime(filename)
     return _remembered_timestamps[filename]
+
 
 def _make_absolute_path(working_dir, filename):
     if os.path.isabs(filename):
@@ -62,18 +70,18 @@ class Node(object):
         if self.cached_should_run is not None:
             return self.cached_should_run
 
-        if len(self.target.output) == 0:
+        if len(self.target.options['output']) == 0:
             self.reason_to_run = 'Sinks (targets without output) should always run'
             self.cached_should_run = True
             return True
 
-        for outfile in self.target.output:
+        for outfile in self.target.options['output']:
             if not _file_exists(_make_absolute_path(self.target.working_dir, outfile)):
                 self.reason_to_run = 'Output file %s is missing' % outfile
                 self.cached_should_run = True
                 return True
 
-        for infile in self.target.input:
+        for infile in self.target.options['input']:
             if not _file_exists(_make_absolute_path(self.target.working_dir, infile)):
                 self.reason_to_run = 'Input file %s is missing' % infile
                 self.cached_should_run = True
@@ -86,7 +94,7 @@ class Node(object):
         # files we don't want to run it whenever someone needs that
         # output just because we don't have time stamped input.
 
-        if len(self.target.input) == 0:
+        if len(self.target.options['input']) == 0:
             self.reason_to_run = "We shouldn't run"
             self.cached_should_run = False
             return False
@@ -95,7 +103,7 @@ class Node(object):
 
         youngest_in_timestamp = None
         youngest_in_filename = None
-        for infile in self.target.input:
+        for infile in self.target.options['input']:
             timestamp = _get_file_timestamp(_make_absolute_path(self.target.working_dir, infile))
             if youngest_in_timestamp is None \
                     or youngest_in_timestamp < timestamp:
@@ -105,7 +113,7 @@ class Node(object):
 
         oldest_out_timestamp = None
         oldest_out_filename = None
-        for outfile in self.target.output:
+        for outfile in self.target.options['output']:
             timestamp = _get_file_timestamp(_make_absolute_path(self.target.working_dir, outfile))
             if oldest_out_timestamp is None \
                     or oldest_out_timestamp > timestamp:
@@ -116,7 +124,7 @@ class Node(object):
         # The youngest in should be older than the oldest out
         if youngest_in_timestamp >= oldest_out_timestamp:
             # we have a younger in file than an outfile
-            self.reason_to_run = 'Infile %s is younger than outfile %s' %  (youngest_in_filename, oldest_out_filename)
+            self.reason_to_run = 'Infile %s is younger than outfile %s' % (youngest_in_filename, oldest_out_filename)
             self.cached_should_run = True
             return True
         else:
@@ -138,13 +146,14 @@ class Node(object):
         self.make_script_dir()
         f = open(self.script_name, 'w')
 
-        # Put PBS options at the top
-        for options in self.target.pbs:
-            print >> f, '#PBS', options
+        print >> f, "#!/bin/bash"
+
+        gwf_workflow.BACKEND.write_script_header(f, self.target.options)
         print >> f
 
         print >> f, '# GWF generated code ...'
         print >> f, 'cd %s' % self.target.working_dir
+        gwf_workflow.BACKEND.write_script_variables(f)
         print >> f
 
         print >> f, '# Script from workflow'
@@ -173,85 +182,112 @@ class Node(object):
             return self.job_id
 
         self.write_script()
-        command = ['qsub', '-N', self.target.name]
         dependents_ids = [dependent.job_id for dependent in dependents]
-        if len(dependents_ids) > 0:
-            command.append('-W')
-            command.append('depend=afterok:{}'.format(':'.join(dependents_ids)))
-        command.append(self.script_name)
+        command = BACKEND.build_submit_command(self.target, self.script_name, dependents_ids)
 
-        qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        job_id = qsub.stdout.read().strip()
-        self.set_job_id(job_id)
+        try:
+            qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            job_id = qsub.stdout.read().strip()
+            self.set_job_id(job_id)
+        except OSError, ex:
+            print
+            print COLORS['red'], COLORS['bold']
+            print 'ERROR:', CLEAR,
+            print "Couldn't execute the submission command {}'{}'{}.".format(COLORS['bold'], ' '.join(command), CLEAR)
+            print ex
+            print COLORS['red']
+            print "Quiting submissions", CLEAR
+            print
+            import sys ; sys.exit(2)
         return job_id
-
 
     def get_existing_outfiles(self):
         """Get list of output files that already exists."""
         result = []
-        for outfile in self.target.output:
+        for outfile in self.target.options['output']:
             filename = _make_absolute_path(self.target.working_dir, outfile)
             if _file_exists(filename):
                 result.append(filename)
         return result
 
     def clean_target(self):
-        '''Delete all existing outfiles.'''
+        """Delete all existing outfiles."""
         for fname in self.get_existing_outfiles():
             os.remove(fname)
 
     def __str__(self):
         return str(self.target)
-    __repr__ = __str__  # not really the correct use of __repr__ but easy 
+
+    __repr__ = __str__  # not really the correct use of __repr__ but easy
     # for printing output when testing...
 
+def dependencies(nodes, target_name):
+    """Return all tasks necessary for building the target.
 
-def schedule(nodes, target_name):
-        """Linearize the targets to be run.
+    The set of tasks is just returned as set.
+    """
+    root = nodes[target_name]
 
-        Returns a list of tasks to be run (in the order they should run or
-        be submitted to the cluster to make sure dependencies are handled
-        correctly) and a set of the names of tasks that will be scheduled
-        (to make sure dependency flags are set in the qsub command).
+    # Working with a list to preserve the order. It makes lookups slower but hopefully these sets
+    # won't be terribly long ... if it becomes a problem it is easy enough to fix it.
+    processed = []
 
-        """
-
-        root = nodes[target_name]
-
-        # If the target is already in the queue we just dismiss the scheduling
-        # right away... this because we need to handle dependent nodes in the
-        # queue differently, since for those we need wait for completion.
-        if root.job_in_queue:
-            return [], set()
-
-        processed = set()
-        scheduled = set()
-        schedule = []
-
-        def dfs(node):
-            if node in processed:
-                # we have already processed the node, and
-                # if we should run the target name is scheduled
-                # otherwise it isn't.
-                return node.target.name in scheduled
-
-            # schedule all dependencies before we schedule this task
+    def dfs(node):
+        if node in processed:
+            return
+        else:
             for dep in node.depends_on:
                 dfs(dep)
+            processed.append(node)
 
-            # If this task needs to run, then schedule it
-            if node.job_in_queue or node.should_run:
-                schedule.append(node)
-                scheduled.add(node.target.name)
+    dfs(root)
+    return processed
 
-            processed.add(node)
+def schedule(nodes, target_name):
+    """Linearize the targets to be run.
 
-        dfs(root)
+    Returns a list of tasks to be run (in the order they should run or
+    be submitted to the cluster to make sure dependencies are handled
+    correctly) and a set of the names of tasks that will be scheduled
+    (to make sure dependency flags are set in the submission command).
+    """
 
-        return schedule, scheduled
+    root = nodes[target_name]
+
+    # If the target is already in the queue we just dismiss the scheduling
+    # right away... this because we need to handle dependent nodes in the
+    # queue differently, since for those we need wait for completion.
+    if root.job_in_queue:
+        return [], set()
+
+    processed = set()
+    scheduled = set()
+    job_schedule = []
+
+    def dfs(node):
+        if node in processed:
+            # we have already processed the node, and
+            # if we should run the target name is scheduled
+            # otherwise it isn't.
+            return node.target.name in scheduled
+
+        # schedule all dependencies before we schedule this task
+        for dep in node.depends_on:
+            dfs(dep)
+
+        # If this task needs to run, then schedule it
+        if node.job_in_queue or node.should_run:
+            job_schedule.append(node)
+            scheduled.add(node.target.name)
+
+        processed.add(node)
+
+    dfs(root)
+
+    return job_schedule, scheduled
 
 
-## WRAPPING IT ALL UP IN A WORKFLOW...
+# # WRAPPING IT ALL UP IN A WORKFLOW...
 class Workflow:
     """Class representing a workflow."""
 
@@ -269,12 +305,12 @@ def build_workflow():
     nodes = {}
     providing = {}
     for target in gwf_workflow.ALL_TARGETS.values():
-        target.input = [_make_absolute_path(target.working_dir, infile)
-                        for infile in target.input]
-        target.output = [_make_absolute_path(target.working_dir, outfile)
-                         for outfile in target.output]
+        target.options['input'] = [_make_absolute_path(target.working_dir, infile)
+                                   for infile in target.options['input']]
+        target.options['output'] = [_make_absolute_path(target.working_dir, outfile)
+                                    for outfile in target.options['output']]
         node = Node(target)
-        for outfile in target.output:
+        for outfile in target.options['output']:
             if outfile in providing:
                 print 'Warning: File', outfile, 'is provided by both',
                 print target.name, 'and', providing[outfile].target.name
@@ -282,7 +318,7 @@ def build_workflow():
         nodes[target.name] = node
 
     for node in nodes.values():
-        for infile in node.target.input:
+        for infile in node.target.options['input']:
             if infile in providing:
                 provider = providing[infile]
                 node.depends_on.add(provider)

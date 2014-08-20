@@ -14,21 +14,21 @@ def read(fname):
 
 setup(
     name = "gwf",
-    version = "0.5.2",
+    version = "0.6.0",
 
     packages = find_packages(where='src'),
     package_dir = {'': 'src'},
-    scripts=['scripts/gwf'],
+    scripts=['scripts/gwf', 'scripts/gwf-config'],
 
-    test_suite='tests',
+    #test_suite='tests',
 
     # metadata for upload to PyPI
     author = "Thomas Mailund",
     author_email = "mailund@birc.au.dk",
     license = "GPLv3",
     keywords = "grid computing workflow",
-    url = "https://github.com/mailund/gwf",
-    description = ("Grid WorkFlow - a make-like system for grid systems."),
+    url = "https://mailund.github.io/gwf",
+    description = ("Grid WorkFlow - a make-like system for computer grids."),
     long_description = read('README'),
 
     classifiers=[

@@ -7,6 +7,7 @@ import inspect
 import os.path
 
 
+# Helper function for wrapping singletons in lists
 def _list(x):
     """Wrap x as a singleton in a list if it isn't a list already."""
     if hasattr(x, '__iter__'):
@@ -15,6 +16,7 @@ def _list(x):
         return [x]
 
 
+# Internal representation of targets.
 class Target(object):
     def __init__(self, name, options, spec):
         self.name = name
@@ -23,32 +25,30 @@ class Target(object):
         filename = inspect.getfile(sys._getframe(2))
         self.working_dir = os.path.dirname(os.path.realpath(filename))
 
-        self.input = []
-        self.output = []
-        self.pbs = []
+        self.options = {
+            'input': [],
+            'output': [],
+            'nodes': 1,
+            'cores': 1,
+            'memory': "4g",
+            'walltime': '120:00:00',
+        }
 
-        known_options = ('input', 'output', 'pbs')
         for k in options.keys():
-            if k not in known_options:
+            if k in self.options:
+                self.options[k] = options[k]
+            else:
                 print 'Warning:, Target', self.name, 'has unknown option', k
 
-        if 'input' in options:
-            self.input = _list(options['input'])
-        if 'output' in options:
-            self.output = _list(options['output'])
-        if 'pbs' in options:
-            self.pbs = _list(options['pbs'])
-
-    def __str__(self):
-        return '''@target {name}\n:input {input}\n:output {output}\n:pbs {pbs}\n\n{spec}'''.format(
-            name=self.name,
-            input=' '.join(self.input), output=' '.join(self.output),
-            pbs=' '.join(self.pbs),
-            spec=self.spec
-        )
-
-    __repr__ = __str__
+        # handle that input and output can be both lists and single file names
+        self.options['input'] = _list(self.options['input'])
+        self.options['output'] = _list(self.options['output'])
 
 
+# This global variable will hold all the targets after a workflow script has completed.
+# gwf will use this list for its further processing.
 ALL_TARGETS = {}
 
+
+# This will be set in the gwf script and refer to the grid backend used.
+BACKEND = None
