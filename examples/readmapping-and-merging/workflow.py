@@ -60,4 +60,4 @@ for i in range(1,3):
 			R2='Masala_{}_R2.fastq.gz'.format(i),
 		 	bamfile='Masala_{}.sorted.rmdup.bam'.format(i))
 
-target('Merge') << merge(individual='Masala')
+target('Merge', walltime="01:00:00") << merge(individual='Masala')
