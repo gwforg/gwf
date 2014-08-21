@@ -6,7 +6,7 @@ from gwf import *
 
 # Templates
 unzip = template(input='{refGenome}.fa.gz', output='{refGenome}.fa') << '''
-gzcat {refGenome}.fa.gz > {refGenome}.fa
+zcat {refGenome}.fa.gz > {refGenome}.fa
 '''
 
 bwa_index = template(input='{refGenome}.fa', 
