@@ -32,8 +32,6 @@ samtools sort -o /scratch/$GWF_JOBID/unsorted.bam /scratch/$GWF_JOBID/sort | \
 
 '''
 
-merge = template(output='merged-bams/{name}.bam') << 
-
 def merge(individual):
 	inputfiles = ['{}_{}.unsorted.bam'.format(individual, i) for i in range(1,3)]
 	outputfile = '{}.bam'.format(individual)
