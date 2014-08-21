@@ -32,6 +32,20 @@ samtools sort -o /scratch/$GWF_JOBID/unsorted.bam /scratch/$GWF_JOBID/sort | \
 
 '''
 
+merge = template(output='merged-bams/{name}.bam') << 
+
+def merge(individual):
+	inputfiles = ['{}_{}.unsorted.bam'.format(individual, i) for i in range(1,3)]
+	outputfile = '{}.bam'.format(individual)
+	shell_spec = '''
+
+	samtools merge - {inputbams} | samtools rmdup -s - merged-bams/{name}.bam
+
+	'''.format(inputbams = ' '.join(inputfiles), name=individual)
+	options = {input=inputfiles, output=outputfiles}
+
+	return (options, shell_spec)
+
 
 # Workflow
 R1files = ['Masala_{}_R1.fastq.gz'.format(i) for i in range(1,3)]
@@ -48,3 +62,4 @@ for i in range(1,3):
 			R2='Masala_{}_R2.fastq.gz'.format(i),
 		 	bamfile='Masala_{}.unsorted.bam'.format(i))
 
+target('Merge') << merge(individual='Masala')
