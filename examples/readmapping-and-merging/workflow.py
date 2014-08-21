@@ -38,11 +38,11 @@ R1files = ['Masala_{}_R1.fastq.gz'.format(i) for i in range(1,3)]
 R2files = ['Masala_{}_R2.fastq.gz'.format(i) for i in range(1,3)]
 bamfiles = ['Masala_{}.sorted.rmdup.bam'.format(i) for i in range(1,3)]
 
-target('UnZipGenome', walltime="00:00:05") << unzip(refGenome='ponAbe2')
-target('IndexGenome', walltime="00:59:00") << bwa_index(refGenome='ponAbe2')
+target('UnZipGenome') << unzip(refGenome='ponAbe2')
+target('IndexGenome') << bwa_index(refGenome='ponAbe2')
 
 for i in range(1,3):
-	target('MapReads_{}'.format(i), walltime="00:59:00") << \
+	target('MapReads_{}'.format(i)) << \
 		bwa_map(refGenome='ponAbe2', 
 			R1='Masala_{}_R1.fastq.gz'.format(i), 
 			R2='Masala_{}_R2.fastq.gz'.format(i),
