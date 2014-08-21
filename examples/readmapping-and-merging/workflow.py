@@ -33,7 +33,7 @@ samtools sort -o /scratch/$GWF_JOBID/unsorted.bam /scratch/$GWF_JOBID/sort | \
 '''
 
 def merge(individual):
-	inputfiles = ['{}_{}.unsorted.bam'.format(individual, i) for i in range(1,3)]
+	inputfiles = ['{}_{}.sorted.rmdup.bam'.format(individual, i) for i in range(1,3)]
 	outputfile = '{}.bam'.format(individual)
 	shell_spec = '''
 
@@ -58,6 +58,6 @@ for i in range(1,3):
 		bwa_map(refGenome='ponAbe2', 
 			R1='Masala_{}_R1.fastq.gz'.format(i), 
 			R2='Masala_{}_R2.fastq.gz'.format(i),
-		 	bamfile='Masala_{}.unsorted.bam'.format(i))
+		 	bamfile='Masala_{}.sorted.rmdup.bam'.format(i))
 
 target('Merge') << merge(individual='Masala')
