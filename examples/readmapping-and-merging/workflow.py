@@ -40,7 +40,7 @@ def merge(individual):
 	samtools merge - {inputbams} | samtools rmdup -s - merged-bams/{name}.bam
 
 	'''.format(inputbams = ' '.join(inputfiles), name=individual)
-	options = {input=inputfiles, output=outputfiles}
+	options = {'input': inputfiles, 'output': outputfiles}
 
 	return (options, shell_spec)
 
