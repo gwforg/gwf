@@ -37,7 +37,7 @@ def merge(individual):
 	outputfile = '{}.bam'.format(individual)
 	shell_spec = '''
 
-	samtools merge - {inputbams} | samtools rmdup -s - merged-bams/{name}.bam
+	samtools merge - {inputbams} | samtools rmdup -s - {name}.bam
 
 	'''.format(inputbams = ' '.join(inputfiles), name=individual)
 	options = {'input': inputfiles, 'output': outputfile}
@@ -56,8 +56,8 @@ target('IndexGenome', walltime="01:00:00") << bwa_index(refGenome='ponAbe2')
 for i in range(1,3):
 	target('MapReads_{}'.format(i), walltime="01:00:00") << \
 		bwa_map(refGenome='ponAbe2', 
-			R1='Masala_{}_R1.fastq.gz'.format(i), 
-			R2='Masala_{}_R2.fastq.gz'.format(i),
-		 	bamfile='Masala_{}.sorted.rmdup.bam'.format(i))
+				R1='Masala_{}_R1.fastq.gz'.format(i), 
+				R2='Masala_{}_R2.fastq.gz'.format(i),
+		 		bamfile='Masala_{}.sorted.rmdup.bam'.format(i))
 
 target('Merge', walltime="01:00:00") << merge(individual='Masala')
