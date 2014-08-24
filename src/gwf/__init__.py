@@ -4,8 +4,8 @@ import sys
 import inspect
 import glob as _glob
 import subprocess
-import cPickle
 import shelve
+import marshal
 
 import gwf_workflow
 
@@ -92,13 +92,7 @@ class _memorize_wrapper(object):
         filename = inspect.getfile(sys._getframe(2))
         self.working_dir = os.path.dirname(os.path.realpath(filename))
 
-    def memory_dir(self):
-        memory_directory = os.path.join(self.working_dir, '.memory')
-        if not os.path.exists(memory_directory):
-            os.makedirs(memory_directory)
-        return memory_directory
-
-    def __call__(self, *args):
+        # The database of remembered results
         memory_dir = self.memory_dir()
         db_file = '{}/{}'.format(memory_dir, self.func.func_name)
         output_file = '{}.db'.format(db_file)
@@ -108,11 +102,26 @@ class _memorize_wrapper(object):
             if os.path.exists(output_file):
                 os.unlink(output_file)
 
-        results_db = shelve.open(db_file)
-        if not str(args) in results_db:
-            results_db[str(args)] = self.func(*args)
+        self.results_db = shelve.open(db_file)
 
-        return results_db[str(args)]
+        # Remember the byte code for the function so it gets run again if it changes
+        current_code_string = marshal.dumps(func.func_code)
+        if '-code-' not in self.results_db or current_code_string != self.results_db['-code-']:
+            # nuke the old and create a new ... the old base based on old code
+            os.unlink(output_file)
+            self.results_db = shelve.open(db_file)
+            self.results_db['-code-'] = current_code_string
+
+    def memory_dir(self):
+        memory_directory = os.path.join(self.working_dir, '.memory')
+        if not os.path.exists(memory_directory):
+            os.makedirs(memory_directory)
+        return memory_directory
+
+    def __call__(self, *args):
+        if not str(args) in self.results_db:
+            self.results_db[str(args)] = self.func(*args)
+        return self.results_db[str(args)]
 
     def should_run(self, output_file):
         """Test if this target needs to be run based on whether input
