@@ -107,10 +107,10 @@ class _memorize_wrapper(object):
             pass # FIXME
 
         results_db = shelve.open(output_file)
-        if not str(*args) in results_db:
-            results_db[str(*args)] = self.func(*args)
+        if not str(args) in results_db:
+            results_db[str(args)] = self.func(*args)
 
-        return results_db[str(*args)]
+        return results_db[str(args)]
 
     def should_run(self, output_file):
         """Test if this target needs to be run based on whether input
