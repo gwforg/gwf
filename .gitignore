@@ -23,3 +23,6 @@ example/.jobs.db.db
 example.tar.gz
 UnZipGenome
 .gwfrc
+test.py
+_base.scssc
+_layout.scssc
