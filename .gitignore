@@ -55,3 +55,4 @@ _site/src/gwf_workflow/workflow.py
 _base.scssc
 _layout.scssc
 test.py
+.memory/

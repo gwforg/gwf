@@ -113,8 +113,15 @@ class _memorize_wrapper(object):
         filename = inspect.getfile(sys._getframe(2))
         self.working_dir = os.path.dirname(os.path.realpath(filename))
 
+    def memory_dir(self):
+        memory_directory = os.path.join(self.working_dir, '.memory')
+        if not _file_exists(memory_directory):
+            os.makedirs(memory_directory)
+        return memory_directory
+
     def __call__(self, *args):
-        output_file = '{}.result'.format(self.func.func_name)
+        memory_dir = self.memory_dir()
+        output_file = '{}/{}.result'.format(memory_dir, self.func.func_name)
         if self.should_run(output_file):
             self.result = self.func(*args)
             with open(output_file, 'w') as memory:
