@@ -100,13 +100,15 @@ class _memorize_wrapper(object):
 
     def __call__(self, *args):
         memory_dir = self.memory_dir()
-        output_file = '{}/{}'.format(memory_dir, self.func.func_name)
+        db_file = '{}/{}'.format(memory_dir, self.func.func_name)
+        output_file = '{}.db'.format(db_file)
 
         if self.should_run(output_file):
             # Clear the database of existing results since these must be out of date
-            pass # FIXME
+            if os.path.exists(output_file):
+                os.unlink(output_file)
 
-        results_db = shelve.open(output_file)
+        results_db = shelve.open(db_file)
         if not str(args) in results_db:
             results_db[str(args)] = self.func(*args)
 
