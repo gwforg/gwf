@@ -52,3 +52,5 @@ _site/src/gwf_workflow/colours.py
 _site/src/gwf_workflow/configurations.py
 _site/src/gwf_workflow/jobs.py
 _site/src/gwf_workflow/workflow.py
+_base.scssc
+_layout.scssc
