@@ -14,7 +14,7 @@ def read(fname):
 
 setup(
     name = "gwf",
-    version = "0.6.0",
+    version = "0.6.1",
 
     packages = find_packages(where='src'),
     package_dir = {'': 'src'},
