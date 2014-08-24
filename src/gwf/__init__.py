@@ -5,6 +5,7 @@ import inspect
 import glob as _glob
 import subprocess
 import cPickle
+import shelve
 
 import gwf_workflow
 
@@ -69,9 +70,8 @@ class target(object):
         gwf_workflow.ALL_TARGETS[self.name] = new_target
 
 
-
-# FIXME: these helper functions are copied. We should only have them written in one place
 from gwf_workflow.workflow import file_exists, get_file_timestamp, make_absolute_path
+
 
 def _list(x):
     """Wrap x as a singleton in a list if it isn't a list already."""
@@ -79,6 +79,7 @@ def _list(x):
         return list(x)
     else:
         return [x]
+
 
 class _memorize_wrapper(object):
     def __init__(self, func, options):
@@ -93,21 +94,23 @@ class _memorize_wrapper(object):
 
     def memory_dir(self):
         memory_directory = os.path.join(self.working_dir, '.memory')
-        if not file_exists(memory_directory):
+        if not os.path.exists(memory_directory):
             os.makedirs(memory_directory)
         return memory_directory
 
     def __call__(self, *args):
         memory_dir = self.memory_dir()
-        output_file = '{}/{}.result'.format(memory_dir, self.func.func_name)
+        output_file = '{}/{}'.format(memory_dir, self.func.func_name)
+
         if self.should_run(output_file):
-            self.result = self.func(*args)
-            with open(output_file, 'w') as memory:
-                cPickle.dump(self.result, memory)
-        else:
-            with open(output_file, 'r') as memory:
-                self.result = cPickle.load(memory)
-        return self.result
+            # Clear the database of existing results since these must be out of date
+            pass # FIXME
+
+        results_db = shelve.open(output_file)
+        if not str(*args) in results_db:
+            results_db[str(*args)] = self.func(*args)
+
+        return results_db[str(*args)]
 
     def should_run(self, output_file):
         """Test if this target needs to be run based on whether input
