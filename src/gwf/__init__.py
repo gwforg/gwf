@@ -104,7 +104,7 @@ class _memorize_wrapper(object):
                 os.unlink(flag_file)
 
             self.results_db.clear()
-            open(flag_file).close() # touch the flag
+            open(flag_file, 'w').close() # touch the flag
 
         # Remember the byte code for the function so it gets run again if it changes
         current_code_string = marshal.dumps(func.func_code)
@@ -115,7 +115,7 @@ class _memorize_wrapper(object):
             self.result_db.clear()
             self.results_db = shelve.open(db_file)
             self.results_db['-code-'] = current_code_string
-            open(flag_file).close() # touch the flag
+            open(flag_file, 'w').close() # touch the flag
 
     def memory_dir(self):
         memory_directory = os.path.join(self.working_dir, '.memory')
