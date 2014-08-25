@@ -112,7 +112,7 @@ class _memorize_wrapper(object):
             # nuke the old and create a new ... the old base based on old code
             if os.path.exists(flag_file):
                 os.unlink(flag_file)
-            self.result_db.clear()
+            self.results_db.clear()
             self.results_db = shelve.open(db_file)
             self.results_db['-code-'] = current_code_string
             open(flag_file, 'w').close() # touch the flag
