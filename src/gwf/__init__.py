@@ -102,17 +102,20 @@ class _memorize_wrapper(object):
             # Clear the database of existing results since these must be out of date
             if os.path.exists(flag_file):
                 os.unlink(flag_file)
-                self.results_db.clear()
-                open(flag_file).close() # touch the flag
+
+            self.results_db.clear()
+            open(flag_file).close() # touch the flag
 
         # Remember the byte code for the function so it gets run again if it changes
         current_code_string = marshal.dumps(func.func_code)
         if '-code-' not in self.results_db or current_code_string != self.results_db['-code-']:
             # nuke the old and create a new ... the old base based on old code
-            os.unlink(flag_file)
+            if os.path.exists(flag_file):
+                os.unlink(flag_file)
             self.result_db.clear()
             self.results_db = shelve.open(db_file)
             self.results_db['-code-'] = current_code_string
+            open(flag_file).close() # touch the flag
 
     def memory_dir(self):
         memory_directory = os.path.join(self.working_dir, '.memory')
