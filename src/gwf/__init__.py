@@ -95,20 +95,22 @@ class _memorize_wrapper(object):
         # The database of remembered results
         memory_dir = self.memory_dir()
         db_file = '{}/{}'.format(memory_dir, self.func.func_name)
-        output_file = '{}.db'.format(db_file)
+        self.results_db = shelve.open(db_file, writeback=True)
+        flag_file = '{}/{}.flag'.format(memory_dir, self.func.func_name)
 
-        if self.should_run(output_file):
+        if self.should_run(flag_file):
             # Clear the database of existing results since these must be out of date
-            if os.path.exists(output_file):
-                os.unlink(output_file)
-
-        self.results_db = shelve.open(db_file)
+            if os.path.exists(flag_file):
+                os.unlink(flag_file)
+                self.results_db.clear()
+                open(flag_file).close() # touch the flag
 
         # Remember the byte code for the function so it gets run again if it changes
         current_code_string = marshal.dumps(func.func_code)
         if '-code-' not in self.results_db or current_code_string != self.results_db['-code-']:
             # nuke the old and create a new ... the old base based on old code
-            os.unlink(output_file)
+            os.unlink(flag_file)
+            self.result_db.clear()
             self.results_db = shelve.open(db_file)
             self.results_db['-code-'] = current_code_string
 
