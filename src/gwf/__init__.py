@@ -182,3 +182,75 @@ class memorize(object):
 
     def __call__(self, func):
         return _memorize_wrapper(func, self.options)
+
+
+
+
+_FUNCTION_TEMPLATE_TEMPLATE = """
+
+import marshal
+import shelve
+import types
+import sys
+
+
+with open("{marshal_file}") as marshal_file:
+    code = marshal.loads(marshal_file.read())
+func = types.FunctionType(code, globals(), "{function_name}")
+
+args_db = shelve.open("{arguments_db_file}")
+args = args_db[sys.argv[1]]
+
+func(*args)
+
+"""
+
+class _function_template_wrapper(object):
+
+    def marshal_dir(self):
+        d = os.path.join(self.working_dir, '.marshal/')
+        if not os.path.exists(d):
+            os.makedirs(d)
+        return d
+
+    def __init__(self, func, options):
+        self.func = func
+        self.options = options
+
+        self.working_dir = os.path.dirname(os.path.realpath(inspect.getfile(sys._getframe(2))))
+
+        self.marshal_file = os.path.join(self.marshal_dir(), '{}.code'.format(func.func_name))
+        self.arguments_db_file = os.path.join(self.marshal_dir(), '{}.args'.format(func.func_name))
+        self.python_file = os.path.join(self.marshal_dir(), '{}.py'.format(func.func_name))
+
+        with open(self.marshal_file, 'w') as marshal_file:
+            marshal_file.write(marshal.dumps(func.func_code))
+        self.arguments_db = shelve.open(self.arguments_db_file)
+        with open(self.python_file, 'w') as python_file:
+            script = _FUNCTION_TEMPLATE_TEMPLATE.format(marshal_file=self.marshal_file,
+                                                        function_name=self.func.func_name,
+                                                        arguments_db_file=self.arguments_db_file,
+                                                        )
+            python_file.write(script)
+
+        self.args_counter = 0
+
+    def __call__(self, *args):
+
+        self.arguments_db["{}".format(self.args_counter)] = args
+        self.args_counter += 1
+
+        options = dict(self.options.items())
+        spec = '''
+        python {python_file} {argument_index}
+        '''.format(python_file=self.python_file, argument_index=self.args_counter-1)
+
+        return options, spec
+
+class function_template(object):
+
+    def __init__(self, **options):
+        self.options = options
+
+    def __call__(self, func):
+        return _function_template_wrapper(func, self.options)
