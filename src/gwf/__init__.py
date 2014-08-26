@@ -9,10 +9,21 @@ import marshal
 
 import gwf_workflow
 
+
+## helpers for gwf internal
+from gwf_workflow.workflow import file_exists, get_file_timestamp, make_absolute_path
+
+def _list(x):
+    """Wrap x as a singleton in a list if it isn't a list already."""
+    if hasattr(x, '__iter__'):
+        return list(x)
+    else:
+        return [x]
+
+
 ## Useful helper functions...
-
-
 def glob(pattern):
+    """Returns a list of filenames matching the shell glob `pattern'."""
     if pattern.startswith('/'):
         glob_pattern = pattern
     else:
@@ -23,6 +34,7 @@ def glob(pattern):
 
 
 def shell(command):
+    """Execute the shell command `command' and return the resulting output as a list of tokens."""
     return subprocess.check_output(command, shell=True).split()
 
 
@@ -68,17 +80,6 @@ class target(object):
 
         new_target = gwf_workflow.Target(self.name, options, spec)
         gwf_workflow.ALL_TARGETS[self.name] = new_target
-
-
-from gwf_workflow.workflow import file_exists, get_file_timestamp, make_absolute_path
-
-
-def _list(x):
-    """Wrap x as a singleton in a list if it isn't a list already."""
-    if hasattr(x, '__iter__'):
-        return list(x)
-    else:
-        return [x]
 
 
 class _memorize_wrapper(object):
