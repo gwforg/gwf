@@ -10,40 +10,8 @@ import gwf_workflow
 from gwf_workflow.jobs import JOBS_QUEUE
 from gwf_workflow import BACKEND
 from gwf_workflow.colours import *
+from gwf_workflow.helpers import *
 
-
-def _escape_file_name(filename):
-    valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
-    return ''.join(c for c in filename if c in valid_chars)
-
-
-def _escape_job_name(job_name):
-    valid_chars = "_%s%s" % (string.ascii_letters, string.digits)
-    return ''.join(c for c in job_name if c in valid_chars)
-
-
-_remembered_files = {}  # cache to avoid too much stat'ing
-_remembered_timestamps = {}  # Use this to avoid too many stats that slows down the script
-
-
-def _file_exists(filename):
-    if filename not in _remembered_files:
-        _remembered_files[filename] = os.path.exists(filename)
-    return _remembered_files[filename]
-
-
-def _get_file_timestamp(filename):
-    if filename not in _remembered_timestamps:
-        _remembered_timestamps[filename] = os.path.getmtime(filename)
-    return _remembered_timestamps[filename]
-
-
-def _make_absolute_path(working_dir, filename):
-    if os.path.isabs(filename):
-        abspath = filename
-    else:
-        abspath = os.path.join(working_dir, filename)
-    return os.path.normpath(abspath)
 
 
 class Node(object):
@@ -54,8 +22,8 @@ class Node(object):
         self.depends_on = set()
         self.dependents = set()
 
-        self.script_dir = _make_absolute_path(self.target.working_dir, '.scripts')
-        self.script_name = _make_absolute_path(self.script_dir, _escape_file_name(self.target.name))
+        self.script_dir = make_absolute_path(self.target.working_dir, '.scripts')
+        self.script_name = make_absolute_path(self.script_dir, escape_file_name(self.target.name))
 
         self.cached_should_run = None
         self.reason_to_run = None
@@ -76,13 +44,13 @@ class Node(object):
             return True
 
         for outfile in self.target.options['output']:
-            if not _file_exists(_make_absolute_path(self.target.working_dir, outfile)):
+            if not file_exists(make_absolute_path(self.target.working_dir, outfile)):
                 self.reason_to_run = 'Output file %s is missing' % outfile
                 self.cached_should_run = True
                 return True
 
         for infile in self.target.options['input']:
-            if not _file_exists(_make_absolute_path(self.target.working_dir, infile)):
+            if not file_exists(make_absolute_path(self.target.working_dir, infile)):
                 self.reason_to_run = 'Input file %s is missing' % infile
                 self.cached_should_run = True
                 return True
@@ -104,7 +72,7 @@ class Node(object):
         youngest_in_timestamp = None
         youngest_in_filename = None
         for infile in self.target.options['input']:
-            timestamp = _get_file_timestamp(_make_absolute_path(self.target.working_dir, infile))
+            timestamp = get_file_timestamp(make_absolute_path(self.target.working_dir, infile))
             if youngest_in_timestamp is None \
                     or youngest_in_timestamp < timestamp:
                 youngest_in_filename = infile
@@ -114,7 +82,7 @@ class Node(object):
         oldest_out_timestamp = None
         oldest_out_filename = None
         for outfile in self.target.options['output']:
-            timestamp = _get_file_timestamp(_make_absolute_path(self.target.working_dir, outfile))
+            timestamp = get_file_timestamp(make_absolute_path(self.target.working_dir, outfile))
             if oldest_out_timestamp is None \
                     or oldest_out_timestamp > timestamp:
                 oldest_out_filename = outfile
@@ -205,8 +173,8 @@ class Node(object):
         """Get list of output files that already exists."""
         result = []
         for outfile in self.target.options['output']:
-            filename = _make_absolute_path(self.target.working_dir, outfile)
-            if _file_exists(filename):
+            filename = make_absolute_path(self.target.working_dir, outfile)
+            if file_exists(filename):
                 result.append(filename)
         return result
 
@@ -305,9 +273,9 @@ def build_workflow():
     nodes = {}
     providing = {}
     for target in gwf_workflow.ALL_TARGETS.values():
-        target.options['input'] = [_make_absolute_path(target.working_dir, infile)
+        target.options['input'] = [make_absolute_path(target.working_dir, infile)
                                    for infile in target.options['input']]
-        target.options['output'] = [_make_absolute_path(target.working_dir, outfile)
+        target.options['output'] = [make_absolute_path(target.working_dir, outfile)
                                     for outfile in target.options['output']]
         node = Node(target)
         for outfile in target.options['output']:
@@ -324,7 +292,7 @@ def build_workflow():
                 node.depends_on.add(provider)
                 provider.dependents.add(node)
             else:
-                if not _file_exists(infile):
+                if not file_exists(infile):
                     print 'Target', node.target.name, 'needs file',
                     print infile, 'which does not exists and is not constructed.'
                     print 'Aborting'
