@@ -25,8 +25,9 @@ class Node(object):
         self.script_dir = make_absolute_path(self.target.working_dir, '.scripts')
         self.script_name = make_absolute_path(self.script_dir, escape_file_name(self.target.name))
 
-        self.cached_should_run = None
+        self.cached_node_should_run = None
         self.reason_to_run = None
+        self.cached_should_run = None
 
     @property
     def node_should_run(self):
@@ -35,24 +36,24 @@ class Node(object):
         if upstream targets need to run, only this task; upstream tasks
         are handled by the dependency graph. """
 
-        if self.cached_should_run is not None:
-            return self.cached_should_run
+        if self.cached_node_should_run is not None:
+            return self.cached_node_should_run
 
         if len(self.target.options['output']) == 0:
             self.reason_to_run = 'Sinks (targets without output) should always run'
-            self.cached_should_run = True
+            self.cached_node_should_run = True
             return True
 
         for outfile in self.target.options['output']:
             if not file_exists(make_absolute_path(self.target.working_dir, outfile)):
                 self.reason_to_run = 'Output file %s is missing' % outfile
-                self.cached_should_run = True
+                self.cached_node_should_run = True
                 return True
 
         for infile in self.target.options['input']:
             if not file_exists(make_absolute_path(self.target.working_dir, infile)):
                 self.reason_to_run = 'Input file %s is missing' % infile
-                self.cached_should_run = True
+                self.cached_node_should_run = True
                 return True
 
         # If no file is missing, it comes down to the time stamps. If we
@@ -64,7 +65,7 @@ class Node(object):
 
         if len(self.target.options['input']) == 0:
             self.reason_to_run = "We shouldn't run"
-            self.cached_should_run = False
+            self.cached_node_should_run = False
             return False
 
         # if we have both input and output files, check time stamps
@@ -93,24 +94,31 @@ class Node(object):
         if youngest_in_timestamp >= oldest_out_timestamp:
             # we have a younger in file than an outfile
             self.reason_to_run = 'Infile %s is younger than outfile %s' % (youngest_in_filename, oldest_out_filename)
-            self.cached_should_run = True
+            self.cached_node_should_run = True
             return True
         else:
             self.reason_to_run = 'Youngest infile %s is older than ' \
                                  'the oldest outfile %s' % \
                                  (youngest_in_filename, oldest_out_filename)
-            self.cached_should_run = False
+            self.cached_node_should_run = False
             return False
 
     @property
     def should_run(self):
+        if self.cached_should_run is not None:
+            return self.cached_should_run
+
         if self.node_should_run:
+            self.cached_should_run = True
             return True
 
         # we shouldn't run based on our own files but we should check if we depend on some node that should run
         for n in self.depends_on:
             if n.should_run:
+                self.cached_should_run = True
                 return True
+            
+        self.cached_should_run = False
         return False
 
 
