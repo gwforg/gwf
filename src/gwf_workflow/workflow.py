@@ -29,7 +29,7 @@ class Node(object):
         self.reason_to_run = None
 
     @property
-    def should_run(self):
+    def node_should_run(self):
         """Test if this target needs to be run based on whether input
         and output files exist and on their time stamps. Doesn't check
         if upstream targets need to run, only this task; upstream tasks
@@ -101,6 +101,18 @@ class Node(object):
                                  (youngest_in_filename, oldest_out_filename)
             self.cached_should_run = False
             return False
+
+    @property
+    def should_run(self):
+        if self.node_should_run:
+            return True
+
+        # we shouldn't run based on our own files but we should check if we depend on some node that should run
+        for n in self.dependents:
+            if n.should_run:
+                return True
+        return False
+
 
     def make_script_dir(self):
         script_dir = self.script_dir
