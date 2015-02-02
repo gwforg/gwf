@@ -108,7 +108,7 @@ class Node(object):
             return True
 
         # we shouldn't run based on our own files but we should check if we depend on some node that should run
-        for n in self.dependents:
+        for n in self.depends_on:
             if n.should_run:
                 return True
         return False
