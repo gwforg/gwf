@@ -46,7 +46,7 @@ def include_workflow(path):
     a workflow file and that file is included. If the path doesn't end in ".py"
     it is assumed to be a directory and "/workflow.py" is appended to it.
     """
-    if path.ends_with(".py"):
+    if path.endswith(".py"):
         workflow_file = path
     else:
         workflow_file = path + '/workflow.py'
