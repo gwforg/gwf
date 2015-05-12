@@ -38,6 +38,21 @@ def shell(command):
     return subprocess.check_output(command, shell=True).split()
 
 
+## sub-workflows
+def include_workflow(path):
+    """Import targets from another workflow file.
+
+    If called with a path that ends in ".py" it is assumed to be the name of
+    a workflow file and that file is included. If the path doesn't end in ".py"
+    it is assumed to be a directory and "/workflow.py" is appended to it.
+    """
+    if path.endswith(".py"):
+        workflow_file = path
+    else:
+        workflow_file = path + '/workflow.py'
+    execfile(workflow_file)
+
+
 ## Templates
 class template(object):
     def __init__(self, **options):
