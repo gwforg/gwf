@@ -34,6 +34,8 @@ class TorqueBackend(object):
         print >> f, '#PBS -l nodes={}:ppn={}'.format(options['nodes'], options['cores'])
         print >> f, '#PBS -l mem={}'.format(options['memory'])
         print >> f, '#PBS -l walltime={}'.format(options['walltime'])
+        if 'queue' in options:
+          print >> f, '#PBS -q {}'.format(options['queue'])
 
     def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID=$PBS_JOBID'
@@ -98,6 +100,8 @@ class SlurmBackend(object):
         print >> f, '#SBATCH -c {}'.format(options['cores'])
         print >> f, '#SBATCH --mem={}'.format(options['memory'])
         print >> f, '#SBATCH -t {}'.format(options['walltime'])
+        if 'queue' in options:
+          print >> f, '#SBATCH -p {}'.format(options['queue'])
 
     def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID=$SLURM_JOBID'
