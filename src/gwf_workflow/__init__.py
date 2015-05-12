@@ -34,8 +34,10 @@ class Target(object):
             'walltime': '120:00:00',
         }
 
+        known_options_without_defaults = set(['queue'])
+
         for k in options.keys():
-            if k in self.options:
+            if k in self.options or k in known_options_without_defaults:
                 self.options[k] = options[k]
             else:
                 print 'Warning:, Target', self.name, 'has unknown option', k
