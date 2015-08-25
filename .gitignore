@@ -18,3 +18,5 @@ test.py
 .jobs.db
 .marshal/
 .scripts
+documentation.markdown
+index.markdown
