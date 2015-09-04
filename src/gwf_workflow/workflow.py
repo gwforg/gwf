@@ -144,6 +144,7 @@ class Node(object):
         print >> f, '# GWF generated code ...'
         print >> f, 'cd %s' % self.target.working_dir
         gwf_workflow.BACKEND.write_script_variables(f)
+        print >> f, "set -e"
         print >> f
 
         print >> f, '# Script from workflow'
