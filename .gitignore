@@ -20,3 +20,4 @@ test.py
 .scripts
 documentation.markdown
 index.markdown
+*.egg-info
