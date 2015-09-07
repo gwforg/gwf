@@ -90,6 +90,7 @@ if args.performance:
                         print 'WARNING: Jobs using multiple nodes are not yet supported!'
 
                     finished_jobs.append({
+                        'id' : job_id,
                         'name' : job_name,
                         'cores' : cores,
                         'nodes' : nodes,
@@ -118,7 +119,7 @@ if args.performance:
             print
 
         for job in finished_jobs:
-            print job
+            job_cpu_performance(job)
 
     sys.exit(0)
 
