@@ -80,20 +80,19 @@ if args.performance:
                 if state == 'COMPLETED':
 
                     cores           = re.search(r'^Cores *: (.*)', job_info, re.MULTILINE).group(1).strip()
-                    nodes           = re.search(r'^Nodes *: (.*)', job_info, re.MULTILINE).group(1).strip()
+                    node_list       = re.search(r'^Nodes *: (.*)', job_info, re.MULTILINE).group(1).strip()
                     used_walltime   = re.search(r'^Used walltime *: (.*)', job_info, re.MULTILINE).group(1).strip()
                     used_cpu_time   = re.search(r'^Used CPU time *: (.*)', job_info, re.MULTILINE).group(1).strip()
                     max_memory_used = re.search(r'^Max Mem used *: (.*) .*', job_info, re.MULTILINE).group(1).strip()
                     memory_reserved = re.search(r'^Mem reserved *: ([^/]+)/.*', job_info, re.MULTILINE).group(1).strip()
 
-                    if not re.match(r's[0-9][0-9]n[0-9][0-9]', nodes):
-                        print 'WARNING: Jobs using multiple nodes are not yet supported!'
+                    node_list = subprocess.check_output('scontrol show hostname {node_list} | paste -d, -s'.format(node_list=node_list), shell=True)
 
                     finished_jobs.append({
                         'id' : job_id,
                         'name' : job_name,
                         'cores' : cores,
-                        'nodes' : nodes,
+                        'nodes' : len(node_list.split(',')),
                         'used_walltime' : used_walltime,
                         'used_cpu_time' : used_cpu_time,
                         'max_memory_used' : max_memory_used,
@@ -113,7 +112,7 @@ if args.performance:
             print '{job_id:>8} {nodes:>6} {cores:>6} {used_walltime:>14} {used_cpu_time:>14} {max_memory_used:>16} {memory_reserved:>16} {cpu_performance:>16} {memory_performance:>19}  {job_name}'.format(
             
                 job_id          = job['id'],
-                nodes           = 'NA', #TODO
+                nodes           = job['nodes'],
                 cores           = job['cores'],
                 used_walltime   = job['used_walltime'],
                 used_cpu_time   = job['used_cpu_time'],

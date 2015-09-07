@@ -44,6 +44,8 @@ def memory_in_bytes(memory):
 
 	if memory[-1].isdigit():
 		return float(memory)
+	elif memory[-1] == 'K':
+		return 1024 * float(memory[:-1])
 	elif memory[-1] == 'M':
 		return 1024 * 1024 * float(memory[:-1])
 	elif memory[-1] == 'G':
