@@ -8,8 +8,8 @@ def job_cpu_performance(job):
 	used_cpu_time = time_in_seconds(job['used_cpu_time'])
 	used_walltime = time_in_seconds(job['used_walltime'])
 
-	if used_walltime == 0:
-		return '100%'
+	if used_walltime == 0 or used_cpu_time == 0:
+		return 'NA'
 
 	else:
 		total_walltime = cores * used_walltime
@@ -21,7 +21,7 @@ def job_memory_performace(job):
 	memory_reserved = memory_in_bytes(job['memory_reserved'])
 	
 	if max_memory_used == 0.0:
-		return '100%'
+		return 'NA'
 	else:
 		return '{:5.1f}%'.format(100*max_memory_used/memory_reserved)
 

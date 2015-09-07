@@ -101,7 +101,31 @@ if args.performance:
 
                 else:
 
-                    unfinished_jobs.append((job_id, state))
+                    unfinished_jobs.append((job_id, state, job_name))
+        
+        if len(finished_jobs) > 0:
+            print 'COMPLETED JOBS'
+            print
+            print '{:>8} {:>6} {:>6} {:>14} {:>14} {:>16} {:>16} {:>16} {:>19}  {}'.format('job_id', 'nodes', 'cores', 'used_walltime', 'used_cpu_time', 'max_memory_used', 'memory_reserved', 'cpu_performance', 'memory_performance', 'name')
+
+        for job in finished_jobs:
+            
+            print '{job_id:>8} {nodes:>6} {cores:>6} {used_walltime:>14} {used_cpu_time:>14} {max_memory_used:>16} {memory_reserved:>16} {cpu_performance:>16} {memory_performance:>19}  {job_name}'.format(
+            
+                job_id          = job['id'],
+                nodes           = 'NA', #TODO
+                cores           = job['cores'],
+                used_walltime   = job['used_walltime'],
+                used_cpu_time   = job['used_cpu_time'],
+                max_memory_used = job['max_memory_used'],
+                memory_reserved = job['memory_reserved'],
+                job_name        = job['name'],
+
+                cpu_performance     = job_cpu_performance(job),
+                memory_performance  = job_memory_performace(job)
+            
+            )
+
 
         if len(unfinished_jobs) > 0:
             
@@ -109,23 +133,20 @@ if args.performance:
             print 'UNFINISHED JOBS'
             print
 
-            for job_id, state in unfinished_jobs:
-                print '\t'.join([job_id, state])
+            max_state_length = 0
+            for _, state, _ in unfinished_jobs:
+                max_state_length = max(max_state_length, len(state))
+
+            for job_id, state, job_name in unfinished_jobs:
+                format_string = '{job_id:>8}  {state:<%d}  {job_name}' % max_state_length
+                print format_string.format(job_id=job_id, state=state, job_name=job_name)
+                
 
         else:
 
             print
             print 'ALL JOBS DONE!'
             print
-
-        print '{:>8} {:>6} {:>6} {:>6}'.format('job_id', 'cores', 'cpu', 'mem')
-        for job in finished_jobs:
-            print '{job_id:>8} {cores:>6} {cpu_performance:>6} {memory_performance:>6}'.format(
-                job_id=job_id,
-                cores=job['cores'],
-                cpu_performance=job_cpu_performance(job),
-                memory_performance=job_memory_performace(job)
-            )
 
     sys.exit(0)
 
