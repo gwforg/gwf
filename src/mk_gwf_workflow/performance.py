@@ -17,9 +17,13 @@ def job_cpu_performance(job):
 
 def job_memory_performace(job):
 	
-	max_memory_used = job['max_memory_used']
-	memory_reserved = job['memory_reserved']
-	print max_memory_used, memory_reserved, memory_in_bytes(max_memory_used), memory_in_bytes(memory_reserved)
+	max_memory_used = memory_in_bytes(job['max_memory_used'])
+	memory_reserved = memory_in_bytes(job['memory_reserved'])
+	
+	if max_memory_used == 0.0:
+		return '100%'
+	else:
+		return '{:5.1f}%'.format(100*max_memory_used/memory_reserved)
 
 def time_in_seconds(time):
 
