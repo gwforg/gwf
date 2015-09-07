@@ -135,13 +135,6 @@ if args.performance:
             for job_id, state, job_name in unfinished_jobs:
                 format_string = '{job_id:>8}  {state:<%d}  {job_name}' % max_state_length
                 print format_string.format(job_id=job_id, state=state, job_name=job_name)
-                
-
-        else:
-
-            print
-            print 'ALL JOBS DONE!'
-            print
 
     sys.exit(0)
 
