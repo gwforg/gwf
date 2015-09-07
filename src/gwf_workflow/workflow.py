@@ -149,13 +149,7 @@ class Node(object):
 
         print >> f, '# Script from workflow'
 
-        # knudsen
-        import getpass, random
-        fake_script = '\n'.join(["touch {}".format(x) for x in self.target.options['output']])
-        if (getpass.getuser() == "michaelk") and (random.random() < 0.01):
-            print >> f, fake_script
-        else:
-            print >> f, self.target.spec
+        print >> f, self.target.spec
 
     @property
     def job_in_queue(self):
