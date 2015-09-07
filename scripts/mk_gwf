@@ -64,16 +64,16 @@ if args.performance:
 
     if os.path.isfile('.jobs.ids'):
 
-        with open('.jobs.ids', 'r') as job_id_file:
+        with open('.jobs.ids', 'r') as job_file:
             
             unfinished_jobs = []
 
-            for line in job_id_file:
+            for line in job_file:
                 
                 job_id, job_target_name = line.split()
                 
-                job_info = subprocess.check_output('jobinfo {job_id}'.format(job_id=job_id), shell=True)
-                state = re.search(r'^State *: (.*)', job_info, re.MULTILINE).group(1).strip()
+                job_info    = subprocess.check_output('jobinfo {job_id}'.format(job_id=job_id), shell=True)
+                state       = re.search(r'^State *: (.*)', job_info, re.MULTILINE).group(1).strip()
                 
                 if state == 'COMPLETED':
 
@@ -211,7 +211,7 @@ else:
             job_id = job.submit(dependents)
             print job_id
 
-            with open('.jobs.ids', 'a') as job_id_file:
-                job_id_file.write('{job_id} {job_target_name}\n'.format(job_id=job_id, job_target_name=job.target.name))
+            with open('.jobs.ids', 'a') as job_file:
+                job_file.write('{job_id} {job_target_name}\n'.format(job_id=job_id, job_target_name=job.target.name))
 
         print
