@@ -1,4 +1,5 @@
 import re
+import sys
 
 def job_cpu_performance(job):
 
@@ -15,8 +16,10 @@ def job_cpu_performance(job):
 		return '{:5.1f}%'.format(100*float(used_cpu_time)/total_walltime)
 
 def job_memory_performace(job):
-
-	pass
+	
+	max_memory_used = job['max_memory_used']
+	memory_reserved = job['memory_reserved']
+	print max_memory_used, memory_reserved, memory_in_bytes(max_memory_used), memory_in_bytes(memory_reserved)
 
 def time_in_seconds(time):
 
@@ -32,3 +35,15 @@ def time_in_seconds(time):
 	days 	= int(time_parts.group('days') or '0')
 
 	return seconds + 60 * minutes + 60 * 60 * hours + 24 * 60 * 60 * days
+
+def memory_in_bytes(memory):
+
+	if memory[-1].isdigit():
+		return float(memory)
+	elif memory[-1] == 'M':
+		return 1024 * 1024 * float(memory[:-1])
+	elif memory[-1] == 'G':
+		return 1024 * 1024 * 1024 * float(memory[:-1])
+	else:
+		print 'INVALID MEMORY FORMAT: {}'.format(memory)
+		sys.exit(1)

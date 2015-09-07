@@ -121,6 +121,7 @@ if args.performance:
         print '{:>8} {:>6}'.format('job_id', 'cpu')
         for job in finished_jobs:
             print '{:>8} {:>6}'.format(job_id, job_cpu_performance(job))
+            print job_memory_performace(job)
 
     sys.exit(0)
 
