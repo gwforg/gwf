@@ -66,6 +66,8 @@ if args.performance:
 
         with open('.jobs.ids', 'r') as job_id_file:
             
+            unfinished_jobs = []
+
             for line in job_id_file:
 
                 job_id, job_target_name = line.rstrip().split()
@@ -86,6 +88,25 @@ if args.performance:
                         print 'WARNING: Jobs using multiple nodes are not yet supported!'
 
                     print state, cores, used_walltime, used_cpu_time, max_memory_used, memory_reserved
+
+                else:
+
+                    unfinished_jobs.append((job_id, state))
+
+        if len(unfinished_jobs) > 0:
+            
+            print
+            print 'UNFINISHED JOBS'
+            print
+
+            for job_id, state in unfinished_jobs:
+                print '\t'.join([job_id, state])
+
+        else:
+
+            print
+            print 'ALL JOBS DONE!'
+            print
 
     sys.exit(0)
 
