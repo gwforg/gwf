@@ -103,8 +103,6 @@ if args.performance:
                     unfinished_jobs.append((job_id, state, job_name))
         
         if len(finished_jobs) > 0:
-            print 'COMPLETED JOBS'
-            print
             print '{:>8} {:>6} {:>6} {:>14} {:>14} {:>16} {:>16} {:>16} {:>19}  {}'.format('job_id', 'nodes', 'cores', 'used_walltime', 'used_cpu_time', 'max_memory_used', 'memory_reserved', 'cpu_performance', 'memory_performance', 'name')
 
         for job in finished_jobs:
@@ -128,8 +126,6 @@ if args.performance:
 
         if len(unfinished_jobs) > 0:
             
-            print
-            print 'UNFINISHED JOBS'
             print
 
             max_state_length = 0
