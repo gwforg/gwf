@@ -23,7 +23,7 @@ def time_in_seconds(time):
 
 	seconds = int(time_parts.group('seconds'))
 	minutes	= int(time_parts.group('minutes'))
-	hours	= int(time_parts.group('hours') or '0.0')
-	days 	= int(time_parts.group('days') or '0.0')
+	hours	= int(time_parts.group('hours') or '0')
+	days 	= int(time_parts.group('days') or '0')
 
 	return seconds + 60 * minutes + 60 * 60 * hours + 24 * 60 * 60 * days
