@@ -6,8 +6,8 @@ import sys
 import argparse
 import ConfigParser
 import pkg_resources
-from mk_gwf_workflow.backends import AVAILABLE_BACKENDS
-import mk_gwf_workflow.configurations as configs
+from gwf_workflow.backends import AVAILABLE_BACKENDS
+import gwf_workflow.configurations as configs
 
 # This gets the installed version of gwf that is actually being used by the script.
 package_version = pkg_resources.require("gwf")[0].version

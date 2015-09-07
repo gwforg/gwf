@@ -7,7 +7,7 @@ import subprocess
 import shelve
 import marshal
 
-import mk_gwf_workflow
+import gwf_workflow
 
 
 ## helpers for gwf internal

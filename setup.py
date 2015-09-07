@@ -13,12 +13,12 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name = "mk_gwf",
+    name = "gwf",
     version = "0.6.1",
 
     packages = find_packages(where='src'),
     package_dir = {'': 'src'},
-    scripts=['scripts/mk_gwf', 'scripts/mk_gwf-config'],
+    scripts=['scripts/gwf', 'scripts/gwf-config'],
 
     #test_suite='tests',
 
