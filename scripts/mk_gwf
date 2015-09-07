@@ -118,8 +118,9 @@ if args.performance:
             print 'ALL JOBS DONE!'
             print
 
+        print '{:>8} {:>6}'.format('job_id', 'cpu')
         for job in finished_jobs:
-            print job_cpu_performance(job)
+            print '{:>8} {:>6}'.format(job_id, job_cpu_performance(job))
 
     sys.exit(0)
 
