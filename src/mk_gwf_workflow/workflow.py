@@ -6,11 +6,11 @@ import os.path
 import string
 import subprocess
 
-import gwf_workflow
-from gwf_workflow.jobs import JOBS_QUEUE
-from gwf_workflow import BACKEND
-from gwf_workflow.colours import *
-from gwf_workflow.helpers import *
+import mk_gwf_workflow
+from mk_gwf_workflow.jobs import JOBS_QUEUE
+from mk_gwf_workflow import BACKEND
+from mk_gwf_workflow.colours import *
+from mk_gwf_workflow.helpers import *
 
 
 
@@ -136,12 +136,12 @@ class Node(object):
 
         print >> f, "#!/bin/bash"
 
-        gwf_workflow.BACKEND.write_script_header(f, self.target.options)
+        mk_gwf_workflow.BACKEND.write_script_header(f, self.target.options)
         print >> f
 
         print >> f, '# GWF generated code ...'
         print >> f, 'cd %s' % self.target.working_dir
-        gwf_workflow.BACKEND.write_script_variables(f)
+        mk_gwf_workflow.BACKEND.write_script_variables(f)
         print >> f
 
         print >> f, '# Script from workflow'
@@ -292,7 +292,7 @@ def build_workflow():
 
     nodes = {}
     providing = {}
-    for target in gwf_workflow.ALL_TARGETS.values():
+    for target in mk_gwf_workflow.ALL_TARGETS.values():
         target.options['input'] = [make_absolute_path(target.working_dir, infile)
                                    for infile in target.options['input']]
         target.options['output'] = [make_absolute_path(target.working_dir, outfile)

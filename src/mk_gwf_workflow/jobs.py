@@ -5,7 +5,7 @@ Module for keeping track of job status for jobs in the grid queue.
 import shelve
 import os.path
 from itertools import izip
-import gwf_workflow
+import mk_gwf_workflow
 
 
 def make_db_file_name(workflow_directory):
