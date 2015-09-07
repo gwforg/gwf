@@ -60,6 +60,31 @@ execfile(args.workflow_file)
 from gwf_workflow.workflow import build_workflow, schedule, dependencies
 workflow = build_workflow()
 
+if args.performance:
+
+    if os.path.isfile('.jobs.ids'):
+
+        with open('.jobs.ids', 'r') as job_id_file:
+            for line in job_id_file:
+
+                job_id, job_target_name = line.rstrip().split()
+                
+                job_info = subprocess.check_output('jobinfo {job_id}'.format(job_id=job_id), shell=True)
+
+                state           = re.search(r'^State *: (.*)', job_info, re.MULTILINE).group(1).strip()
+
+                if state == 'COMPLETED':
+
+                    cores           = re.search(r'^Cores *: (.*)', job_info, re.MULTILINE).group(1).strip()
+                    used_walltime   = re.search(r'^Used walltime *: (.*)', job_info, re.MULTILINE).group(1).strip()
+                    used_cpu_time   = re.search(r'^Used CPU time *: (.*)', job_info, re.MULTILINE).group(1).strip()
+                    max_memory_used = re.search(r'^Max Mem used *: (.*) .*', job_info, re.MULTILINE).group(1).strip()
+                    memory_reserved = re.search(r'^Mem reserved *: ([^/]+)/.*', job_info, re.MULTILINE).group(1).strip()
+
+                    print state, cores, used_walltime, used_cpu_time, max_memory_used, memory_reserved
+
+    sys.exit(0)
+
 if args.clean:
     if len(args.targets) == 0:
         parser.error("No targets specified to clean.\nThis is never a good idea and gwf refuses to clean default targets.\n")
@@ -163,5 +188,5 @@ else:
 
             with open('.jobs.ids', 'a') as job_id_file:
                 job_id_file.write('{job_id} {job_target_name}\n'.format(job_id=job_id, job_target_name=job.target.name))
-                
+
         print
