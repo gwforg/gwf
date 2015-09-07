@@ -9,6 +9,7 @@ import mk_gwf_workflow
 from mk_gwf_workflow.backends import AVAILABLE_BACKENDS
 from mk_gwf_workflow.configurations import read_configurations
 from mk_gwf_workflow.colours import *
+from mk_gwf_workflow.performance import *
 
 # This gets the installed version of gwf that is actually being used by the script.
 package_version = pkg_resources.require("gwf")[0].version
