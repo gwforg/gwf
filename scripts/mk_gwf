@@ -66,11 +66,12 @@ if args.performance:
 
         with open('.jobs.ids', 'r') as job_file:
             
+            finished_jobs = []
             unfinished_jobs = []
 
             for line in job_file:
                 
-                job_id, job_target_name = line.split()
+                job_id, job_name = line.split()
                 
                 job_info    = subprocess.check_output('jobinfo {job_id}'.format(job_id=job_id), shell=True)
                 state       = re.search(r'^State *: (.*)', job_info, re.MULTILINE).group(1).strip()
@@ -87,7 +88,14 @@ if args.performance:
                     if not re.match(r's[0-9][0-9]n[0-9][0-9]', nodes):
                         print 'WARNING: Jobs using multiple nodes are not yet supported!'
 
-                    print state, cores, used_walltime, used_cpu_time, max_memory_used, memory_reserved
+                    finished_jobs.append({
+                        'name' : job_name,
+                        'cores' : cores,
+                        'nodes' : nodes,
+                        'used_walltime' : used_walltime,
+                        'used_cpu_time' : used_cpu_time,
+                        'max_memory_used' : max_memory_used,
+                        'memory_reserved' : memory_reserved })
 
                 else:
 
@@ -107,6 +115,9 @@ if args.performance:
             print
             print 'ALL JOBS DONE!'
             print
+
+        for job in finished_jobs:
+            print job
 
     sys.exit(0)
 
