@@ -119,7 +119,7 @@ if args.performance:
             print
 
         for job in finished_jobs:
-            job_cpu_performance(job)
+            print job_cpu_performance(job)
 
     sys.exit(0)
 

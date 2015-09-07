@@ -7,7 +7,12 @@ def job_cpu_performance(job):
 	used_cpu_time = time_in_seconds(job['used_cpu_time'])
 	used_walltime = time_in_seconds(job['used_walltime'])
 
-	
+	if used_walltime == 0:
+		return '100%'
+
+	else:
+		total_walltime = cores * used_walltime
+		return '{:5.1f}%'.format(100*float(used_cpu_time)/total_walltime)
 
 def job_memory_performace(job):
 
