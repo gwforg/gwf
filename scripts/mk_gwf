@@ -69,8 +69,8 @@ if args.performance:
             unfinished_jobs = []
 
             for line in job_id_file:
-
-                job_id, job_target_name = line.rstrip().split()
+                
+                job_id, job_target_name = line.split()
                 
                 job_info = subprocess.check_output('jobinfo {job_id}'.format(job_id=job_id), shell=True)
                 state = re.search(r'^State *: (.*)', job_info, re.MULTILINE).group(1).strip()
