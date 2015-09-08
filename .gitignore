@@ -6,6 +6,9 @@ gwf.egg*
 example/
 UnZipGenome
 .gwfrc
+test.py
+_base.scssc
+_layout.scssc
 .sass-cache/
 _site/
 _base.scssc
@@ -17,3 +20,4 @@ test.py
 .scripts
 documentation.markdown
 index.markdown
+*.egg-info

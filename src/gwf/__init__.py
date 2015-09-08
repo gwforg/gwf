@@ -95,7 +95,7 @@ class target(object):
         options = self.options
 
         if isinstance(spec, tuple):
-            options = dict(options.items() + spec[0].items())
+            options = dict(spec[0].items() + options.items())
             spec = spec[1]
 
         if self.name in gwf_workflow.ALL_TARGETS:
