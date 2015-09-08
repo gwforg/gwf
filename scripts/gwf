@@ -6,6 +6,7 @@ import sys
 import argparse
 import pkg_resources
 import gwf_workflow
+import subprocess
 from gwf_workflow.backends import AVAILABLE_BACKENDS
 from gwf_workflow.configurations import read_configurations
 from gwf_workflow.colours import *
@@ -55,11 +56,6 @@ if not os.path.exists(args.workflow_file):
 
 # Set the backend based on defaults or arguments...
 gwf_workflow.BACKEND = AVAILABLE_BACKENDS[args.backend]()
-
-
-execfile(args.workflow_file)
-from gwf_workflow.workflow import build_workflow, schedule, dependencies
-workflow = build_workflow()
 
 if args.performance:
 
@@ -148,6 +144,10 @@ if args.performance:
                 print format_string.format(job_id=job_id, state=state, job_name=job_name)
 
     sys.exit(0)
+
+execfile(args.workflow_file)
+from gwf_workflow.workflow import build_workflow, schedule, dependencies
+workflow = build_workflow()
 
 if args.clean:
     if len(args.targets) == 0:
