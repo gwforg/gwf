@@ -60,7 +60,6 @@ class TorqueBackend(object):
         return command
 
 
-
 class SlurmBackend(object):
     """Backend functionality for slurm."""
 
@@ -127,7 +126,22 @@ class SlurmBackend(object):
         return command
 
 
+class LocalBackend(SlurmBackend):
+
+    def __init__(self):
+        self.next_job_id = 0
+
+    def write_script_variables(self, f):
+        print >> f, 'export GWF_JOBID={}'.format(self.next_job_id)
+
+    def build_submit_command(self, target, script_name, dependent_ids):
+        command = ['bash', script_name]
+
+        self.next_job_id += 1
+        return command
+
 AVAILABLE_BACKENDS = {
     'torque': TorqueBackend,
     'slurm': SlurmBackend,
+    'local': LocalBackend
 }
