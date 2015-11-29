@@ -13,6 +13,8 @@ from gwf_workflow.colours import *
 from gwf_workflow.helpers import *
 
 
+  
+
 
 class Node(object):
     """Class handling targets. Stores the info for executing them."""
@@ -142,9 +144,11 @@ class Node(object):
         print >> f, '# GWF generated code ...'
         print >> f, 'cd %s' % self.target.working_dir
         gwf_workflow.BACKEND.write_script_variables(f)
+        print >> f, "set -e"
         print >> f
 
         print >> f, '# Script from workflow'
+
         print >> f, self.target.spec
 
     @property
