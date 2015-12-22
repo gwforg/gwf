@@ -54,6 +54,8 @@ class TorqueBackend(object):
         command.append(script_name)
         return command
 
+    def build_cancel_command(self, job_ids):
+        return ['qdel'] + map(str, job_ids)
 
 
 class SlurmBackend(object):
@@ -120,6 +122,8 @@ class SlurmBackend(object):
         command.append(script_name)
         return command
 
+    def build_cancel_command(self, job_ids):
+        return ['scancel'] + map(str, job_ids)
 
 
 AVAILABLE_BACKENDS = {
