@@ -6,8 +6,8 @@ import os.path
 
 
 def _mkdir_if_not_exist(dirname):
-  if not os.path.exists(dirname):
-    os.makedirs(dirname)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
 
 
 class TorqueBackend(object):
@@ -20,7 +20,9 @@ class TorqueBackend(object):
         result = dict((job_id, None) for job_id in job_ids)
         for job_id in job_ids:
             try:
-                stat = subprocess.Popen(['qstat', '-f', job_id], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                stat = subprocess.Popen(['qstat', '-f', job_id],
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT)
                 for line in stat.stdout:
                     line = line.strip()
                     if line.startswith('job_state'):
@@ -31,11 +33,12 @@ class TorqueBackend(object):
         return result
 
     def write_script_header(self, f, options):
-        print >> f, '#PBS -l nodes={}:ppn={}'.format(options['nodes'], options['cores'])
+        print >> f, '#PBS -l nodes={}:ppn={}'.format(
+            options['nodes'], options['cores'])
         print >> f, '#PBS -l mem={}'.format(options['memory'])
         print >> f, '#PBS -l walltime={}'.format(options['walltime'])
         if 'queue' in options:
-          print >> f, '#PBS -q {}'.format(options['queue'])
+            print >> f, '#PBS -q {}'.format(options['queue'])
 
     def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID=$PBS_JOBID'
@@ -44,19 +47,20 @@ class TorqueBackend(object):
         log_dir = os.path.join(target.working_dir, 'gwf_log')
         _mkdir_if_not_exist(log_dir)
 
-        command = ['qsub', '-N', target.name, 
+        command = ['qsub', '-N', target.name,
                    '-o', os.path.join(log_dir, target.name+'.stdout'),
                    '-e', os.path.join(log_dir, target.name+'.stderr'),
                    ]
         if len(dependents_ids) > 0:
             command.append('-W')
-            command.append('depend=afterok:{}'.format(':'.join(dependents_ids)))
+
+            ids = ':'.join(dependents_ids)
+            command.append('depend=afterok:{}'.format(ids))
         command.append(script_name)
         return command
 
     def build_cancel_command(self, job_ids):
         return ['qdel'] + map(str, job_ids)
-
 
 class SlurmBackend(object):
     """Backend functionality for slurm."""
@@ -85,7 +89,8 @@ class SlurmBackend(object):
             stat = subprocess.Popen(['squeue',
                                      '--noheader',
                                      '--format=%i;%t;%E'],
-                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
             for line in stat.stdout:
                 job_id, state, depends = line.strip().split(';')
                 simple_state = map_state[state]
@@ -103,7 +108,7 @@ class SlurmBackend(object):
         print >> f, '#SBATCH --mem={}'.format(options['memory'])
         print >> f, '#SBATCH -t {}'.format(options['walltime'])
         if 'queue' in options:
-          print >> f, '#SBATCH -p {}'.format(options['queue'])
+            print >> f, '#SBATCH -p {}'.format(options['queue'])
 
     def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID=$SLURM_JOBID'
@@ -125,8 +130,22 @@ class SlurmBackend(object):
     def build_cancel_command(self, job_ids):
         return ['scancel'] + map(str, job_ids)
 
+class LocalBackend(SlurmBackend):
+
+    def __init__(self):
+        self.next_job_id = 0
+
+    def write_script_variables(self, f):
+        print >> f, 'export GWF_JOBID={}'.format(self.next_job_id)
+
+    def build_submit_command(self, target, script_name, dependent_ids):
+        command = ['bash', script_name]
+
+        self.next_job_id += 1
+        return command
 
 AVAILABLE_BACKENDS = {
     'torque': TorqueBackend,
     'slurm': SlurmBackend,
+    'local': LocalBackend
 }
