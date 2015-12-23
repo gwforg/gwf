@@ -43,8 +43,8 @@ class Target(object):
                 print 'Warning:, Target', self.name, 'has unknown option', k
 
         # handle that input and output can be both lists and single file names
-        self.options['input'] = _list(self.options['input'])
-        self.options['output'] = _list(self.options['output'])
+        self.options['input'] = filter(None, _list(self.options['input'])) # safer in case someone writes input='' meaning "no input"
+        self.options['output'] = filter(None, _list(self.options['output']))
 
 
 # This global variable will hold all the targets after a workflow script has completed.
