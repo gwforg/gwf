@@ -21,3 +21,10 @@ test.py
 documentation.markdown
 index.markdown
 *.egg-info
+.jobs.ids
+Masala.sorted.rmdup.bam
+ponAbe2.amb
+ponAbe2.ann
+ponAbe2.fa
+ponAbe2.pac
+unsorted.bam
