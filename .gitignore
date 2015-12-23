@@ -28,3 +28,7 @@ examples/readmapping/ponAbe2.ann
 examples/readmapping/ponAbe2.fa
 examples/readmapping/ponAbe2.pac
 examples/readmapping/unsorted.bam
+Masala.unsorted.bam
+examples/readmapping/.jobs/IndexGenome
+examples/readmapping/.jobs/MapReads
+examples/readmapping/.jobs/SortBAM

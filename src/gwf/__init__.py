@@ -283,3 +283,6 @@ class function_template(object):
 
     def __call__(self, func):
         return _function_template_wrapper(func, self.options)
+
+
+
