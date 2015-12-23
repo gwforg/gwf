@@ -143,7 +143,8 @@ class LocalBackend(object):
         self.next_job_id = 0
 
     def get_state_of_jobs(self, job_ids):
-        return ["?"] * len(job_ids)
+        fake_table = dict(zip(job_ids, ["?"] * len(job_ids)))
+        return fake_table
 
     def write_script_header(self, f, options):
         pass

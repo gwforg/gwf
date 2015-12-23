@@ -29,3 +29,11 @@ Masala.unsorted.bam
 ponAbe2.amb
 ponAbe2.ann
 ponAbe2.fa
+IndexGenome.stderr
+IndexGenome.stdout
+examples/readmapping/gwf_log/MapReads.stderr
+examples/readmapping/gwf_log/MapReads.stdout
+examples/readmapping/gwf_log/SortBAM.stderr
+examples/readmapping/gwf_log/SortBAM.stdout
+examples/readmapping/gwf_log/UnZipGenome.stderr
+examples/readmapping/gwf_log/UnZipGenome.stdout

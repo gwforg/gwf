@@ -93,7 +93,7 @@ class Node(object):
         assert oldest_out_timestamp is not None
 
         # The youngest in should be older than the oldest out
-        if youngest_in_timestamp >= oldest_out_timestamp:
+        if youngest_in_timestamp > oldest_out_timestamp:
             # we have a younger in file than an outfile
             self.reason_to_run = 'Infile %s is younger than outfile %s' % (youngest_in_filename, oldest_out_filename)
             self.cached_node_should_run = True
