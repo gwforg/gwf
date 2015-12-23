@@ -59,6 +59,11 @@ class TorqueBackend(object):
         command.append(script_name)
         return command
 
+    def submit_command(self, target, script_name, dependents_ids):
+        command = self.build_submit_command(target, script_name, dependents_ids)
+        qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        job_id = qsub.stdout.read().strip()
+        return job_id
 
 class SlurmBackend(object):
     """Backend functionality for slurm."""
@@ -125,20 +130,38 @@ class SlurmBackend(object):
         command.append(script_name)
         return command
 
+    def submit_command(self, target, script_name, dependents_ids):
+        command = self.build_submit_command(target, script_name, dependents_ids)
+        qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        job_id = qsub.stdout.read().strip()
+        return job_id
 
-class LocalBackend(SlurmBackend):
+class LocalBackend(object):
+    """Backend functionality for local execution."""
 
     def __init__(self):
         self.next_job_id = 0
+
+    def get_state_of_jobs(self, job_ids):
+        return "?"
+
+    def write_script_header(self, f, options):
+        pass
 
     def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID={}'.format(self.next_job_id)
 
     def build_submit_command(self, target, script_name, dependent_ids):
-        command = ['bash', script_name]
+        command = ["bash", script_name]
 
         self.next_job_id += 1
         return command
+
+    def submit_command(self, target, script_name, dependents_ids):
+        command = self.build_submit_command(target, script_name, dependents_ids)
+        qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        job_id = self.next_job_id
+        return job_id
 
 AVAILABLE_BACKENDS = {
     'torque': TorqueBackend,

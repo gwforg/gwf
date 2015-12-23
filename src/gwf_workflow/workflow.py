@@ -175,11 +175,8 @@ class Node(object):
 
         self.write_script()
         dependents_ids = [dependent.job_id for dependent in dependents]
-        command = BACKEND.build_submit_command(self.target, self.script_name, dependents_ids)
-
         try:
-            qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            job_id = qsub.stdout.read().strip()
+            job_id = BACKEND.submit_command(self.target, self.script_name, dependents_ids)
             self.set_job_id(job_id)
         except OSError, ex:
             print
