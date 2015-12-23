@@ -21,3 +21,10 @@ test.py
 documentation.markdown
 index.markdown
 *.egg-info
+examples/readmapping/.jobs.ids
+examples/readmapping/Masala.sorted.rmdup.bam
+examples/readmapping/ponAbe2.amb
+examples/readmapping/ponAbe2.ann
+examples/readmapping/ponAbe2.fa
+examples/readmapping/ponAbe2.pac
+examples/readmapping/unsorted.bam
