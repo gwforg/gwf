@@ -241,6 +241,7 @@ elif args.cancel:
                 print
                 import sys ; sys.exit(2)
 
+        workflow.targets[target_name].clean_target()
 
 else:
     # Executing work flow!
