@@ -249,13 +249,16 @@ elif args.cancel:
 elif args.printspec:
     # for target_name, job in workflow.targets.items():
     for target_name in all_targets:
-        job = workflow.targets[target_name]
-        if job.job_in_queue:
-            print "{}{}: {}{}".format(COLORS['yellow'], target_name, job.target.spec, CLEAR)
-        elif job.should_run:
-            print "{}{}: {}{}".format(COLORS['red'], target_name, job.target.spec, CLEAR)
-        else:
-            print "{}{}: {}{}".format(COLORS['green'], target_name, job.target.spec, CLEAR)
+        print "{}== {} {}{}".format(COLORS["bold"], target_name, "="*(60-4-len(target_name)), CLEAR)
+        for job in dependencies(workflow.targets, target_name):
+            if job.job_in_queue:
+                print "-- {}{}:{} ------\n {}".format(COLORS['yellow'], job.target.name, CLEAR, job.target.spec)
+            elif job.should_run:
+                print "-- {}{}:{} ------\n {}".format(COLORS['red'], job.target.name, CLEAR, job.target.spec)
+            else:
+                print "-- {}{}:{} ------\n {}".format(COLORS['green'], job.target.name, CLEAR, job.target.spec)
+        print "{}{}{}".format(COLORS["bold"], "="*60, CLEAR)
+        print
 
 
 else:
