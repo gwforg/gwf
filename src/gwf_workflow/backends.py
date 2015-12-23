@@ -143,7 +143,7 @@ class LocalBackend(object):
         self.next_job_id = 0
 
     def get_state_of_jobs(self, job_ids):
-        return "?"
+        return ["?"] * len(job_ids)
 
     def write_script_header(self, f, options):
         pass
@@ -153,14 +153,18 @@ class LocalBackend(object):
 
     def build_submit_command(self, target, script_name, dependent_ids):
         command = ["bash", script_name]
-
-        self.next_job_id += 1
         return command
 
     def submit_command(self, target, script_name, dependents_ids):
+        log_dir = os.path.join(target.working_dir, 'gwf_log')
         command = self.build_submit_command(target, script_name, dependents_ids)
-        qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        with open(os.path.join(log_dir, target.name+'.stdout'), "w") as outfile:
+            print >> outfile, qsub.stdout.read()
+        with open(os.path.join(log_dir, target.name+'.stderr'), "w") as outfile:
+            print >> outfile, qsub.stderr.read()
         job_id = self.next_job_id
+        self.next_job_id += 1
         return job_id
 
 AVAILABLE_BACKENDS = {
