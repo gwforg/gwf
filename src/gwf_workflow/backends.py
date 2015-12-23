@@ -65,6 +65,9 @@ class TorqueBackend(object):
         job_id = qsub.stdout.read().strip()
         return job_id
 
+    def build_cancel_command(self, job_ids):
+        return ['qdel'] + map(str, job_ids)
+
 class SlurmBackend(object):
     """Backend functionality for slurm."""
 
@@ -136,6 +139,9 @@ class SlurmBackend(object):
         job_id = qsub.stdout.read().strip()
         return job_id
 
+    def build_cancel_command(self, job_ids):
+        return ['scancel'] + map(str, job_ids)
+
 class LocalBackend(object):
     """Backend functionality for local execution."""
 
@@ -167,6 +173,10 @@ class LocalBackend(object):
         job_id = self.next_job_id
         self.next_job_id += 1
         return job_id
+
+    def build_cancel_command(self, job_ids):
+        pass
+
 
 AVAILABLE_BACKENDS = {
     'torque': TorqueBackend,

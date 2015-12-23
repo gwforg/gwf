@@ -5,7 +5,7 @@ from gwf import *
 from gwf.bwa import bwa_index
 from gwf.samtools import samtools_sort
 
-# copied here to avoid using /scratch when testing local execution
+# Using a different version here that doesn't use /scratch -- for local testing
 bwa_map = template(input=['{R1}', '{R2}', '{refGenome}.amb', '{refGenome}.ann', '{refGenome}.pac'],
                    output='{bamfile}', cores=16) << '''
 
@@ -15,7 +15,6 @@ samtools sort -o unsorted.bam sort | \
     samtools rmdup -s - {bamfile}
 
 '''
-
 
 target('UnZipGenome', input='ponAbe2.fa.gz', output='ponAbe2.fa', walltime="00:00:05") << '''
 zcat ponAbe2.fa.gz > ponAbe2.fa
