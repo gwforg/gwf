@@ -32,6 +32,8 @@ parser.add_argument('-d', '--dry-run', default=False, action='store_true',
                     help='The submit script will be printed but not executed.')
 parser.add_argument('-s', '--status', default=False, action='store_true',
                     help='Print status of targets.')
+parser.add_argument('--printspec', default=False, action='store_true',
+                    help='Print shell commands for targets.')
 parser.add_argument('-k', '--cancel', default=False, action='store_true',
                     help='Cancel queued jobs for targets')
 parser.add_argument('-c', '--clean', default=False, action='store_true',
@@ -242,6 +244,22 @@ elif args.cancel:
                 import sys ; sys.exit(2)
 
         workflow.targets[target_name].clean_target()
+
+
+elif args.printspec:
+    # for target_name, job in workflow.targets.items():
+    for target_name in all_targets:
+        print "{}== {} {}{}".format(COLORS["bold"], target_name, "="*(60-4-len(target_name)), CLEAR)
+        for job in dependencies(workflow.targets, target_name):
+            if job.job_in_queue:
+                print "-- {}{}:{} ------\n {}".format(COLORS['yellow'], job.target.name, CLEAR, job.target.spec)
+            elif job.should_run:
+                print "-- {}{}:{} ------\n {}".format(COLORS['red'], job.target.name, CLEAR, job.target.spec)
+            else:
+                print "-- {}{}:{} ------\n {}".format(COLORS['green'], job.target.name, CLEAR, job.target.spec)
+        print "{}{}{}".format(COLORS["bold"], "="*60, CLEAR)
+        print
+
 
 else:
     # Executing work flow!
