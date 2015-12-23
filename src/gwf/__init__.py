@@ -285,4 +285,25 @@ class function_template(object):
         return _function_template_wrapper(func, self.options)
 
 
+class _Infix:
+    def __init__(self, function):
+        self.function = function
+    def __rlshift__(self, other):
+        return _Infix(lambda x, self=self, other=other: self.function(other, x))
+    def __rshift__(self, other):
+        return self.function(other)
 
+def splice_path(path, directory=None, suffix=None, tag=None):
+    orig_dir, base_name = os.path.split(path)
+    base_name, orig_suffix = os.path.splitext(base_name)
+    if not directory:
+        directory = orig_dir
+    if not suffix:
+        suffix = orig_suffix
+    if tag:
+        base_name = "{}_{}".format(tag, base_name)
+    return os.path.join(directory, base_name) + suffix
+
+tag = _Infix(lambda l, tag: [splice_path(x, tag=tag) for x in l])
+suffix = _Infix(lambda l, suffix: [splice_path(x, suffix=suffix) for x in l])
+outdir = _Infix(lambda l, outdir: [splice_path(x, directory=outdir) for x in l])
