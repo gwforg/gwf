@@ -2,6 +2,7 @@
 
 import os.path
 import ConfigParser
+from distutils.spawn import find_executable as has_exe
 
 
 USER_CONFIG_FILE = os.path.expanduser("~/.gwfrc")
@@ -11,7 +12,10 @@ LOCAL_CONFIG_FILE = '.gwfrc'
 def set_defaults(config):
 	"""Set global defaults in the 'gwf' section."""
 	config.add_section('gwf')
-	config.set('gwf', 'backend', 'torque')
+        if has_exe("squeue") and has_exe("sbatch"):
+            config.set('gwf', 'backend', 'slurm')
+        else:
+            config.set('gwf', 'backend', 'torque')
 
 
 def read_configurations():
