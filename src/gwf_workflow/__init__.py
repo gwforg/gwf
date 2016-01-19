@@ -34,7 +34,7 @@ class Target(object):
             'walltime': '120:00:00',
         }
 
-        known_options_without_defaults = set(['queue'])
+        known_options_without_defaults = set(['queue', 'account'])
 
         for k in options.keys():
             if k in self.options or k in known_options_without_defaults:

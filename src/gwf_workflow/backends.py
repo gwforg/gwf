@@ -39,6 +39,8 @@ class TorqueBackend(object):
         print >> f, '#PBS -l walltime={}'.format(options['walltime'])
         if 'queue' in options:
             print >> f, '#PBS -q {}'.format(options['queue'])
+        if 'account' in options:
+            print >> f, '#PBS -A {}'.format(options['account'])
 
     def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID=$PBS_JOBID'
@@ -115,6 +117,8 @@ class SlurmBackend(object):
         print >> f, '#SBATCH -t {}'.format(options['walltime'])
         if 'queue' in options:
             print >> f, '#SBATCH -p {}'.format(options['queue'])
+        if 'account' in options:
+            print >> f, '#SBATCH -A {}'.format(options['account'])
 
     def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID=$SLURM_JOBID'
