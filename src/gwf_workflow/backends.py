@@ -119,6 +119,12 @@ class SlurmBackend(object):
             print >> f, '#SBATCH -p {}'.format(options['queue'])
         if 'account' in options:
             print >> f, '#SBATCH -A {}'.format(options['account'])
+        if 'constraint' in options:
+            print >> f, '#SBATCH -C {}'.format(options['constraint'])
+        if 'mail_type' in options:
+            print >> f, '#SBATCH --mail-type={}'.format(options['mail_type'])
+        if 'mail_user' in options:
+            print >> f, '#SBATCH --mail-user={}'.format(options['mail_user'])
 
     def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID=$SLURM_JOBID'
