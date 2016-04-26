@@ -270,6 +270,16 @@ else:
             continue
 
         print '{}Scheduling computation of target'.format(COLORS['bold']), target_name, '{}...'.format(CLEAR)
+        if args.verbose:
+            target = workflow.targets[target_name]
+            print 'Inputs'
+            for name in target.target.options['input']:
+                print '   ', os.path.relpath(name)
+            print 'Outputs'
+            for name in target.target.options['output']:
+                print '   ', os.path.relpath(name)
+            print
+
         for job in schedule:
 
             if job.job_id:
