@@ -280,10 +280,20 @@ else:
             continue
 
         print '{}Scheduling computation of target'.format(COLORS['bold']), target_name, '{}...'.format(CLEAR)
+        if args.verbose:
+            target = workflow.targets[target_name]
+            print 'Inputs'
+            for name in target.target.options['input']:
+                print '   ', os.path.relpath(name)
+            print 'Outputs'
+            for name in target.target.options['output']:
+                print '   ', os.path.relpath(name)
+            print
+
         for job in schedule:
 
             if job.job_id:
-                print "Taget", job.target.name, "is already submitted ({})".format(job.job_id)
+                print "Target", job.target.name, "is already submitted ({})".format(job.job_id)
                 continue
 
             dependents = [dependent for dependent in job.depends_on if dependent.target.name in scheduled_jobs]
