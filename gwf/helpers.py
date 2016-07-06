@@ -39,3 +39,11 @@ def make_absolute_path(working_dir, filename):
     else:
         abspath = os.path.join(working_dir, filename)
     return os.path.normpath(abspath)
+
+
+def _list(x):
+    """Wrap x as a singleton in a list if it isn't a list already."""
+    if hasattr(x, '__iter__'):
+        return list(x)
+    else:
+        return [x]

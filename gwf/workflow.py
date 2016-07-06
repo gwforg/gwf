@@ -1,15 +1,47 @@
 """Classes representing a workflow."""
 
+import inspect
 import os.path
 import sys
 
 import gwf
 
-from gwf.helpers import *
+from gwf.colours import *
+from gwf import BACKEND
+from gwf.helpers import _list, make_absolute_path, escape_file_name, file_exists, get_file_timestamp
 from gwf.jobs import JOBS_QUEUE
 
-from colours import *
-from gwf import BACKEND
+
+# Internal representation of targets.
+class Target(object):
+
+    def __init__(self, name, options, spec):
+        self.name = name
+        self.spec = spec
+
+        filename = inspect.getfile(sys._getframe(2))
+        self.working_dir = os.path.dirname(os.path.realpath(filename))
+
+        self.options = {
+            'input': [],
+            'output': [],
+            'nodes': 1,
+            'cores': 1,
+            'memory': "4g",
+            'walltime': '120:00:00',
+        }
+
+        known_options_without_defaults = set(['queue', 'account', 'constraint', 'mail_user', 'mail_type'])
+
+        for k in options.keys():
+            if k in self.options or k in known_options_without_defaults:
+                self.options[k] = options[k]
+            else:
+                print 'Warning:, Target', self.name, 'has unknown option', k
+
+        # handle that input and output can be both lists and single file names
+        self.options['input'] = filter(None, _list(self.options['input']))
+        self.options['output'] = filter(None, _list(self.options['output']))
 
 
 class Node(object):
@@ -177,7 +209,8 @@ class Node(object):
             print
             print COLORS['red'], COLORS['bold']
             print 'ERROR:', CLEAR,
-            print "Couldn't execute the submission command {}'{}'{}.".format(COLORS['bold'], ' '.join(command), CLEAR)
+            print "Couldn't execute the submission command {}'{}'{}.".format(COLORS['bold'], ' '.join(self.script_name),
+                                                                             CLEAR)
             print ex
             print COLORS['red']
             print "Quiting submissions", CLEAR
