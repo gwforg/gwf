@@ -8,7 +8,8 @@ import sys
 
 import gwf
 
-from gwf.helpers import file_exists, get_file_timestamp, make_absolute_path
+from gwf.workflow import Target
+from gwf.helpers import file_exists, get_file_timestamp, make_absolute_path, _list
 
 
 ## Useful helper functions...
@@ -28,7 +29,6 @@ def shell(command):
     return subprocess.check_output(command, shell=True).split()
 
 
-## sub-workflows
 def include_workflow(path):
     """Import targets from another workflow file.
 
@@ -51,7 +51,6 @@ def include_workflow(path):
     execfile(workflow_file)
 
 
-## Templates
 class template(object):
     def __init__(self, **options):
         self.spec = None
@@ -75,7 +74,6 @@ class template(object):
         return options, self.spec.format(**substitutions)
 
 
-# Targets...
 class target(object):
     def __init__(self, name, **options):
         self.name = name
@@ -91,7 +89,7 @@ class target(object):
         if self.name in gwf.ALL_TARGETS:
             print 'Warning: Target', self.name, 'defined more than once.'
 
-        new_target = gwf.workflow.Target(self.name, options, spec)
+        new_target = Target(self.name, options, spec)
         gwf.ALL_TARGETS[self.name] = new_target
 
 

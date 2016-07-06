@@ -133,14 +133,12 @@ if args.status:
             print
 
 elif args.cancel:
-    cancel_command = gwf.BACKEND.build_cancel_command
-
     for target_name in all_targets:
 
         job_ids = [task.job_id for task in dependencies(workflow, target_name) if task.job_in_queue]
         if job_ids:
             print '{}Cancelling job computation of target'.format(COLORS['bold']), target_name, '{}'.format(CLEAR)
-            command = cancel_command(job_ids)
+            command = gwf.BACKEND.build_cancel_command(job_ids)
             try:
                 qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 qsub.stdout.read()
