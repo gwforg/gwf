@@ -1,11 +1,13 @@
-"""Wrappers around code for the grid queue backend."""
-
 from __future__ import absolute_import
 from __future__ import print_function
 
 import subprocess
 import os
 import os.path
+
+import gwf
+
+from gwf.helpers import make_absolute_path, escape_file_name
 
 
 # This will be set in the gwf script and refer to the grid backend used.
@@ -17,11 +19,32 @@ def _mkdir_if_not_exist(dirname):
         os.makedirs(dirname)
 
 
-class TorqueBackend(object):
+class Backend(object):
+
+    def __init__(self, working_dir):
+        pass
+
+    def get_state_of_jobs(self):
+        raise NotImplementedError()
+
+    def write_script_header(self, f, options):
+        raise NotImplementedError()
+
+    def write_script_variables(self, f):
+        raise NotImplementedError()
+
+    def submit_command(self, target, script_name, dependent_ids):
+        raise NotImplementedError()
+
+    def build_cancel_command(self, job_ids):
+        raise NotImplementedError()
+
+
+class TorqueBackend(Backend):
     """Backend functionality for torque."""
 
     def __init__(self):
-        pass
+        self.script_dir = make_absolute_path(gwf.WORKING_DIR, '.scripts')
 
     def get_state_of_jobs(self, job_ids):
         result = dict((job_id, None) for job_id in job_ids)
@@ -52,7 +75,9 @@ class TorqueBackend(object):
     def write_script_variables(self, f):
         print('export GWF_JOBID=$PBS_JOBID', file=f)
 
-    def build_submit_command(self, target, script_name, dependents_ids):
+    def _build_submit_command(self, target, script_name, dependents_ids):
+        self.script_name = make_absolute_path(self.script_dir, escape_file_name(target.name))
+
         log_dir = os.path.join(target.working_dir, 'gwf_log')
         _mkdir_if_not_exist(log_dir)
 
@@ -69,7 +94,7 @@ class TorqueBackend(object):
         return command
 
     def submit_command(self, target, script_name, dependents_ids):
-        command = self.build_submit_command(target, script_name, dependents_ids)
+        command = self._build_submit_command(target, script_name, dependents_ids)
         qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         job_id = qsub.stdout.read().strip()
         return job_id
@@ -78,11 +103,40 @@ class TorqueBackend(object):
         return ['qdel'] + map(str, job_ids)
 
 
-class SlurmBackend(object):
+class SlurmBackend(Backend):
     """Backend functionality for slurm."""
 
     def __init__(self):
-        pass
+
+        self.script_dir = make_absolute_path(gwf.WORKING_DIR, '.scripts')
+        self.script_name = make_absolute_path(self.script_dir, escape_file_name(self.name))
+
+    def make_script_dir(self):
+        script_dir = self.script_dir
+        # Don't use the _file_exists() function here. It caches its status and that won't work for the script dir.
+        if not os.path.exists(script_dir):
+            os.makedirs(script_dir)
+
+    def write_script(self, target):
+        """Write the code to a script that can be executed."""
+
+        self.make_script_dir()
+        f = open(self.script_name, 'w')
+
+        print("#!/bin/bash", file=f)
+
+        self.write_script_header(f, target.options)
+        print(file=f)
+
+        print('# GWF generated code ...', file=f)
+        print('cd %s' % gwf.WORKING_DIR, file=f)
+        self.write_script_variables(f)
+        print(f, "set -e", file=f)
+        print(file=f)
+
+        print('# Script from workflow', file=f)
+
+        print(self.spec, file=f)
 
     def get_state_of_jobs(self, job_ids):
         result = dict((job_id, False) for job_id in job_ids)
@@ -137,7 +191,7 @@ class SlurmBackend(object):
     def write_script_variables(self, f):
         print('export GWF_JOBID=$SLURM_JOBID', file=f)
 
-    def build_submit_command(self, target, script_name, dependents_ids):
+    def _build_submit_command(self, target, script_name, dependents_ids):
         log_dir = os.path.join(target.working_dir, 'gwf_log')
         _mkdir_if_not_exist(log_dir)
 
@@ -152,7 +206,9 @@ class SlurmBackend(object):
         return command
 
     def submit_command(self, target, script_name, dependents_ids):
-        command = self.build_submit_command(target, script_name, dependents_ids)
+        self.write_script(target)
+
+        command = self._build_submit_command(target, script_name, dependents_ids)
         qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         job_id = qsub.stdout.read().strip()
         return job_id
@@ -161,7 +217,7 @@ class SlurmBackend(object):
         return ['scancel'] + map(str, job_ids)
 
 
-class LocalBackend(object):
+class LocalBackend(Backend):
     """Backend functionality for local execution."""
 
     def __init__(self):
@@ -177,13 +233,13 @@ class LocalBackend(object):
     def write_script_variables(self, f):
         print >> f, 'export GWF_JOBID={}'.format(self.next_job_id)
 
-    def build_submit_command(self, target, script_name, dependent_ids):
+    def _build_submit_command(self, target, script_name, dependent_ids):
         command = ["bash", script_name]
         return command
 
     def submit_command(self, target, script_name, dependents_ids):
         log_dir = os.path.join(target.working_dir, 'gwf_log')
-        command = self.build_submit_command(target, script_name, dependents_ids)
+        command = self._build_submit_command(target, script_name, dependents_ids)
         qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         with open(os.path.join(log_dir, target.name + '.stdout'), "w") as outfile:
             print(qsub.stdout.read(), file=outfile)

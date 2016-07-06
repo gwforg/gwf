@@ -55,7 +55,10 @@ if not os.path.exists(args.workflow_file):
     parser.error("The specified workflow file '{}' does not exist.\n".format(args.workflow_file))
 
 # Set the backend based on defaults or arguments...
-gwf.backends.BACKEND = AVAILABLE_BACKENDS[args.backend]()
+gwf.WORKING_DIR = os.path.abspath(os.path.dirname(args.workflow_file))
+
+backend_cls = AVAILABLE_BACKENDS[args.backend]
+gwf.backends.BACKEND = backend_cls()
 
 execfile(args.workflow_file)
 
@@ -198,7 +201,6 @@ else:
 
             if args.dry_run:
                 # For a dry run we just finish here, but write the script so people can check it
-                job.write_script()
                 print()
                 continue
 

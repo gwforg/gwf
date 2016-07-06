@@ -1,14 +1,13 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-import inspect
 import os.path
 import sys
 
 import gwf
 
 from gwf.colours import *
-from gwf.helpers import make_list, make_absolute_path, escape_file_name, file_exists, get_file_timestamp
+from gwf.helpers import make_list, make_absolute_path, file_exists, get_file_timestamp
 from gwf.jobs import JOBS_QUEUE
 
 
@@ -23,9 +22,6 @@ class Node(object):
     def __init__(self, name, options, spec):
         self.name = name
         self.spec = spec
-
-        filename = inspect.getfile(sys._getframe(2))
-        self.working_dir = os.path.dirname(os.path.realpath(filename))
 
         self.options = {
             'input': [],
@@ -51,9 +47,6 @@ class Node(object):
         self.depends_on = set()
         self.dependents = set()
 
-        self.script_dir = make_absolute_path(self.working_dir, '.scripts')
-        self.script_name = make_absolute_path(self.script_dir, escape_file_name(self.name))
-
         self.cached_node_should_run = None
         self.reason_to_run = None
         self.cached_should_run = None
@@ -74,13 +67,13 @@ class Node(object):
             return True
 
         for outfile in self.options['output']:
-            if not file_exists(make_absolute_path(self.working_dir, outfile)):
+            if not file_exists(make_absolute_path(gwf.WORKING_DIR, outfile)):
                 self.reason_to_run = 'Output file %s is missing' % outfile
                 self.cached_node_should_run = True
                 return True
 
         for infile in self.options['input']:
-            if not file_exists(make_absolute_path(self.working_dir, infile)):
+            if not file_exists(make_absolute_path(gwf.WORKING_DIR, infile)):
                 self.reason_to_run = 'Input file %s is missing' % infile
                 self.cached_node_should_run = True
                 return True
@@ -102,7 +95,7 @@ class Node(object):
         youngest_in_timestamp = None
         youngest_in_filename = None
         for infile in self.options['input']:
-            timestamp = get_file_timestamp(make_absolute_path(self.working_dir, infile))
+            timestamp = get_file_timestamp(make_absolute_path(gwf.WORKING_DIR, infile))
             if youngest_in_timestamp is None \
                     or youngest_in_timestamp < timestamp:
                 youngest_in_filename = infile
@@ -112,7 +105,7 @@ class Node(object):
         oldest_out_timestamp = None
         oldest_out_filename = None
         for outfile in self.options['output']:
-            timestamp = get_file_timestamp(make_absolute_path(self.working_dir, outfile))
+            timestamp = get_file_timestamp(make_absolute_path(gwf.WORKING_DIR, outfile))
             if oldest_out_timestamp is None \
                     or oldest_out_timestamp > timestamp:
                 oldest_out_filename = outfile
@@ -150,56 +143,28 @@ class Node(object):
         self.cached_should_run = False
         return False
 
-    def make_script_dir(self):
-        script_dir = self.script_dir
-        # Don't use the _file_exists() function here. It caches its status and that won't work for the script dir.
-        if not os.path.exists(script_dir):
-            os.makedirs(script_dir)
-
-    def write_script(self):
-        """Write the code to a script that can be executed."""
-
-        self.make_script_dir()
-        f = open(self.script_name, 'w')
-
-        print("#!/bin/bash", file=f)
-
-        gwf.backends.BACKEND.write_script_header(f, self.options)
-        print(file=f)
-
-        print('# GWF generated code ...', file=f)
-        print('cd %s' % self.working_dir, file=f)
-        gwf.backends.BACKEND.write_script_variables(f)
-        print(f, "set -e", file=f)
-        print(file=f)
-
-        print('# Script from workflow', file=f)
-
-        print(self.spec, file=f)
-
     @property
     def job_in_queue(self):
-        return JOBS_QUEUE.get_database(self.working_dir).in_queue(self.name)
+        return JOBS_QUEUE.get_database(gwf.WORKING_DIR).in_queue(self.name)
 
     @property
     def job_queue_status(self):
-        return JOBS_QUEUE.get_database(self.working_dir).get_job_status(self.name)
+        return JOBS_QUEUE.get_database(gwf.WORKING_DIR).get_job_status(self.name)
 
     @property
     def job_id(self):
         if self.job_in_queue:
-            return JOBS_QUEUE.get_database(self.working_dir).get_job_id(self.name)
+            return JOBS_QUEUE.get_database(gwf.WORkING_DIR).get_job_id(self.name)
         else:
             return None
 
     def set_job_id(self, job_id):
-        JOBS_QUEUE.get_database(self.working_dir).set_job_id(self.name, job_id)
+        JOBS_QUEUE.get_database(gwf.WORKING_DIR).set_job_id(self.name, job_id)
 
     def submit(self, dependents):
         if self.job_in_queue:
             return self.job_id
 
-        self.write_script()
         dependents_ids = [dependent.job_id for dependent in dependents]
         try:
             job_id = gwf.backends.BACKEND.submit_command(self, self.script_name, dependents_ids)
@@ -222,7 +187,7 @@ class Node(object):
         """Get list of output files that already exists."""
         result = []
         for outfile in self.options['output']:
-            filename = make_absolute_path(self.working_dir, outfile)
+            filename = make_absolute_path(gwf.WORKING_DIR, outfile)
             if file_exists(filename):
                 result.append(filename)
         return result
@@ -312,9 +277,9 @@ def build_workflow():
     nodes = {}
     providing = {}
     for target in ALL_TARGETS.values():
-        target.options['input'] = [make_absolute_path(target.working_dir, infile)
+        target.options['input'] = [make_absolute_path(gwf.WORKING_DIR, infile)
                                    for infile in target.options['input']]
-        target.options['output'] = [make_absolute_path(target.working_dir, outfile)
+        target.options['output'] = [make_absolute_path(gwf.WORKING_DIR, outfile)
                                     for outfile in target.options['output']]
         #node = Node(target)
         for outfile in target.options['output']:

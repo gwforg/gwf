@@ -2,12 +2,13 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import glob as _glob
-import inspect
 import marshal
 import os.path
 import shelve
 import subprocess
 import sys
+
+import gwf
 
 from gwf.workflow import ALL_TARGETS
 from gwf.workflow import Node
@@ -44,10 +45,7 @@ def include_workflow(path):
         workflow_file = path + '/workflow.py'
 
     if not workflow_file.startswith('/'):
-        # include relative to the workflow that includes...
-        filename = inspect.getfile(sys._getframe(1))
-        working_dir = os.path.dirname(os.path.realpath(filename))
-        workflow_file = os.path.join(working_dir, workflow_file)
+        workflow_file = os.path.join(gwf.WORKING_DIR, workflow_file)
 
     execfile(workflow_file)
 
@@ -102,9 +100,6 @@ class _memorize_wrapper(object):
             self.options['input'] = []
         self.options['input'] = make_list(self.options['input'])
 
-        filename = inspect.getfile(sys._getframe(2))
-        self.working_dir = os.path.dirname(os.path.realpath(filename))
-
         # The database of remembered results
         memory_dir = self.memory_dir()
         db_file = '{}/{}'.format(memory_dir, self.func.func_name)
@@ -131,7 +126,7 @@ class _memorize_wrapper(object):
             open(flag_file, 'w').close()  # touch the flag
 
     def memory_dir(self):
-        memory_directory = os.path.join(self.working_dir, '.memory')
+        memory_directory = os.path.join(gwf.WORKING_DIR, '.memory')
         if not os.path.exists(memory_directory):
             os.makedirs(memory_directory)
         return memory_directory
@@ -147,11 +142,11 @@ class _memorize_wrapper(object):
         if upstream targets need to run, only this task; upstream tasks
         are handled by the dependency graph. """
 
-        if not file_exists(make_absolute_path(self.working_dir, output_file)):
+        if not file_exists(make_absolute_path(gwf.WORKING_DIR, output_file)):
             return True
 
         for infile in self.options['input']:
-            if not file_exists(make_absolute_path(self.working_dir, infile)):
+            if not file_exists(make_absolute_path(gwf.WORKING_DIR, infile)):
                 print("""
 The memorized function `{func_name}' depends on an input file "{infile}"
 that doesn't exist.
@@ -175,13 +170,13 @@ need to run at the time the workflow is evaluated.
 
         youngest_in_timestamp = None
         for infile in self.options['input']:
-            timestamp = get_file_timestamp(make_absolute_path(self.working_dir, infile))
+            timestamp = get_file_timestamp(make_absolute_path(gwf.WORKING_DIR, infile))
             if youngest_in_timestamp is None \
                     or youngest_in_timestamp < timestamp:
                 youngest_in_timestamp = timestamp
         assert youngest_in_timestamp is not None
 
-        out_timestamp = get_file_timestamp(make_absolute_path(self.working_dir, output_file))
+        out_timestamp = get_file_timestamp(make_absolute_path(gwf.WORKING_DIR, output_file))
         # The youngest in should be older than the output
         if youngest_in_timestamp >= out_timestamp:
             return True
@@ -232,8 +227,6 @@ class _function_template_wrapper(object):
     def __init__(self, func, options):
         self.func = func
         self.options = options
-
-        self.working_dir = os.path.dirname(os.path.realpath(inspect.getfile(sys._getframe(2))))
 
         self.marshal_file = os.path.join(self.marshal_dir(), '{}.code'.format(func.func_name))
         self.arguments_db_file = os.path.join(self.marshal_dir(), '{}.args'.format(func.func_name))
