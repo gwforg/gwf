@@ -43,13 +43,10 @@ class JobsDatabase(object):
         return job_name in self.status_db
 
     def get_job_id(self, job_name):
-        return self.db[job_name]
+        return self.db.get(job_name)
 
     def get_job_status(self, job_name):
-        if job_name in self.status_db:
-            return self.status_db[job_name]
-        else:
-            return None
+        return self.status_db.get(job_name)
 
     def close(self):
         self.db.close()

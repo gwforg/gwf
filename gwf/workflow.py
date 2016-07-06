@@ -130,18 +130,9 @@ class Target(object):
         if self.cached_should_run is not None:
             return self.cached_should_run
 
-        if self.node_should_run:
-            self.cached_should_run = True
-            return True
-
-        # we shouldn't run based on our own files but we should check if we depend on some node that should run
-        for n in self.depends_on:
-            if n.should_run:
-                self.cached_should_run = True
-                return True
-
-        self.cached_should_run = False
-        return False
+        # If this target should run, or any of the targets and this target depends on should run, this node should run.
+        self.cached_should_run = self.node_should_run or any(n.should_run for n in self.depends_on)
+        return self.cached_should_run
 
     @property
     def job_in_queue(self):
@@ -153,10 +144,7 @@ class Target(object):
 
     @property
     def job_id(self):
-        if self.job_in_queue:
-            return JOBS_QUEUE.get_database(gwf.WORkING_DIR).get_job_id(self.name)
-        else:
-            return None
+        return JOBS_QUEUE.get_database(gwf.WORkING_DIR).get_job_id(self.name)
 
     def set_job_id(self, job_id):
         JOBS_QUEUE.get_database(gwf.WORKING_DIR).set_job_id(self.name, job_id)
