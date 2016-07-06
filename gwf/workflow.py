@@ -8,7 +8,7 @@ import gwf
 
 from gwf.colours import *
 from gwf import BACKEND
-from gwf.helpers import _list, make_absolute_path, escape_file_name, file_exists, get_file_timestamp
+from gwf.helpers import make_list, make_absolute_path, escape_file_name, file_exists, get_file_timestamp
 from gwf.jobs import JOBS_QUEUE
 
 
@@ -40,8 +40,8 @@ class Target(object):
                 print 'Warning:, Target', self.name, 'has unknown option', k
 
         # handle that input and output can be both lists and single file names
-        self.options['input'] = filter(None, _list(self.options['input']))
-        self.options['output'] = filter(None, _list(self.options['output']))
+        self.options['input'] = filter(None, make_list(self.options['input']))
+        self.options['output'] = filter(None, make_list(self.options['output']))
 
 
 class Node(object):
@@ -339,3 +339,15 @@ def build_workflow():
                     sys.exit(2)
 
     return nodes
+
+
+def split_tasks(tasks):
+    up_to_date, in_queue, to_schedule = [], [], []
+    for task in tasks:
+        if task.job_in_queue:
+            in_queue.append(task)
+        elif task.should_run:
+            to_schedule.append(task)
+        else:
+            up_to_date.append(task)
+    return up_to_date, in_queue, to_schedule

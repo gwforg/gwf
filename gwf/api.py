@@ -9,7 +9,7 @@ import sys
 import gwf
 
 from gwf.workflow import Target
-from gwf.helpers import file_exists, get_file_timestamp, make_absolute_path, _list
+from gwf.helpers import file_exists, get_file_timestamp, make_absolute_path, make_list
 
 
 ## Useful helper functions...
@@ -99,7 +99,7 @@ class _memorize_wrapper(object):
         self.options = options
         if 'input' not in self.options:
             self.options['input'] = []
-        self.options['input'] = _list(self.options['input'])
+        self.options['input'] = make_list(self.options['input'])
 
         filename = inspect.getfile(sys._getframe(2))
         self.working_dir = os.path.dirname(os.path.realpath(filename))

@@ -41,7 +41,7 @@ def make_absolute_path(working_dir, filename):
     return os.path.normpath(abspath)
 
 
-def _list(x):
+def make_list(x):
     """Wrap x as a singleton in a list if it isn't a list already."""
     if hasattr(x, '__iter__'):
         return list(x)

@@ -9,7 +9,7 @@ import gwf
 from gwf.backends import AVAILABLE_BACKENDS
 from gwf.colours import *
 from gwf.configurations import read_configurations
-from gwf.workflow import build_workflow, dependencies, get_execution_schedule
+from gwf.workflow import build_workflow, dependencies, get_execution_schedule, split_tasks
 
 config = read_configurations()
 
@@ -85,18 +85,6 @@ if args.pattern:
     all_targets = [fn
                    for pattern in all_targets
                    for fn in fnmatch.filter(defined_targets, pattern)]
-
-
-def split_tasks(tasks):
-    up_to_date, in_queue, to_schedule = [], [], []
-    for task in tasks:
-        if task.job_in_queue:
-            in_queue.append(task)
-        elif task.should_run:
-            to_schedule.append(task)
-        else:
-            up_to_date.append(task)
-    return up_to_date, in_queue, to_schedule
 
 
 if args.status:
