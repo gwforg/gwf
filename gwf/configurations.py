@@ -4,7 +4,6 @@ import os.path
 import ConfigParser
 from distutils.spawn import find_executable as has_exe
 
-
 USER_CONFIG_FILE = os.path.expanduser("~/.gwfrc")
 LOCAL_CONFIG_FILE = '.gwfrc'
 

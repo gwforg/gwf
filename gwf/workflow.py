@@ -115,10 +115,9 @@ class Node(object):
             if n.should_run:
                 self.cached_should_run = True
                 return True
-            
+
         self.cached_should_run = False
         return False
-
 
     def make_script_dir(self):
         script_dir = self.script_dir
@@ -183,7 +182,8 @@ class Node(object):
             print COLORS['red']
             print "Quiting submissions", CLEAR
             print
-            import sys ; sys.exit(2)
+            import sys;
+            sys.exit(2)
         return job_id
 
     def get_existing_outfiles(self):
@@ -206,6 +206,7 @@ class Node(object):
     __repr__ = __str__  # not really the correct use of __repr__ but easy
     # for printing output when testing...
 
+
 def dependencies(nodes, target_name):
     """Return all tasks necessary for building the target.
 
@@ -227,6 +228,7 @@ def dependencies(nodes, target_name):
 
     dfs(root)
     return processed
+
 
 def schedule(nodes, target_name):
     """Linearize the targets to be run.

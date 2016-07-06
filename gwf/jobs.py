@@ -75,9 +75,9 @@ class JobsDBCollection(object):
         for db in self.databases.values():
             db.close()
 
+
 # Global data base access for a running workflow...
 JOBS_QUEUE = JobsDBCollection()
-
 
 # Necessary to close all databases at exit...
 import atexit

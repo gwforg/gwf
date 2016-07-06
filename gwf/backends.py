@@ -50,8 +50,8 @@ class TorqueBackend(object):
         _mkdir_if_not_exist(log_dir)
 
         command = ['qsub', '-N', target.name,
-                   '-o', os.path.join(log_dir, target.name+'.stdout'),
-                   '-e', os.path.join(log_dir, target.name+'.stderr'),
+                   '-o', os.path.join(log_dir, target.name + '.stdout'),
+                   '-e', os.path.join(log_dir, target.name + '.stderr'),
                    ]
         if len(dependents_ids) > 0:
             command.append('-W')
@@ -70,6 +70,7 @@ class TorqueBackend(object):
     def build_cancel_command(self, job_ids):
         return ['qdel'] + map(str, job_ids)
 
+
 class SlurmBackend(object):
     """Backend functionality for slurm."""
 
@@ -79,19 +80,19 @@ class SlurmBackend(object):
     def get_state_of_jobs(self, job_ids):
         result = dict((job_id, False) for job_id in job_ids)
         map_state = {  # see squeue man page under JOB STATE CODES
-                       'BF': '?',  # BOOT_FAIL
-                       'CA': '?',  # CANCELLED
-                       'CD': '?',  # COMPLETED
-                       'CF': 'R',  # CONFIGURING
-                       'CG': 'R',  # COMPLETING
-                       'F':  '?',  # FAILED
-                       'NF': '?',  # NODE_FAIL
-                       'PD': 'Q',  # PENDING
-                       'PR': '?',  # PREEMPTED
-                       'R':  'R',  # RUNNING
-                       'S':  'R',  # SUSPENDED
-                       'TO': '?',  # TIMEOUT
-                       'SE': 'Q',  # SPECIAL_EXIT
+            'BF': '?',  # BOOT_FAIL
+            'CA': '?',  # CANCELLED
+            'CD': '?',  # COMPLETED
+            'CF': 'R',  # CONFIGURING
+            'CG': 'R',  # COMPLETING
+            'F': '?',  # FAILED
+            'NF': '?',  # NODE_FAIL
+            'PD': 'Q',  # PENDING
+            'PR': '?',  # PREEMPTED
+            'R': 'R',  # RUNNING
+            'S': 'R',  # SUSPENDED
+            'TO': '?',  # TIMEOUT
+            'SE': 'Q',  # SPECIAL_EXIT
         }
         try:
             stat = subprocess.Popen(['squeue',
@@ -134,8 +135,8 @@ class SlurmBackend(object):
         _mkdir_if_not_exist(log_dir)
 
         command = ['sbatch', '-J', target.name, '--parsable',
-                   '-o', os.path.join(log_dir, target.name+'.%j.stdout'),
-                   '-e', os.path.join(log_dir, target.name+'.%j.stderr'),
+                   '-o', os.path.join(log_dir, target.name + '.%j.stdout'),
+                   '-e', os.path.join(log_dir, target.name + '.%j.stderr'),
                    ]
         if len(dependents_ids) > 0:
             command.append('-d')
@@ -151,6 +152,7 @@ class SlurmBackend(object):
 
     def build_cancel_command(self, job_ids):
         return ['scancel'] + map(str, job_ids)
+
 
 class LocalBackend(object):
     """Backend functionality for local execution."""
@@ -176,9 +178,9 @@ class LocalBackend(object):
         log_dir = os.path.join(target.working_dir, 'gwf_log')
         command = self.build_submit_command(target, script_name, dependents_ids)
         qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        with open(os.path.join(log_dir, target.name+'.stdout'), "w") as outfile:
+        with open(os.path.join(log_dir, target.name + '.stdout'), "w") as outfile:
             print >> outfile, qsub.stdout.read()
-        with open(os.path.join(log_dir, target.name+'.stderr'), "w") as outfile:
+        with open(os.path.join(log_dir, target.name + '.stderr'), "w") as outfile:
             print >> outfile, qsub.stderr.read()
         job_id = self.next_job_id
         self.next_job_id += 1

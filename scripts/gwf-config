@@ -28,22 +28,20 @@ parser = argparse.ArgumentParser(
     For questions, comments or bug-reports contact <mailund@birc.au.dk> or go to https://github.com/mailund/gwf/issues/
     """)
 
-parser.add_argument('--print', dest='print_options', default=False, action='store_true',  
-    help="""Print the options that are set for this working directory.""")
-parser.add_argument('--print-global', default=False, action='store_true',  
-    help="""Print the options that are explicitly set user-wide. This does not include system wide defaults or local options.""")
-parser.add_argument('--print-local', default=False, action='store_true',  
-    help="""Print the options that are explicitly set for the current directory.""")
+parser.add_argument('--print', dest='print_options', default=False, action='store_true',
+                    help="""Print the options that are set for this working directory.""")
+parser.add_argument('--print-global', default=False, action='store_true',
+                    help="""Print the options that are explicitly set user-wide. This does not include system wide defaults or local options.""")
+parser.add_argument('--print-local', default=False, action='store_true',
+                    help="""Print the options that are explicitly set for the current directory.""")
 
-
-parser.add_argument('--global', dest='global_options', default=False, action='store_true',  
-    help="""Set a global option. Such an option will be set for all workflows run by the user unless explicitly overwritten using
+parser.add_argument('--global', dest='global_options', default=False, action='store_true',
+                    help="""Set a global option. Such an option will be set for all workflows run by the user unless explicitly overwritten using
     a local option. By default, options will only be set for the workflow in the current working directory.""")
 
 parser.add_argument('--backend', choices=AVAILABLE_BACKENDS.keys(), help='Grid backend to use.')
 
 args = parser.parse_args()
-
 
 ## Handle options ################################################################################################
 if args.print_options:
