@@ -20,9 +20,7 @@ def glob(pattern):
     if pattern.startswith('/'):
         glob_pattern = pattern
     else:
-        filename = inspect.getfile(sys._getframe(1))
-        working_dir = os.path.dirname(os.path.realpath(filename))
-        glob_pattern = os.path.join(working_dir, pattern)
+        glob_pattern = os.path.join(gwf.WORKING_DIR, pattern)
     return _glob.glob(glob_pattern)
 
 
@@ -219,7 +217,7 @@ func(*args)
 
 class _function_template_wrapper(object):
     def marshal_dir(self):
-        d = os.path.join(self.working_dir, '.marshal/')
+        d = os.path.join(gwf.WORKING_DIR, '.marshal/')
         if not os.path.exists(d):
             os.makedirs(d)
         return d

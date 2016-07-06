@@ -21,9 +21,6 @@ def _mkdir_if_not_exist(dirname):
 
 class Backend(object):
 
-    def __init__(self, working_dir):
-        pass
-
     def get_state_of_jobs(self):
         raise NotImplementedError()
 
@@ -78,7 +75,7 @@ class TorqueBackend(Backend):
     def _build_submit_command(self, target, script_name, dependents_ids):
         self.script_name = make_absolute_path(self.script_dir, escape_file_name(target.name))
 
-        log_dir = os.path.join(target.working_dir, 'gwf_log')
+        log_dir = os.path.join(gwf.WORKING_DIR, 'gwf_log')
         _mkdir_if_not_exist(log_dir)
 
         command = ['qsub', '-N', target.name,
@@ -192,7 +189,7 @@ class SlurmBackend(Backend):
         print('export GWF_JOBID=$SLURM_JOBID', file=f)
 
     def _build_submit_command(self, target, script_name, dependents_ids):
-        log_dir = os.path.join(target.working_dir, 'gwf_log')
+        log_dir = os.path.join(gwf.WORKING_DIR, 'gwf_log')
         _mkdir_if_not_exist(log_dir)
 
         command = ['sbatch', '-J', target.name, '--parsable',
@@ -238,7 +235,7 @@ class LocalBackend(Backend):
         return command
 
     def submit_command(self, target, script_name, dependents_ids):
-        log_dir = os.path.join(target.working_dir, 'gwf_log')
+        log_dir = os.path.join(gwf.WORKING_DIR, 'gwf_log')
         command = self._build_submit_command(target, script_name, dependents_ids)
         qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         with open(os.path.join(log_dir, target.name + '.stdout'), "w") as outfile:
