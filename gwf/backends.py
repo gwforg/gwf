@@ -1,8 +1,15 @@
 """Wrappers around code for the grid queue backend."""
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 import subprocess
 import os
 import os.path
+
+
+# This will be set in the gwf script and refer to the grid backend used.
+BACKEND = None
 
 
 def _mkdir_if_not_exist(dirname):
@@ -33,17 +40,17 @@ class TorqueBackend(object):
         return result
 
     def write_script_header(self, f, options):
-        print >> f, '#PBS -l nodes={}:ppn={}'.format(
-            options['nodes'], options['cores'])
-        print >> f, '#PBS -l mem={}'.format(options['memory'])
-        print >> f, '#PBS -l walltime={}'.format(options['walltime'])
+        print('#PBS -l nodes={}:ppn={}'.format(
+            options['nodes'], options['cores']), file=f)
+        print('#PBS -l mem={}'.format(options['memory']), file=f)
+        print('#PBS -l walltime={}'.format(options['walltime']), file=f)
         if 'queue' in options:
-            print >> f, '#PBS -q {}'.format(options['queue'])
+            print('#PBS -q {}'.format(options['queue']), file=f)
         if 'account' in options:
-            print >> f, '#PBS -A {}'.format(options['account'])
+            print('#PBS -A {}'.format(options['account']), file=f)
 
     def write_script_variables(self, f):
-        print >> f, 'export GWF_JOBID=$PBS_JOBID'
+        print('export GWF_JOBID=$PBS_JOBID', file=f)
 
     def build_submit_command(self, target, script_name, dependents_ids):
         log_dir = os.path.join(target.working_dir, 'gwf_log')
@@ -112,23 +119,23 @@ class SlurmBackend(object):
         return result
 
     def write_script_header(self, f, options):
-        print >> f, '#SBATCH -N {}'.format(options['nodes'])
-        print >> f, '#SBATCH -c {}'.format(options['cores'])
-        print >> f, '#SBATCH --mem={}'.format(options['memory'])
-        print >> f, '#SBATCH -t {}'.format(options['walltime'])
+        print('#SBATCH -N {}'.format(options['nodes']), file=f)
+        print('#SBATCH -c {}'.format(options['cores']), file=f)
+        print('#SBATCH --mem={}'.format(options['memory']), file=f)
+        print('#SBATCH -t {}'.format(options['walltime']), file=f)
         if 'queue' in options:
-            print >> f, '#SBATCH -p {}'.format(options['queue'])
+            print('#SBATCH -p {}'.format(options['queue']), file=f)
         if 'account' in options:
-            print >> f, '#SBATCH -A {}'.format(options['account'])
+            print('#SBATCH -A {}'.format(options['account']), file=f)
         if 'constraint' in options:
-            print >> f, '#SBATCH -C {}'.format(options['constraint'])
+            print('#SBATCH -C {}'.format(options['constraint']), file=f)
         if 'mail_type' in options:
-            print >> f, '#SBATCH --mail-type={}'.format(options['mail_type'])
+            print('#SBATCH --mail-type={}'.format(options['mail_type']), file=f)
         if 'mail_user' in options:
-            print >> f, '#SBATCH --mail-user={}'.format(options['mail_user'])
+            print('#SBATCH --mail-user={}'.format(options['mail_user']), file=f)
 
     def write_script_variables(self, f):
-        print >> f, 'export GWF_JOBID=$SLURM_JOBID'
+        print('export GWF_JOBID=$SLURM_JOBID', file=f)
 
     def build_submit_command(self, target, script_name, dependents_ids):
         log_dir = os.path.join(target.working_dir, 'gwf_log')
@@ -179,9 +186,9 @@ class LocalBackend(object):
         command = self.build_submit_command(target, script_name, dependents_ids)
         qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         with open(os.path.join(log_dir, target.name + '.stdout'), "w") as outfile:
-            print >> outfile, qsub.stdout.read()
+            print(qsub.stdout.read(), file=outfile)
         with open(os.path.join(log_dir, target.name + '.stderr'), "w") as outfile:
-            print >> outfile, qsub.stderr.read()
+            print(qsub.stderr.read(), file=outfile)
         job_id = self.next_job_id
         self.next_job_id += 1
         return job_id

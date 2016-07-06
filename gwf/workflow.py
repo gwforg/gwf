@@ -1,4 +1,5 @@
-"""Classes representing a workflow."""
+from __future__ import absolute_import
+from __future__ import print_function
 
 import inspect
 import os.path
@@ -7,13 +8,17 @@ import sys
 import gwf
 
 from gwf.colours import *
-from gwf import BACKEND
 from gwf.helpers import make_list, make_absolute_path, escape_file_name, file_exists, get_file_timestamp
 from gwf.jobs import JOBS_QUEUE
 
 
-# Internal representation of targets.
-class Target(object):
+# This global variable will hold all the targets after a workflow script has completed.
+# gwf will use this list for its further processing.
+ALL_TARGETS = {}
+
+
+class Node(object):
+    """Class handling targets. Stores the info for executing them."""
 
     def __init__(self, name, options, spec):
         self.name = name
@@ -37,23 +42,17 @@ class Target(object):
             if k in self.options or k in known_options_without_defaults:
                 self.options[k] = options[k]
             else:
-                print 'Warning:, Target', self.name, 'has unknown option', k
+                print('Warning:, Target', self.name, 'has unknown option', k)
 
         # handle that input and output can be both lists and single file names
         self.options['input'] = filter(None, make_list(self.options['input']))
         self.options['output'] = filter(None, make_list(self.options['output']))
 
-
-class Node(object):
-    """Class handling targets. Stores the info for executing them."""
-
-    def __init__(self, target):
-        self.target = target
         self.depends_on = set()
         self.dependents = set()
 
-        self.script_dir = make_absolute_path(self.target.working_dir, '.scripts')
-        self.script_name = make_absolute_path(self.script_dir, escape_file_name(self.target.name))
+        self.script_dir = make_absolute_path(self.working_dir, '.scripts')
+        self.script_name = make_absolute_path(self.script_dir, escape_file_name(self.name))
 
         self.cached_node_should_run = None
         self.reason_to_run = None
@@ -69,19 +68,19 @@ class Node(object):
         if self.cached_node_should_run is not None:
             return self.cached_node_should_run
 
-        if len(self.target.options['output']) == 0:
+        if len(self.options['output']) == 0:
             self.reason_to_run = 'Sinks (targets without output) should always run'
             self.cached_node_should_run = True
             return True
 
-        for outfile in self.target.options['output']:
-            if not file_exists(make_absolute_path(self.target.working_dir, outfile)):
+        for outfile in self.options['output']:
+            if not file_exists(make_absolute_path(self.working_dir, outfile)):
                 self.reason_to_run = 'Output file %s is missing' % outfile
                 self.cached_node_should_run = True
                 return True
 
-        for infile in self.target.options['input']:
-            if not file_exists(make_absolute_path(self.target.working_dir, infile)):
+        for infile in self.options['input']:
+            if not file_exists(make_absolute_path(self.working_dir, infile)):
                 self.reason_to_run = 'Input file %s is missing' % infile
                 self.cached_node_should_run = True
                 return True
@@ -93,7 +92,7 @@ class Node(object):
         # files we don't want to run it whenever someone needs that
         # output just because we don't have time stamped input.
 
-        if len(self.target.options['input']) == 0:
+        if len(self.options['input']) == 0:
             self.reason_to_run = "We shouldn't run"
             self.cached_node_should_run = False
             return False
@@ -102,8 +101,8 @@ class Node(object):
 
         youngest_in_timestamp = None
         youngest_in_filename = None
-        for infile in self.target.options['input']:
-            timestamp = get_file_timestamp(make_absolute_path(self.target.working_dir, infile))
+        for infile in self.options['input']:
+            timestamp = get_file_timestamp(make_absolute_path(self.working_dir, infile))
             if youngest_in_timestamp is None \
                     or youngest_in_timestamp < timestamp:
                 youngest_in_filename = infile
@@ -112,8 +111,8 @@ class Node(object):
 
         oldest_out_timestamp = None
         oldest_out_filename = None
-        for outfile in self.target.options['output']:
-            timestamp = get_file_timestamp(make_absolute_path(self.target.working_dir, outfile))
+        for outfile in self.options['output']:
+            timestamp = get_file_timestamp(make_absolute_path(self.working_dir, outfile))
             if oldest_out_timestamp is None \
                     or oldest_out_timestamp > timestamp:
                 oldest_out_filename = outfile
@@ -163,38 +162,38 @@ class Node(object):
         self.make_script_dir()
         f = open(self.script_name, 'w')
 
-        print >> f, "#!/bin/bash"
+        print("#!/bin/bash", file=f)
 
-        gwf.BACKEND.write_script_header(f, self.target.options)
-        print >> f
+        gwf.backends.BACKEND.write_script_header(f, self.options)
+        print(file=f)
 
-        print >> f, '# GWF generated code ...'
-        print >> f, 'cd %s' % self.target.working_dir
-        gwf.BACKEND.write_script_variables(f)
-        print >> f, "set -e"
-        print >> f
+        print('# GWF generated code ...', file=f)
+        print('cd %s' % self.working_dir, file=f)
+        gwf.backends.BACKEND.write_script_variables(f)
+        print(f, "set -e", file=f)
+        print(file=f)
 
-        print >> f, '# Script from workflow'
+        print('# Script from workflow', file=f)
 
-        print >> f, self.target.spec
+        print(self.spec, file=f)
 
     @property
     def job_in_queue(self):
-        return JOBS_QUEUE.get_database(self.target.working_dir).in_queue(self.target.name)
+        return JOBS_QUEUE.get_database(self.working_dir).in_queue(self.name)
 
     @property
     def job_queue_status(self):
-        return JOBS_QUEUE.get_database(self.target.working_dir).get_job_status(self.target.name)
+        return JOBS_QUEUE.get_database(self.working_dir).get_job_status(self.name)
 
     @property
     def job_id(self):
         if self.job_in_queue:
-            return JOBS_QUEUE.get_database(self.target.working_dir).get_job_id(self.target.name)
+            return JOBS_QUEUE.get_database(self.working_dir).get_job_id(self.name)
         else:
             return None
 
     def set_job_id(self, job_id):
-        JOBS_QUEUE.get_database(self.target.working_dir).set_job_id(self.target.name, job_id)
+        JOBS_QUEUE.get_database(self.working_dir).set_job_id(self.name, job_id)
 
     def submit(self, dependents):
         if self.job_in_queue:
@@ -203,27 +202,27 @@ class Node(object):
         self.write_script()
         dependents_ids = [dependent.job_id for dependent in dependents]
         try:
-            job_id = BACKEND.submit_command(self.target, self.script_name, dependents_ids)
+            job_id = gwf.backends.BACKEND.submit_command(self, self.script_name, dependents_ids)
             self.set_job_id(job_id)
-        except OSError, ex:
-            print
-            print COLORS['red'], COLORS['bold']
-            print 'ERROR:', CLEAR,
-            print "Couldn't execute the submission command {}'{}'{}.".format(COLORS['bold'], ' '.join(self.script_name),
-                                                                             CLEAR)
-            print ex
-            print COLORS['red']
-            print "Quiting submissions", CLEAR
-            print
-            import sys;
+        except OSError as ex:
+            print()
+            print(COLORS['red'], COLORS['bold'])
+            print('ERROR:', CLEAR, end=' ')
+            print("Couldn't execute the submission command {}'{}'{}.".format(COLORS['bold'], ' '.join(self.script_name), CLEAR))
+            print(ex)
+            print(COLORS['red'])
+            print("Quiting submissions", CLEAR)
+            print()
+
             sys.exit(2)
+
         return job_id
 
     def get_existing_outfiles(self):
         """Get list of output files that already exists."""
         result = []
-        for outfile in self.target.options['output']:
-            filename = make_absolute_path(self.target.working_dir, outfile)
+        for outfile in self.options['output']:
+            filename = make_absolute_path(self.working_dir, outfile)
             if file_exists(filename):
                 result.append(filename)
         return result
@@ -234,7 +233,7 @@ class Node(object):
             os.remove(fname)
 
     def __str__(self):
-        return str(self.target)
+        return str(self)
 
     __repr__ = __str__  # not really the correct use of __repr__ but easy
     # for printing output when testing...
@@ -298,7 +297,7 @@ def get_execution_schedule(nodes, target_name):
         # If this task needs to run, then schedule it
         if node.job_in_queue or node.should_run:
             job_schedule.append(node)
-            scheduled.add(node.target.name)
+            scheduled.add(node.name)
 
         processed.add(node)
 
@@ -312,30 +311,30 @@ def build_workflow():
 
     nodes = {}
     providing = {}
-    for target in gwf.ALL_TARGETS.values():
+    for target in ALL_TARGETS.values():
         target.options['input'] = [make_absolute_path(target.working_dir, infile)
                                    for infile in target.options['input']]
         target.options['output'] = [make_absolute_path(target.working_dir, outfile)
                                     for outfile in target.options['output']]
-        node = Node(target)
+        #node = Node(target)
         for outfile in target.options['output']:
             if outfile in providing:
-                print 'Warning: File', outfile, 'is provided by both',
-                print target.name, 'and', providing[outfile].target.name
-            providing[outfile] = node
-        nodes[target.name] = node
+                print('Warning: File', outfile, 'is provided by both', end=' ')
+                print(target.name, 'and', providing[outfile].target.name)
+            providing[outfile] = target
+        nodes[target.name] = target
 
     for node in nodes.values():
-        for infile in node.target.options['input']:
+        for infile in node.options['input']:
             if infile in providing:
                 provider = providing[infile]
                 node.depends_on.add(provider)
                 provider.dependents.add(node)
             else:
                 if not file_exists(infile):
-                    print 'Target', node.target.name, 'needs file',
-                    print infile, 'which does not exists and is not constructed.'
-                    print 'Aborting'
+                    print('Target', node.target.name, 'needs file', end=' ')
+                    print(infile, 'which does not exists and is not constructed.')
+                    print('Aborting')
                     sys.exit(2)
 
     return nodes

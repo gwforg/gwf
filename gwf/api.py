@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import print_function
+
 import glob as _glob
 import inspect
 import marshal
@@ -6,13 +9,11 @@ import shelve
 import subprocess
 import sys
 
-import gwf
-
-from gwf.workflow import Target
+from gwf.workflow import ALL_TARGETS
+from gwf.workflow import Node
 from gwf.helpers import file_exists, get_file_timestamp, make_absolute_path, make_list
 
 
-## Useful helper functions...
 def glob(pattern):
     """Returns a list of filenames matching the shell glob `pattern'."""
     if pattern.startswith('/'):
@@ -86,11 +87,11 @@ class target(object):
             options = dict(spec[0].items() + options.items())
             spec = spec[1]
 
-        if self.name in gwf.ALL_TARGETS:
-            print 'Warning: Target', self.name, 'defined more than once.'
+        if self.name in ALL_TARGETS:
+            print('Warning: Target', self.name, 'defined more than once.')
 
-        new_target = Target(self.name, options, spec)
-        gwf.ALL_TARGETS[self.name] = new_target
+        new_target = Node(self.name, options, spec)
+        ALL_TARGETS[self.name] = new_target
 
 
 class _memorize_wrapper(object):
@@ -151,13 +152,13 @@ class _memorize_wrapper(object):
 
         for infile in self.options['input']:
             if not file_exists(make_absolute_path(self.working_dir, infile)):
-                print """
+                print("""
 The memorized function `{func_name}' depends on an input file "{infile}"
 that doesn't exist.
 
 Memorized functions cannot depend on the output of targets since they
 need to run at the time the workflow is evaluated.
-                """.format(func_name=self.func.func_name, infile=infile)
+                """.format(func_name=self.func.func_name, infile=infile))
                 sys.exit(1)
 
         # If no file is missing, it comes down to the time stamps. If we
