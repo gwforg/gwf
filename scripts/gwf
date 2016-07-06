@@ -121,7 +121,7 @@ if args.status:
                 print(COLORS['yellow'], task.target.name, CLEAR, '({}: {})'.format(task.job_id, task.job_queue_status))
             for task in to_schedule:
                 print(COLORS['red'], task.target.name, CLEAR)
-            print
+            print()
 
 elif args.cancel:
     for target_name in all_targets:
@@ -154,13 +154,13 @@ elif args.printspec:
         print("{}== {} {}{}".format(COLORS["bold"], target_name, "=" * (60 - 4 - len(target_name)), CLEAR))
         for job in dependencies(workflow, target_name):
             if job.job_in_queue:
-                print("-- {}{}:{} ------\n {}".format(COLORS['yellow'], job.target.name, CLEAR, job.target.spec))
+                print("-- {}{}:{} ------\n {}".format(COLORS['yellow'], job.name, CLEAR, job.spec))
             elif job.should_run:
-                print("-- {}{}:{} ------\n {}".format(COLORS['red'], job.target.name, CLEAR, job.target.spec))
+                print("-- {}{}:{} ------\n {}".format(COLORS['red'], job.name, CLEAR, job.spec))
             else:
-                print("-- {}{}:{} ------\n {}".format(COLORS['green'], job.target.name, CLEAR, job.target.spec))
+                print("-- {}{}:{} ------\n {}".format(COLORS['green'], job.name, CLEAR, job.spec))
         print("{}{}{}".format(COLORS["bold"], "=" * 60, CLEAR))
-        print
+        print()
 
 
 else:
@@ -180,7 +180,7 @@ else:
             print('Outputs')
             for name in target.options['output']:
                 print('   ', os.path.relpath(name))
-            print
+            print()
 
         for job in schedule:
 
