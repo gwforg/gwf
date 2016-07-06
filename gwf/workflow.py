@@ -230,7 +230,7 @@ def dependencies(nodes, target_name):
     return processed
 
 
-def schedule(nodes, target_name):
+def get_execution_schedule(nodes, target_name):
     """Linearize the targets to be run.
 
     Returns a list of tasks to be run (in the order they should run or
@@ -274,18 +274,6 @@ def schedule(nodes, target_name):
     return job_schedule, scheduled
 
 
-# # WRAPPING IT ALL UP IN A WORKFLOW...
-class Workflow:
-    """Class representing a workflow."""
-
-    def __init__(self, targets):
-        self.targets = targets
-
-    def get_execution_schedule(self, target_name):
-        execution_schedule, scheduled_tasks = schedule(self.targets, target_name)
-        return execution_schedule, scheduled_tasks
-
-
 def build_workflow():
     """Collect all the targets and build up their dependencies."""
 
@@ -317,4 +305,4 @@ def build_workflow():
                     print 'Aborting'
                     sys.exit(2)
 
-    return Workflow(nodes)
+    return nodes
