@@ -1,3 +1,4 @@
+import sys
 import argparse
 import fnmatch
 import os.path
@@ -58,7 +59,7 @@ gwf.BACKEND = AVAILABLE_BACKENDS[args.backend]()
 cancel_command = gwf.BACKEND.build_cancel_command
 
 execfile(args.workflow_file)
-from gwf import build_workflow, dependencies
+from gwf.workflow import build_workflow, dependencies
 workflow = build_workflow()
 
 if args.clean:
