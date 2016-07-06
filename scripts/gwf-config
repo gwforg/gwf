@@ -1,16 +1,12 @@
 #!/Users/mailund/anaconda/bin/python
 
-import os
-import os.path
-import sys
 import argparse
-import ConfigParser
-import pkg_resources
-from gwf_workflow.backends import AVAILABLE_BACKENDS
-import gwf_workflow.configurations as configs
+import sys
 
-# This gets the installed version of gwf that is actually being used by the script.
-package_version = pkg_resources.require("gwf")[0].version
+import pkg_resources
+
+import gwf.configurations as configs
+from gwf import AVAILABLE_BACKENDS
 
 
 ## Helper functions ################################################################################################
@@ -27,12 +23,11 @@ def print_configs(config):
 
 ## Option parser ################################################################################################
 parser = argparse.ArgumentParser(
-    version=package_version,
     description="""
-    Grid WorkFlow (v{version}) -- Keeps track of the status of jobs in a workflow and submits jobs that needs to be run.
+    Grid WorkFlow -- Keeps track of the status of jobs in a workflow and submits jobs that needs to be run.
     
     gwf-config is used for setting GWF options either global for the user or for the current working directory.
-    """.format(version=package_version),
+    """,
     epilog="""
     For questions, comments or bug-reports contact <mailund@birc.au.dk> or go to https://github.com/mailund/gwf/issues/
     """)

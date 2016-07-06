@@ -2,10 +2,11 @@
 Module for keeping track of job status for jobs in the grid queue.
 """
 
-import shelve
 import os.path
+import shelve
 from itertools import izip
-import gwf_workflow
+
+import gwf
 
 
 def make_db_file_name(workflow_directory):
@@ -23,7 +24,7 @@ class JobsDatabase(object):
     def _read_and_update_status(self):
         job_names = list(self.db.keys())
         job_ids = list(self.db[name] for name in job_names)
-        current_state = gwf_workflow.BACKEND.get_state_of_jobs(job_ids)
+        current_state = gwf.BACKEND.get_state_of_jobs(job_ids)
         for job_name, job_id in izip(job_names, job_ids):
             job_id = self.db[job_name]
             job_status = current_state[job_id]

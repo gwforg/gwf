@@ -1,17 +1,15 @@
+import glob as _glob
+import inspect
+import marshal
 import os
 import os.path
-import sys
-import inspect
-import glob as _glob
-import subprocess
 import shelve
-import marshal
+import subprocess
+import sys
 
-import gwf_workflow
+import gwf
 
-
-## helpers for gwf internal
-from gwf_workflow.workflow import file_exists, get_file_timestamp, make_absolute_path
+from gwf.helpers import file_exists, get_file_timestamp, make_absolute_path
 
 def _list(x):
     """Wrap x as a singleton in a list if it isn't a list already."""
@@ -98,11 +96,11 @@ class target(object):
             options = dict(spec[0].items() + options.items())
             spec = spec[1]
 
-        if self.name in gwf_workflow.ALL_TARGETS:
+        if self.name in gwf.ALL_TARGETS:
             print 'Warning: Target', self.name, 'defined more than once.'
 
-        new_target = gwf_workflow.Target(self.name, options, spec)
-        gwf_workflow.ALL_TARGETS[self.name] = new_target
+        new_target = gwf.Target(self.name, options, spec)
+        gwf.ALL_TARGETS[self.name] = new_target
 
 
 class _memorize_wrapper(object):

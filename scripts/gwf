@@ -1,28 +1,22 @@
-#!/Users/mailund/anaconda/bin/python
-
-import os
-import os.path
-import sys
 import argparse
-import pkg_resources
-import gwf_workflow
-import subprocess
 import fnmatch
+import os.path
+import subprocess
 
-from gwf_workflow.backends import AVAILABLE_BACKENDS
-from gwf_workflow.configurations import read_configurations
-from gwf_workflow.colours import *
-from gwf_workflow.performance import *
+import gwf
 
-# This gets the installed version of gwf that is actually being used by the script.
-package_version = pkg_resources.require("gwf")[0].version
+from gwf.backends import AVAILABLE_BACKENDS
+from gwf.colours import *
+from gwf.configurations import read_configurations
+
+from gwf.performance import *
+
 config = read_configurations()
 
 parser = argparse.ArgumentParser(
-    version=package_version,
     description="""
-    Grid WorkFlow (v{version}) -- Keeps track of the status of jobs in a workflow and submits jobs that needs to be run.
-    """.format(version=package_version),
+    Grid WorkFlow -- Keeps track of the status of jobs in a workflow and submits jobs that needs to be run.
+    """,
     epilog="""
     For questions, comments or bug-reports contact <mailund@birc.au.dk> or go to https://github.com/mailund/gwf/issues/
     """)
@@ -63,9 +57,9 @@ if not os.path.exists(args.workflow_file):
 
 
 # Set the backend based on defaults or arguments...
-gwf_workflow.BACKEND = AVAILABLE_BACKENDS[args.backend]()
+gwf.BACKEND = AVAILABLE_BACKENDS[args.backend]()
 
-cancel_command = gwf_workflow.BACKEND.build_cancel_command
+cancel_command = gwf.BACKEND.build_cancel_command
 
 if args.performance:
 
@@ -156,7 +150,7 @@ if args.performance:
     sys.exit(0)
 
 execfile(args.workflow_file)
-from gwf_workflow.workflow import build_workflow, schedule, dependencies
+from gwf import build_workflow, dependencies
 workflow = build_workflow()
 
 if args.clean:

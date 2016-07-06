@@ -13,8 +13,7 @@ setup(
     name = "gwf",
     version = "0.7.0",
 
-    packages = find_packages(where='src'),
-    package_dir = {'': 'src'},
+    packages = find_packages(),
     scripts=['scripts/gwf', 'scripts/gwf-config'],
 
     #test_suite='tests',

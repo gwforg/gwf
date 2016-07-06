@@ -1,19 +1,14 @@
 """Classes representing a workflow."""
 
-import sys
 import os
 import os.path
-import string
-import subprocess
+import sys
 
-import gwf_workflow
-from gwf_workflow.jobs import JOBS_QUEUE
-from gwf_workflow import BACKEND
-from gwf_workflow.colours import *
-from gwf_workflow.helpers import *
+from gwf.helpers import *
+from gwf.jobs import JOBS_QUEUE
 
-
-  
+from colours import *
+from gwf import BACKEND
 
 
 class Node(object):
@@ -138,12 +133,12 @@ class Node(object):
 
         print >> f, "#!/bin/bash"
 
-        gwf_workflow.BACKEND.write_script_header(f, self.target.options)
+        gwf.BACKEND.write_script_header(f, self.target.options)
         print >> f
 
         print >> f, '# GWF generated code ...'
         print >> f, 'cd %s' % self.target.working_dir
-        gwf_workflow.BACKEND.write_script_variables(f)
+        gwf.BACKEND.write_script_variables(f)
         print >> f, "set -e"
         print >> f
 
@@ -293,7 +288,7 @@ def build_workflow():
 
     nodes = {}
     providing = {}
-    for target in gwf_workflow.ALL_TARGETS.values():
+    for target in gwf.ALL_TARGETS.values():
         target.options['input'] = [make_absolute_path(target.working_dir, infile)
                                    for infile in target.options['input']]
         target.options['output'] = [make_absolute_path(target.working_dir, outfile)
