@@ -11,7 +11,7 @@ import sys
 import gwf
 
 from gwf.workflow import ALL_TARGETS
-from gwf.workflow import Node
+from gwf.workflow import Target
 from gwf.helpers import file_exists, get_file_timestamp, make_absolute_path, make_list
 
 
@@ -88,7 +88,7 @@ class target(object):
         if self.name in ALL_TARGETS:
             print('Warning: Target', self.name, 'defined more than once.')
 
-        new_target = Node(self.name, options, spec)
+        new_target = Target(self.name, options, spec)
         ALL_TARGETS[self.name] = new_target
 
 

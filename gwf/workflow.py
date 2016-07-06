@@ -16,7 +16,7 @@ from gwf.jobs import JOBS_QUEUE
 ALL_TARGETS = {}
 
 
-class Node(object):
+class Target(object):
     """Class handling targets. Stores the info for executing them."""
 
     def __init__(self, name, options, spec):
