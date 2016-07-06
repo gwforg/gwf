@@ -1,8 +1,9 @@
 """Classes representing a workflow."""
 
-import os
 import os.path
 import sys
+
+import gwf
 
 from gwf.helpers import *
 from gwf.jobs import JOBS_QUEUE
