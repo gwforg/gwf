@@ -144,7 +144,7 @@ class Target(object):
 
     @property
     def job_id(self):
-        return JOBS_QUEUE.get_database(gwf.WORkING_DIR).get_job_id(self.name)
+        return JOBS_QUEUE.get_database(gwf.WORKING_DIR).get_job_id(self.name)
 
     def set_job_id(self, job_id):
         JOBS_QUEUE.get_database(gwf.WORKING_DIR).set_job_id(self.name, job_id)
