@@ -264,7 +264,7 @@ def get_execution_schedule(nodes, target_name):
 def build_workflow(working_dir):
     """Collect all the targets and build up their dependencies."""
 
-    nodes = {}
+    targets = {}
     providing = {}
     for target in ALL_TARGETS.values():
         target.working_dir = working_dir
@@ -279,9 +279,9 @@ def build_workflow(working_dir):
                 print('Warning: File', outfile, 'is provided by both', end=' ')
                 print(target.name, 'and', providing[outfile].target.name)
             providing[outfile] = target
-        nodes[target.name] = target
+        targets[target.name] = target
 
-    for node in nodes.values():
+    for node in targets.values():
         for infile in node.options['input']:
             if infile in providing:
                 provider = providing[infile]
@@ -294,7 +294,7 @@ def build_workflow(working_dir):
                     print('Aborting')
                     sys.exit(2)
 
-    return nodes
+    return targets
 
 
 def split_tasks(tasks):
