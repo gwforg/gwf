@@ -22,8 +22,8 @@ class SlurmBackend(Backend):
     def _write_script(self, target):
         """Write the code to a script that can be executed."""
 
-        script_dir = make_absolute_path(self.working_dir, '.scripts')
-        script_name = make_absolute_path(self.script_dir, escape_file_name(target.name))
+        script_dir = make_absolute_path(target.working_dir, '.scripts')
+        script_name = make_absolute_path(target.script_dir, escape_file_name(target.name))
 
         if not os.path.exists(script_dir):
             os.makedirs(script_dir)
