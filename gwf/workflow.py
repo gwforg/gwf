@@ -23,6 +23,8 @@ class Target(object):
         self.name = name
         self.spec = spec
 
+        self.working_dir = None
+
         self.options = {
             'input': [],
             'output': [],
@@ -67,13 +69,13 @@ class Target(object):
             return True
 
         for outfile in self.options['output']:
-            if not file_exists(make_absolute_path(gwf.WORKING_DIR, outfile)):
+            if not file_exists(make_absolute_path(self.working_dir, outfile)):
                 self.reason_to_run = 'Output file %s is missing' % outfile
                 self.cached_node_should_run = True
                 return True
 
         for infile in self.options['input']:
-            if not file_exists(make_absolute_path(gwf.WORKING_DIR, infile)):
+            if not file_exists(make_absolute_path(self.working_dir, infile)):
                 self.reason_to_run = 'Input file %s is missing' % infile
                 self.cached_node_should_run = True
                 return True
@@ -95,7 +97,7 @@ class Target(object):
         youngest_in_timestamp = None
         youngest_in_filename = None
         for infile in self.options['input']:
-            timestamp = get_file_timestamp(make_absolute_path(gwf.WORKING_DIR, infile))
+            timestamp = get_file_timestamp(make_absolute_path(self.working_dir, infile))
             if youngest_in_timestamp is None \
                     or youngest_in_timestamp < timestamp:
                 youngest_in_filename = infile
@@ -105,7 +107,7 @@ class Target(object):
         oldest_out_timestamp = None
         oldest_out_filename = None
         for outfile in self.options['output']:
-            timestamp = get_file_timestamp(make_absolute_path(gwf.WORKING_DIR, outfile))
+            timestamp = get_file_timestamp(make_absolute_path(self.working_dir, outfile))
             if oldest_out_timestamp is None \
                     or oldest_out_timestamp > timestamp:
                 oldest_out_filename = outfile
@@ -136,18 +138,18 @@ class Target(object):
 
     @property
     def job_in_queue(self):
-        return JOBS_QUEUE.get_database(gwf.WORKING_DIR).in_queue(self.name)
+        return JOBS_QUEUE.get_database(self.working_dir).in_queue(self.name)
 
     @property
     def job_queue_status(self):
-        return JOBS_QUEUE.get_database(gwf.WORKING_DIR).get_job_status(self.name)
+        return JOBS_QUEUE.get_database(self.working_dir).get_job_status(self.name)
 
     @property
     def job_id(self):
-        return JOBS_QUEUE.get_database(gwf.WORKING_DIR).get_job_id(self.name)
+        return JOBS_QUEUE.get_database(self.working_dir).get_job_id(self.name)
 
     def set_job_id(self, job_id):
-        JOBS_QUEUE.get_database(gwf.WORKING_DIR).set_job_id(self.name, job_id)
+        JOBS_QUEUE.get_database(self.working_dir).set_job_id(self.name, job_id)
 
     def submit(self, dependents):
         if self.job_in_queue:
@@ -175,7 +177,7 @@ class Target(object):
         """Get list of output files that already exists."""
         result = []
         for outfile in self.options['output']:
-            filename = make_absolute_path(gwf.WORKING_DIR, outfile)
+            filename = make_absolute_path(self.working_dir, outfile)
             if file_exists(filename):
                 result.append(filename)
         return result
@@ -259,17 +261,19 @@ def get_execution_schedule(nodes, target_name):
     return job_schedule, scheduled
 
 
-def build_workflow():
+def build_workflow(working_dir):
     """Collect all the targets and build up their dependencies."""
 
     nodes = {}
     providing = {}
     for target in ALL_TARGETS.values():
-        target.options['input'] = [make_absolute_path(gwf.WORKING_DIR, infile)
+        target.working_dir = working_dir
+
+        target.options['input'] = [make_absolute_path(target.working_dir, infile)
                                    for infile in target.options['input']]
-        target.options['output'] = [make_absolute_path(gwf.WORKING_DIR, outfile)
+        target.options['output'] = [make_absolute_path(target.working_dir, outfile)
                                     for outfile in target.options['output']]
-        #node = Node(target)
+
         for outfile in target.options['output']:
             if outfile in providing:
                 print('Warning: File', outfile, 'is provided by both', end=' ')
