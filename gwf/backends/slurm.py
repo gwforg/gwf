@@ -19,37 +19,43 @@ def _mkdir_if_not_exist(dirname):
 class SlurmBackend(Backend):
     """Backend functionality for slurm."""
 
-    def __init__(self):
+    def _write_script(self, target):
+        """Write the code to a script that can be executed."""
 
-        self.script_dir = make_absolute_path(gwf.WORKING_DIR, '.scripts')
-        self.script_name = make_absolute_path(self.script_dir, escape_file_name(self.name))
+        script_dir = make_absolute_path(self.working_dir, '.scripts')
+        script_name = make_absolute_path(self.script_dir, escape_file_name(target.name))
 
-    def make_script_dir(self):
-        script_dir = self.script_dir
-        # Don't use the _file_exists() function here. It caches its status and that won't work for the script dir.
         if not os.path.exists(script_dir):
             os.makedirs(script_dir)
 
-    def write_script(self, target):
-        """Write the code to a script that can be executed."""
+        with open(script_name, 'w') as f:
+            print("#!/bin/bash", file=f)
 
-        self.make_script_dir()
-        f = open(self.script_name, 'w')
+            print('#SBATCH -N {}'.format(target.options['nodes']), file=f)
+            print('#SBATCH -c {}'.format(target.options['cores']), file=f)
+            print('#SBATCH --mem={}'.format(target.options['memory']), file=f)
+            print('#SBATCH -t {}'.format(target.options['walltime']), file=f)
+            if 'queue' in target.options:
+                print('#SBATCH -p {}'.format(target.options['queue']), file=f)
+            if 'account' in target.options:
+                print('#SBATCH -A {}'.format(target.options['account']), file=f)
+            if 'constraint' in target.options:
+                print('#SBATCH -C {}'.format(target.options['constraint']), file=f)
+            if 'mail_type' in target.options:
+                print('#SBATCH --mail-type={}'.format(target.options['mail_type']), file=f)
+            if 'mail_user' in target.options:
+                print('#SBATCH --mail-user={}'.format(target.options['mail_user']), file=f)
 
-        print("#!/bin/bash", file=f)
+            print(file=f)
 
-        self.write_script_header(f, target.options)
-        print(file=f)
+            print('# GWF generated code ...', file=f)
+            print('cd %s' % target.working_dir, file=f)
+            print('export GWF_JOBID=$SLURM_JOBID', file=f)
+            print(f, "set -e", file=f)
+            print(file=f)
 
-        print('# GWF generated code ...', file=f)
-        print('cd %s' % gwf.WORKING_DIR, file=f)
-        self.write_script_variables(f)
-        print(f, "set -e", file=f)
-        print(file=f)
-
-        print('# Script from workflow', file=f)
-
-        print(self.spec, file=f)
+            print('# Script from workflow', file=f)
+            print(target.spec, file=f)
 
     def get_state_of_jobs(self, job_ids):
         result = dict((job_id, False) for job_id in job_ids)
@@ -85,27 +91,8 @@ class SlurmBackend(Backend):
             pass
         return result
 
-    def write_script_header(self, f, options):
-        print('#SBATCH -N {}'.format(options['nodes']), file=f)
-        print('#SBATCH -c {}'.format(options['cores']), file=f)
-        print('#SBATCH --mem={}'.format(options['memory']), file=f)
-        print('#SBATCH -t {}'.format(options['walltime']), file=f)
-        if 'queue' in options:
-            print('#SBATCH -p {}'.format(options['queue']), file=f)
-        if 'account' in options:
-            print('#SBATCH -A {}'.format(options['account']), file=f)
-        if 'constraint' in options:
-            print('#SBATCH -C {}'.format(options['constraint']), file=f)
-        if 'mail_type' in options:
-            print('#SBATCH --mail-type={}'.format(options['mail_type']), file=f)
-        if 'mail_user' in options:
-            print('#SBATCH --mail-user={}'.format(options['mail_user']), file=f)
-
-    def write_script_variables(self, f):
-        print('export GWF_JOBID=$SLURM_JOBID', file=f)
-
     def _build_submit_command(self, target, script_name, dependents_ids):
-        log_dir = os.path.join(gwf.WORKING_DIR, 'gwf_log')
+        log_dir = os.path.join(target.working_dir, 'gwf_log')
         _mkdir_if_not_exist(log_dir)
 
         command = ['sbatch', '-J', target.name, '--parsable',
@@ -119,7 +106,7 @@ class SlurmBackend(Backend):
         return command
 
     def submit_command(self, target, script_name, dependents_ids):
-        self.write_script(target)
+        self._write_script(target)
 
         command = self._build_submit_command(target, script_name, dependents_ids)
         qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
