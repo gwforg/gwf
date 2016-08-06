@@ -1,197 +1,12 @@
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
 import os.path
 import sys
 
 import gwf
-
 from gwf.colours import *
-from gwf.helpers import make_list, make_absolute_path, file_exists, get_file_timestamp
-from gwf.jobs import JOBS_QUEUE
-
-
-# This global variable will hold all the targets after a workflow script has completed.
-# gwf will use this list for its further processing.
-ALL_TARGETS = {}
-
-
-class Target(object):
-    """Class handling targets. Stores the info for executing them."""
-
-    def __init__(self, name, options, spec):
-        self.name = name
-        self.spec = spec
-
-        self.working_dir = None
-
-        self.options = {
-            'input': [],
-            'output': [],
-            'nodes': 1,
-            'cores': 1,
-            'memory': "4g",
-            'walltime': '120:00:00',
-        }
-
-        known_options_without_defaults = {'queue', 'account', 'constraint', 'mail_user', 'mail_type'}
-
-        for k in options.keys():
-            if k in self.options or k in known_options_without_defaults:
-                self.options[k] = options[k]
-            else:
-                print('Warning:, Target', self.name, 'has unknown option', k)
-
-        # handle that input and output can be both lists and single file names
-        self.options['input'] = filter(None, make_list(self.options['input']))
-        self.options['output'] = filter(None, make_list(self.options['output']))
-
-        self.depends_on = set()
-        self.dependents = set()
-
-        self.cached_node_should_run = None
-        self.reason_to_run = None
-        self.cached_should_run = None
-
-    @property
-    def node_should_run(self):
-        """Test if this target needs to be run based on whether input
-        and output files exist and on their time stamps. Doesn't check
-        if upstream targets need to run, only this task; upstream tasks
-        are handled by the dependency graph. """
-
-        if self.cached_node_should_run is not None:
-            return self.cached_node_should_run
-
-        if len(self.options['output']) == 0:
-            self.reason_to_run = 'Sinks (targets without output) should always run'
-            self.cached_node_should_run = True
-            return True
-
-        for outfile in self.options['output']:
-            if not file_exists(make_absolute_path(self.working_dir, outfile)):
-                self.reason_to_run = 'Output file %s is missing' % outfile
-                self.cached_node_should_run = True
-                return True
-
-        for infile in self.options['input']:
-            if not file_exists(make_absolute_path(self.working_dir, infile)):
-                self.reason_to_run = 'Input file %s is missing' % infile
-                self.cached_node_should_run = True
-                return True
-
-        # If no file is missing, it comes down to the time stamps. If we
-        # only have output and no input, we assume the output is up to
-        # date. Touching files and adding input can fix this behaviour
-        # from the user side but if we have a program that just creates
-        # files we don't want to run it whenever someone needs that
-        # output just because we don't have time stamped input.
-
-        if len(self.options['input']) == 0:
-            self.reason_to_run = "We shouldn't run"
-            self.cached_node_should_run = False
-            return False
-
-        # if we have both input and output files, check time stamps
-
-        youngest_in_timestamp = None
-        youngest_in_filename = None
-        for infile in self.options['input']:
-            timestamp = get_file_timestamp(make_absolute_path(self.working_dir, infile))
-            if youngest_in_timestamp is None \
-                    or youngest_in_timestamp < timestamp:
-                youngest_in_filename = infile
-                youngest_in_timestamp = timestamp
-        assert youngest_in_timestamp is not None
-
-        oldest_out_timestamp = None
-        oldest_out_filename = None
-        for outfile in self.options['output']:
-            timestamp = get_file_timestamp(make_absolute_path(self.working_dir, outfile))
-            if oldest_out_timestamp is None \
-                    or oldest_out_timestamp > timestamp:
-                oldest_out_filename = outfile
-                oldest_out_timestamp = timestamp
-        assert oldest_out_timestamp is not None
-
-        # The youngest in should be older than the oldest out
-        if youngest_in_timestamp > oldest_out_timestamp:
-            # we have a younger in file than an outfile
-            self.reason_to_run = 'Infile %s is younger than outfile %s' % (youngest_in_filename, oldest_out_filename)
-            self.cached_node_should_run = True
-            return True
-        else:
-            self.reason_to_run = 'Youngest infile %s is older than ' \
-                                 'the oldest outfile %s' % \
-                                 (youngest_in_filename, oldest_out_filename)
-            self.cached_node_should_run = False
-            return False
-
-    @property
-    def should_run(self):
-        if self.cached_should_run is not None:
-            return self.cached_should_run
-
-        # If this target should run, or any of the targets and this target depends on should run, this node should run.
-        self.cached_should_run = self.node_should_run or any(n.should_run for n in self.depends_on)
-        return self.cached_should_run
-
-    @property
-    def job_in_queue(self):
-        return JOBS_QUEUE.get_database(self.working_dir).in_queue(self.name)
-
-    @property
-    def job_queue_status(self):
-        return JOBS_QUEUE.get_database(self.working_dir).get_job_status(self.name)
-
-    @property
-    def job_id(self):
-        return JOBS_QUEUE.get_database(self.working_dir).get_job_id(self.name)
-
-    def set_job_id(self, job_id):
-        JOBS_QUEUE.get_database(self.working_dir).set_job_id(self.name, job_id)
-
-    def submit(self, dependents):
-        if self.job_in_queue:
-            return self.job_id
-
-        dependents_ids = [dependent.job_id for dependent in dependents]
-        try:
-            job_id = gwf.backends.BACKEND.submit_command(self, self.script_name, dependents_ids)
-            self.set_job_id(job_id)
-        except OSError as ex:
-            print()
-            print(COLORS['red'], COLORS['bold'])
-            print('ERROR:', CLEAR, end=' ')
-            print("Couldn't execute the submission command {}'{}'{}.".format(COLORS['bold'], ' '.join(self.script_name), CLEAR))
-            print(ex)
-            print(COLORS['red'])
-            print("Quiting submissions", CLEAR)
-            print()
-
-            sys.exit(2)
-
-        return job_id
-
-    def get_existing_outfiles(self):
-        """Get list of output files that already exists."""
-        result = []
-        for outfile in self.options['output']:
-            filename = make_absolute_path(self.working_dir, outfile)
-            if file_exists(filename):
-                result.append(filename)
-        return result
-
-    def clean_target(self):
-        """Delete all existing outfiles."""
-        for fname in self.get_existing_outfiles():
-            os.remove(fname)
-
-    def __str__(self):
-        return str(self)
-
-    __repr__ = __str__  # not really the correct use of __repr__ but easy
-    # for printing output when testing...
+from gwf.helpers import (file_exists, get_file_timestamp, make_absolute_path,
+                         make_list)
 
 
 def dependencies(nodes, target_name):
@@ -202,7 +17,8 @@ def dependencies(nodes, target_name):
     root = nodes[target_name]
 
     # Working with a list to preserve the order. It makes lookups slower but hopefully these sets
-    # won't be terribly long ... if it becomes a problem it is easy enough to fix it.
+    # won't be terribly long ... if it becomes a problem it is easy enough to
+    # fix it.
     processed = []
 
     def dfs(node):
@@ -261,49 +77,183 @@ def get_execution_schedule(nodes, target_name):
     return job_schedule, scheduled
 
 
-def build_workflow(working_dir):
-    """Collect all the targets and build up their dependencies."""
+class Target(object):
 
-    targets = {}
-    providing = {}
-    for target in ALL_TARGETS.values():
-        target.working_dir = working_dir
+    def __init__(self, name, inputs, outputs, options, working_dir, spec=None):
+        self.name = name
 
-        target.options['input'] = [make_absolute_path(target.working_dir, infile)
-                                   for infile in target.options['input']]
-        target.options['output'] = [make_absolute_path(target.working_dir, outfile)
-                                    for outfile in target.options['output']]
+        self.inputs = [_norm_path(working_dir, path) for path in inputs]
+        self.outputs = [_norm_path(working_dir, path) for path in outputs]
 
-        for outfile in target.options['output']:
-            if outfile in providing:
-                print('Warning: File', outfile, 'is provided by both', end=' ')
-                print(target.name, 'and', providing[outfile].target.name)
-            providing[outfile] = target
-        targets[target.name] = target
+        self.options = options
+        self.working_dir = working_dir
 
-    for node in targets.values():
-        for infile in node.options['input']:
-            if infile in providing:
-                provider = providing[infile]
-                node.depends_on.add(provider)
-                provider.dependents.add(node)
-            else:
-                if not file_exists(infile):
-                    print('Target', node.target.name, 'needs file', end=' ')
-                    print(infile, 'which does not exists and is not constructed.')
-                    print('Aborting')
-                    sys.exit(2)
+        self.spec = spec
 
-    return targets
+    @property
+    def is_source(self):
+        """Return whether this target is a source.
+
+        A target is a source if it does not depend on any files."""
+        return not self.inputs
+
+    @property
+    def is_sink(self):
+        """Return whether this target is a sink.
+
+        A target is a sink if it does not output any files.
+        """
+        return not self.outputs
+
+    def __lshift__(self, spec):
+        self.spec = spec
+
+    def __repr__(self):
+        return target_repr.format(
+            self.__class__.__name__,
+            self.name,
+            self.inputs,
+            self.outputs,
+            self.options,
+            self.working_dir,
+            self.spec,
+        )
+
+    def __str__(self):
+        return self.name
 
 
-def split_tasks(tasks):
-    up_to_date, in_queue, to_schedule = [], [], []
-    for task in tasks:
-        if task.job_in_queue:
-            in_queue.append(task)
-        elif task.should_run:
-            to_schedule.append(task)
+class Workflow(object):
+
+    def __init__(self):
+        self._backend = None
+        self._targets = {}
+        self._dependency_graph = {}
+
+        filename = inspect.getfile(sys._getframe(1))
+        self.working_dir = os.path.dirname(os.path.realpath(filename))
+
+    def _add_target(self, target):
+        if target.name in self._targets:
+            raise GWFException(
+                'Target "{}" already exists in workflow.'.format(target.name)
+            )
+
+        self._targets[target.name] = target
+
+    def target(self, name, inputs, outputs, **options):
+        """Create a target."""
+        new_target = Target(name, inputs, outputs, options,
+                            working_dir=self.working_dir)
+
+        self._add_target(new_target)
+        return new_target
+
+    def include_path(self, path):
+        """Include targets of another workflow into this workflow."""
+        other_workflow = _import_object(path)
+        self.include_workflow(other_workflow)
+
+    def include_workflow(self, other_workflow):
+        """Include targets from another `Workflow` object in this workflow."""
+        for target in other_workflow._targets.values():
+            self._add_target(target)
+
+    def include(self, path_or_workflow):
+        """Include another workflow into this workflow."""
+        if isinstance(path_or_workflow, Workflow):
+            self.include_workflow(path_or_workflow)
+        elif isinstance(path_or_workflow, str):
+            self.include_path(path_or_workflow)
+        elif inspect.ismodule(path_or_workflow):
+            self.include_workflow(getattr(path_or_workflow, 'gwf'))
         else:
-            up_to_date.append(task)
-    return up_to_date, in_queue, to_schedule
+            raise TypeError('First argument must be either a string or a '
+                            'Workflow object.')
+
+    def prepare(self):
+        """Prepare workflow to run.
+
+        After the workflow has been prepared, three dictionaries will be
+        available on the object:
+
+        `provides`:
+            a dictionary of file paths and the corresponding targets that
+            produce the files.
+
+        `dependencies`:
+            a dictionary where each key is a `Target` and the value is a list
+            of `Target`s that the key `Target` depends on.
+
+        `dependents`:
+            a dictionary where each key is a `Target` and the value is a list
+            of `Targets`s that depend on the key `Target`.
+        """
+        provides = {}
+        dependencies = defaultdict(list)
+        dependents = defaultdict(list)
+
+        for target in self._targets.values():
+            for path in target.outputs:
+                if path in provides:
+                    raise GWFException(
+                        ex_msg_file_provided_by_multple_targets.format(
+                            path, provides[path].name, target.name
+                        )
+                    )
+
+                provides[path] = target
+
+        for target in self._targets.values():
+            for path in target.inputs:
+                if os.path.exists(path):
+                    continue
+
+                if path not in provides:
+                    raise GWFException(
+                        ex_msg_file_required_but_not_provided.format(
+                            path, target.name
+                        )
+                    )
+
+                dependencies[target].append(provides[path])
+
+        for target, deps in dependencies.items():
+            for dep in deps:
+                dependents[dep].append(target)
+
+        self.provides = provides
+        self.dependencies = dependencies
+        self.dependents = dependents
+
+    @cache
+    def should_run(self, target):
+        if any(self.should_run(dep) for dep in self.dependencies[target]):
+            return True
+
+        if target.is_sink:
+            return True
+
+        if any(not os.path.exists(path) for path in target.outputs):
+            return True
+
+        if target.is_source:
+            return False
+
+        youngest_in_ts, youngest_in_path = \
+            max((_get_file_timestamp(path), path) for path in target.inputs)
+
+        oldest_out_ts, oldest_out_path = \
+            min((_get_file_timestamp(path), path) for path in target.outputs)
+
+        return youngest_in_ts > oldest_out_ts
+
+    def run(self, backend=Backend()):
+        self.prepare()
+
+        should_run = [target
+                      for target in self._targets.values()
+                      if self.should_run(target)]
+        print(should_run)
+
+        # backend.submit(self)
