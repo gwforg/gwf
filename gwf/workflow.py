@@ -1,12 +1,58 @@
 from __future__ import absolute_import, print_function
 
+import imp
+import inspect
 import os.path
 import sys
+from collections import defaultdict
 
-import gwf
-from gwf.colours import *
-from gwf.helpers import (file_exists, get_file_timestamp, make_absolute_path,
-                         make_list)
+from . import GWFException
+from .utils import cache
+
+
+ex_msg_file_provided_by_multple_targets = '''
+    File "{}" provided by multiple targets "{}" and "{}".
+'''.strip()
+
+ex_msg_file_required_but_not_provided = '''
+    File "{}" is required by "{}", but does not exist and is not provided by \
+    a target.
+'''.strip()
+
+target_repr = '''
+    {}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, spec={!r})
+'''.strip()
+
+
+def _import_object(path, default_obj='gwf'):
+    if not os.path.isabs(path):
+        path = os.path.abspath(os.path.join(os.getcwd(), path))
+
+    comps = path.rsplit(':')
+    if len(comps) == 2:
+        path, obj = comps
+    elif len(comps) == 1:
+        path, obj = comps[0], default_obj
+    else:
+        raise ValueError('Invalid path.')
+
+    basedir, filename = os.path.split(path)
+    filename, ext = os.path.splitext(filename)
+
+    mod_loc = imp.find_module(filename, [basedir])
+    mod = imp.load_module(filename, *mod_loc)
+    return getattr(mod, obj)
+
+
+def _norm_path(working_dir, path):
+    if os.path.isabs(path):
+        return path
+    return os.path.abspath(os.path.join(working_dir, path))
+
+
+@cache
+def _get_file_timestamp(filename):
+    return os.path.getmtime(filename)
 
 
 def dependencies(nodes, target_name):
@@ -16,9 +62,9 @@ def dependencies(nodes, target_name):
     """
     root = nodes[target_name]
 
-    # Working with a list to preserve the order. It makes lookups slower but hopefully these sets
-    # won't be terribly long ... if it becomes a problem it is easy enough to
-    # fix it.
+    # Working with a list to preserve the order. It makes lookups slower but
+    # hopefully these sets won't be terribly long ... if it becomes a problem
+    # it is easy enough to fix it.
     processed = []
 
     def dfs(node):
@@ -248,12 +294,5 @@ class Workflow(object):
 
         return youngest_in_ts > oldest_out_ts
 
-    def run(self, backend=Backend()):
-        self.prepare()
-
-        should_run = [target
-                      for target in self._targets.values()
-                      if self.should_run(target)]
-        print(should_run)
-
-        # backend.submit(self)
+    def run(self, backend):
+        pass
