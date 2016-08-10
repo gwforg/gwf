@@ -1,10 +1,28 @@
-class Backend(object):
+BACKENDS = {}
 
-    def get_state_of_jobs(self):
+
+def register_backend(backend):
+    BACKENDS[backend.name] = backend
+
+
+class BackendType(type):
+
+    def __new__(meta, name, bases, class_dict):
+        cls = type.__new__(meta, name, bases, class_dict)
+        register_backend(cls)
+        return cls
+
+
+class Backend(metaclass=BackendType):
+
+    def submitted(self, targets):
         raise NotImplementedError()
 
-    def submit_command(self, target, script_name, dependent_ids):
+    def running(self, targets):
         raise NotImplementedError()
 
-    def build_cancel_command(self, job_ids):
+    def submit(self, targets):
+        raise NotImplementedError()
+
+    def cancel(self, targets):
         raise NotImplementedError()
