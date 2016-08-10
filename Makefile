@@ -1,2 +1,7 @@
+init:
+	pip install -r requirements.txt
+	pip install .
 test:
-	python -m unittest discover tests/
+	coverage run --source gwf -m unittest discover tests/
+lint:
+	flake8
