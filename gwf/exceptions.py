@@ -1,0 +1,2 @@
+class GWFException(Exception):
+    pass

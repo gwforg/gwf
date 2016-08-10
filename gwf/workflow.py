@@ -6,7 +6,7 @@ import os.path
 import sys
 from collections import defaultdict
 
-from . import GWFException
+from .exceptions import GWFException
 from .utils import cache
 
 
@@ -50,6 +50,10 @@ def _norm_path(working_dir, path):
     return os.path.abspath(os.path.join(working_dir, path))
 
 
+def _norm_paths(working_dir, paths):
+    return [_norm_path(working_dir, path) for path in paths]
+
+
 @cache
 def _get_file_timestamp(filename):
     return os.path.getmtime(filename)
@@ -60,8 +64,8 @@ class Target(object):
     def __init__(self, name, inputs, outputs, options, working_dir, spec=None):
         self.name = name
 
-        self.inputs = [_norm_path(working_dir, path) for path in inputs]
-        self.outputs = [_norm_path(working_dir, path) for path in outputs]
+        self.inputs = _norm_paths(working_dir, inputs)
+        self.outputs = _norm_paths(working_dir, outputs)
 
         self.options = options
         self.working_dir = working_dir
@@ -155,15 +159,15 @@ class Workflow(object):
         After the workflow has been prepared, three dictionaries will be
         available on the object:
 
-        `provides`:
+        `self.provides`:
             a dictionary of file paths and the corresponding targets that
             produce the files.
 
-        `dependencies`:
+        `self.dependencies`:
             a dictionary where each key is a `Target` and the value is a list
             of `Target`s that the key `Target` depends on.
 
-        `dependents`:
+        `self.dependents`:
             a dictionary where each key is a `Target` and the value is a list
             of `Targets`s that depend on the key `Target`.
         """
@@ -252,7 +256,7 @@ class Workflow(object):
     def _get_execution_schedule_for_target(self, target):
         """Linearize the targets to be run.
 
-        Returns a list of tasks to be run (in the order they should run or
+        Returns a list of `Target`s to be run (in the order they should run or
         be submitted to the cluster to make sure dependencies are handled
         correctly) and a set of the names of tasks that will be scheduled
         (to make sure dependency flags are set in the submission command).
@@ -262,7 +266,7 @@ class Workflow(object):
 
         # If the target is already in the queue we just dismiss the scheduling
         # right away... this because we need to handle dependent nodes in the
-        # queue differently, since for those we need wait for completion.
+        # queue differently, since for those we need to wait for completion.
         if self.backend.submitted(root):
             return [], set()
 
