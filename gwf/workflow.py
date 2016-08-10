@@ -89,6 +89,7 @@ class Target(object):
 
     def __lshift__(self, spec):
         self.spec = spec
+        return self
 
     def __repr__(self):
         return target_repr.format(
