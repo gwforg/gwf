@@ -1,30 +1,7 @@
 import os.path
-from collections import defaultdict
 
 from .exceptions import GWFException
 from .utils import cache
-
-
-_ex_msg_file_provided_by_multiple_targets = (
-    'File "{}" provided by multiple targets "{}" and "{}".'
-)
-
-_ex_msg_file_required_but_not_provided = (
-    'File "{}" is required by "{}", but does not exist and is not provided by '
-    'a target.'
-)
-
-
-def iter_inputs(targets):
-    for target in targets:
-        for path in target.inputs:
-            yield target, path
-
-
-def iter_outputs(targets):
-    for target in targets:
-        for path in target.outputs:
-            yield target, path
 
 
 @cache
@@ -58,33 +35,6 @@ class Scheduler:
         self.provides = {}
         self.dependencies = defaultdict(list)
         self.dependents = defaultdict(list)
-
-        for target, path in iter_outputs(self.workflow.targets.itervalues()):
-            if path in self.provides:
-                raise GWFException(
-                    _ex_msg_file_provided_by_multiple_targets.format(
-                        path, self.provides[path].name, target.name
-                    )
-                )
-
-            self.provides[path] = target
-
-        for target, path in iter_inputs(self.workflow.targets.itervalues()):
-            if os.path.exists(path):
-                continue
-
-            if path not in self.provides:
-                raise GWFException(
-                    _ex_msg_file_required_but_not_provided.format(
-                        path, target.name
-                    )
-                )
-
-            self.dependencies[target].append(self.provides[path])
-
-        for target, deps in self.dependencies.items():
-            for dep in deps:
-                self.dependents[dep].append(target)
 
     @cache
     def should_run(self, target):

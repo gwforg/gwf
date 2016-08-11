@@ -4,14 +4,36 @@ import imp
 import inspect
 import os.path
 import sys
+from collections import defaultdict
 
 from .exceptions import GWFException
 
+
+_ex_msg_file_provided_by_multiple_targets = (
+    'File "{}" provided by multiple targets "{}" and "{}".'
+)
+
+_ex_msg_file_required_but_not_provided = (
+    'File "{}" is required by "{}", but does not exist and is not provided by '
+    'a target.'
+)
 
 _target_repr = (
     '{}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, '
     'spec={!r})'
 )
+
+
+def iter_inputs(targets):
+    for target in targets:
+        for path in target.inputs:
+            yield target, path
+
+
+def iter_outputs(targets):
+    for target in targets:
+        for path in target.outputs:
+            yield target, path
 
 
 def _import_object(path, default_obj='gwf'):
@@ -138,3 +160,39 @@ class Workflow(object):
         else:
             raise TypeError('First argument must be either a string or a '
                             'Workflow object.')
+
+    def get_providers(self):
+        for target, path in iter_outputs(self.workflow.targets.itervalues()):
+            if path in self.provides:
+                raise GWFException(
+                    _ex_msg_file_provided_by_multiple_targets.format(
+                        path, self.provides[path].name, target.name
+                    )
+                )
+
+            self.provides[path] = target
+
+    def get_dependencies(self):
+        providers = self.get_providers()
+        dependencies = defaultdict(list)
+        for target, path in iter_inputs(self.targets.itervalues()):
+            if os.path.exists(path):
+                continue
+
+            if path not in self.provides:
+                raise GWFException(
+                    _ex_msg_file_required_but_not_provided.format(
+                        path, target.name
+                    )
+                )
+
+            dependencies[target].append(providers[path])
+        return dependencies
+
+    def get_dependents(self):
+        dependencies = self.get_dependencies()
+        dependents = defaultdict(list)
+        for target, deps in dependencies.items():
+            for dep in deps:
+                self.dependents[dep].append(target)
+        return dependents
