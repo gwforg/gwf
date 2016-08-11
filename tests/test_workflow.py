@@ -1,11 +1,24 @@
 import os.path
 import unittest
+from unittest.mock import patch
 
 from gwf import Workflow, Target
+from gwf.exceptions import GWFException
 
 
 class TestWorkflow(unittest.TestCase):
-    pass
+
+    def setUp(self):
+        self.workflow = Workflow()
+
+    def test_adding_a_target_makes_it_available_to_the_workflow(self):
+        self.workflow.target('TestTarget', inputs=[], outputs=[], spec='')
+        self.assertIn('TestTarget', self.workflow.targets)
+
+    def test_adding_two_targets_with_the_same_names_should_raise_an_exception(self):
+        self.workflow.target('TestTarget', inputs=[], outputs=[], spec='')
+        with self.assertRaises(GWFException):
+            self.workflow.target('TestTarget', inputs=[], outputs=[], spec='')
 
 
 class TestTarget(unittest.TestCase):
