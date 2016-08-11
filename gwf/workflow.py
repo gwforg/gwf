@@ -10,18 +10,19 @@ from .exceptions import GWFException
 from .utils import cache
 
 
-ex_msg_file_provided_by_multple_targets = '''
-    File "{}" provided by multiple targets "{}" and "{}".
-'''.strip()
+_ex_msg_file_provided_by_multiple_targets = (
+    'File "{}" provided by multiple targets "{}" and "{}".'
+)
 
-ex_msg_file_required_but_not_provided = '''
-    File "{}" is required by "{}", but does not exist and is not provided by \
-    a target.
-'''.strip()
+_ex_msg_file_required_but_not_provided = (
+    'File "{}" is required by "{}", but does not exist and is not provided by '
+    'a target.'
+)
 
-target_repr = '''
-    {}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, spec={!r})
-'''.strip()
+_target_repr = (
+    '{}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, '
+    'spec={!r})'
+)
 
 
 def _import_object(path, default_obj='gwf'):
@@ -92,7 +93,7 @@ class Target(object):
         return self
 
     def __repr__(self):
-        return target_repr.format(
+        return _target_repr.format(
             self.__class__.__name__,
             self.name,
             self.inputs,
@@ -180,7 +181,7 @@ class Workflow(object):
             for path in target.outputs:
                 if path in provides:
                     raise GWFException(
-                        ex_msg_file_provided_by_multple_targets.format(
+                        _ex_msg_file_provided_by_multiple_targets.format(
                             path, provides[path].name, target.name
                         )
                     )
@@ -194,7 +195,7 @@ class Workflow(object):
 
                 if path not in provides:
                     raise GWFException(
-                        ex_msg_file_required_but_not_provided.format(
+                        _ex_msg_file_required_but_not_provided.format(
                             path, target.name
                         )
                     )
