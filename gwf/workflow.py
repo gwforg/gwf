@@ -4,20 +4,9 @@ import imp
 import inspect
 import os.path
 import sys
-from collections import defaultdict
 
 from .exceptions import GWFException
-from .utils import cache
 
-
-_ex_msg_file_provided_by_multiple_targets = (
-    'File "{}" provided by multiple targets "{}" and "{}".'
-)
-
-_ex_msg_file_required_but_not_provided = (
-    'File "{}" is required by "{}", but does not exist and is not provided by '
-    'a target.'
-)
 
 _target_repr = (
     '{}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, '
@@ -53,11 +42,6 @@ def _norm_path(working_dir, path):
 
 def _norm_paths(working_dir, paths):
     return [_norm_path(working_dir, path) for path in paths]
-
-
-@cache
-def _get_file_timestamp(filename):
-    return os.path.getmtime(filename)
 
 
 class Target(object):
@@ -108,27 +92,27 @@ class Target(object):
 
 
 class Workflow(object):
+    """Represents a workflow."""
 
     def __init__(self):
-        self._backend = None
-        self._targets = {}
-        self._dependency_graph = {}
+        self.targets = {}
 
         filename = inspect.getfile(sys._getframe(1))
         self.working_dir = os.path.dirname(os.path.realpath(filename))
 
     def _add_target(self, target):
-        if target.name in self._targets:
+        if target.name in self.targets:
             raise GWFException(
                 'Target "{}" already exists in workflow.'.format(target.name)
             )
 
-        self._targets[target.name] = target
+        self.targets[target.name] = target
 
     def target(self, name, inputs, outputs, **options):
         """Create a target."""
-        new_target = Target(name, inputs, outputs, options,
-                            working_dir=self.working_dir)
+        new_target = Target(
+            name, inputs, outputs, options, working_dir=self.working_dir
+        )
 
         self._add_target(new_target)
         return new_target
@@ -140,7 +124,7 @@ class Workflow(object):
 
     def include_workflow(self, other_workflow):
         """Include targets from another `Workflow` object in this workflow."""
-        for target in other_workflow._targets.values():
+        for target in other_workflow.targets.values():
             self._add_target(target)
 
     def include(self, path_or_workflow):
@@ -154,149 +138,3 @@ class Workflow(object):
         else:
             raise TypeError('First argument must be either a string or a '
                             'Workflow object.')
-
-    def prepare(self):
-        """Prepare workflow to run.
-
-        After the workflow has been prepared, three dictionaries will be
-        available on the object:
-
-        `self.provides`:
-            a dictionary of file paths and the corresponding targets that
-            produce the files.
-
-        `self.dependencies`:
-            a dictionary where each key is a `Target` and the value is a list
-            of `Target`s that the key `Target` depends on.
-
-        `self.dependents`:
-            a dictionary where each key is a `Target` and the value is a list
-            of `Targets`s that depend on the key `Target`.
-        """
-        provides = {}
-        dependencies = defaultdict(list)
-        dependents = defaultdict(list)
-
-        for target in self._targets.values():
-            for path in target.outputs:
-                if path in provides:
-                    raise GWFException(
-                        _ex_msg_file_provided_by_multiple_targets.format(
-                            path, provides[path].name, target.name
-                        )
-                    )
-
-                provides[path] = target
-
-        for target in self._targets.values():
-            for path in target.inputs:
-                if os.path.exists(path):
-                    continue
-
-                if path not in provides:
-                    raise GWFException(
-                        _ex_msg_file_required_but_not_provided.format(
-                            path, target.name
-                        )
-                    )
-
-                dependencies[target].append(provides[path])
-
-        for target, deps in dependencies.items():
-            for dep in deps:
-                dependents[dep].append(target)
-
-        self.provides = provides
-        self.dependencies = dependencies
-        self.dependents = dependents
-
-    @cache
-    def should_run(self, target):
-        if any(self.should_run(dep) for dep in self.dependencies[target]):
-            return True
-
-        if target.is_sink:
-            return True
-
-        if any(not os.path.exists(path) for path in target.outputs):
-            return True
-
-        if target.is_source:
-            return False
-
-        youngest_in_ts, youngest_in_path = \
-            max((_get_file_timestamp(path), path) for path in target.inputs)
-
-        oldest_out_ts, oldest_out_path = \
-            min((_get_file_timestamp(path), path) for path in target.outputs)
-
-        return youngest_in_ts > oldest_out_ts
-
-    def _get_dependencies(self, target):
-        """Return all tasks necessary for building the target.
-
-        The set of tasks is just returned as set.
-        """
-        root = target
-
-        # Working with a list to preserve the order. It makes lookups slower
-        # but hopefully these sets won't be terribly long ... if it becomes a
-        # problem it is easy enough to fix it.
-        processed = []
-
-        def dfs(node):
-            if node in processed:
-                return
-            else:
-                for dep in node.depends_on:
-                    dfs(dep)
-                processed.append(node)
-
-        dfs(root)
-        return processed
-
-    def _get_execution_schedule_for_target(self, target):
-        """Linearize the targets to be run.
-
-        Returns a list of `Target`s to be run (in the order they should run or
-        be submitted to the cluster to make sure dependencies are handled
-        correctly) and a set of the names of tasks that will be scheduled
-        (to make sure dependency flags are set in the submission command).
-        """
-
-        root = target
-
-        # If the target is already in the queue we just dismiss the scheduling
-        # right away... this because we need to handle dependent nodes in the
-        # queue differently, since for those we need to wait for completion.
-        if self.backend.submitted(root):
-            return [], set()
-
-        processed = set()
-        scheduled = set()
-        job_schedule = []
-
-        def dfs(target):
-            if target in processed:
-                # we have already processed the node, and
-                # if we should run the target name is scheduled
-                # otherwise it isn't.
-                return target.name in scheduled
-
-            # schedule all dependencies before we schedule this task
-            for dep in self._get_dependencies(target):
-                dfs(dep)
-
-            # If this task needs to run, then schedule it
-            if self.backend.submitted(target) or self.should_run(target):
-                job_schedule.append(target)
-                scheduled.add(target)
-
-            processed.add(target)
-
-        dfs(root)
-
-        return job_schedule, scheduled
-
-    def run(self, backend):
-        pass
