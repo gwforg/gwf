@@ -24,7 +24,7 @@ class TestWorkflow(unittest.TestCase):
         with self.assertRaises(GWFException):
             workflow.target('TestTarget', inputs=[], outputs=[], spec='')
 
-    def test_include_workflow_should_extend_including_workflow(self):
+    def test_including_workflow_should_extend_including_workflow(self):
         workflow = Workflow()
         workflow.target('TestTarget1', inputs=[], outputs=[])
 
@@ -38,7 +38,7 @@ class TestWorkflow(unittest.TestCase):
         self.assertIn('TestTarget2', workflow.targets)
         self.assertIn('TestTarget3', workflow.targets)
 
-    def test_include_workflow_with_target_with_existing_name_should_raise_an_exception(self):
+    def test_including_workflow_with_target_with_existing_name_should_raise_an_exception(self):
         workflow = Workflow()
         workflow.target('TestTarget', inputs=[], outputs=[])
 
