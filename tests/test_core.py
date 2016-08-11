@@ -12,13 +12,41 @@ class TestWorkflow(unittest.TestCase):
         self.workflow = Workflow()
 
     def test_adding_a_target_makes_it_available_to_the_workflow(self):
-        self.workflow.target('TestTarget', inputs=[], outputs=[], spec='')
-        self.assertIn('TestTarget', self.workflow.targets)
+        workflow = Workflow()
+        workflow.target('TestTarget', inputs=[], outputs=[], spec='')
+
+        self.assertIn('TestTarget', workflow.targets)
 
     def test_adding_two_targets_with_the_same_names_should_raise_an_exception(self):
-        self.workflow.target('TestTarget', inputs=[], outputs=[], spec='')
+        workflow = Workflow()
+        workflow.target('TestTarget', inputs=[], outputs=[], spec='')
+
         with self.assertRaises(GWFException):
-            self.workflow.target('TestTarget', inputs=[], outputs=[], spec='')
+            workflow.target('TestTarget', inputs=[], outputs=[], spec='')
+
+    def test_include_workflow_should_extend_including_workflow(self):
+        workflow = Workflow()
+        workflow.target('TestTarget1', inputs=[], outputs=[])
+
+        other_workflow = Workflow()
+        other_workflow.target('TestTarget2', inputs=[], outputs=[])
+        other_workflow.target('TestTarget3', inputs=[], outputs=[])
+
+        workflow.include_workflow(other_workflow)
+
+        self.assertIn('TestTarget1', workflow.targets)
+        self.assertIn('TestTarget2', workflow.targets)
+        self.assertIn('TestTarget3', workflow.targets)
+
+    def test_include_workflow_with_target_with_existing_name_should_raise_an_exception(self):
+        workflow = Workflow()
+        workflow.target('TestTarget', inputs=[], outputs=[])
+
+        other_workflow = Workflow()
+        other_workflow.target('TestTarget', inputs=[], outputs=[])
+
+        with self.assertRaises(GWFException):
+            workflow.include_workflow(other_workflow)
 
 
 class TestTarget(unittest.TestCase):
