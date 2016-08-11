@@ -13,6 +13,8 @@ from gwf_workflow.colours import *
 from gwf_workflow.helpers import *
 
 
+  
+
 
 class Node(object):
     """Class handling targets. Stores the info for executing them."""
@@ -91,7 +93,7 @@ class Node(object):
         assert oldest_out_timestamp is not None
 
         # The youngest in should be older than the oldest out
-        if youngest_in_timestamp >= oldest_out_timestamp:
+        if youngest_in_timestamp > oldest_out_timestamp:
             # we have a younger in file than an outfile
             self.reason_to_run = 'Infile %s is younger than outfile %s' % (youngest_in_filename, oldest_out_filename)
             self.cached_node_should_run = True
@@ -142,9 +144,11 @@ class Node(object):
         print >> f, '# GWF generated code ...'
         print >> f, 'cd %s' % self.target.working_dir
         gwf_workflow.BACKEND.write_script_variables(f)
+        print >> f, "set -e"
         print >> f
 
         print >> f, '# Script from workflow'
+
         print >> f, self.target.spec
 
     @property
@@ -171,11 +175,8 @@ class Node(object):
 
         self.write_script()
         dependents_ids = [dependent.job_id for dependent in dependents]
-        command = BACKEND.build_submit_command(self.target, self.script_name, dependents_ids)
-
         try:
-            qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            job_id = qsub.stdout.read().strip()
+            job_id = BACKEND.submit_command(self.target, self.script_name, dependents_ids)
             self.set_job_id(job_id)
         except OSError, ex:
             print
