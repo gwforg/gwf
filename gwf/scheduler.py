@@ -14,6 +14,10 @@ _ex_msg_file_required_but_not_provided = (
     'a target.'
 )
 
+_ex_msg_target_depends_on_itself = (
+    'Target {} depends on itself.'
+)
+
 
 @cache
 def _get_file_timestamp(filename):
@@ -80,6 +84,16 @@ class Scheduler:
         self.provides, self.dependencies, self.dependents = \
             _compute_dependency_graph(self.workflow.targets.values())
 
+        self._check_circular_dependencies()
+
+    def _check_circular_dependencies(self):
+        for target in self.workflow.targets.values():
+            for dep in self.dependencies[target]:
+                if target in self._get_dependencies(dep):
+                    raise GWFException(
+                        _ex_msg_target_depends_on_itself.format(target.name)
+                    )
+
     @cache
     def should_run(self, target):
         if any(self.should_run(dep) for dep in self.dependencies[target]):
@@ -102,28 +116,26 @@ class Scheduler:
 
         return youngest_in_ts > oldest_out_ts
 
-    # def _get_dependencies(self, target):
-    #     """Return all tasks necessary for building the target.
-    #
-    #     The set of tasks is just returned as set.
-    #     """
-    #     root = target
-    #
-    #     # Working with a list to preserve the order. It makes lookups slower
-    #     # but hopefully these sets won't be terribly long ... if it becomes a
-    #     # problem it is easy enough to fix it.
-    #     processed = []
-    #
-    #     def dfs(node):
-    #         if node in processed:
-    #             return
-    #         else:
-    #             for dep in node.depends_on:
-    #                 dfs(dep)
-    #             processed.append(node)
-    #
-    #     dfs(root)
-    #     return processed
+    def _get_dependencies(self, target):
+        """Return all tasks necessary for building the target.
+
+        The set of tasks is just returned as set.
+        """
+        # Working with a list to preserve the order. It makes lookups slower
+        # but hopefully these sets won't be terribly long ... if it becomes a
+        # problem it is easy enough to fix it.
+        processed = []
+
+        def dfs(other_target):
+            if other_target in processed:
+                return
+            else:
+                processed.append(other_target)
+                for dep in self.dependencies[other_target]:
+                    dfs(dep)
+
+        dfs(target)
+        return processed
 
     def _get_execution_schedule_for_target(self, target):
         """Linearize the targets to be run.

@@ -41,14 +41,14 @@ class TestScheduler(unittest.TestCase):
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
         scheduler = Scheduler(self.workflow, self.mock_backend)
 
-        self.assertNotIn(target, scheduler.dependencies)
+        self.assertEqual(scheduler.dependencies[target], [])
 
     @patch('gwf.scheduler.os.path.exists', return_value=True)
     def test_existing_files_cause_no_dependencies(self, mock_os_path_exists):
         target = self.workflow.target('TestTarget', inputs=['test_input.txt'], outputs=[])
 
         scheduler = Scheduler(self.workflow, self.mock_backend)
-        self.assertNotIn(target, scheduler.dependencies)
+        self.assertEqual(scheduler.dependencies[target], [])
 
     @patch('gwf.scheduler.os.path.exists', return_value=False)
     def test_non_existing_files_not_provided_by_other_target_raises_exception(self, mock_os_path_exists):
@@ -78,6 +78,32 @@ class TestScheduler(unittest.TestCase):
         self.assertIn(target1, scheduler.dependencies[target3])
         self.assertIn(target2, scheduler.dependencies[target3])
 
+    @patch('gwf.scheduler.os.path.exists', return_value=False)
+    def test_finds_non_existing_files_provided_by_other_targets_in_chain(self, mock_os_path_exists):
+        target1 = self.workflow.target('TestTarget1', inputs=[], outputs=['test_file1.txt'])
+        target2 = self.workflow.target('TestTarget2', inputs=['test_file1.txt'], outputs=['test_file2.txt'])
+        target3 = self.workflow.target('TestTarget3', inputs=['test_file2.txt'], outputs=[])
+
+        scheduler = Scheduler(self.workflow, self.mock_backend)
+
+        self.assertIn(target2, scheduler.dependencies)
+        self.assertIn(target3, scheduler.dependencies)
+        self.assertIn(target1, scheduler.dependencies[target2])
+        self.assertIn(target2, scheduler.dependencies[target3])
+
+    @patch('gwf.scheduler.os.path.exists', return_value=False)
+    def test_handles_immediate_circular_dependencies_in_workflow(self, mock_os_path_exists):
+        self.workflow.target('TestTarget1', inputs=['test_file2.txt'], outputs=['test_file1.txt'])
+        self.workflow.target('TestTarget2', inputs=['test_file1.txt'], outputs=['test_file2.txt'])
+
+        with self.assertRaises(GWFException):
+            Scheduler(self.workflow, self.mock_backend)
+
+    @patch('gwf.scheduler.os.path.exists', return_value=False)
+    def test_handles_circular_dependencies_in_workflow(self, mock_os_path_exists):
+        self.workflow.target('TestTarget1', inputs=['test_file3.txt'], outputs=['test_file1.txt'])
+        self.workflow.target('TestTarget2', inputs=['test_file1.txt'], outputs=['test_file2.txt'])
+        self.workflow.target('TestTarget3', inputs=['test_file2.txt'], outputs=['test_file3.txt'])
 
         with self.assertRaises(GWFException):
             Scheduler(self.workflow, self.mock_backend)
