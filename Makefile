@@ -5,3 +5,5 @@ test:
 	coverage run --source gwf -m unittest discover tests/
 lint:
 	flake8
+coverage:
+	coverage report -m
