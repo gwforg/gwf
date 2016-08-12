@@ -57,17 +57,17 @@ class TestScheduler(unittest.TestCase):
             Scheduler(self.workflow, self.mock_backend)
 
     @patch('gwf.scheduler.os.path.exists', return_value=False)
-    def test_find_non_existing_file_provided_by_other_target(self, mock_os_path_exists):
+    def test_finds_non_existing_file_provided_by_other_target(self, mock_os_path_exists):
         target1 = self.workflow.target('TestTarget1', inputs=[], outputs=['test_file.txt'])
         target2 = self.workflow.target('TestTarget2', inputs=['test_file.txt'], outputs=[])
-        
+
         scheduler = Scheduler(self.workflow, self.mock_backend)
 
         self.assertIn(target2, scheduler.dependencies)
         self.assertIn(target1, scheduler.dependencies[target2])
 
     @patch('gwf.scheduler.os.path.exists', return_value=False)
-    def test_find_non_existing_files_provided_by_two_other_targets(self, mock_os_path_exists):
+    def test_finds_non_existing_files_provided_by_two_other_targets(self, mock_os_path_exists):
         target1 = self.workflow.target('TestTarget1', inputs=[], outputs=['test_file1.txt'])
         target2 = self.workflow.target('TestTarget2', inputs=[], outputs=['test_file2.txt'])
         target3 = self.workflow.target('TestTarget3', inputs=['test_file1.txt', 'test_file2.txt'], outputs=[])
