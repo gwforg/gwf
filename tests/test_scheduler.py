@@ -30,6 +30,13 @@ class TestScheduler(unittest.TestCase):
         self.assertIn('/test_output.txt', scheduler.provides)
         self.assertEqual(scheduler.provides['/test_output.txt'].name, 'TestTarget')
 
+    def test_raises_exceptions_if_two_targets_produce_the_same_file(self):
+        self.workflow.target('TestTarget1', inputs=[], outputs=['/test_output.txt'], working_dir='')
+        self.workflow.target('TestTarget2', inputs=[], outputs=['/test_output.txt'], working_dir='')
+
+        with self.assertRaises(GWFException):
+            Scheduler(self.workflow, self.mock_backend)
+
     def test_finds_no_dependencies_for_target_with_no_inputs(self):
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
         scheduler = Scheduler(self.workflow, self.mock_backend)
@@ -71,9 +78,6 @@ class TestScheduler(unittest.TestCase):
         self.assertIn(target1, scheduler.dependencies[target3])
         self.assertIn(target2, scheduler.dependencies[target3])
 
-    def test_raises_exceptions_if_two_targets_produce_the_same_file(self):
-        self.workflow.target('TestTarget1', inputs=[], outputs=['/test_output.txt'], working_dir='')
-        self.workflow.target('TestTarget2', inputs=[], outputs=['/test_output.txt'], working_dir='')
 
         with self.assertRaises(GWFException):
             Scheduler(self.workflow, self.mock_backend)
