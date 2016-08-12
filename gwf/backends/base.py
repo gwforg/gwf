@@ -1,15 +1,15 @@
 BACKENDS = {}
 
 
-def register_backend(backend):
-    BACKENDS[backend.name] = backend
+def register_backend(name, backend_cls):
+    BACKENDS[name] = backend_cls
 
 
 class BackendType(type):
 
     def __new__(meta, name, bases, class_dict):
         cls = type.__new__(meta, name, bases, class_dict)
-        register_backend(cls)
+        register_backend(name, cls)
         return cls
 
 
