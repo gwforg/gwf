@@ -1,7 +1,18 @@
 import os.path
+from collections import defaultdict
 
 from .exceptions import GWFException
-from .utils import cache
+from .utils import cache, iter_inputs, iter_outputs
+
+
+_ex_msg_file_provided_by_multiple_targets = (
+    'File "{}" provided by multiple targets "{}" and "{}".'
+)
+
+_ex_msg_file_required_but_not_provided = (
+    'File "{}" is required by "{}", but does not exist and is not provided by '
+    'a target.'
+)
 
 
 @cache
@@ -9,11 +20,45 @@ def _get_file_timestamp(filename):
     return os.path.getmtime(filename)
 
 
+def _compute_dependency_graph(targets):
+    provides = {}
+    dependencies = defaultdict(list)
+    dependents = defaultdict(list)
+
+    for target, path in iter_outputs(targets):
+        if path in provides:
+            raise GWFException(
+                _ex_msg_file_provided_by_multiple_targets.format(
+                    path, provides[path].name, target.name
+                )
+            )
+
+        provides[path] = target
+
+    for target, path in iter_inputs(targets):
+        if os.path.exists(path):
+            continue
+
+        if path not in provides:
+            raise GWFException(
+                _ex_msg_file_required_but_not_provided.format(
+                    path, target.name
+                )
+            )
+
+        dependencies[target].append(provides[path])
+
+    for target, deps in dependencies.items():
+        for dep in deps:
+            dependents[dep].append(target)
+
+    return provides, dependencies, dependents
+
+
 class Scheduler:
     """Run a workflow on a specific backend.
 
-    After the workflow has been prepared, three attributes will be
-    available on the object:
+    Three attributes are available on the object:
 
     `provides`:
         a dictionary of file paths and the corresponding targets that
@@ -32,9 +77,8 @@ class Scheduler:
         self.workflow = workflow
         self.backend = backend
 
-        self.provides = {}
-        self.dependencies = defaultdict(list)
-        self.dependents = defaultdict(list)
+        self.provides, self.dependencies, self.dependents = \
+            _compute_dependency_graph(self.workflow.targets.values())
 
     @cache
     def should_run(self, target):

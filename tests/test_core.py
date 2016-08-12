@@ -2,14 +2,11 @@ import os.path
 import unittest
 from unittest.mock import patch
 
-from gwf import Workflow, Target
+from gwf.core import Workflow, Target
 from gwf.exceptions import GWFException
 
 
 class TestWorkflow(unittest.TestCase):
-
-    def setUp(self):
-        self.workflow = Workflow()
 
     def test_adding_a_target_makes_it_available_to_the_workflow(self):
         workflow = Workflow()
@@ -124,6 +121,72 @@ class TestTarget(unittest.TestCase):
         target = self.create_test_target() << 'this is a spec'
         self.assertIsNotNone(target.spec)
         self.assertEqual(target.spec, 'this is a spec')
+
+    def test_str_on_target(self):
+        target = Target(
+            'TestTarget',
+            inputs=[],
+            outputs=[],
+            options={},
+            working_dir='/some/dir'
+        )
+        self.assertEqual(str(target), 'TestTarget')
+
+    def test_repr_on_target(self):
+        target = Target(
+            'TestTarget',
+            inputs=[],
+            outputs=[],
+            options={},
+            working_dir='/some/dir'
+        )
+
+        self.assertEqual(
+            repr(target),
+            "Target(name='TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir', spec=None)"
+        )
+
+    def test_repr_on_target_with_input(self):
+        target = Target(
+            'TestTarget',
+            inputs=['test_input.txt'],
+            outputs=[],
+            options={},
+            working_dir='/some/dir'
+        )
+
+        self.assertEqual(
+            repr(target),
+            "Target(name='TestTarget', inputs=['/some/dir/test_input.txt'], outputs=[], options={}, working_dir='/some/dir', spec=None)"
+        )
+
+    def test_repr_on_target_with_output(self):
+        target = Target(
+            'TestTarget',
+            inputs=[],
+            outputs=['test_output.txt'],
+            options={},
+            working_dir='/some/dir'
+        )
+
+        self.assertEqual(
+            repr(target),
+            "Target(name='TestTarget', inputs=[], outputs=['/some/dir/test_output.txt'], options={}, working_dir='/some/dir', spec=None)"
+        )
+
+    def test_repr_on_target_with_option(self):
+        target = Target(
+            'TestTarget',
+            inputs=[],
+            outputs=[],
+            options={'some_option': True},
+            working_dir='/some/dir'
+        )
+
+        self.assertEqual(
+            repr(target),
+            "Target(name='TestTarget', inputs=[], outputs=[], options={'some_option': True}, working_dir='/some/dir', spec=None)"
+        )
 
 
 class TestDependencies(unittest.TestCase):
