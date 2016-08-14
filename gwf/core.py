@@ -7,7 +7,6 @@ import sys
 
 from .exceptions import GWFException
 
-
 _target_repr = (
     '{}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, '
     'spec={!r})'
@@ -92,13 +91,22 @@ class Target(object):
 
 
 class Workflow(object):
+
     """Represents a workflow."""
 
-    def __init__(self):
+    def __init__(self, working_dir=None):
         self.targets = {}
 
-        filename = inspect.getfile(sys._getframe(1))
-        self.working_dir = os.path.dirname(os.path.realpath(filename))
+        self.working_dir = working_dir
+        if self.working_dir is None:
+            # Get the frame object of whatever called the Workflow.__init__
+            # and extract the path of the file which is was defined in. Then
+            # normalize the path and get the directory of the file.
+            #
+            # TODO: Figure out whether this can be replaced with a simple
+            # os.getcwd() call.
+            filename = inspect.getfile(sys._getframe(1))
+            self.working_dir = os.path.dirname(os.path.realpath(filename))
 
     def _add_target(self, target):
         if target.name in self.targets:
@@ -109,7 +117,7 @@ class Workflow(object):
         self.targets[target.name] = target
 
     def target(self, name, inputs, outputs, **options):
-        """Create a target."""
+        """Create a target and add it to the `Workflow`."""
         new_target = Target(
             name, inputs, outputs, options, working_dir=self.working_dir
         )

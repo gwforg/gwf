@@ -2,7 +2,7 @@ import os.path
 import unittest
 from unittest.mock import patch
 
-from gwf.core import Workflow, Target
+from gwf.core import Target, Workflow
 from gwf.exceptions import GWFException
 
 
@@ -50,9 +50,24 @@ class TestWorkflow(unittest.TestCase):
         with self.assertRaises(GWFException):
             workflow.include_workflow(other_workflow)
 
+    def test_targets_inherit_workflow_working_dir_with_given_working_dir(self):
+        workflow = Workflow(working_dir='/some/path')
+        target = workflow.target('TestTarget', inputs=[], outputs=[])
+        self.assertEqual(target.working_dir, '/some/path')
+
+    @patch('gwf.core.sys._getframe')
+    @patch('gwf.core.inspect.getfile', return_value='/some/path/file.py')
+    def test_workflow_computes_working_dir_when_not_initialized_with_working_dir(
+            self, inspect_getfile_mock, sys_getframe_mock):
+
+        workflow = Workflow()
+
+        self.assertEqual(sys_getframe_mock.call_count, 1)
+        self.assertEqual(inspect_getfile_mock.call_count, 1)
+        self.assertEqual(workflow.working_dir, '/some/path')
+
 
 class TestTarget(unittest.TestCase):
-
 
     def test_relative_input_paths_are_normalized(self):
         target = create_test_target(
