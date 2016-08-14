@@ -6,6 +6,11 @@ from gwf.core import Workflow, Target
 from gwf.exceptions import GWFException
 
 
+def create_test_target(name='TestTarget', inputs=[], outputs=[], options={}, working_dir=''):
+    """A factory for `Target` objects."""
+    return Target(name, inputs, outputs, options, working_dir)
+
+
 class TestWorkflow(unittest.TestCase):
 
     def test_adding_a_target_makes_it_available_to_the_workflow(self):
@@ -48,15 +53,9 @@ class TestWorkflow(unittest.TestCase):
 
 class TestTarget(unittest.TestCase):
 
-    def create_test_target(name='TestTarget',
-                           inputs=[],
-                           outputs=[],
-                           options={},
-                           working_dir=''):
-        return Target(name, inputs, outputs, options, working_dir)
 
     def test_relative_input_paths_are_normalized(self):
-        target = self.create_test_target(
+        target = create_test_target(
             inputs=['test_input1.txt', 'test_input2.txt'],
             working_dir='/some/path'
         )
@@ -68,7 +67,7 @@ class TestTarget(unittest.TestCase):
         self.assertTrue(target.inputs[1].startswith('/some/path'))
 
     def test_relative_output_paths_are_normalized(self):
-        target = self.create_test_target(
+        target = create_test_target(
             outputs=['test_output1.txt', 'test_output2.txt'],
             working_dir='/some/path'
         )
@@ -80,7 +79,7 @@ class TestTarget(unittest.TestCase):
         self.assertTrue(target.outputs[1].startswith('/some/path'))
 
     def test_absolute_input_paths_are_not_normalized(self):
-        target = self.create_test_target(
+        target = create_test_target(
             inputs=['test_input1.txt', '/other/path/test_input2.txt'],
             working_dir='/some/path'
         )
@@ -89,7 +88,7 @@ class TestTarget(unittest.TestCase):
         self.assertTrue(target.inputs[1].startswith('/other/path'))
 
     def test_absolute_output_paths_are_not_normalized(self):
-        target = self.create_test_target(
+        target = create_test_target(
             inputs=['test_output1.txt', '/other/path/test_output2.txt'],
             working_dir='/some/path'
         )
@@ -98,27 +97,27 @@ class TestTarget(unittest.TestCase):
         self.assertTrue(target.inputs[1].startswith('/other/path'))
 
     def test_target_without_outputs_is_a_sink(self):
-        target = self.create_test_target()
+        target = create_test_target()
         self.assertTrue(target.is_sink)
 
     def test_target_with_outputs_is_not_a_sink(self):
-        target = self.create_test_target(
+        target = create_test_target(
             outputs=['test_output1.txt', 'test_output2.txt']
         )
         self.assertFalse(target.is_sink)
 
     def test_target_without_inputs_is_a_source(self):
-        target = self.create_test_target()
+        target = create_test_target()
         self.assertTrue(target.is_source)
 
     def test_target_with_inputs_is_not_a_source(self):
-        target = self.create_test_target(
+        target = create_test_target(
             inputs=['test_input1.txt', 'test_input2.txt']
         )
         self.assertFalse(target.is_source)
 
     def test_assigning_spec_to_target_sets_spec_attribute(self):
-        target = self.create_test_target() << 'this is a spec'
+        target = create_test_target() << 'this is a spec'
         self.assertIsNotNone(target.spec)
         self.assertEqual(target.spec, 'this is a spec')
 
