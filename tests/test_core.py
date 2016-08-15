@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 
 from gwf.core import Target, Workflow
-from gwf.exceptions import GWFException
+from gwf.exceptions import GWFError
 
 
 def create_test_target(name='TestTarget', inputs=[], outputs=[], options={}, working_dir=''):
@@ -23,7 +23,7 @@ class TestWorkflow(unittest.TestCase):
         workflow = Workflow()
         workflow.target('TestTarget', inputs=[], outputs=[], spec='')
 
-        with self.assertRaises(GWFException):
+        with self.assertRaises(GWFError):
             workflow.target('TestTarget', inputs=[], outputs=[], spec='')
 
     def test_including_workflow_should_extend_including_workflow(self):
@@ -47,7 +47,7 @@ class TestWorkflow(unittest.TestCase):
         other_workflow = Workflow()
         other_workflow.target('TestTarget', inputs=[], outputs=[])
 
-        with self.assertRaises(GWFException):
+        with self.assertRaises(GWFError):
             workflow.include_workflow(other_workflow)
 
     def test_targets_inherit_workflow_working_dir_with_given_working_dir(self):

@@ -3,7 +3,7 @@ from unittest.mock import patch, create_autospec
 
 from gwf.core import Workflow
 from gwf.backends.base import Backend
-from gwf.exceptions import GWFException
+from gwf.exceptions import GWFError
 from gwf.scheduler import Scheduler
 
 
@@ -34,7 +34,7 @@ class TestScheduler(unittest.TestCase):
         self.workflow.target('TestTarget1', inputs=[], outputs=['/test_output.txt'], working_dir='')
         self.workflow.target('TestTarget2', inputs=[], outputs=['/test_output.txt'], working_dir='')
 
-        with self.assertRaises(GWFException):
+        with self.assertRaises(GWFError):
             Scheduler(self.workflow, self.mock_backend)
 
     def test_finds_no_dependencies_for_target_with_no_inputs(self):
@@ -53,7 +53,7 @@ class TestScheduler(unittest.TestCase):
     @patch('gwf.scheduler.os.path.exists', return_value=False)
     def test_non_existing_files_not_provided_by_other_target_raises_exception(self, mock_os_path_exists):
         self.workflow.target('TestTarget', inputs=['test_input.txt'], outputs=[])
-        with self.assertRaises(GWFException):
+        with self.assertRaises(GWFError):
             Scheduler(self.workflow, self.mock_backend)
 
     @patch('gwf.scheduler.os.path.exists', return_value=False)
@@ -96,7 +96,7 @@ class TestScheduler(unittest.TestCase):
         self.workflow.target('TestTarget1', inputs=['test_file2.txt'], outputs=['test_file1.txt'])
         self.workflow.target('TestTarget2', inputs=['test_file1.txt'], outputs=['test_file2.txt'])
 
-        with self.assertRaises(GWFException):
+        with self.assertRaises(GWFError):
             Scheduler(self.workflow, self.mock_backend)
 
     @patch('gwf.scheduler.os.path.exists', return_value=False)
@@ -105,7 +105,7 @@ class TestScheduler(unittest.TestCase):
         self.workflow.target('TestTarget2', inputs=['test_file1.txt'], outputs=['test_file2.txt'])
         self.workflow.target('TestTarget3', inputs=['test_file2.txt'], outputs=['test_file3.txt'])
 
-        with self.assertRaises(GWFException):
+        with self.assertRaises(GWFError):
             Scheduler(self.workflow, self.mock_backend)
 
     def test_sink_should_always_run(self):

@@ -5,7 +5,7 @@ import inspect
 import os.path
 import sys
 
-from .exceptions import GWFException
+from .exceptions import GWFError
 
 _target_repr = (
     '{}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, '
@@ -110,7 +110,7 @@ class Workflow(object):
 
     def _add_target(self, target):
         if target.name in self.targets:
-            raise GWFException(
+            raise GWFError(
                 'Target "{}" already exists in workflow.'.format(target.name)
             )
 
