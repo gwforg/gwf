@@ -1,9 +1,14 @@
 import os.path
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, create_autospec
 
-from gwf.core import Target, Workflow
-from gwf.exceptions import TargetExistsError
+from gwf.core import Target, Workflow, prepare_workflow
+from gwf.exceptions import (
+    TargetExistsError,
+    CircularDependencyError,
+    FileProvidedByMultipleTargetsError,
+    FileRequiredButNotProvidedError,
+)
 
 
 def create_test_target(name='TestTarget', inputs=[], outputs=[], options={}, working_dir=''):
@@ -201,6 +206,107 @@ class TestTarget(unittest.TestCase):
             repr(target),
             "Target(name='TestTarget', inputs=[], outputs=[], options={'some_option': True}, working_dir='/some/dir', spec=None)"
         )
+
+
+class TestPrepareWorkflow(unittest.TestCase):
+
+    def setUp(self):
+        self.workflow = Workflow()
+
+    def test_finds_no_providers_in_empty_workflow(self):
+        prepared_workflow = prepare_workflow(self.workflow)
+        self.assertDictEqual(prepared_workflow.provides, {})
+
+    def test_finds_no_providers_in_workflow_with_no_producers(self):
+        self.workflow.target('TestTarget', inputs=[], outputs=[])
+
+        prepared_workflow = prepare_workflow(self.workflow)
+        self.assertDictEqual(prepared_workflow.provides, {})
+
+    def test_finds_provider_in_workflow_with_one_producer(self):
+        self.workflow.target('TestTarget', inputs=[], outputs=['/test_output.txt'], working_dir='')
+
+        prepared_workflow = prepare_workflow(self.workflow)
+        self.assertIn('/test_output.txt', prepared_workflow.provides)
+        self.assertEqual(prepared_workflow.provides['/test_output.txt'].name, 'TestTarget')
+
+    def test_raises_exceptions_if_two_targets_produce_the_same_file(self):
+        self.workflow.target('TestTarget1', inputs=[], outputs=['/test_output.txt'], working_dir='')
+        self.workflow.target('TestTarget2', inputs=[], outputs=['/test_output.txt'], working_dir='')
+
+        with self.assertRaises(FileProvidedByMultipleTargetsError):
+            prepare_workflow(self.workflow)
+
+    def test_finds_no_dependencies_for_target_with_no_inputs(self):
+        target = self.workflow.target('TestTarget', inputs=[], outputs=[])
+        prepared_workflow = prepare_workflow(self.workflow)
+
+        self.assertEqual(prepared_workflow.dependencies[target], [])
+
+    @patch('gwf.core.os.path.exists', return_value=True)
+    def test_existing_files_cause_no_dependencies(self, mock_os_path_exists):
+        target = self.workflow.target('TestTarget', inputs=['test_input.txt'], outputs=[])
+
+        prepared_workflow = prepare_workflow(self.workflow)
+        self.assertEqual(prepared_workflow.dependencies[target], [])
+
+    @patch('gwf.core.os.path.exists', return_value=False)
+    def test_non_existing_files_not_provided_by_other_target_raises_exception(self, mock_os_path_exists):
+        self.workflow.target('TestTarget', inputs=['test_input.txt'], outputs=[])
+        with self.assertRaises(FileRequiredButNotProvidedError):
+            prepare_workflow(self.workflow)
+
+    @patch('gwf.core.os.path.exists', return_value=False)
+    def test_finds_non_existing_file_provided_by_other_target(self, mock_os_path_exists):
+        target1 = self.workflow.target('TestTarget1', inputs=[], outputs=['test_file.txt'])
+        target2 = self.workflow.target('TestTarget2', inputs=['test_file.txt'], outputs=[])
+
+        prepared_workflow = prepare_workflow(self.workflow)
+
+        self.assertIn(target2, prepared_workflow.dependencies)
+        self.assertIn(target1, prepared_workflow.dependencies[target2])
+
+    @patch('gwf.core.os.path.exists', return_value=False)
+    def test_finds_non_existing_files_provided_by_two_other_targets(self, mock_os_path_exists):
+        target1 = self.workflow.target('TestTarget1', inputs=[], outputs=['test_file1.txt'])
+        target2 = self.workflow.target('TestTarget2', inputs=[], outputs=['test_file2.txt'])
+        target3 = self.workflow.target('TestTarget3', inputs=['test_file1.txt', 'test_file2.txt'], outputs=[])
+
+        prepared_workflow = prepare_workflow(self.workflow)
+
+        self.assertIn(target3, prepared_workflow.dependencies)
+        self.assertIn(target1, prepared_workflow.dependencies[target3])
+        self.assertIn(target2, prepared_workflow.dependencies[target3])
+
+    @patch('gwf.core.os.path.exists', return_value=False)
+    def test_finds_non_existing_files_provided_by_other_targets_in_chain(self, mock_os_path_exists):
+        target1 = self.workflow.target('TestTarget1', inputs=[], outputs=['test_file1.txt'])
+        target2 = self.workflow.target('TestTarget2', inputs=['test_file1.txt'], outputs=['test_file2.txt'])
+        target3 = self.workflow.target('TestTarget3', inputs=['test_file2.txt'], outputs=[])
+
+        prepared_workflow = prepare_workflow(self.workflow)
+
+        self.assertIn(target2, prepared_workflow.dependencies)
+        self.assertIn(target3, prepared_workflow.dependencies)
+        self.assertIn(target1, prepared_workflow.dependencies[target2])
+        self.assertIn(target2, prepared_workflow.dependencies[target3])
+
+    @patch('gwf.core.os.path.exists', return_value=False)
+    def test_immediate_circular_dependencies_in_workflow_raises_exception(self, mock_os_path_exists):
+        self.workflow.target('TestTarget1', inputs=['test_file2.txt'], outputs=['test_file1.txt'])
+        self.workflow.target('TestTarget2', inputs=['test_file1.txt'], outputs=['test_file2.txt'])
+
+        with self.assertRaises(CircularDependencyError):
+            prepare_workflow(self.workflow)
+
+    @patch('gwf.core.os.path.exists', return_value=False)
+    def test_circular_dependencies_in_workflow_raises_exception(self, mock_os_path_exists):
+        self.workflow.target('TestTarget1', inputs=['test_file3.txt'], outputs=['test_file1.txt'])
+        self.workflow.target('TestTarget2', inputs=['test_file1.txt'], outputs=['test_file2.txt'])
+        self.workflow.target('TestTarget3', inputs=['test_file2.txt'], outputs=['test_file3.txt'])
+
+        with self.assertRaises(CircularDependencyError):
+            prepare_workflow(self.workflow)
 
 
 class TestDependencies(unittest.TestCase):
