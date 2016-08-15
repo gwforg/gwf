@@ -92,7 +92,7 @@ class TestScheduler(unittest.TestCase):
         self.assertIn(target2, scheduler.dependencies[target3])
 
     @patch('gwf.scheduler.os.path.exists', return_value=False)
-    def test_handles_immediate_circular_dependencies_in_workflow(self, mock_os_path_exists):
+    def test_immediate_circular_dependencies_in_workflow_raises_exception(self, mock_os_path_exists):
         self.workflow.target('TestTarget1', inputs=['test_file2.txt'], outputs=['test_file1.txt'])
         self.workflow.target('TestTarget2', inputs=['test_file1.txt'], outputs=['test_file2.txt'])
 
@@ -100,7 +100,7 @@ class TestScheduler(unittest.TestCase):
             Scheduler(self.workflow, self.mock_backend)
 
     @patch('gwf.scheduler.os.path.exists', return_value=False)
-    def test_handles_circular_dependencies_in_workflow(self, mock_os_path_exists):
+    def test_circular_dependencies_in_workflow_raises_exception(self, mock_os_path_exists):
         self.workflow.target('TestTarget1', inputs=['test_file3.txt'], outputs=['test_file1.txt'])
         self.workflow.target('TestTarget2', inputs=['test_file1.txt'], outputs=['test_file2.txt'])
         self.workflow.target('TestTarget3', inputs=['test_file2.txt'], outputs=['test_file3.txt'])
