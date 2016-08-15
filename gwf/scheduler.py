@@ -1,22 +1,13 @@
 import os.path
 from collections import defaultdict
 
-from .exceptions import GWFError
+from .exceptions import (
+    CircularDependencyError,
+    FileProvidedByMultipleTargetsError,
+    FileRequiredButNotProvidedError,
+)
+
 from .utils import cache, iter_inputs, iter_outputs
-
-
-_ex_msg_file_provided_by_multiple_targets = (
-    'File "{}" provided by multiple targets "{}" and "{}".'
-)
-
-_ex_msg_file_required_but_not_provided = (
-    'File "{}" is required by "{}", but does not exist and is not provided by '
-    'a target.'
-)
-
-_ex_msg_target_depends_on_itself = (
-    'Target {} depends on itself.'
-)
 
 
 @cache
@@ -31,10 +22,8 @@ def _compute_dependency_graph(targets):
 
     for target, path in iter_outputs(targets):
         if path in provides:
-            raise GWFError(
-                _ex_msg_file_provided_by_multiple_targets.format(
-                    path, provides[path].name, target.name
-                )
+            raise FileProvidedByMultipleTargetsError(
+                path, provides[path].name, target
             )
 
         provides[path] = target
@@ -44,12 +33,7 @@ def _compute_dependency_graph(targets):
             continue
 
         if path not in provides:
-            raise GWFError(
-                _ex_msg_file_required_but_not_provided.format(
-                    path, target.name
-                )
-            )
-
+            raise FileRequiredButNotProvidedError(path, target)
         dependencies[target].append(provides[path])
 
     for target, deps in dependencies.items():
@@ -90,9 +74,7 @@ class Scheduler:
         for target in self.workflow.targets.values():
             for dep in self.dependencies[target]:
                 if target in self._get_dependencies(dep):
-                    raise GWFError(
-                        _ex_msg_target_depends_on_itself.format(target.name)
-                    )
+                    raise CircularDependencyError(target)
 
     @cache
     def should_run(self, target):
