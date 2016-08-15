@@ -107,3 +107,13 @@ class TestScheduler(unittest.TestCase):
 
         with self.assertRaises(GWFException):
             Scheduler(self.workflow, self.mock_backend)
+
+    def test_sink_should_always_run(self):
+        target = self.workflow.target('TestTarget1', inputs=[], outputs=[])
+        scheduler = Scheduler(self.workflow, self.mock_backend)
+        self.assertTrue(scheduler.should_run(target))
+
+    def test_target_with_missing_output_files_should_always_run(self):
+        target = self.workflow.target('TestTarget', inputs=[], outputs=['test_output.txt'])
+        scheduler = Scheduler(self.workflow, self.mock_backend)
+        self.assertTrue(scheduler.should_run(target))
