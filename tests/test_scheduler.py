@@ -118,7 +118,8 @@ class TestScheduler(unittest.TestCase):
         scheduler = Scheduler(self.workflow, self.mock_backend)
         self.assertTrue(scheduler.should_run(target))
 
-    def test_target_with_missing_output_files_should_always_run(self):
+    @patch('gwf.scheduler.os.path.exists', return_value=False)
+    def test_target_with_missing_output_files_should_always_run(self, mock_os_path_exists):
         target = self.workflow.target('TestTarget', inputs=[], outputs=['test_output.txt'])
         scheduler = Scheduler(self.workflow, self.mock_backend)
         self.assertTrue(scheduler.should_run(target))
