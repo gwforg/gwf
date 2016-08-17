@@ -1,6 +1,5 @@
 import os.path
 
-from .core import prepare_workflow
 from .utils import cache
 
 BACKENDS = {}
@@ -106,8 +105,3 @@ class Backend(metaclass=BackendType):
         dfs(root)
 
         return job_schedule, scheduled
-
-
-def make_backend(workflow, backend_cls, *args, **kwargs):
-    prepared_workflow = prepare_workflow(workflow)
-    return backend_cls(prepared_workflow, *args, **kwargs)
