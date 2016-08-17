@@ -179,35 +179,53 @@ class Workflow(object):
                             'Workflow object.')
 
 
-def prepare_workflow(workflow):
+def compute_file_providers(targets):
     provides = {}
-    dependencies = defaultdict(list)
-    dependents = defaultdict(list)
-
-    for target, path in iter_outputs(workflow.targets.values()):
+    for target, path in iter_outputs(targets):
         if path in provides:
             raise FileProvidedByMultipleTargetsError(
                 path, provides[path].name, target
             )
 
         provides[path] = target
+    return provides
 
-    for target, path in iter_inputs(workflow.targets.values()):
+
+def compute_dependencies(targets, provides):
+    dependencies = defaultdict(list)
+    for target, path in iter_inputs(targets):
         if os.path.exists(path):
             continue
 
         if path not in provides:
             raise FileRequiredButNotProvidedError(path, target)
         dependencies[target].append(provides[path])
+    return dependencies
 
+
+def compute_dependents(dependencies):
+    dependents = defaultdict(list)
     for target, deps in dependencies.items():
         for dep in deps:
             dependents[dep].append(target)
+    return dependents
 
-    for target in workflow.targets.values():
+
+def check_for_circular_dependencies(targets, dependencies):
+    for target in targets:
         for dep in dependencies[target]:
             if target in _get_deep_dependencies(dep, dependencies):
                 raise CircularDependencyError(target)
+
+
+def prepare_workflow(workflow):
+    """Prepare workflow to be submitted through a `Backend`."""
+
+    provides = compute_file_providers(workflow.targets.values())
+    dependencies = compute_dependencies(workflow.targets.values(), provides)
+    dependents = compute_dependents(dependencies)
+
+    check_for_circular_dependencies(workflow.targets.values(), dependencies)
 
     # Attach prepared attributes to the workflow.
     setattr(workflow, 'provides', provides)
