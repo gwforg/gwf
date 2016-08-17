@@ -1,6 +1,7 @@
 import os.path
 
-from .utils import cache
+from ..exceptions import WorkflowNotPreparedError
+from ..utils import cache
 
 BACKENDS = {}
 
@@ -37,6 +38,10 @@ def register_backend(name, backend_cls):
     BACKENDS[name] = backend_cls
 
 
+def get_backends():
+    return dict(BACKENDS)
+
+
 class BackendType(type):
 
     def __new__(meta, name, bases, class_dict):
@@ -47,8 +52,18 @@ class BackendType(type):
 
 class Backend(metaclass=BackendType):
 
+    """Representation of a backend.
+
+    A workflow is initialized with a :class:`gwf.core.Workflow`
+    """
+
     def __init__(self, workflow):
         self.workflow = workflow
+
+        if (not hasattr(workflow, 'provides') or
+                not hasattr(workflow, 'dependencies') or
+                not hasattr(workflow, 'dependents')):
+            raise WorkflowNotPreparedError()
 
     def submitted(self, targets):
         raise NotImplementedError()

@@ -3,6 +3,7 @@ class GWFError(Exception):
 
 
 class TargetExistsError(GWFError):
+
     def __init__(self, target):
         self.target = target
 
@@ -51,3 +52,7 @@ class CircularDependencyError(GWFError):
         ).format(self.target)
 
         super(CircularDependencyError, self).__init__(message)
+
+
+class WorkflowNotPreparedError(GWFError):
+    pass
