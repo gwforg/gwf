@@ -69,33 +69,6 @@ def _get_deep_dependencies(target, dependencies):
     return processed
 
 
-def _compute_dependencies(targets, provides):
-    dependencies = defaultdict(list)
-    for target, path in iter_inputs(targets):
-        if os.path.exists(path):
-            continue
-
-        if path not in provides:
-            raise FileRequiredButNotProvidedError(path, target)
-        dependencies[target].append(provides[path])
-    return dependencies
-
-
-def _compute_dependents(dependencies):
-    dependents = defaultdict(list)
-    for target, deps in dependencies.items():
-        for dep in deps:
-            dependents[dep].append(target)
-    return dependents
-
-
-def _check_for_circular_dependencies(targets, dependencies):
-    for target in targets:
-        for dep in dependencies[target]:
-            if target in _get_deep_dependencies(dep, dependencies):
-                raise CircularDependencyError(target)
-
-
 class Target(object):
 
     def __init__(self, name, inputs, outputs, options, working_dir, spec=None):
@@ -198,36 +171,67 @@ class Workflow(object):
             raise TypeError('First argument must be either a string or a '
                             'Workflow object.')
 
-
-def compute_file_providers(targets):
-    provides = {}
-    for target, path in iter_outputs(targets):
-        if path in provides:
-            raise FileProvidedByMultipleTargetsError(
-                path, provides[path].name, target
-            )
-
-        provides[path] = target
-    return provides
+    def __repr__(self):
+        return '{}(working_dir={r}, targets={r})'.format(
+            self.__class__.__name__, self.working_dir, self.targets
+        )
 
 
-def prepare_workflow(workflow):
-    """Prepare workflow to be submitted through a `Backend`."""
+class PreparedWorkflow:
 
-    provides = compute_file_providers(workflow.targets.values())
-    dependencies = _compute_dependencies(workflow.targets.values(), provides)
-    dependents = _compute_dependents(dependencies)
+    def __init__(self, workflow=None):
+        self.targets = {}
+        self.working_dir = None
 
-    _check_for_circular_dependencies(workflow.targets.values(), dependencies)
+        if workflow is not None:
+            self.prepare(workflow)
 
-    # Attach prepared attributes to the workflow.
-    setattr(workflow, 'provides', provides)
-    setattr(workflow, 'dependencies', dependencies)
-    setattr(workflow, 'dependents', dependents)
+    def prepare(self, workflow):
+        self.targets = workflow.targets
+        self.working_dir = workflow.working_dir
 
-    return workflow
+        self.provides = self.prepare_file_providers()
+        self.dependencies = self.prepare_dependencies(self.provides)
+        self.dependents = self.prepare_dependents(self.dependencies)
 
+        self._check_for_circular_dependencies()
 
-def init_backend(workflow, backend_cls, *args, **kwargs):
-    prepared_workflow = prepare_workflow(workflow)
-    return backend_cls(prepared_workflow, *args, **kwargs)
+    def prepare_file_providers(self):
+        provides = {}
+        for target, path in iter_outputs(self.targets.values()):
+            if path in provides:
+                raise FileProvidedByMultipleTargetsError(
+                    path, provides[path].name, target
+                )
+
+            provides[path] = target
+        return provides
+
+    def prepare_dependencies(self, rovides):
+        dependencies = defaultdict(list)
+        for target, path in iter_inputs(self.targets.values()):
+            if os.path.exists(path):
+                continue
+
+            if path not in self.provides:
+                raise FileRequiredButNotProvidedError(path, target)
+            dependencies[target].append(self.provides[path])
+        return dependencies
+
+    def prepare_dependents(self, dependencies):
+        dependents = defaultdict(list)
+        for target, deps in self.dependencies.items():
+            for dep in deps:
+                dependents[dep].append(target)
+        return dependents
+
+    def _check_for_circular_dependencies(self):
+        for target in self.targets.values():
+            for dep in self.dependencies[target]:
+                if target in _get_deep_dependencies(dep, self.dependencies):
+                    raise CircularDependencyError(target)
+
+    def __repr__(self):
+        return '{}(working_dir={r}, targets={r})'.format(
+            self.__class__.__name__, self.working_dir, self.targets
+        )
