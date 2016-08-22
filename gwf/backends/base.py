@@ -1,5 +1,6 @@
 import os.path
 
+from ..core import PreparedWorkflow
 from ..exceptions import WorkflowNotPreparedError
 from ..utils import cache
 
@@ -58,12 +59,9 @@ class Backend(metaclass=BackendType):
     """
 
     def __init__(self, workflow):
-        self.workflow = workflow
-
-        if (not hasattr(workflow, 'provides') or
-                not hasattr(workflow, 'dependencies') or
-                not hasattr(workflow, 'dependents')):
+        if not isinstance(workflow, PreparedWorkflow):
             raise WorkflowNotPreparedError()
+        self.workflow = workflow
 
     def submitted(self, targets):
         raise NotImplementedError()
