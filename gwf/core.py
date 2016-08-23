@@ -119,8 +119,14 @@ class Workflow(object):
 
         self.targets[target.name] = target
 
-    def target(self, name, inputs, outputs, **options):
+    def target(self, name, inputs=None, outputs=None, **options):
         """Create a target and add it to the `Workflow`."""
+
+        if inputs is None:
+            inputs = []
+        if outputs is None:
+            outputs = []
+
         new_target = Target(
             name, inputs, outputs, options, working_dir=self.working_dir
         )
