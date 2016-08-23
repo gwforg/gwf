@@ -6,12 +6,6 @@ from ..utils import cache
 
 BACKENDS = {}
 
-
-@cache
-def _get_file_timestamp(filename):
-    return os.path.getmtime(filename)
-
-
 @cache
 def _should_run(target, dependencies):
     if any(_should_run(dep) for dep in dependencies[target]):
