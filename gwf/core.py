@@ -157,7 +157,7 @@ class Workflow(object):
                             'Workflow object.')
 
     def __repr__(self):
-        return '{}(working_dir={r}, targets={r})'.format(
+        return '{}(working_dir={!r}, targets={!r})'.format(
             self.__class__.__name__, self.working_dir, self.targets
         )
 
@@ -217,6 +217,6 @@ class PreparedWorkflow:
                     raise CircularDependencyError(target)
 
     def __repr__(self):
-        return '{}(working_dir={r}, targets={r})'.format(
+        return '{}(working_dir={!r}, targets={!r})'.format(
             self.__class__.__name__, self.working_dir, self.targets
         )
