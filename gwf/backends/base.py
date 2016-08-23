@@ -34,14 +34,24 @@ def register_backend(name, backend_cls):
 
 
 def get_backends():
-    return dict(BACKENDS)
+    return BACKENDS.items()
 
 
 class BackendType(type):
 
     def __new__(meta, name, bases, class_dict):
         cls = type.__new__(meta, name, bases, class_dict)
-        register_backend(name, cls)
+
+        # Do not register the base Backend class.
+        if name == 'Backend':
+            return cls
+
+        if not hasattr(cls, 'name'):
+            raise GWFError(
+                'Backend {} does not declare name class variable.'.format(name)
+            )
+
+        register_backend(getattr(cls, 'name'), cls)
         return cls
 
 
