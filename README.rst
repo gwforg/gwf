@@ -4,7 +4,7 @@ gwf
 
 A flexible, pragmatic workflow tool.
 
-|status| |docs| |license| |versions| |format| |ci-status| |downloads|
+|status| |docs| |license| |versions| |format| |ci-status| |coveralls| |downloads|
 
 .. |ci-status| image:: 	https://img.shields.io/travis/mailund/gwf.svg
     :target: https://travis-ci.org/mailund/gwf
@@ -27,3 +27,6 @@ A flexible, pragmatic workflow tool.
 .. |license| image:: https://img.shields.io/pypi/mailund/gwf.svg
     :target: https://pypi.python.org/pypi/gwf
     :alt: License
+.. |coveralls| image:: https://img.shields.io/coveralls/mailund/gwf.svg
+    :target: https://coveralls.io/github/mailund/gwf
+    :alt: Coverage
