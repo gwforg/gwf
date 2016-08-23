@@ -1,10 +1,9 @@
-import os.path
-
 from ..core import PreparedWorkflow
-from ..exceptions import WorkflowNotPreparedError, GWFError
+from ..exceptions import GWFError, WorkflowNotPreparedError
 from ..utils import cache
 
 BACKENDS = {}
+
 
 def register_backend(name, backend_cls):
     BACKENDS[name] = backend_cls

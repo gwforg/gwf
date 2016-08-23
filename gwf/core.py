@@ -1,15 +1,15 @@
 from __future__ import absolute_import, print_function
 
 import inspect
+import itertools
 import os.path
 import sys
-import itertools
 from collections import defaultdict
 
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, TargetExistsError)
-from .utils import import_object, iter_inputs, iter_outputs, get_file_timestamp
+from .utils import get_file_timestamp, import_object, iter_inputs, iter_outputs
 
 _target_repr = (
     '{}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, '
