@@ -205,7 +205,7 @@ class TestTarget(unittest.TestCase):
         )
 
 
-class TestPrepareWorkflow(unittest.TestCase):
+class TestPreparedWorkflow(unittest.TestCase):
 
     def setUp(self):
         self.workflow = Workflow()
