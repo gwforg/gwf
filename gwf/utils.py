@@ -1,4 +1,6 @@
 import functools
+import imp
+import os.path
 
 
 def cache(obj):
@@ -22,3 +24,30 @@ def iter_outputs(targets):
     for target in targets:
         for path in target.outputs:
             yield target, path
+
+
+def import_object(path, default_obj='gwf'):
+    if not os.path.isabs(path):
+        path = os.path.abspath(os.path.join(os.getcwd(), path))
+
+    comps = path.rsplit(':')
+    if len(comps) == 2:
+        path, obj = comps
+    elif len(comps) == 1:
+        path, obj = comps[0], default_obj
+    else:
+        raise ValueError('Invalid path.')
+
+    basedir, filename = os.path.split(path)
+    filename, ext = os.path.splitext(filename)
+
+    mod_loc = imp.find_module(filename, [basedir])
+    mod = imp.load_module(filename, *mod_loc)
+    return getattr(mod, obj)
+
+
+def get_file_timestamp(filename):
+    try:
+        return os.path.getmtime(filename)
+    except OSError:
+        return None

@@ -1,6 +1,5 @@
 from __future__ import absolute_import, print_function
 
-import imp
 import inspect
 import os.path
 import sys
@@ -9,32 +8,12 @@ from collections import defaultdict
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, TargetExistsError)
-from .utils import iter_inputs, iter_outputs
+from .utils import import_object, iter_inputs, iter_outputs, get_file_timestamp
 
 _target_repr = (
     '{}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, '
     'spec={!r})'
 )
-
-
-def _import_object(path, default_obj='gwf'):
-    if not os.path.isabs(path):
-        path = os.path.abspath(os.path.join(os.getcwd(), path))
-
-    comps = path.rsplit(':')
-    if len(comps) == 2:
-        path, obj = comps
-    elif len(comps) == 1:
-        path, obj = comps[0], default_obj
-    else:
-        raise ValueError('Invalid path.')
-
-    basedir, filename = os.path.split(path)
-    filename, ext = os.path.splitext(filename)
-
-    mod_loc = imp.find_module(filename, [basedir])
-    mod = imp.load_module(filename, *mod_loc)
-    return getattr(mod, obj)
 
 
 def _norm_path(working_dir, path):
