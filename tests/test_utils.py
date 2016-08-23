@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from gwf.utils import _split_import_path, cache, import_object
 
@@ -45,3 +45,17 @@ class TestImportObject(unittest.TestCase):
                 '/some/dir/workflow.py::other_obj', 'workflow_obj'
             )
 
+    @patch('gwf.utils.os.getcwd', return_value='/some/dir')
+    @patch('gwf.utils.imp.find_module', return_value=(None, '', ('', '', None)))
+    @patch('gwf.utils.imp.load_module')
+    @patch('gwf.utils._split_import_path', return_value=('/some/dir/this', 'workflow', 'gwf'))
+    def test_import_with_non_absolute_path_normalizes_path_and_loads_module(
+            self, mock_split_import_path, mock_load_module, mock_find_module, mock_getcwd):
+
+        import_object('this/workflow.py')
+
+        mock_split_import_path.assert_called_once_with(
+            '/some/dir/this/workflow.py', 'gwf'
+        )
+        self.assertEqual(mock_find_module.call_count, 1)
+        self.assertEqual(mock_load_module.call_count, 1)
