@@ -1,0 +1,23 @@
+import argparse
+import sys
+
+from gwf.backends.base import get_backends
+from gwf.core import PreparedWorkflow
+from gwf.utils import import_object
+
+
+backends = get_backends()
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-f', '--file', default='workflow.py:gwf',
+                    help='Path to the workflow file.')
+parser.add_argument('-b', '--backend', default='local',
+                    choices=backends,
+                    help='Backend used to run the workflow.')
+
+args = parser.parse_args()
+
+workflow = import_object(args.file)
+prepared_workflow = PreparedWorkflow(workflow)
+
+print(prepared_workflow)
