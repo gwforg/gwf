@@ -1,7 +1,7 @@
 import os.path
 
 from ..core import PreparedWorkflow
-from ..exceptions import WorkflowNotPreparedError
+from ..exceptions import WorkflowNotPreparedError, GWFError
 from ..utils import cache
 
 BACKENDS = {}
