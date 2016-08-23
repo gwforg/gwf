@@ -3,6 +3,7 @@ from __future__ import absolute_import, print_function
 import inspect
 import os.path
 import sys
+import itertools
 from collections import defaultdict
 
 from .exceptions import (CircularDependencyError,
@@ -211,6 +212,12 @@ class PreparedWorkflow:
             for dep in deps:
                 dependents[dep].append(target)
         return dependents
+
+    def prepare_file_cache(self):
+        input_iter = iter_inputs(self.targets.values())
+        output_iter = iter_outputs(self.targets.values())
+        return {path: get_file_timestamp(path)
+                for _, path in itertools.chain(input_iter, output_iter)}
 
     def _check_for_circular_dependencies(self):
         for target in self.targets.values():
