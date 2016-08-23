@@ -1,6 +1,6 @@
 import os.path
 import unittest
-from unittest.mock import create_autospec, patch
+from unittest.mock import Mock, create_autospec, patch
 
 from gwf.core import PreparedWorkflow, Target, Workflow
 from gwf.exceptions import (CircularDependencyError,
@@ -15,6 +15,16 @@ def create_test_target(name='TestTarget', inputs=[], outputs=[], options={}, wor
 
 class TestWorkflow(unittest.TestCase):
 
+    def test_target_with_no_input_has_empty_inputs_attribute(self):
+        workflow = Workflow()
+        target = workflow.target('TestTarget')
+        self.assertListEqual(target.inputs, [])
+
+    def test_target_with_no_output_has_empty_outputs_attribute(self):
+        workflow = Workflow()
+        target = workflow.target('TestTarget')
+        self.assertListEqual(target.outputs, [])
+
     def test_adding_a_target_makes_it_available_to_the_workflow(self):
         workflow = Workflow()
         workflow.target('TestTarget', inputs=[], outputs=[], spec='')
@@ -28,7 +38,7 @@ class TestWorkflow(unittest.TestCase):
         with self.assertRaises(TargetExistsError):
             workflow.target('TestTarget', inputs=[], outputs=[], spec='')
 
-    def test_including_workflow_should_extend_including_workflow(self):
+    def test_including_workflow_object_should_extend_including_workflow(self):
         workflow = Workflow()
         workflow.target('TestTarget1', inputs=[], outputs=[])
 
@@ -42,7 +52,7 @@ class TestWorkflow(unittest.TestCase):
         self.assertIn('TestTarget2', workflow.targets)
         self.assertIn('TestTarget3', workflow.targets)
 
-    def test_including_workflow_with_target_with_existing_name_should_raise_an_exception(self):
+    def test_including_workflow_object_with_target_with_existing_name_should_raise_an_exception(self):
         workflow = Workflow()
         workflow.target('TestTarget', inputs=[], outputs=[])
 
@@ -51,6 +61,63 @@ class TestWorkflow(unittest.TestCase):
 
         with self.assertRaises(TargetExistsError):
             workflow.include_workflow(other_workflow)
+
+    @patch('gwf.core.import_object')
+    def test_including_workflow_path_import_object_and_include_workflow_into_current_workflow(self, mock_import_object):
+        workflow = Workflow()
+        workflow.target('TestTarget1', inputs=[], outputs=[])
+
+        other_workflow = Workflow()
+        other_workflow.target('TestTarget2', inputs=[], outputs=[])
+        other_workflow.target('TestTarget3', inputs=[], outputs=[])
+
+        mock_import_object.return_value = other_workflow
+
+        with patch.object(workflow, 'include_workflow') as mock_include_workflow:
+            workflow.include_path('/path/to/other_workflow.py')
+
+            mock_import_object.assert_called_once_with(
+                '/path/to/other_workflow.py'
+            )
+
+            mock_include_workflow.assert_called_once_with(
+                other_workflow
+            )
+
+    def test_including_workflow_instance_dispatches_to_include_workflow(self):
+        workflow = Workflow()
+        other_workflow = Workflow()
+
+        with patch.object(workflow, 'include_workflow') as mock_include_workflow:
+            workflow.include(other_workflow)
+            mock_include_workflow.assert_called_once_with(other_workflow)
+
+    def test_including_workflow_path_dispatches_to_include_path(self):
+        workflow = Workflow()
+
+        with patch.object(workflow, 'include_path') as mock_include_path:
+            workflow.include('/path/to/other_workflow.py')
+            mock_include_path.assert_called_once_with(
+                '/path/to/other_workflow.py')
+
+    @patch('gwf.core.inspect.ismodule', return_value=True)
+    def test_including_workflow_module_gets_workflow_attribute_and_dispatches_to_include_workflow(self, mock_ismodule):
+        workflow = Workflow(working_dir='/some/dir')
+        other_workflow = Workflow(working_dir='/some/other/dir')
+
+        mock_module = Mock()
+        mock_module.gwf = other_workflow
+
+        with patch.object(workflow, 'include_workflow') as mock_include_workflow:
+            workflow.include(mock_module)
+
+            mock_ismodule.assert_called_once_with(mock_module)
+            mock_include_workflow.assert_called_once_with(other_workflow)
+
+    def test_including_non_module_str_and_object_value_raises_type_error(self):
+        workflow = Workflow(working_dir='/some/dir')
+        with self.assertRaises(TypeError):
+            workflow.include(42)
 
     def test_targets_inherit_workflow_working_dir_with_given_working_dir(self):
         workflow = Workflow(working_dir='/some/path')
@@ -67,6 +134,18 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(sys_getframe_mock.call_count, 1)
         self.assertEqual(inspect_getfile_mock.call_count, 1)
         self.assertEqual(workflow.working_dir, '/some/path')
+
+    def test_empty_workflow_repr(self):
+        workflow = Workflow('/some/dir')
+        self.assertEqual(
+            repr(workflow), "Workflow(working_dir='/some/dir', targets={})")
+
+    def test_nonempty_workflow_repr(self):
+        workflow = Workflow('/some/dir')
+        workflow.target('TestTarget')
+
+        self.assertIn("working_dir='/some/dir'", repr(workflow))
+        self.assertIn("name='TestTarget'", repr(workflow))
 
 
 class TestTarget(unittest.TestCase):
@@ -208,7 +287,7 @@ class TestTarget(unittest.TestCase):
 class TestPreparedWorkflow(unittest.TestCase):
 
     def setUp(self):
-        self.workflow = Workflow()
+        self.workflow = Workflow(working_dir='/some/dir')
 
     def test_finds_no_providers_in_empty_workflow(self):
         prepared_workflow = PreparedWorkflow(self.workflow)
@@ -323,6 +402,19 @@ class TestPreparedWorkflow(unittest.TestCase):
 
         with self.assertRaises(CircularDependencyError):
             PreparedWorkflow(self.workflow)
+
+    def test_empty_prepared_workflow_repr(self):
+        prepared_workflow = PreparedWorkflow(self.workflow)
+        self.assertEqual(
+            repr(prepared_workflow),
+            "PreparedWorkflow(working_dir='/some/dir', targets={})"
+        )
+
+    def test_nonempty_prepared_workflow_repr(self):
+        self.workflow.target('TestTarget')
+        prepared_workflow = PreparedWorkflow(self.workflow)
+        self.assertIn("working_dir='/some/dir'", repr(prepared_workflow))
+        self.assertIn('TestTarget', repr(prepared_workflow))
 
 
 class TestGetExecutionSchedule(unittest.TestCase):
