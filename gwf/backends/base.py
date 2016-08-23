@@ -81,7 +81,7 @@ class Backend(metaclass=BackendType):
                 # we have already processed the node, and
                 # if we should run the target name is scheduled
                 # otherwise it isn't.
-                return target.name in scheduled
+                return target in scheduled
 
             # schedule all dependencies before we schedule this task
             dependencies = self.workflow.dependencies[target]
@@ -89,7 +89,7 @@ class Backend(metaclass=BackendType):
                 dfs(dep)
 
             # If this task needs to run, then schedule it
-            if self.submitted(target) or self.should_run(target, dependencies):
+            if self.submitted(target) or self.should_run(target):
                 job_schedule.append(target)
                 scheduled.add(target)
 
@@ -99,7 +99,6 @@ class Backend(metaclass=BackendType):
 
         return job_schedule, scheduled
 
-    @cache
     def should_run(self, target):
         if any(self.should_run(dep) for dep in self.workflow.dependencies[target]):
             return True
