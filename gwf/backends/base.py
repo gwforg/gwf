@@ -6,29 +6,6 @@ from ..utils import cache
 
 BACKENDS = {}
 
-@cache
-def _should_run(target, dependencies):
-    if any(_should_run(dep) for dep in dependencies[target]):
-        return True
-
-    if target.is_sink:
-        return True
-
-    if any(not os.path.exists(path) for path in target.outputs):
-        return True
-
-    if target.is_source:
-        return False
-
-    youngest_in_ts, youngest_in_path = \
-        max((_get_file_timestamp(path), path) for path in target.inputs)
-
-    oldest_out_ts, oldest_out_path = \
-        min((_get_file_timestamp(path), path) for path in target.outputs)
-
-    return youngest_in_ts > oldest_out_ts
-
-
 def register_backend(name, backend_cls):
     BACKENDS[name] = backend_cls
 
@@ -122,3 +99,24 @@ class Backend(metaclass=BackendType):
         dfs(root)
 
         return job_schedule, scheduled
+
+    @cache
+    def should_run(self, target):
+        if any(self.should_run(dep) for dep in self.workflow.dependencies[target]):
+            return True
+
+        if target.is_sink:
+            return True
+
+        if any(self.workflow.file_cache[path] is None for path in target.outputs):
+            return True
+
+        if target.is_source:
+            return False
+
+        youngest_in_ts, youngest_in_path = max(self.workflow.file_cache[path]
+                                               for path in target.inputs)
+        oldest_out_ts, oldest_out_path = min(self.workflow.file_cache[path]
+                                             for path in target.outputs)
+
+        return youngest_in_ts > oldest_out_ts
