@@ -26,10 +26,7 @@ def iter_outputs(targets):
             yield target, path
 
 
-def import_object(path, default_obj='gwf'):
-    if not os.path.isabs(path):
-        path = os.path.abspath(os.path.join(os.getcwd(), path))
-
+def _split_import_path(path, default_obj):
     comps = path.rsplit(':')
     if len(comps) == 2:
         path, obj = comps
@@ -40,7 +37,13 @@ def import_object(path, default_obj='gwf'):
 
     basedir, filename = os.path.split(path)
     filename, ext = os.path.splitext(filename)
+    return filename, basedir, obj
 
+
+def import_object(path, default_obj='gwf'):
+    if not os.path.isabs(path):
+        path = os.path.abspath(os.path.join(os.getcwd(), path))
+    filename, basedir, obj = _split_import_path(path, default_obj)
     mod_loc = imp.find_module(filename, [basedir])
     mod = imp.load_module(filename, *mod_loc)
     return getattr(mod, obj)
