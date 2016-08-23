@@ -25,7 +25,7 @@ setup(
     keywords="grid computing workflow",
     url="https://mailund.github.io/gwf",
     description="Grid WorkFlow - a make-like system for computer grids.",
-    long_description=read('README'),
+    long_description=read('README.rst'),
 
     classifiers=[
         "Development Status :: 4 - Beta",
