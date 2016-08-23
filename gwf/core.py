@@ -181,6 +181,8 @@ class PreparedWorkflow:
 
         self._check_for_circular_dependencies()
 
+        self.file_cache = self.prepare_file_cache()
+
     def prepare_file_providers(self):
         provides = {}
         for target, path in iter_outputs(self.targets.values()):

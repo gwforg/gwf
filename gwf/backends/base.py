@@ -34,7 +34,7 @@ def register_backend(name, backend_cls):
 
 
 def get_backends():
-    return BACKENDS.items()
+    return dict(BACKENDS)
 
 
 class BackendType(type):
