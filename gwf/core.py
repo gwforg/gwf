@@ -136,7 +136,7 @@ class Workflow(object):
 
     def include_path(self, path):
         """Include targets of another workflow into this workflow."""
-        other_workflow = _import_object(path)
+        other_workflow = import_object(path)
         self.include_workflow(other_workflow)
 
     def include_workflow(self, other_workflow):
