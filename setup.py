@@ -14,7 +14,7 @@ setup(
     version="0.7.0",
 
     packages=find_packages(),
-    scripts=[],
+    scripts=['scripts/gwf'],
 
     test_suite='tests',
 
