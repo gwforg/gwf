@@ -35,7 +35,8 @@ class Backend(metaclass=BackendType):
 
     """Representation of a backend.
 
-    A workflow is initialized with a :class:`gwf.core.Workflow`
+    A backend is initialized with an instance of
+    :class:`gwf.core.PreparedWorkflow`.
     """
 
     def __init__(self, workflow):
