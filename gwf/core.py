@@ -11,11 +11,6 @@ from .exceptions import (CircularDependencyError,
                          FileRequiredButNotProvidedError, TargetExistsError)
 from .utils import get_file_timestamp, import_object, iter_inputs, iter_outputs
 
-_target_repr = (
-    '{}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, '
-    'spec={!r})'
-)
-
 
 def _norm_path(working_dir, path):
     if os.path.isabs(path):
@@ -82,7 +77,12 @@ class Target(object):
         return self
 
     def __repr__(self):
-        return _target_repr.format(
+        format_str = (
+            '{}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, '
+            'working_dir={!r}, spec={!r})'
+        )
+
+        return format_str.format(
             self.__class__.__name__,
             self.name,
             self.inputs,
