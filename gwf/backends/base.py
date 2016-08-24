@@ -100,6 +100,7 @@ class Backend(metaclass=BackendType):
 
         return job_schedule, scheduled
 
+    @cache
     def should_run(self, target):
         if any(self.should_run(dep) for dep in self.workflow.dependencies[target]):
             return True
