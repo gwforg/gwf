@@ -1,7 +1,7 @@
-""" Handling of configuration files. """
+"""Handling of configuration files."""
 
-import os.path
 import ConfigParser
+import os.path
 from distutils.spawn import find_executable as has_exe
 
 USER_CONFIG_FILE = os.path.expanduser("~/.gwfrc")
