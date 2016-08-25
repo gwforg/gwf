@@ -3,6 +3,7 @@ import imp
 import logging
 import os.path
 import time
+from contextlib import ContextDecorator
 
 
 def cache(obj):
@@ -16,7 +17,7 @@ def cache(obj):
     return memoizer
 
 
-class timer:
+class timer(ContextDecorator):
 
     def __init__(self, msg, logger=None):
         self.msg = msg
