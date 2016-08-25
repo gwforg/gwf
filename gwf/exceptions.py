@@ -56,3 +56,7 @@ class CircularDependencyError(GWFError):
 
 class WorkflowNotPreparedError(GWFError):
     pass
+
+
+class IncludeWorkflowError(GWFError):
+    pass
