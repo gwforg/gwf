@@ -39,9 +39,10 @@ class TestBaseBackend(unittest.TestCase):
         workflow = Workflow(working_dir='/some/dir')
         target = workflow.target('TestTarget')
 
-        backend = Backend(PreparedWorkflow(workflow))
+        prepared_workflow = PreparedWorkflow(workflow)
+        backend = Backend(prepared_workflow)
         with patch.object(backend, 'submitted', return_value=False):
-            with patch.object(backend, 'should_run', return_value=True):
+            with patch.object(prepared_workflow, 'should_run', return_value=True):
                 schedule, scheduled = backend.schedule(target)
                 self.assertListEqual(schedule, [target])
                 self.assertSetEqual(scheduled, set([target]))
@@ -51,9 +52,10 @@ class TestBaseBackend(unittest.TestCase):
         target1 = workflow.target('TestTarget1', outputs=['test_output.txt'])
         target2 = workflow.target('TestTarget2', inputs=['test_output.txt'])
 
-        backend = Backend(PreparedWorkflow(workflow))
+        prepared_workflow = PreparedWorkflow(workflow)
+        backend = Backend(prepared_workflow)
         with patch.object(backend, 'submitted', return_value=False):
-            with patch.object(backend, 'should_run', return_value=True):
+            with patch.object(prepared_workflow, 'should_run', return_value=True):
                 schedule, scheduled = backend.schedule(target2)
                 self.assertListEqual(schedule, [target1, target2])
                 self.assertSetEqual(scheduled, set([target1, target2]))
@@ -68,9 +70,10 @@ class TestBaseBackend(unittest.TestCase):
         target4 = workflow.target('TestTarget4', inputs=[
                                   'test_output3.txt'], outputs=['final_output.txt'])
 
-        backend = Backend(PreparedWorkflow(workflow))
+        prepared_workflow = PreparedWorkflow(workflow)
+        backend = Backend(prepared_workflow)
         with patch.object(backend, 'submitted', return_value=False):
-            with patch.object(backend, 'should_run', return_value=True):
+            with patch.object(prepared_workflow, 'should_run', return_value=True):
                 schedule, scheduled = backend.schedule(target4)
                 self.assertListEqual(
                     schedule, [target1, target2, target3, target4])
@@ -90,9 +93,10 @@ class TestBaseBackend(unittest.TestCase):
             outputs=['final_output.txt']
         )
 
-        backend = Backend(PreparedWorkflow(workflow))
+        prepared_workflow = PreparedWorkflow(workflow)
+        backend = Backend(prepared_workflow)
         with patch.object(backend, 'submitted', return_value=False):
-            with patch.object(backend, 'should_run', return_value=True):
+            with patch.object(prepared_workflow, 'should_run', return_value=True):
                 schedule, scheduled = backend.schedule(target4)
                 self.assertListEqual(
                     schedule, [target1, target2, target3, target4])

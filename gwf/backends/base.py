@@ -1,6 +1,5 @@
 from ..core import PreparedWorkflow
 from ..exceptions import GWFError, WorkflowNotPreparedError
-from ..utils import cache
 
 BACKENDS = {}
 
@@ -90,7 +89,7 @@ class Backend(metaclass=BackendType):
                 dfs(dep)
 
             # If this task needs to run, then schedule it
-            if self.submitted(target) or self.should_run(target):
+            if self.submitted(target) or self.workflow.should_run(target):
                 job_schedule.append(target)
                 scheduled.add(target)
 
@@ -99,24 +98,3 @@ class Backend(metaclass=BackendType):
         dfs(root)
 
         return job_schedule, scheduled
-
-    @cache
-    def should_run(self, target):
-        if any(self.should_run(dep) for dep in self.workflow.dependencies[target]):
-            return True
-
-        if target.is_sink:
-            return True
-
-        if any(self.workflow.file_cache[path] is None for path in target.outputs):
-            return True
-
-        if target.is_source:
-            return False
-
-        youngest_in_ts, youngest_in_path = max(self.workflow.file_cache[path]
-                                               for path in target.inputs)
-        oldest_out_ts, oldest_out_path = min(self.workflow.file_cache[path]
-                                             for path in target.outputs)
-
-        return youngest_in_ts > oldest_out_ts
