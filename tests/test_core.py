@@ -417,5 +417,88 @@ class TestPreparedWorkflow(unittest.TestCase):
         self.assertIn('TestTarget', repr(prepared_workflow))
 
 
+class TestShouldRun(unittest.TestCase):
+
+    def setUp(self):
+        workflow = Workflow(working_dir='/some/dir')
+        self.target1 = workflow.target(
+            'TestTarget1',
+            outputs=['test_output1.txt']
+        )
+        self.target2 = workflow.target(
+            'TestTarget2',
+            inputs=['test_output1.txt'],
+            outputs=['test_output2.txt']
+        )
+        self.target3 = workflow.target(
+            'TestTarget3',
+            inputs=['test_output1.txt'],
+            outputs=['test_output3.txt']
+        )
+        self.target4 = workflow.target(
+            'TestTarget4',
+            inputs=['test_output2.txt', 'test_output3.txt'],
+            outputs=['final_output.txt']
+        )
+
+        self.prepared_workflow = PreparedWorkflow(workflow)
+
+    def test_target_should_run_if_one_of_its_dependencies_does_not_exist(self):
+        with self.assertLogs(level='DEBUG') as logs:
+            self.assertTrue(self.prepared_workflow.should_run(self.target1))
+
+        self.assertEqual(
+            logs.output,
+            [
+                'DEBUG:gwf.core:TestTarget1 should run because one of its output files does not exist.'
+            ]
+        )
+
+    def test_target_should_run_if_one_of_its_dependencies_should_run(self):
+        with self.assertLogs(level='DEBUG') as logs:
+            self.assertTrue(self.prepared_workflow.should_run(self.target2))
+
+        self.assertEqual(
+            logs.output,
+            [
+                'DEBUG:gwf.core:TestTarget1 should run because one of its output files does not exist.',
+                'DEBUG:gwf.core:TestTarget2 should run because one of its dependencies should run.'
+            ]
+        )
+
+    def test_target_should_run_if_any_of_its_deep_dependencies_should_run(self):
+        with self.assertLogs(level='DEBUG') as logs:
+            self.assertTrue(self.prepared_workflow.should_run(self.target4))
+
+        self.assertEqual(
+            logs.output,
+            [
+                'DEBUG:gwf.core:TestTarget1 should run because one of its output files does not exist.',
+                'DEBUG:gwf.core:TestTarget2 should run because one of its dependencies should run.',
+                'DEBUG:gwf.core:TestTarget4 should run because one of its dependencies should run.'
+            ]
+        )
+
+    def test_target_should_run_if_it_is_a_sink(self):
+        with patch.object(self.target1, 'outputs', []):
+            with self.assertLogs(level='DEBUG') as logs:
+                self.assertTrue(
+                    self.prepared_workflow.should_run(self.target1))
+
+            self.assertEqual(
+                logs.output,
+                [
+                    'DEBUG:gwf.core:TestTarget1 should run because it is a sink.'
+                ]
+            )
+
+    def test_target_should_not_run_if_it_is_a_source_and_all_outputs_exist(self):
+        with patch.object(self.target1, 'outputs', ['a', 'b']):
+            with patch.dict(self.prepared_workflow.file_cache, {'a': 1, 'b': 2}):
+                self.assertFalse(
+                    self.prepared_workflow.should_run(self.target1)
+                )
+
+
 class TestGetExecutionSchedule(unittest.TestCase):
     pass
