@@ -2,6 +2,7 @@ from __future__ import absolute_import, print_function
 
 import inspect
 import itertools
+import logging
 import os.path
 import sys
 from collections import defaultdict
@@ -9,7 +10,10 @@ from collections import defaultdict
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, TargetExistsError)
-from .utils import get_file_timestamp, import_object, iter_inputs, iter_outputs
+from .utils import (cache, get_file_timestamp, import_object, iter_inputs,
+                    iter_outputs, timer)
+
+logger = logging.getLogger(__name__)
 
 
 def _norm_path(working_dir, path):
@@ -176,13 +180,30 @@ class PreparedWorkflow:
         self.targets = workflow.targets
         self.working_dir = workflow.working_dir
 
-        self.provides = self.prepare_file_providers()
-        self.dependencies = self.prepare_dependencies(self.provides)
-        self.dependents = self.prepare_dependents(self.dependencies)
+        logger.debug(
+            'preparing workflow with %s targets defined.',
+            len(self.targets)
+        )
 
-        self._check_for_circular_dependencies()
+        logger.debug('preparing file providers.')
+        with timer('prepared file providers in %.3fms.', logger=logger) as t:
+            self.provides = self.prepare_file_providers()
 
-        self.file_cache = self.prepare_file_cache()
+        logger.debug('preparing dependencies.')
+        with timer('prepared dependencies in %.3fms.', logger=logger) as t:
+            self.dependencies = self.prepare_dependencies(self.provides)
+
+        logger.debug('preparing dependents.')
+        with timer('prepared dependents in %.3fms.', logger=logger) as t:
+            self.dependents = self.prepare_dependents(self.dependencies)
+
+        logger.debug('checking for circular dependencies')
+        with timer('checked for circular dependencies in %.3fms.', logger=logger) as t:
+            self._check_for_circular_dependencies()
+
+        logger.debug('preparing file cache.')
+        with timer('prepared file cache in %.3fms.', logger=logger) as t:
+            self.file_cache = self.prepare_file_cache()
 
     def prepare_file_providers(self):
         provides = {}
@@ -224,6 +245,64 @@ class PreparedWorkflow:
             for dep in self.dependencies[target]:
                 if target in _get_deep_dependencies(dep, self.dependencies):
                     raise CircularDependencyError(target)
+
+    @cache
+    def should_run(self, target):
+        if any(self.should_run(dep) for dep in self.dependencies[target]):
+            logger.debug(
+                '%s should run because one of its dependencies should run.',
+                target.name
+            )
+            return True
+
+        if target.is_sink:
+            logger.debug(
+                '%s should run because it is a sink.',
+                target.name
+            )
+            return True
+
+        if any(self.file_cache[path] is None for path in target.outputs):
+            logger.debug(
+                '%s should run because one of its output files does not exist.',
+                target.name
+            )
+            return True
+
+        if target.is_source:
+            logger.debug(
+                '%s should not run because it is a source.',
+                target.name
+            )
+            return False
+
+        youngest_in_ts, youngest_in_path = max(
+            self.file_cache[path] for path in target.inputs
+        )
+        logger.debug(
+            '%s is the youngest input file of %s with timestamp %s.',
+            youngest_in_path,
+            target.name,
+            youngest_in_ts
+        )
+
+        oldest_out_ts, oldest_out_path = min(
+            self.file_cache[path] for path in target.outputs
+        )
+        logger.debug(
+            '%s is the oldest output file of %s with timestamp %s.',
+            oldest_out_path,
+            target.name,
+            youngest_in_ts
+        )
+        logger.debug(
+            '%s should run since %s is larger than %s.',
+            target.name,
+            youngest_in_ts,
+            oldest_out_ts
+        )
+
+        return youngest_in_ts > oldest_out_ts
 
     def __repr__(self):
         return '{}(working_dir={!r}, targets={!r})'.format(
