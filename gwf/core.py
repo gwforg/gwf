@@ -9,7 +9,8 @@ from collections import defaultdict
 
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
-                         FileRequiredButNotProvidedError, TargetExistsError)
+                         FileRequiredButNotProvidedError, TargetExistsError,
+                         IncludeWorkflowError)
 from .utils import (cache, get_file_timestamp, import_object, iter_inputs,
                     iter_outputs, timer)
 
@@ -104,7 +105,8 @@ class Workflow(object):
 
     """Represents a workflow."""
 
-    def __init__(self, working_dir=None):
+    def __init__(self, name=None, working_dir=None):
+        self.name = name
         self.targets = {}
 
         self.working_dir = working_dir
@@ -143,13 +145,26 @@ class Workflow(object):
         """Include targets of another workflow into this workflow."""
         other_workflow = import_object(path)
         self.include_workflow(other_workflow)
+        return other_workflow
 
-    def include_workflow(self, other_workflow):
+    def include_workflow(self, other_workflow, namespace=None):
         """Include targets from another `Workflow` object in this workflow."""
+        if other_workflow.name is None and namespace is None:
+            raise IncludeWorkflowError(
+                'The included workflow has not been assigned a name. To '
+                'include the workflow you must set the namespace argument.'
+            )
+        namespace_prefix = namespace or other_workflow.name
+        if namespace_prefix == self.name:
+            raise IncludeWorkflowError(
+                'The included workflow has the same name as this workflow'
+            )
+
         for target in other_workflow.targets.values():
+            target.name = '{}.{}'.format(namespace_prefix, target.name)
             self._add_target(target)
 
-    def include(self, path_or_workflow):
+    def include(self, path_or_workflow, namespace=None):
         """Include another workflow into this workflow."""
         if isinstance(path_or_workflow, Workflow):
             self.include_workflow(path_or_workflow)
@@ -162,8 +177,8 @@ class Workflow(object):
                             'Workflow object.')
 
     def __repr__(self):
-        return '{}(working_dir={!r}, targets={!r})'.format(
-            self.__class__.__name__, self.working_dir, self.targets
+        return '{}(name={!r}, working_dir={!r}, targets={!r})'.format(
+            self.__class__.__name__, self.name, self.working_dir, self.targets
         )
 
 

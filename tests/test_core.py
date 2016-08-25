@@ -5,7 +5,8 @@ from unittest.mock import Mock, create_autospec, patch
 from gwf.core import PreparedWorkflow, Target, Workflow
 from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
-                            FileRequiredButNotProvidedError, TargetExistsError)
+                            FileRequiredButNotProvidedError, TargetExistsError,
+                            IncludeWorkflowError)
 
 
 def create_test_target(name='TestTarget', inputs=[], outputs=[], options={}, working_dir=''):
@@ -38,29 +39,43 @@ class TestWorkflow(unittest.TestCase):
         with self.assertRaises(TargetExistsError):
             workflow.target('TestTarget', inputs=[], outputs=[], spec='')
 
+    def test_including_workflow_with_no_name_raises_an_exception(self):
+        workflow = Workflow()
+        other_workflow = Workflow()
+        with self.assertRaises(IncludeWorkflowError):
+            workflow.include(other_workflow)
+
     def test_including_workflow_object_should_extend_including_workflow(self):
         workflow = Workflow()
         workflow.target('TestTarget1', inputs=[], outputs=[])
 
-        other_workflow = Workflow()
+        other_workflow = Workflow(name='foo')
         other_workflow.target('TestTarget2', inputs=[], outputs=[])
         other_workflow.target('TestTarget3', inputs=[], outputs=[])
 
         workflow.include_workflow(other_workflow)
 
         self.assertIn('TestTarget1', workflow.targets)
-        self.assertIn('TestTarget2', workflow.targets)
-        self.assertIn('TestTarget3', workflow.targets)
+        self.assertIn('foo.TestTarget2', workflow.targets)
+        self.assertIn('foo.TestTarget3', workflow.targets)
 
-    def test_including_workflow_object_with_target_with_existing_name_should_raise_an_exception(self):
+    def test_include_with_namespace_overrides_included_workflow_name(self):
         workflow = Workflow()
         workflow.target('TestTarget', inputs=[], outputs=[])
 
-        other_workflow = Workflow()
+        other_workflow = Workflow(name='foo')
         other_workflow.target('TestTarget', inputs=[], outputs=[])
 
-        with self.assertRaises(TargetExistsError):
-            workflow.include_workflow(other_workflow)
+        workflow.include_workflow(other_workflow, namespace='bar')
+        self.assertIn('bar.TestTarget', workflow.targets)
+        self.assertNotIn('foo.TestTarget', workflow.targets)
+        self.assertIn('TestTarget', workflow.targets)
+
+    def test_including_workflow_with_same_name_as_this_workflow_raises_an_exception(self):
+        workflow = Workflow(name='foo')
+        other_workflow = Workflow(name='foo')
+        with self.assertRaises(IncludeWorkflowError):
+            workflow.include(other_workflow)
 
     @patch('gwf.core.import_object')
     def test_including_workflow_path_import_object_and_include_workflow_into_current_workflow(self, mock_import_object):
@@ -136,12 +151,12 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(workflow.working_dir, '/some/path')
 
     def test_empty_workflow_repr(self):
-        workflow = Workflow('/some/dir')
+        workflow = Workflow(working_dir='/some/dir')
         self.assertEqual(
-            repr(workflow), "Workflow(working_dir='/some/dir', targets={})")
+            repr(workflow), "Workflow(name=None, working_dir='/some/dir', targets={})")
 
     def test_nonempty_workflow_repr(self):
-        workflow = Workflow('/some/dir')
+        workflow = Workflow(working_dir='/some/dir')
         workflow.target('TestTarget')
 
         self.assertIn("working_dir='/some/dir'", repr(workflow))
