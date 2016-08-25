@@ -268,11 +268,10 @@ class PreparedWorkflow:
             )
             return False
 
-        print(self.file_cache)
-        print(target.inputs)
         youngest_in_ts, youngest_in_path = max(
             self.file_cache[path] for path in target.inputs
         )
+
         logger.debug(
             '%s is the youngest input file of %s with timestamp %s.',
             youngest_in_path,
@@ -283,12 +282,14 @@ class PreparedWorkflow:
         oldest_out_ts, oldest_out_path = min(
             self.file_cache[path] for path in target.outputs
         )
+
         logger.debug(
             '%s is the oldest output file of %s with timestamp %s.',
             oldest_out_path,
             target.name,
             youngest_in_ts
         )
+
         logger.debug(
             '%s should run since %s is larger than %s.',
             target.name,
