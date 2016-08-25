@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from gwf.backends.base import Backend, get_backends
 from gwf.core import PreparedWorkflow, Workflow
