@@ -1,6 +1,8 @@
 import functools
 import imp
+import logging
 import os.path
+import time
 
 
 def cache(obj):
@@ -12,6 +14,22 @@ def cache(obj):
             _cache[args] = obj(*args, **kwargs)
         return _cache[args]
     return memoizer
+
+
+class timer:
+
+    def __init__(self, msg, logger=None):
+        self.msg = msg
+        self.logger = logger or logging.getLogger(__name__)
+
+    def __enter__(self):
+        self.start = time.clock()
+        return self
+
+    def __exit__(self, *args):
+        self.end = time.clock()
+        self.duration = self.end - self.start
+        self.logger.debug(self.msg, self.duration * 1000)
 
 
 def iter_inputs(targets):
