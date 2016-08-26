@@ -44,15 +44,19 @@ class Backend(metaclass=BackendType):
         self.workflow = workflow
 
     def submitted(self, targets):
+        """Return whether the target has been submitted."""
         raise NotImplementedError()
 
     def running(self, targets):
+        """Return whether the target is running."""
         raise NotImplementedError()
 
     def submit(self, targets):
+        """Submit a target."""
         raise NotImplementedError()
 
     def cancel(self, targets):
+        """Cancel a target."""
         raise NotImplementedError()
 
     def schedule(self, target):

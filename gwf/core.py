@@ -125,7 +125,7 @@ class Workflow(object):
         self.targets[target.name] = target
 
     def target(self, name, inputs=None, outputs=None, **options):
-        """Create a target and add it to the `Workflow`."""
+        """Create a target and add it to the :class:`gwf.core.Workflow`."""
 
         if inputs is None:
             inputs = []
@@ -244,6 +244,7 @@ class PreparedWorkflow:
             self.prepare(workflow)
 
     def prepare(self, workflow):
+        """Prepare this workflow given a :class:`gwf.core.Workflow` instance."""
         self.targets = workflow.targets
         self.working_dir = workflow.working_dir
 
