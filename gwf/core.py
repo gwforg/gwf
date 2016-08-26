@@ -50,6 +50,7 @@ def _get_deep_dependencies(target, dependencies):
 
 
 class Target(object):
+    """Represents a target."""
 
     def __init__(self, name, inputs, outputs, options, working_dir, spec=None):
         self.name = name
@@ -114,9 +115,6 @@ class Workflow(object):
             # Get the frame object of whatever called the Workflow.__init__
             # and extract the path of the file which is was defined in. Then
             # normalize the path and get the directory of the file.
-            #
-            # TODO: Figure out whether this can be replaced with a simple
-            # os.getcwd() call.
             filename = inspect.getfile(sys._getframe(1))
             self.working_dir = os.path.dirname(os.path.realpath(filename))
 
@@ -164,14 +162,66 @@ class Workflow(object):
             target.name = '{}.{}'.format(namespace_prefix, target.name)
             self._add_target(target)
 
-    def include(self, path_or_workflow, namespace=None):
-        """Include another workflow into this workflow."""
-        if isinstance(path_or_workflow, Workflow):
-            self.include_workflow(path_or_workflow)
-        elif isinstance(path_or_workflow, str):
-            self.include_path(path_or_workflow)
-        elif inspect.ismodule(path_or_workflow):
-            self.include_workflow(getattr(path_or_workflow, 'gwf'))
+    def include(self, other_workflow, namespace=None):
+        """Include another workflow into this workflow.
+
+        This method can be given either an :class:`gwf.core.Workflow` instance,
+        a module or a path to a workflow file.
+
+        If a module or path the workflow object to include will be determined
+        according to the following rules:
+
+        1. If a module object is given, the module must define an attribute
+           named `gwf` containing a :class:`gwf.core.Workflow` object.
+        2. If a path is given it must point to a file defining a module with an
+           attribute named `gwf` containing a :class:`gwf.core.Workflow`
+           object.
+
+        When a :class:`gwf.core.Workflow` instance has been obtained, all
+        targets will be included directly into this workflow. To avoid name
+        clashes the `namespace` argument must be provided. For example::
+
+            workflow1 = Workflow()
+            workflow1.target('TestTarget')
+
+            workflow2 = Workflow()
+            workflow2.target('TestTarget')
+
+            workflow1.include(workflow2, namespace='wf1')
+
+        The workflow now contains two targets named `TestTarget` (defined in
+        `workflow2`) and `wf1.TestTarget` (defined in `workflow1`). The
+        `namespace` parameter can be left out if the workflow to be included
+        has been named::
+
+            workflow1 = Workflow(name='wf1')
+            workflow1.target('TestTarget')
+
+            workflow2 = Workflow()
+            workflow2.target('TestTarget')
+
+            workflow1.include(workflow2)
+
+        This yields the same result as before. The `namespace` argument can be
+        used to override the specified name::
+
+            workflow1 = Workflow(name='wf1')
+            workflow1.target('TestTarget')
+
+            workflow2 = Workflow()
+            workflow2.target('TestTarget')
+
+            workflow1.include(workflow2, namespace='foo')
+
+        The workflow will now contain targets named `TestTarget` and
+        `foo.TestTarget`.
+        """
+        if isinstance(other_workflow, Workflow):
+            self.include_workflow(other_workflow)
+        elif isinstance(other_workflow, str):
+            self.include_path(other_workflow)
+        elif inspect.ismodule(other_workflow):
+            self.include_workflow(getattr(other_workflow, 'gwf'))
         else:
             raise TypeError('First argument must be either a string or a '
                             'Workflow object.')
@@ -183,6 +233,8 @@ class Workflow(object):
 
 
 class PreparedWorkflow:
+
+    """Represents a finalized workflow graph."""
 
     def __init__(self, workflow=None):
         self.targets = {}
