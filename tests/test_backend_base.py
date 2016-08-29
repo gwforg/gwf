@@ -31,7 +31,7 @@ class TestBaseBackend(unittest.TestCase):
 
         backend = Backend(PreparedWorkflow(workflow))
         with patch.object(backend, 'submitted', return_value=True):
-            schedule, scheduled = backend.schedule(target)
+            schedule, scheduled = backend._get_schedule_for_target(target)
             self.assertListEqual(schedule, [])
             self.assertSetEqual(scheduled, set())
 
@@ -43,7 +43,7 @@ class TestBaseBackend(unittest.TestCase):
         backend = Backend(prepared_workflow)
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
-                schedule, scheduled = backend.schedule(target)
+                schedule, scheduled = backend._get_schedule_for_target(target)
                 self.assertListEqual(schedule, [target])
                 self.assertSetEqual(scheduled, set([target]))
 
@@ -56,7 +56,7 @@ class TestBaseBackend(unittest.TestCase):
         backend = Backend(prepared_workflow)
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
-                schedule, scheduled = backend.schedule(target2)
+                schedule, scheduled = backend._get_schedule_for_target(target2)
                 self.assertListEqual(schedule, [target1, target2])
                 self.assertSetEqual(scheduled, set([target1, target2]))
 
@@ -74,7 +74,7 @@ class TestBaseBackend(unittest.TestCase):
         backend = Backend(prepared_workflow)
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
-                schedule, scheduled = backend.schedule(target4)
+                schedule, scheduled = backend._get_schedule_for_target(target4)
                 self.assertListEqual(
                     schedule, [target1, target2, target3, target4])
                 self.assertSetEqual(scheduled, set(
@@ -97,7 +97,7 @@ class TestBaseBackend(unittest.TestCase):
         backend = Backend(prepared_workflow)
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
-                schedule, scheduled = backend.schedule(target4)
+                schedule, scheduled = backend._get_schedule_for_target(target4)
                 self.assertListEqual(
                     schedule, [target1, target2, target3, target4])
                 self.assertSetEqual(scheduled, set(

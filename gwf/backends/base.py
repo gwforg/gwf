@@ -59,7 +59,7 @@ class Backend(metaclass=BackendType):
         """Cancel a target."""
         raise NotImplementedError()
 
-    def schedule(self, target):
+    def _get_schedule_for_target(self, root):
         """Linearize the targets to be run.
 
         Returns a list of :class:`~gwf.Target`s to be run (in the order they
