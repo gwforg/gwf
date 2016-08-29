@@ -2,8 +2,8 @@
 # This is an example workflow for read mapping using bwa and samtools.
 
 from gwf import *
-from gwf.bwa import bwa_index
-from gwf.samtools import samtools_sort
+from gwf.extra.bwa import bwa_index
+from gwf.extra.samtools import samtools_sort
 
 # Using a different version here that doesn't use /scratch -- for local testing
 bwa_map = template(input=['{R1}', '{R2}', '{refGenome}.amb', '{refGenome}.ann', '{refGenome}.pac'],

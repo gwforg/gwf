@@ -1,6 +1,3 @@
-import ez_setup
-ez_setup.use_setuptools()
-
 import os
 from setuptools import setup, find_packages
 
@@ -13,23 +10,22 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name = "gwf",
-    version = "0.7.0",
+    name="gwf",
+    version="0.7.0",
 
-    packages = find_packages(where='src'),
-    package_dir = {'': 'src'},
-    scripts=['scripts/gwf', 'scripts/gwf-config'],
+    packages=find_packages(),
+    scripts=['scripts/gwf'],
 
-    #test_suite='tests',
+    test_suite='tests',
 
     # metadata for upload to PyPI
-    author = "Thomas Mailund",
-    author_email = "mailund@birc.au.dk",
-    license = "GPLv3",
-    keywords = "grid computing workflow",
-    url = "https://mailund.github.io/gwf",
-    description = ("Grid WorkFlow - a make-like system for computer grids."),
-    long_description = read('README'),
+    author="Thomas Mailund",
+    author_email="mailund@birc.au.dk",
+    license="GPLv3",
+    keywords="grid computing workflow",
+    url="https://mailund.github.io/gwf",
+    description="Grid WorkFlow - a make-like system for computer grids.",
+    long_description=read('README.rst'),
 
     classifiers=[
         "Development Status :: 4 - Beta",
