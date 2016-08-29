@@ -11,7 +11,7 @@ from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
                          TargetExistsError)
-from .utils import (cache, get_file_timestamp, import_object, iter_inputs,
+from .utils import (cache, dfs, get_file_timestamp, import_object, iter_inputs,
                     iter_outputs, timer)
 
 logger = logging.getLogger(__name__)
@@ -32,21 +32,7 @@ def _get_deep_dependencies(target, dependencies):
 
     The set of tasks is just returned as set.
     """
-    # Working with a list to preserve the order. It makes lookups slower
-    # but hopefully these sets won't be terribly long ... if it becomes a
-    # problem it is easy enough to fix it.
-    processed = []
-
-    def dfs(other_target):
-        if other_target in processed:
-            return
-        else:
-            processed.append(other_target)
-            for dep in dependencies[other_target]:
-                dfs(dep)
-
-    dfs(target)
-    return processed
+    return dfs(target, dependencies)
 
 
 class Target(object):

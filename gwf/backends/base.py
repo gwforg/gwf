@@ -1,5 +1,6 @@
 from ..core import PreparedWorkflow
 from ..exceptions import GWFError, WorkflowNotPreparedError
+from ..utils import dfs
 
 BACKENDS = {}
 
@@ -68,37 +69,14 @@ class Backend(metaclass=BackendType):
         (to make sure dependency flags are set in the submission command).
         """
 
-        root = target
-
         # If the target is already in the queue we just dismiss the scheduling
         # right away... this because we need to handle dependent nodes in the
         # queue differently, since for those we need to wait for completion.
         if self.submitted(root):
             return [], set()
 
-        processed = set()
-        scheduled = set()
         job_schedule = []
-
-        def dfs(target):
-            if target in processed:
-                # we have already processed the node, and
-                # if we should run the target name is scheduled
-                # otherwise it isn't.
-                return target in scheduled
-
-            # schedule all dependencies before we schedule this task
-            dependencies = self.workflow.dependencies[target]
-            for dep in dependencies:
-                dfs(dep)
-
-            # If this task needs to run, then schedule it
+        for target in dfs(root, self.workflow.dependencies):
             if self.submitted(target) or self.workflow.should_run(target):
                 job_schedule.append(target)
-                scheduled.add(target)
-
-            processed.add(target)
-
-        dfs(root)
-
-        return job_schedule, scheduled
+        return job_schedule, set(job_schedule)

@@ -73,3 +73,21 @@ def get_file_timestamp(filename):
         return os.path.getmtime(filename)
     except OSError:
         return None
+
+
+def dfs(root, dependencies):
+    visited = set()
+    path = []
+
+    def dfs_inner(node):
+        if node in visited:
+            return
+
+        visited.add(node)
+        for dep in dependencies[node]:
+            dfs_inner(dep)
+
+        path.append(node)
+
+    dfs_inner(root)
+    return path
