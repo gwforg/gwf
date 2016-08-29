@@ -30,7 +30,8 @@ Getting Started
    :maxdepth: 2
 
    configuration
-   tutorial/index
+   tutorial
+   best_practices
 
 Extending gwf
 -------------
