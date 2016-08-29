@@ -5,8 +5,8 @@ from unittest.mock import Mock, create_autospec, patch
 from gwf.core import PreparedWorkflow, Target, Workflow
 from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
-                            FileRequiredButNotProvidedError, TargetExistsError,
-                            IncludeWorkflowError)
+                            FileRequiredButNotProvidedError,
+                            IncludeWorkflowError, TargetExistsError)
 
 
 def create_test_target(name='TestTarget', inputs=[], outputs=[], options={}, working_dir=''):
@@ -96,7 +96,7 @@ class TestWorkflow(unittest.TestCase):
             )
 
             mock_include_workflow.assert_called_once_with(
-                other_workflow
+                other_workflow, namespace=None
             )
 
     def test_including_workflow_instance_dispatches_to_include_workflow(self):
@@ -105,7 +105,8 @@ class TestWorkflow(unittest.TestCase):
 
         with patch.object(workflow, 'include_workflow') as mock_include_workflow:
             workflow.include(other_workflow)
-            mock_include_workflow.assert_called_once_with(other_workflow)
+            mock_include_workflow.assert_called_once_with(
+                other_workflow, namespace=None)
 
     def test_including_workflow_path_dispatches_to_include_path(self):
         workflow = Workflow()
@@ -113,7 +114,7 @@ class TestWorkflow(unittest.TestCase):
         with patch.object(workflow, 'include_path') as mock_include_path:
             workflow.include('/path/to/other_workflow.py')
             mock_include_path.assert_called_once_with(
-                '/path/to/other_workflow.py')
+                '/path/to/other_workflow.py', namespace=None)
 
     @patch('gwf.core.inspect.ismodule', return_value=True)
     def test_including_workflow_module_gets_workflow_attribute_and_dispatches_to_include_workflow(self, mock_ismodule):
@@ -127,7 +128,8 @@ class TestWorkflow(unittest.TestCase):
             workflow.include(mock_module)
 
             mock_ismodule.assert_called_once_with(mock_module)
-            mock_include_workflow.assert_called_once_with(other_workflow)
+            mock_include_workflow.assert_called_once_with(
+                other_workflow, namespace=None)
 
     def test_including_non_module_str_and_object_value_raises_type_error(self):
         workflow = Workflow(working_dir='/some/dir')
