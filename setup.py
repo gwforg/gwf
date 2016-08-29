@@ -1,17 +1,20 @@
 import os
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
+
 
 # Utility function to read the README file.  Used for the
 # long_description.  It's nice, because now 1) we have a top level
 # README file and 2) it's easier to type in the README file than to put
 # a raw string in below ...
 
+
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
     name="gwf",
-    version="0.7.0",
+    version="1.0.0",
 
     packages=find_packages(),
     scripts=['scripts/gwf'],
@@ -19,12 +22,12 @@ setup(
     test_suite='tests',
 
     # metadata for upload to PyPI
-    author="Thomas Mailund",
-    author_email="mailund@birc.au.dk",
+    author="Thomas Mailund, Dan Søndergaard",
+    author_email="mailund@birc.au.dk, das@birc.au.dk",
     license="GPLv3",
     keywords="grid computing workflow",
     url="https://mailund.github.io/gwf",
-    description="Grid WorkFlow - a make-like system for computer grids.",
+    description="A flexible, pragmatic workflow tool.",
     long_description=read('README.rst'),
 
     classifiers=[
