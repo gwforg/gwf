@@ -23,6 +23,13 @@ Or via conda::
 
 You can find the code `here <https://github.com/mailund/gwf>`_.
 
+Upgrading from an Older Version
+-------------------------------
+
+If you have been using an older version of *gwf* you will have to
+make a few changes to your workflows to be able to run them with version 1.0
+and above. :doc:`Read more... </upgrading_from_pre_1.0>`
+
 Getting Started
 ---------------
 
