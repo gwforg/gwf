@@ -9,8 +9,8 @@ from collections import defaultdict
 
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
-                         FileRequiredButNotProvidedError, TargetExistsError,
-                         IncludeWorkflowError)
+                         FileRequiredButNotProvidedError, IncludeWorkflowError,
+                         TargetExistsError)
 from .utils import (cache, get_file_timestamp, import_object, iter_inputs,
                     iter_outputs, timer)
 
@@ -50,7 +50,25 @@ def _get_deep_dependencies(target, dependencies):
 
 
 class Target(object):
-    """Represents a target."""
+    """Represents a target.
+
+    A target is a unit of work that can be tied to other targets through
+    dependencies on files.
+
+    :ivar str name:
+        Name of the target.
+    :ivar list inputs:
+        A list of input paths for this target.
+    :ivar list outputs:
+        A list of output paths for this target.
+    :ivar dict options:
+        Options such as number of cores, memory requirements etc. Options are
+        backend-dependent.
+    :ivar str working_dir:
+        Working directory of the workflow that this target was defined in.
+    :ivar str spec:
+        The specification of the target.
+    """
 
     def __init__(self, name, inputs, outputs, options, working_dir, spec=None):
         self.name = name
@@ -104,7 +122,18 @@ class Target(object):
 
 class Workflow(object):
 
-    """Represents a workflow."""
+    """Represents a workflow.
+
+    :ivar str name: initial value: None
+        The name is used for namespacing when including workflows. See
+        :func:`~include` for more details on namespacing.
+    :ivar dict targets:
+        A dictionary of the targets in this workflow.
+    :ivar str working_dir:
+        The directory containing the file where the workflow was initialized.
+        All file paths used in targets added to this workflow are relative to
+        the working directory.
+    """
 
     def __init__(self, name=None, working_dir=None):
         self.name = name
@@ -125,7 +154,22 @@ class Workflow(object):
         self.targets[target.name] = target
 
     def target(self, name, inputs=None, outputs=None, **options):
-        """Create a target and add it to the :class:`gwf.core.Workflow`."""
+        """Create a target and add it to the :class:`gwf.core.Workflow`.
+
+        This is syntactic sugar for creating a new :class:`~gwf.Target` and
+        adding it to the workflow. The target is also returned from the method
+        so that the user can directly manipulate it, if necessary. For example,
+        this allows assigning a spec to a target directly after defining it::
+
+            workflow = Workflow()
+            workflow.target('NewTarget', inputs=['test.txt', 'out.txt']) <<< '''
+            cat test.txt > out.txt
+            echo hello world >> out.txt
+            '''
+
+        This will create a new target named `NewTarget`, add it to the workflow
+        and assign a spec to the target.
+        """
 
         if inputs is None:
             inputs = []
@@ -139,14 +183,20 @@ class Workflow(object):
         self._add_target(new_target)
         return new_target
 
-    def include_path(self, path):
-        """Include targets of another workflow into this workflow."""
+    def include_path(self, path, namespace=None):
+        """Include targets from another :class:`gwf.Workflow` into this workflow.
+
+        See :func:`~gwf.Workflow.include`.
+        """
         other_workflow = import_object(path)
-        self.include_workflow(other_workflow)
+        self.include_workflow(other_workflow, namespace=namespace)
         return other_workflow
 
     def include_workflow(self, other_workflow, namespace=None):
-        """Include targets from another `Workflow` object in this workflow."""
+        """Include targets from another :class:`gwf.Workflow` into this workflow.
+
+        See :func:`~gwf.Workflow.include`.
+        """
         if other_workflow.name is None and namespace is None:
             raise IncludeWorkflowError(
                 'The included workflow has not been assigned a name. To '
@@ -163,21 +213,21 @@ class Workflow(object):
             self._add_target(target)
 
     def include(self, other_workflow, namespace=None):
-        """Include another workflow into this workflow.
+        """Include targets from another :class:`gwf.Workflow` into this workflow.
 
-        This method can be given either an :class:`gwf.core.Workflow` instance,
+        This method can be given either an :class:`gwf.Workflow` instance,
         a module or a path to a workflow file.
 
         If a module or path the workflow object to include will be determined
         according to the following rules:
 
         1. If a module object is given, the module must define an attribute
-           named `gwf` containing a :class:`gwf.core.Workflow` object.
+           named `gwf` containing a :class:`gwf.Workflow` object.
         2. If a path is given it must point to a file defining a module with an
-           attribute named `gwf` containing a :class:`gwf.core.Workflow`
+           attribute named `gwf` containing a :class:`gwf.Workflow`
            object.
 
-        When a :class:`gwf.core.Workflow` instance has been obtained, all
+        When a :class:`gwf.Workflow` instance has been obtained, all
         targets will be included directly into this workflow. To avoid name
         clashes the `namespace` argument must be provided. For example::
 
@@ -217,11 +267,12 @@ class Workflow(object):
         `foo.TestTarget`.
         """
         if isinstance(other_workflow, Workflow):
-            self.include_workflow(other_workflow)
+            self.include_workflow(other_workflow, namespace=namespace)
         elif isinstance(other_workflow, str):
-            self.include_path(other_workflow)
+            self.include_path(other_workflow, namespace=namespace)
         elif inspect.ismodule(other_workflow):
-            self.include_workflow(getattr(other_workflow, 'gwf'))
+            self.include_workflow(
+                getattr(other_workflow, 'gwf'), namespace=namespace)
         else:
             raise TypeError('First argument must be either a string or a '
                             'Workflow object.')
@@ -234,11 +285,26 @@ class Workflow(object):
 
 class PreparedWorkflow:
 
-    """Represents a finalized workflow graph."""
+    """Represents a finalized workflow graph.
+
+    If :class:`PreparedWorkflow` is initialized with the *workflow*
+    parameter, the :class:`PreparedWorkflow` is prepared with the passed
+    workflow. Otherwise, :meth:`~prepare` must be used.
+
+    :ivar targets: initial value: dict()
+    :ivar working_dir: initial value: None
+    :ivar provides: initial value: None
+    :ivar dependencies: initial value: None
+    :ivar dependents: initial value: None
+    """
 
     def __init__(self, workflow=None):
         self.targets = {}
         self.working_dir = None
+
+        self.provides = None
+        self.dependencies = None
+        self.dependents = None
 
         if workflow is not None:
             self.prepare(workflow)
@@ -308,6 +374,7 @@ class PreparedWorkflow:
 
     @cache
     def should_run(self, target):
+        """Return whether a target should be run or not."""
         if any(self.should_run(dep) for dep in self.dependencies[target]):
             logger.debug(
                 '%s should run because one of its dependencies should run.',

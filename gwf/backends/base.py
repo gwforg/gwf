@@ -62,8 +62,8 @@ class Backend(metaclass=BackendType):
     def schedule(self, target):
         """Linearize the targets to be run.
 
-        Returns a list of `Target`s to be run (in the order they should
-        be submitted to the backend to make sure dependencies are handled
+        Returns a list of :class:`~gwf.Target`s to be run (in the order they
+        should be submitted to the backend to make sure dependencies are handled
         correctly) and a set of the names of tasks that will be scheduled
         (to make sure dependency flags are set in the submission command).
         """

@@ -1,7 +1,7 @@
 from __future__ import absolute_import, print_function
 
-from gwf.core import Target, Workflow, PreparedWorkflow
 from gwf.backends.base import Backend
+from gwf.core import PreparedWorkflow, Target, Workflow
 
 
 class template(object):
