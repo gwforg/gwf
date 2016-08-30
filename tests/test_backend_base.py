@@ -31,9 +31,8 @@ class TestBaseBackend(unittest.TestCase):
 
         backend = Backend(PreparedWorkflow(workflow))
         with patch.object(backend, 'submitted', return_value=True):
-            schedule, scheduled = backend._get_schedule_for_target(target)
+            schedule = backend.schedule(target)
             self.assertListEqual(schedule, [])
-            self.assertSetEqual(scheduled, set())
 
     def test_scheduling_workflow_with_one_target_that_is_not_submitted_returns_schedule_with_target(self):
         workflow = Workflow(working_dir='/some/dir')
@@ -43,9 +42,8 @@ class TestBaseBackend(unittest.TestCase):
         backend = Backend(prepared_workflow)
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
-                schedule, scheduled = backend._get_schedule_for_target(target)
+                schedule = backend.schedule(target)
                 self.assertListEqual(schedule, [target])
-                self.assertSetEqual(scheduled, set([target]))
 
     def test_scheduling_workflow_with_target_with_deps_that_are_not_submitted(self):
         workflow = Workflow(working_dir='/some/dir')
@@ -56,9 +54,8 @@ class TestBaseBackend(unittest.TestCase):
         backend = Backend(prepared_workflow)
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
-                schedule, scheduled = backend._get_schedule_for_target(target2)
+                schedule = backend.schedule(target2)
                 self.assertListEqual(schedule, [target1, target2])
-                self.assertSetEqual(scheduled, set([target1, target2]))
 
     def test_scheduling_workflow_with_deep_deps_that_are_not_submitted(self):
         workflow = Workflow(working_dir='/some/dir')
@@ -74,11 +71,9 @@ class TestBaseBackend(unittest.TestCase):
         backend = Backend(prepared_workflow)
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
-                schedule, scheduled = backend._get_schedule_for_target(target4)
+                schedule = backend.schedule(target4)
                 self.assertListEqual(
                     schedule, [target1, target2, target3, target4])
-                self.assertSetEqual(scheduled, set(
-                    [target1, target2, target3, target4]))
 
     def test_scheduling_workflow_with_branch_and_join_structure(self):
         workflow = Workflow(working_dir='/some/dir')
@@ -97,8 +92,6 @@ class TestBaseBackend(unittest.TestCase):
         backend = Backend(prepared_workflow)
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
-                schedule, scheduled = backend._get_schedule_for_target(target4)
+                schedule = backend.schedule(target4)
                 self.assertListEqual(
                     schedule, [target1, target2, target3, target4])
-                self.assertSetEqual(scheduled, set(
-                    [target1, target2, target3, target4]))

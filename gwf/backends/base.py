@@ -1,8 +1,12 @@
+import logging
+
 from ..core import PreparedWorkflow
 from ..exceptions import GWFError, WorkflowNotPreparedError
 from ..utils import dfs
 
 BACKENDS = {}
+
+logger = logging.getLogger(__name__)
 
 
 def register_backend(name, backend_cls):
@@ -44,39 +48,32 @@ class Backend(metaclass=BackendType):
             raise WorkflowNotPreparedError()
         self.workflow = workflow
 
-    def submitted(self, targets):
+    def submitted(self, target):
         """Return whether the target has been submitted."""
-        raise NotImplementedError()
+        pass
 
-    def running(self, targets):
+    def running(self, target):
         """Return whether the target is running."""
-        raise NotImplementedError()
+        pass
 
-    def submit(self, targets):
+    def submit(self, target):
         """Submit a target."""
-        raise NotImplementedError()
+        pass
 
-    def cancel(self, targets):
+    def cancel(self, target):
         """Cancel a target."""
-        raise NotImplementedError()
+        pass
 
-    def _get_schedule_for_target(self, root):
-        """Linearize the targets to be run.
+    def schedule(self, target):
+        """Schedule and submit a :class:`Target`s and its dependencies."""
+        if self.submitted(target):
+            return []
 
-        Returns a list of :class:`~gwf.Target`s to be run (in the order they
-        should be submitted to the backend to make sure dependencies are handled
-        correctly) and a set of the names of tasks that will be scheduled
-        (to make sure dependency flags are set in the submission command).
-        """
-
-        # If the target is already in the queue we just dismiss the scheduling
-        # right away... this because we need to handle dependent nodes in the
-        # queue differently, since for those we need to wait for completion.
-        if self.submitted(root):
-            return [], set()
-
-        job_schedule = []
-        for target in dfs(root, self.workflow.dependencies):
-            if self.submitted(target) or self.workflow.should_run(target):
-                job_schedule.append(target)
-        return job_schedule, set(job_schedule)
+        scheduled = []
+        for scheduled_target in dfs(target, self.workflow.dependencies):
+            logger.info('Scheduling target %s', scheduled_target.name)
+            if not self.submitted(target) and self.workflow.should_run(target):
+                logger.info('Submitting target %s', scheduled_target.name)
+                self.submit(scheduled_target)
+                scheduled.append(scheduled_target)
+        return scheduled
