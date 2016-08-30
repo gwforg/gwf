@@ -69,6 +69,7 @@ def import_object(path, default_obj='gwf'):
 
 
 def get_file_timestamp(filename):
+    """Return the modification time of `filename`."""
     try:
         return os.path.getmtime(filename)
     except OSError:
@@ -76,6 +77,7 @@ def get_file_timestamp(filename):
 
 
 def dfs(root, dependencies):
+    """Return the depth-first traversal path through a graph from `root`."""
     visited = set()
     path = []
 
