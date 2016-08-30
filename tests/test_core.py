@@ -2,6 +2,7 @@ import os.path
 import unittest
 from unittest.mock import Mock, create_autospec, patch
 
+from gwf import template
 from gwf.core import PreparedWorkflow, Target, Workflow
 from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
@@ -12,6 +13,37 @@ from gwf.exceptions import (CircularDependencyError,
 def create_test_target(name='TestTarget', inputs=[], outputs=[], options={}, working_dir=''):
     """A factory for `Target` objects."""
     return Target(name, inputs, outputs, options, working_dir)
+
+
+class TestTemplate(unittest.TestCase):
+
+    def setUp(self):
+        self.test_template = template(
+            inputs=['input{idx}.txt'],
+            outputs=['output{idx}.txt'],
+        )
+
+        self.test_template << """
+        cat input{idx}.txt > output{idx}.txt
+        """
+
+    def test_template_substitutes_args_when_called(self):
+
+        options, spec = self.test_template(idx=0)
+        self.assertDictEqual(options, {
+            'inputs': ['input0.txt'],
+            'outputs': ['output0.txt']
+        })
+
+        self.assertIn('cat input0.txt > output0.txt', spec)
+
+    def test_target_created_from_template(self):
+        workflow = Workflow(working_dir='/some/dir')
+        target = workflow.target('TestTarget') << self.test_template(idx=0)
+
+        self.assertEqual(target.inputs, ['/some/dir/input0.txt'])
+        self.assertEqual(target.outputs, ['/some/dir/output0.txt'])
+        self.assertIn('cat input0.txt > output0.txt', target.spec)
 
 
 class TestWorkflow(unittest.TestCase):

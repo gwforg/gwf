@@ -83,7 +83,16 @@ class Target(object):
         return not self.outputs
 
     def __lshift__(self, spec):
-        self.spec = spec
+        if isinstance(spec, tuple):
+            options, spec = spec
+            self.inputs = _norm_paths(
+                self.working_dir, options.pop('inputs', list))
+            self.outputs = _norm_paths(
+                self.working_dir, options.pop('outputs', list))
+            self.options = options
+            self.spec = spec
+        else:
+            self.spec = spec
         return self
 
     def __repr__(self):

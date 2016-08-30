@@ -20,13 +20,15 @@ class template(object):
                 return s.format(**substitutions)
             elif hasattr(s, '__iter__'):
                 return [substitute(x) for x in s]
-            else:
-                return s
 
         formatted_options = [(key, substitute(val))
                              for key, val in self.options.items()]
         options = dict(formatted_options)
         return options, self.spec.format(**substitutions)
+
+    def __repr__(self):
+        return '{}(options={!r}, spec={!r})'.format(
+            self.__class__.__name__, self.options, self.spec)
 
 
 __all__ = ('Target', 'Workflow', 'PreparedWorkflow', 'Backend', 'template')
