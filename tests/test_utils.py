@@ -1,7 +1,8 @@
 import unittest
 from unittest.mock import Mock, patch
 
-from gwf.utils import _split_import_path, cache, import_object
+from gwf.utils import (_split_import_path, cache, get_file_timestamp,
+                       import_object)
 
 
 class TestCache(unittest.TestCase):
@@ -59,3 +60,16 @@ class TestImportObject(unittest.TestCase):
         )
         self.assertEqual(mock_find_module.call_count, 1)
         self.assertEqual(mock_load_module.call_count, 1)
+
+
+class TestGetFileTimestamp(unittest.TestCase):
+
+    @patch('gwf.utils.os.path.getmtime', return_value=42)
+    def test_returns_modified_time_of_file_if_it_exists(self, mock_getmtime):
+        self.assertEqual(get_file_timestamp('/some/file'), 42)
+        mock_getmtime.assert_called_once_with('/some/file')
+
+    @patch('gwf.utils.os.path.getmtime', side_effect=OSError)
+    def test_returns_none_if_file_does_not_exist(self, mock_getmtime):
+        self.assertIsNone(get_file_timestamp('/some/file'))
+        mock_getmtime.assert_called_once_with('/some/file')

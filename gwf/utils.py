@@ -69,7 +69,11 @@ def import_object(path, default_obj='gwf'):
 
 
 def get_file_timestamp(filename):
-    """Return the modification time of `filename`."""
+    """Return the modification time of `filename`.
+
+    :param str filename: Path to a file.
+    :return: Modification time of the file or `None` if the file does not exist.
+    """
     try:
         return os.path.getmtime(filename)
     except OSError:
