@@ -291,6 +291,7 @@ class PreparedWorkflow:
         self.provides = None
         self.dependencies = None
         self.dependents = None
+        self.file_cache = None
 
         if workflow is not None:
             self.prepare(workflow)
@@ -390,7 +391,7 @@ class PreparedWorkflow:
             return False
 
         youngest_in_ts, youngest_in_path = max(
-            self.file_cache[path] for path in target.inputs
+            (self.file_cache[path], path) for path in target.inputs
         )
 
         logger.debug(
@@ -401,7 +402,7 @@ class PreparedWorkflow:
         )
 
         oldest_out_ts, oldest_out_path = min(
-            self.file_cache[path] for path in target.outputs
+            (self.file_cache[path], path) for path in target.outputs
         )
 
         logger.debug(

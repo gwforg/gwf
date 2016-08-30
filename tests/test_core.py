@@ -516,6 +516,34 @@ class TestShouldRun(unittest.TestCase):
                     self.prepared_workflow.should_run(self.target1)
                 )
 
+    def test_should_run_if_any_input_file_is_newer_than_any_output_file(self):
+        mock_file_cache = {
+            '/some/dir/test_output1.txt': 0,
+            '/some/dir/test_output2.txt': 1,
+            '/some/dir/test_output3.txt': 3,
+            '/some/dir/final_output.txt': 2,
+        }
+
+        with patch.dict(self.prepared_workflow.file_cache, mock_file_cache):
+            self.assertFalse(self.prepared_workflow.should_run(self.target1))
+            self.assertFalse(self.prepared_workflow.should_run(self.target2))
+            self.assertFalse(self.prepared_workflow.should_run(self.target3))
+            self.assertTrue(self.prepared_workflow.should_run(self.target4))
+
+    def test_should_run_not_run_if_all_outputs_are_newer_then_the_inputs(self):
+        mock_file_cache = {
+            '/some/dir/test_output1.txt': 0,
+            '/some/dir/test_output2.txt': 1,
+            '/some/dir/test_output3.txt': 3,
+            '/some/dir/final_output.txt': 4,
+        }
+
+        with patch.dict(self.prepared_workflow.file_cache, mock_file_cache):
+            self.assertFalse(self.prepared_workflow.should_run(self.target1))
+            self.assertFalse(self.prepared_workflow.should_run(self.target2))
+            self.assertFalse(self.prepared_workflow.should_run(self.target3))
+            self.assertFalse(self.prepared_workflow.should_run(self.target4))
+
 
 class TestGetExecutionSchedule(unittest.TestCase):
     pass
