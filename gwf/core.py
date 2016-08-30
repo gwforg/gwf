@@ -27,14 +27,6 @@ def _norm_paths(working_dir, paths):
     return [_norm_path(working_dir, path) for path in paths]
 
 
-def _get_deep_dependencies(target, dependencies):
-    """Return all `Target`s necessary for building `target`.
-
-    The set of tasks is just returned as set.
-    """
-    return dfs(target, dependencies)
-
-
 class Target(object):
     """Represents a target.
 
@@ -384,7 +376,7 @@ class PreparedWorkflow:
     def _check_for_circular_dependencies(self):
         for target in self.targets.values():
             for dep in self.dependencies[target]:
-                if target in _get_deep_dependencies(dep, self.dependencies):
+                if target in dfs(dep, self.dependencies):
                     raise CircularDependencyError(target)
 
     @cache
