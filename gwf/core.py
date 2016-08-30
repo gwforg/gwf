@@ -300,8 +300,8 @@ class PreparedWorkflow:
     """Represents a finalized workflow graph.
 
     If :class:`gwf.PreparedWorkflow` is initialized with the *workflow*
-    parameter, the :class:`gwf.PreparedWorkflow` is prepared with the passed
-    workflow. Otherwise, :meth:`~prepare` must be used.
+    parameter, the :class:`gwf.PreparedWorkflow` calls :meth:`prepare` with the
+    workflow.
 
     :ivar targets: initial value: dict()
     :ivar working_dir: initial value: None
@@ -326,6 +326,14 @@ class PreparedWorkflow:
         """Prepare this workflow given a :class:`gwf.Workflow` instance.
 
         :param gwf.Workflow workflow:
+            The workflow which should be prepared.
+        :raises FileProvidedByMultipleTargetsError:
+            Raised if the same file is provided by multiple targets.
+        :raises FileRequiredButNotProvidedError:
+            Raised if a target has an input file that does not exist on the
+            file system and that is not provided by another target.
+        :raises CircularDependencyError:
+            Raised if the workflow contains a circular dependency.
         """
         self.targets = workflow.targets
         self.working_dir = workflow.working_dir
