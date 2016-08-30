@@ -8,6 +8,6 @@ test:
 lint:
 	flake8
 coverage:
-	coverage report -m
+	coverage report
 docs:
 	$(MAKE) -C docs html

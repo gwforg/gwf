@@ -184,18 +184,6 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(inspect_getfile_mock.call_count, 1)
         self.assertEqual(workflow.working_dir, '/some/path')
 
-    def test_empty_workflow_repr(self):
-        workflow = Workflow(working_dir='/some/dir')
-        self.assertEqual(
-            repr(workflow), "Workflow(name=None, working_dir='/some/dir', targets={})")
-
-    def test_nonempty_workflow_repr(self):
-        workflow = Workflow(working_dir='/some/dir')
-        workflow.target('TestTarget')
-
-        self.assertIn("working_dir='/some/dir'", repr(workflow))
-        self.assertIn("name='TestTarget'", repr(workflow))
-
 
 class TestTarget(unittest.TestCase):
 
@@ -275,62 +263,6 @@ class TestTarget(unittest.TestCase):
             working_dir='/some/dir'
         )
         self.assertEqual(str(target), 'TestTarget')
-
-    def test_repr_on_target(self):
-        target = Target(
-            'TestTarget',
-            inputs=[],
-            outputs=[],
-            options={},
-            working_dir='/some/dir'
-        )
-
-        self.assertEqual(
-            repr(target),
-            "Target(name='TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir', spec=None)"
-        )
-
-    def test_repr_on_target_with_input(self):
-        target = Target(
-            'TestTarget',
-            inputs=['test_input.txt'],
-            outputs=[],
-            options={},
-            working_dir='/some/dir'
-        )
-
-        self.assertEqual(
-            repr(target),
-            "Target(name='TestTarget', inputs=['/some/dir/test_input.txt'], outputs=[], options={}, working_dir='/some/dir', spec=None)"
-        )
-
-    def test_repr_on_target_with_output(self):
-        target = Target(
-            'TestTarget',
-            inputs=[],
-            outputs=['test_output.txt'],
-            options={},
-            working_dir='/some/dir'
-        )
-
-        self.assertEqual(
-            repr(target),
-            "Target(name='TestTarget', inputs=[], outputs=['/some/dir/test_output.txt'], options={}, working_dir='/some/dir', spec=None)"
-        )
-
-    def test_repr_on_target_with_option(self):
-        target = Target(
-            'TestTarget',
-            inputs=[],
-            outputs=[],
-            options={'some_option': True},
-            working_dir='/some/dir'
-        )
-
-        self.assertEqual(
-            repr(target),
-            "Target(name='TestTarget', inputs=[], outputs=[], options={'some_option': True}, working_dir='/some/dir', spec=None)"
-        )
 
 
 class TestPreparedWorkflow(unittest.TestCase):
@@ -451,19 +383,6 @@ class TestPreparedWorkflow(unittest.TestCase):
 
         with self.assertRaises(CircularDependencyError):
             PreparedWorkflow(self.workflow)
-
-    def test_empty_prepared_workflow_repr(self):
-        prepared_workflow = PreparedWorkflow(self.workflow)
-        self.assertEqual(
-            repr(prepared_workflow),
-            "PreparedWorkflow(working_dir='/some/dir', targets={})"
-        )
-
-    def test_nonempty_prepared_workflow_repr(self):
-        self.workflow.target('TestTarget')
-        prepared_workflow = PreparedWorkflow(self.workflow)
-        self.assertIn("working_dir='/some/dir'", repr(prepared_workflow))
-        self.assertIn('TestTarget', repr(prepared_workflow))
 
 
 class TestShouldRun(unittest.TestCase):
