@@ -160,7 +160,7 @@ class Workflow(object):
         self.targets[target.name] = target
 
     def target(self, name, inputs=None, outputs=None, **options):
-        """Create a target and add it to the :class:`gwf.core.Workflow`.
+        """Create a target and add it to the :class:`gwf.Workflow`.
 
         This is syntactic sugar for creating a new :class:`~gwf.Target` and
         adding it to the workflow. The target is also returned from the method
@@ -175,6 +175,12 @@ class Workflow(object):
 
         This will create a new target named `NewTarget`, add it to the workflow
         and assign a spec to the target.
+
+        :param str name: Name of the target.
+        :param iterable inputs: List of files that this target depends on.
+        :param iterable output: List of files that this target produces.
+
+        Any further keyword arguments are passed to the backend.
         """
 
         if inputs is None:
@@ -293,8 +299,8 @@ class PreparedWorkflow:
 
     """Represents a finalized workflow graph.
 
-    If :class:`PreparedWorkflow` is initialized with the *workflow*
-    parameter, the :class:`PreparedWorkflow` is prepared with the passed
+    If :class:`gwf.PreparedWorkflow` is initialized with the *workflow*
+    parameter, the :class:`gwf.PreparedWorkflow` is prepared with the passed
     workflow. Otherwise, :meth:`~prepare` must be used.
 
     :ivar targets: initial value: dict()
@@ -317,7 +323,10 @@ class PreparedWorkflow:
             self.prepare(workflow)
 
     def prepare(self, workflow):
-        """Prepare this workflow given a :class:`gwf.core.Workflow` instance."""
+        """Prepare this workflow given a :class:`gwf.Workflow` instance.
+
+        :param gwf.Workflow workflow:
+        """
         self.targets = workflow.targets
         self.working_dir = workflow.working_dir
 

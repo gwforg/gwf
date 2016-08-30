@@ -7,6 +7,13 @@ Welcome to gwf
 scientific workflows developed at the Bioinformatics Research Centre
 (BiRC), Aarhus University.
 
+*gwf* provides a make-like system for specifying dependencies between tasks to
+be run. Dependencies are based on files, but unlike *make* where several input
+files can be used for dependencies for one output file, the workflow supports
+tasks that takes several input files and produces several output files. Tasks
+then have dependencies on selected files, either produced by one or many other
+tasks or assumed to be present on the system.
+
 To quickly get started with writing workflows in *gwf* you can read the
 :ref:`tutorial`. If you want to extend *gwf* you should read
 :ref:`writing_plugins`. We don't have the backend you need to run your workflow
