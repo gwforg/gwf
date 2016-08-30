@@ -529,24 +529,41 @@ class TestShouldRun(unittest.TestCase):
         )
 
     def test_target_should_run_if_it_is_a_sink(self):
-        with patch.object(self.target1, 'outputs', []):
-            with self.assertLogs(level='DEBUG') as logs:
-                self.assertTrue(
-                    self.prepared_workflow.should_run(self.target1))
+        workflow = Workflow(working_dir='/some/dir')
+        target = workflow.target(
+            'TestTarget',
+            outputs=[]
+        )
+
+        prepared_workflow = PreparedWorkflow(workflow=workflow)
+
+        with self.assertLogs(level='DEBUG') as logs:
+            self.assertTrue(prepared_workflow.should_run(target))
 
             self.assertEqual(
                 logs.output,
                 [
-                    'DEBUG:gwf.core:TestTarget1 should run because it is a sink.'
+                    'DEBUG:gwf.core:TestTarget should run because it is a sink.'
                 ]
             )
 
     def test_target_should_not_run_if_it_is_a_source_and_all_outputs_exist(self):
-        with patch.object(self.target1, 'outputs', ['a', 'b']):
-            with patch.dict(self.prepared_workflow.file_cache, {'a': 1, 'b': 2}):
-                self.assertFalse(
-                    self.prepared_workflow.should_run(self.target1)
-                )
+        workflow = Workflow(working_dir='/some/dir')
+        target = workflow.target(
+            'TestTarget1',
+            outputs=['test_output1.txt', 'test_output2.txt']
+        )
+
+        prepared_workflow = PreparedWorkflow(workflow=workflow)
+
+        mock_file_cache = {
+            '/some/dir/test_output1.txt': 1,
+            '/some/dir/test_output2.txt': 2
+        }
+        with patch.dict(prepared_workflow.file_cache, mock_file_cache):
+            self.assertFalse(
+                prepared_workflow.should_run(target)
+            )
 
     def test_should_run_if_any_input_file_is_newer_than_any_output_file(self):
         mock_file_cache = {

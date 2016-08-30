@@ -59,13 +59,32 @@ class Target(object):
     def __init__(self, name, inputs, outputs, options, working_dir, spec=None):
         self.name = name
 
-        self.inputs = _norm_paths(working_dir, inputs)
-        self.outputs = _norm_paths(working_dir, outputs)
-
         self.options = options
         self.working_dir = working_dir
 
+        self._inputs = []
+        self._outputs = []
+
+        self.inputs = inputs
+        self.outputs = outputs
+
         self.spec = spec
+
+    @property
+    def inputs(self):
+        return _norm_paths(self.working_dir, self._inputs)
+
+    @inputs.setter
+    def inputs(self, values):
+        self._inputs = values
+
+    @property
+    def outputs(self):
+        return _norm_paths(self.working_dir, self._outputs)
+
+    @outputs.setter
+    def outputs(self, values):
+        self._outputs = values
 
     @property
     def is_source(self):
