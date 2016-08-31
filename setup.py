@@ -20,6 +20,9 @@ setup(
     scripts=['scripts/gwf'],
 
     test_suite='tests',
+    install_requires=[
+        'begins>=0.9',
+    ],
 
     # metadata for upload to PyPI
     author="Thomas Mailund, Dan Søndergaard",
