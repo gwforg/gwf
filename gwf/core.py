@@ -237,7 +237,13 @@ class Workflow(object):
            named `gwf` containing a :class:`gwf.Workflow` object.
         2. If a path is given it must point to a file defining a module with an
            attribute named `gwf` containing a :class:`gwf.Workflow`
-           object.
+           object. If you want to include a workflow with another name you can
+           specify the attribute name with a colon, e.g.::
+
+                /some/path/workflow.py:myworkflow
+
+           This will include all targets from the workflow `myworkflow`
+           declared in the file `/some/path/workflow.py`.
 
         When a :class:`gwf.Workflow` instance has been obtained, all
         targets will be included directly into this workflow. To avoid name
