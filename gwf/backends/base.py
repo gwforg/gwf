@@ -66,14 +66,43 @@ class Backend(metaclass=BackendType):
 
     def schedule(self, target):
         """Schedule and submit a :class:`Target`s and its dependencies."""
+        logger.debug('Scheduling target %s.', target.name)
+
         if self.submitted(target):
+            logger.debug('Target %s has already been submitted.', target.name)
             return []
 
         scheduled = []
-        for scheduled_target in dfs(target, self.workflow.dependencies):
-            logger.info('Scheduling target %s', scheduled_target.name)
-            if not self.submitted(target) and self.workflow.should_run(target):
-                logger.info('Submitting target %s', scheduled_target.name)
-                self.submit(scheduled_target)
-                scheduled.append(scheduled_target)
+        for dependency in dfs(target, self.workflow.dependencies):
+            logger.info(
+                'Scheduling dependency %s of %s',
+                dependency.name,
+                target.name
+            )
+
+            if self.submitted(dependency):
+                logger.debug(
+                    'Target %s has already been submitted.',
+                    dependency.name
+                )
+                continue
+
+            if not self.workflow.should_run(dependency):
+                logger.debug(
+                    'Target %s should not run.',
+                    dependency.name
+                )
+                continue
+
+            logger.info('Submitting dependency %s', dependency.name)
+
+            self.submit(dependency)
+            scheduled.append(dependency)
+
         return scheduled
+
+    def schedule_many(self, targets):
+        schedules = []
+        for target in targets:
+            schedules.append(self.schedule(target))
+        return schedules
