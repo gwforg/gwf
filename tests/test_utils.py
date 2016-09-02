@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import Mock, patch
 
+from gwf.exceptions import GWFError
 from gwf.utils import (_split_import_path, cache, get_file_timestamp,
                        import_object)
 
@@ -61,6 +62,10 @@ class TestImportObject(unittest.TestCase):
         )
         self.assertEqual(mock_find_module.call_count, 1)
         self.assertEqual(mock_load_module.call_count, 1)
+
+    def test_trying_to_load_workflow_from_nonexisting_path_raises_exception(self):
+        with self.assertRaisesRegex(GWFError, '.*this/workflow\.py.*'):
+            import_object('this/workflow.py')
 
 
 class TestGetFileTimestamp(unittest.TestCase):
