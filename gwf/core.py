@@ -320,7 +320,7 @@ class Workflow(object):
         )
 
 
-class PreparedWorkflow:
+class PreparedWorkflow(object):
 
     """Represents a finalized workflow graph.
 
