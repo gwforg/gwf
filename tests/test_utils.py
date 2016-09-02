@@ -46,12 +46,13 @@ class TestImportObject(unittest.TestCase):
                 '/some/dir/workflow.py::other_obj', 'workflow_obj'
             )
 
+    @patch('gwf.utils.os.path.exists', return_value=True)
     @patch('gwf.utils.os.getcwd', return_value='/some/dir')
     @patch('gwf.utils.imp.find_module', return_value=(None, '', ('', '', None)))
     @patch('gwf.utils.imp.load_module')
     @patch('gwf.utils._split_import_path', return_value=('/some/dir/this', 'workflow', 'gwf'))
     def test_import_with_non_absolute_path_normalizes_path_and_loads_module(
-            self, mock_split_import_path, mock_load_module, mock_find_module, mock_getcwd):
+            self, mock_split_import_path, mock_load_module, mock_find_module, mock_getcwd, mock_exists):
 
         import_object('this/workflow.py')
 

@@ -5,6 +5,10 @@ import os.path
 import time
 from contextlib import ContextDecorator
 
+from gwf.exceptions import GWFError
+
+logger = logging.getLogger(__name__)
+
 
 def cache(obj):
     _cache = obj._cache = {}
@@ -52,7 +56,7 @@ def _split_import_path(path, default_obj):
     elif len(comps) == 1:
         path, obj = comps[0], default_obj
     else:
-        raise ValueError('Invalid path.')
+        raise ValueError('Invalid path: "{}".'.format(path))
 
     basedir, filename = os.path.split(path)
     filename, ext = os.path.splitext(filename)
@@ -62,10 +66,28 @@ def _split_import_path(path, default_obj):
 def import_object(path, default_obj='gwf'):
     if not os.path.isabs(path):
         path = os.path.abspath(os.path.join(os.getcwd(), path))
-    filename, basedir, obj = _split_import_path(path, default_obj)
+
+    filename, basedir, objname = _split_import_path(path, default_obj)
+    fullpath = os.path.join(basedir, filename + '.py')
+
+    if not os.path.exists(fullpath):
+        raise GWFError(
+            'The file "{}" does not exist.'.format(fullpath)
+        )
+
     mod_loc = imp.find_module(filename, [basedir])
     mod = imp.load_module(filename, *mod_loc)
-    return getattr(mod, obj)
+
+    try:
+        return getattr(mod, objname)
+    except AttributeError as e:
+        logger.debug(e)
+        raise GWFError(
+            'Module "{}" does not declare the attribute "{}".'.format(
+                filename,
+                objname
+            )
+        )
 
 
 def get_file_timestamp(filename):
