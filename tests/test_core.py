@@ -384,6 +384,13 @@ class TestPreparedWorkflow(unittest.TestCase):
         with self.assertRaises(CircularDependencyError):
             PreparedWorkflow(self.workflow)
 
+    def test_endpoints_only_includes_target_with_no_dependents(self):
+        target1 = self.workflow.target('TestTarget1', outputs=['test.txt'])
+        target2 = self.workflow.target('TestTarget2', inputs=['test.txt'])
+        target3 = self.workflow.target('TestTarget3', inputs=['test.txt'])
+        prepared_workflow = PreparedWorkflow(self.workflow)
+        self.assertSetEqual(prepared_workflow.endpoints(), {target2, target3})
+
 
 class TestShouldRun(unittest.TestCase):
 

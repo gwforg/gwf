@@ -464,6 +464,10 @@ class PreparedWorkflow:
 
         return youngest_in_ts > oldest_out_ts
 
+    def endpoints(self):
+        """Return a set of all targets that are not depended on by other targets."""
+        return set(self.targets.values()) - set(self.dependents.keys())
+
     def __repr__(self):
         return '{}(working_dir={!r}, targets={!r})'.format(
             self.__class__.__name__, self.working_dir, self.targets
