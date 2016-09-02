@@ -102,6 +102,14 @@ class Backend(metaclass=BackendType):
         return scheduled
 
     def schedule_many(self, targets):
+        """Schedule a list of :class:`Target`s and their dependencies.
+
+        Will schedule the targets in `targets` with :func:`schedule`
+        and return a list of schedules.
+
+        :param list targets: A list of targets to be scheduled.
+        :return: A list of schedules, one for each target in `targets`.
+        """
         schedules = []
         for target in targets:
             schedules.append(self.schedule(target))
