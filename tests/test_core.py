@@ -1,6 +1,7 @@
+import os
 import os.path
 import unittest
-from unittest.mock import Mock, create_autospec, patch
+from unittest.mock import Mock, call, create_autospec, patch
 
 from gwf import template
 from gwf.core import PreparedWorkflow, Target, Workflow
@@ -253,6 +254,31 @@ class TestTarget(unittest.TestCase):
         target = create_test_target() << 'this is a spec'
         self.assertIsNotNone(target.spec)
         self.assertEqual(target.spec, 'this is a spec')
+
+    @patch('gwf.core.os.remove', spec=os.remove)
+    def test_clean_with_existing_output_files(self, mock_remove):
+        target = create_test_target(outputs=['test1.txt', 'test2.txt'],
+                                    working_dir='/some/path')
+        target.clean()
+
+        mock_remove.assert_has_calls([
+            call('/some/path/test1.txt'),
+            call('/some/path/test2.txt'),
+        ])
+
+        self.assertEqual(mock_remove.call_count, 2)
+
+    @patch('gwf.core.os.remove', spec=os.remove, side_effect=[None, FileNotFoundError])
+    def test_clean_with_nonexisting_output_files(self, mock_remove):
+        target = create_test_target(outputs=['test1.txt', 'test2.txt'],
+                                    working_dir='/some/path')
+        target.clean()
+
+        mock_remove.assert_has_calls([
+            call('/some/path/test1.txt'),
+            call('/some/path/test2.txt'),
+        ])
+        self.assertEqual(mock_remove.call_count, 2)
 
     def test_str_on_target(self):
         target = Target(
