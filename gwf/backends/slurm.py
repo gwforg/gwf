@@ -18,6 +18,57 @@ from .base import Backend
 logger = logging.getLogger(__name__)
 
 
+@cache
+def _find_slurm_executable(name):
+    return distutils.spawn.find_executable(name)
+
+
+@cache
+def _live_job_states():
+    """Ask Slurm for the state of ALL live jobs.
+
+    There are two reasons why we ask for all the jobs:
+        1) We don't want to spawn a subprocesses for each job
+        2) Asking for multiple specific jobs would involve building a
+        potentially very long commandline - which could fail if too long.
+
+    The result is a dict mapping from jobid to one of 'RQH'.
+    """
+    result = dict()
+    map_state = {  # see squeue man page under JOB STATE CODES
+        'BF': '?',  # BOOT_FAIL
+        'CA': '?',  # CANCELLED
+        'CD': '?',  # COMPLETED
+        'CF': 'R',  # CONFIGURING
+        'CG': 'R',  # COMPLETING
+        'F': '?',  # FAILED
+        'NF': '?',  # NODE_FAIL
+        'PD': 'Q',  # PENDING
+        'PR': '?',  # PREEMPTED
+        'R': 'R',  # RUNNING
+        'S': 'R',  # SUSPENDED
+        'TO': '?',  # TIMEOUT
+        'SE': 'Q',  # SPECIAL_EXIT
+    }
+    try:
+        squeue = _find_slurm_executable("squeue")
+        stat = subprocess.Popen([squeue,
+                                 '--noheader',
+                                 '--format=%i;%t;%E'],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+        for line in stat.stdout:
+            job_id, state, depends = line.strip().split(';')
+            simple_state = map_state[state]
+            if simple_state == 'Q' and depends != '':
+                result[job_id] = 'H'
+            else:
+                result[job_id] = simple_state
+    except:
+        pass
+    return result
+
+
 class SlurmBackend(Backend):
     """Backend for the slurm workload manager."""
 
@@ -121,54 +172,3 @@ def _compile_script(target):
     out.append('# Script from workflow')
     out.append(target.spec)
     return '\n'.join(out)
-
-
-@cache
-def _find_slurm_executable(name):
-    return distutils.spawn.find_executable(name)
-
-
-@cache
-def _live_job_states():
-    """Ask Slurm for the state of ALL live jobs.
-
-    There are two reasons why we ask for all the jobs:
-        1) We don't want to spawn a subprocesses for each job
-        2) Asking for multiple specific jobs would involve building a
-        potentially very long commandline - which could fail if too long.
-
-    The result is a dict mapping from jobid to one of 'RQH'.
-    """
-    result = dict()
-    map_state = {  # see squeue man page under JOB STATE CODES
-        'BF': '?',  # BOOT_FAIL
-        'CA': '?',  # CANCELLED
-        'CD': '?',  # COMPLETED
-        'CF': 'R',  # CONFIGURING
-        'CG': 'R',  # COMPLETING
-        'F': '?',  # FAILED
-        'NF': '?',  # NODE_FAIL
-        'PD': 'Q',  # PENDING
-        'PR': '?',  # PREEMPTED
-        'R': 'R',  # RUNNING
-        'S': 'R',  # SUSPENDED
-        'TO': '?',  # TIMEOUT
-        'SE': 'Q',  # SPECIAL_EXIT
-    }
-    try:
-        squeue = _find_slurm_executable("squeue")
-        stat = subprocess.Popen([squeue,
-                                 '--noheader',
-                                 '--format=%i;%t;%E'],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        for line in stat.stdout:
-            job_id, state, depends = line.strip().split(';')
-            simple_state = map_state[state]
-            if simple_state == 'Q' and depends != '':
-                result[job_id] = 'H'
-            else:
-                result[job_id] = simple_state
-    except:
-        pass
-    return result
