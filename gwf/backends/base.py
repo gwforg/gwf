@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 from ..core import PreparedWorkflow
 from ..exceptions import GWFError, WorkflowNotPreparedError
@@ -26,9 +27,15 @@ class BackendType(type):
         if name == 'Backend':
             return cls
 
-        if not hasattr(cls, 'name'):
+        if 'name' not in class_dict:
             raise GWFError(
                 'Backend {} does not declare name class variable.'.format(name)
+            )
+
+        if 'schedule' in class_dict or 'schedule_all' in class_dict:
+            warnings.warn(
+                'Subclasses of Backend should not override schedule() or '
+                'schedule_all().'
             )
 
         register_backend(getattr(cls, 'name'), cls)
