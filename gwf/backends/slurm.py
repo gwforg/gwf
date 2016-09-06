@@ -5,6 +5,7 @@ from __future__ import absolute_import, print_function
 import distutils.spawn
 import json
 import logging
+import os
 import subprocess
 
 from ..core import PreparedWorkflow
@@ -105,6 +106,15 @@ def _compile_script(target):
     return '\n'.join(out)
 
 
+def dump_atomic(obj, path):
+    with open(path + '.new', 'w') as fileobj:
+        json.dump(obj, fileobj)
+        fileobj.flush()
+        os.fsync(fileobj.fileno())
+        fileobj.close()
+    os.rename(path + '.new', path)
+
+
 class SlurmBackend(Backend):
     """Backend for the slurm workload manager."""
 
@@ -130,8 +140,7 @@ class SlurmBackend(Backend):
 
     def close(self):
         # TODO: error handling
-        with open(".gwf/slurm-backend-jobdb.json", "w") as fileobj:
-            json.dump(self.job_db, fileobj)
+        dump_atomic(self.job_db, '.gwf/slurm-backend-jobdb.json')
 
     def submitted(self, target):
         """Return whether the target has been submitted."""
