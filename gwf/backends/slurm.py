@@ -111,8 +111,8 @@ def _compile_script(target):
             ("-p ", "queue"),
             ("-A ", "account"),
             ("-C ", "constraint"),
-            ("--mail-type= ", "mail_type"),
-            ("--mail-user= ", "mail_user"),
+            ("--mail-type=", "mail_type"),
+            ("--mail-user=", "mail_user"),
             ]
     out.extend(
             "#SBATCH {0}{1}".format(slurm_flag, options[gwf_name])
