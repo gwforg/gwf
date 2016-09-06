@@ -35,7 +35,10 @@ JOB_STATE_CODES = {
 
 
 def _find_exe(name):
-    return distutils.spawn.find_executable(name)
+    exe = distutils.spawn.find_executable(name)
+    if not exe:
+        raise BackendError('Could not find executable "{}".'.format(name))
+    return exe
 
 
 SQUEUE = _find_exe('squeue')
