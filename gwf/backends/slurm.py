@@ -110,14 +110,18 @@ class SlurmBackend(Backend):
 
     def submit(self, target):
         """Submit a target."""
-        dependency_ids = []
-        for dep in self.workflow.dependencies[target]:
-            if dep.name in self.job_db:
-                dependency_ids.append(self.job_db[dep.name])
+        dependency_ids = [
+            self.job_db[dep.name]
+            for dep in self.workflow.dependencies[target]
+            if dep.name in self.job_db
+        ]
+
         sbatch = _find_slurm_executable("sbatch")
         cmd = [sbatch, "--parsable"]
         if dependency_ids:
-            cmd.append("--dependency=afterok:" + ",".join(dependency_ids))
+            cmd.append(
+                "--dependency=afterok:{}".format(",".join(dependency_ids))
+            )
         proc = subprocess.Popen(cmd)
         script_contents = _compile_script(target)
         new_job_id, error_text = proc.communicate(script_contents)
@@ -156,6 +160,7 @@ def _compile_script(target):
         ("--mail-type=", "mail_type"),
         ("--mail-user=", "mail_user"),
     ]
+
     out.extend(
         "#SBATCH {0}{1}".format(slurm_flag, options[gwf_name])
         for slurm_flag, gwf_name in option_table
@@ -164,7 +169,7 @@ def _compile_script(target):
 
     out.append('')
     out.append('# GWF generated code ...')
-    out.append('cd %s' % target.working_dir)
+    out.append('cd {}'.format(target.working_dir))
     out.append('export GWF_JOBID=$SLURM_JOBID')
     out.append('set -e')
     out.append('')
