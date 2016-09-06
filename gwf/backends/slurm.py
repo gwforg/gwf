@@ -1,9 +1,13 @@
+"""This modules implements a GWF backend for the Slurm workload manager."""
 from __future__ import absolute_import
 from __future__ import print_function
 
+import sys
 import os
 import os.path
 import subprocess
+import distutils.spawn
+import json
 
 import gwf
 
@@ -11,107 +15,169 @@ from gwf.backends.base import Backend
 from gwf.helpers import make_absolute_path, escape_file_name
 
 
-def _mkdir_if_not_exist(dirname):
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-
-
 class SlurmBackend(Backend):
-    """Backend functionality for slurm."""
+    """Backend for the slurm workload manager."""
 
-    def _write_script(self, target):
-        """Write the code to a script that can be executed."""
+    def __init__(self, workflow):
+        if not isinstance(workflow, PreparedWorkflow):
+            raise WorkflowNotPreparedError()
+        self.workflow = workflow
+        # TODO: maybe use some sort of actual db instead of a file?
+        if os.path.exists(".gwf/slurm-backend-jobdb.json"):
+            self.job_db = json.loads(open(".gwf/slurm-backend-jobdb.json").read())
+        else:
+            self.job_db = dict()
 
-        script_dir = make_absolute_path(target.working_dir, '.scripts')
-        script_name = make_absolute_path(target.script_dir, escape_file_name(target.name))
+        self.live_job_states = _live_job_states()
+        for target_name, job_id in list(self.job_db.items()):
+            if job_id not in self.live_job_states:
+                del self.job_db[target_name]
 
-        if not os.path.exists(script_dir):
-            os.makedirs(script_dir)
+    def close(self):
+        """Close the job database"""
+        encoded = json.dumps(self.job_db)
+        # TODO: error handling
+        with open(".gwf/slurm-backend-jobdb-new.json", "w") as f:
+            f.write(encoded)
+            f.write("\n")
+        os.rename(".gwf/slurm-backend-jobdb-new.json", ".gwf/slurm-backend-jobdb.json")
 
-        with open(script_name, 'w') as f:
-            print("#!/bin/bash", file=f)
+    def submitted(self, target):
+        """Return whether the target has been submitted."""
+        return target.name in self.job_db
 
-            print('#SBATCH -N {}'.format(target.options['nodes']), file=f)
-            print('#SBATCH -c {}'.format(target.options['cores']), file=f)
-            print('#SBATCH --mem={}'.format(target.options['memory']), file=f)
-            print('#SBATCH -t {}'.format(target.options['walltime']), file=f)
-            if 'queue' in target.options:
-                print('#SBATCH -p {}'.format(target.options['queue']), file=f)
-            if 'account' in target.options:
-                print('#SBATCH -A {}'.format(target.options['account']), file=f)
-            if 'constraint' in target.options:
-                print('#SBATCH -C {}'.format(target.options['constraint']), file=f)
-            if 'mail_type' in target.options:
-                print('#SBATCH --mail-type={}'.format(target.options['mail_type']), file=f)
-            if 'mail_user' in target.options:
-                print('#SBATCH --mail-user={}'.format(target.options['mail_user']), file=f)
+    def running(self, target):
+        """Return whether the target is running."""
+        target_job_id = self.job_db.get(target.name, None)
+        return self.live_job_states.get(target_job_id, '?') == 'R'
 
-            print(file=f)
+    def submit(self, target, dependencies):
+        """Submit a target."""
+        dependency_ids = []
+        for dep in dependencies:
+            if dep.name in self.job_db:
+                dependency_ids.append(self.job_db[dep.name])
+        sbatch = _find_slurm_executable("sbatch")
+        cmd = [sbatch, "--parsable"]
+        if dependency_ids:
+            cmd.append("--dependency=afterok:" + ",".join(dependency_ids))
+        proc = subprocess.Popen(cmd)
+        script_contents = _compile_script(target)
+        new_job_id, error_text = proc.communicate(script_contents)
+        new_job_id = new_job_id.strip()
+        if proc.returncode != 0:
+            # TODO: better error handling
+            print(error_text, file=sys.stderr)
+            sys.exit(1)
+        self.job_db[target.name] = new_job_id
+        # New jobs are assumed to be on-hold until the next time gwf is invoked
+        self.live_job_states[new_job_id] = 'H'
 
-            print('# GWF generated code ...', file=f)
-            print('cd %s' % target.working_dir, file=f)
-            print('export GWF_JOBID=$SLURM_JOBID', file=f)
-            print(f, "set -e", file=f)
-            print(file=f)
+    def cancel(self, target):
+        """Cancel a target."""
+        target_job_id = self.job_db.get(target.name, '?')
+        if target_job_id in self.live_job_states:
+            scancel = _find_slurm_executable("scancel")
+            proc = subprocess.Popen([scancel, "-j", target_job_id])
+            stdout, stderr = proc.communicate()
+            # TODO: error handling
 
-            print('# Script from workflow', file=f)
-            print(target.spec, file=f)
+    def schedule(self, target):
+        """Schedule and submit a :class:`Target`s and its dependencies."""
+        if self.submitted(target):
+            return []
 
-    def get_state_of_jobs(self, job_ids):
-        result = dict((job_id, False) for job_id in job_ids)
-        map_state = {  # see squeue man page under JOB STATE CODES
-            'BF': '?',  # BOOT_FAIL
-            'CA': '?',  # CANCELLED
-            'CD': '?',  # COMPLETED
-            'CF': 'R',  # CONFIGURING
-            'CG': 'R',  # COMPLETING
-            'F': '?',  # FAILED
-            'NF': '?',  # NODE_FAIL
-            'PD': 'Q',  # PENDING
-            'PR': '?',  # PREEMPTED
-            'R': 'R',  # RUNNING
-            'S': 'R',  # SUSPENDED
-            'TO': '?',  # TIMEOUT
-            'SE': 'Q',  # SPECIAL_EXIT
-        }
-        try:
-            stat = subprocess.Popen(['squeue',
-                                     '--noheader',
-                                     '--format=%i;%t;%E'],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT)
-            for line in stat.stdout:
-                job_id, state, depends = line.strip().split(';')
-                simple_state = map_state[state]
-                if simple_state == 'Q' and depends != '':
-                    result[job_id] = 'H'
-                else:
-                    result[job_id] = simple_state
-        except:
-            pass
-        return result
+        deps = self.workflow.dependencies
+        scheduled = []
+        for scheduled_target in dfs(target, deps):
+            logger.info('Scheduling target %s', scheduled_target.name)
+            if not self.submitted(target) and self.workflow.should_run(target):
+                logger.info('Submitting target %s', scheduled_target.name)
+                self.submit(scheduled_target, deps[scheduled_target])
+                scheduled.append(scheduled_target)
+        return scheduled
 
-    def _build_submit_command(self, target, script_name, dependents_ids):
-        log_dir = os.path.join(target.working_dir, 'gwf_log')
-        _mkdir_if_not_exist(log_dir)
 
-        command = ['sbatch', '-J', target.name, '--parsable',
-                   '-o', os.path.join(log_dir, target.name + '.%j.stdout'),
-                   '-e', os.path.join(log_dir, target.name + '.%j.stderr'),
-                   ]
-        if len(dependents_ids) > 0:
-            command.append('-d')
-            command.append('afterok:{}'.format(':'.join(dependents_ids)))
-        command.append(script_name)
-        return command
+def _compile_script(target):
+    options = target.options
+    out = []
+    out.append('#!/bin/bash')
 
-    def submit_command(self, target, script_name, dependents_ids):
-        self._write_script(target)
+    option_table = [
+            ("-N ", "nodes"),
+            ("-c ", "cores"),
+            ("--mem=", "memory"),
+            ("-t ", "walltime"),
+            ("-p ", "queue"),
+            ("-A ", "account"),
+            ("-C ", "constraint"),
+            ("--mail-type= ", "mail_type"),
+            ("--mail-user= ", "mail_user"),
+            ]
+    out.extend(
+            "#SBATCH {0}{1}".format(slurm_flag, options[gwf_name])
+            for slurm_flag, gwf_name in option_table
+            if gwf_name in options
+            )
 
-        command = self._build_submit_command(target, script_name, dependents_ids)
-        qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        job_id = qsub.stdout.read().strip()
-        return job_id
+    out.append('')
+    out.append('# GWF generated code ...')
+    out.append('cd %s' % target.working_dir)
+    out.append('export GWF_JOBID=$SLURM_JOBID')
+    out.append('set -e')
+    out.append('')
 
-    def build_cancel_command(self, job_ids):
-        return ['scancel'] + map(str, job_ids)
+    out.append('# Script from workflow')
+    out.append(target.spec)
+    return '\n'.join(out)
+
+
+@cache
+def _find_slurm_executable(name):
+    return distutils.spawn.find_executable(name)
+
+
+@cache
+def _live_job_states():
+    """Ask Slurm for the state of ALL live jobs.
+
+    There are two reasons why we ask for all the jobs:
+        1) We don't want to spawn a subprocesses for each job
+        2) Asking for multiple specific jobs would involve building a
+        potentially very long commandline - which could fail if too long.
+
+    The result is a dict mapping from jobid to one of 'RQH'.
+    """
+    result = dict()
+    map_state = {  # see squeue man page under JOB STATE CODES
+        'BF': '?',  # BOOT_FAIL
+        'CA': '?',  # CANCELLED
+        'CD': '?',  # COMPLETED
+        'CF': 'R',  # CONFIGURING
+        'CG': 'R',  # COMPLETING
+        'F': '?',  # FAILED
+        'NF': '?',  # NODE_FAIL
+        'PD': 'Q',  # PENDING
+        'PR': '?',  # PREEMPTED
+        'R': 'R',  # RUNNING
+        'S': 'R',  # SUSPENDED
+        'TO': '?',  # TIMEOUT
+        'SE': 'Q',  # SPECIAL_EXIT
+    }
+    try:
+        squeue = _find_slurm_executable("squeue")
+        stat = subprocess.Popen([squeue,
+                                 '--noheader',
+                                 '--format=%i;%t;%E'],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+        for line in stat.stdout:
+            job_id, state, depends = line.strip().split(';')
+            simple_state = map_state[state]
+            if simple_state == 'Q' and depends != '':
+                result[job_id] = 'H'
+            else:
+                result[job_id] = simple_state
+    except:
+        pass
+    return result
