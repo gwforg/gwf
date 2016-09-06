@@ -5,14 +5,11 @@ from __future__ import absolute_import, print_function
 import distutils.spawn
 import json
 import logging
-import os
-import os.path
 import subprocess
-import sys
 
 from ..core import PreparedWorkflow
-from ..exceptions import WorkflowNotPreparedError
-from ..utils import cache, dfs
+from ..exceptions import BackendError
+from ..utils import cache, dfs, timer
 from .base import Backend
 
 logger = logging.getLogger(__name__)
@@ -36,12 +33,17 @@ JOB_STATE_CODES = {
 }
 
 
-@cache
-def _find_slurm_executable(name):
+def _find_exe(name):
     return distutils.spawn.find_executable(name)
 
 
+SQUEUE = _find_exe('squeue')
+SBATCH = _find_exe('sbatch')
+SCANCEL = _find_exe('scancel')
+
+
 @cache
+@timer('fetching slurm job states with sqeueu took %0.2fms', logger=logger)
 def _live_job_states():
     """Ask Slurm for the state of all live jobs.
 
@@ -53,10 +55,7 @@ def _live_job_states():
 
     :return: a dict mapping from job id to either R, H or Q.
     """
-
-    squeue = _find_slurm_executable("squeue")
-
-    cmd = [squeue, '--noheader', '--format=%i;%t;%E']
+    cmd = [SQUEUE, '--noheader', '--format=%i;%t;%E']
     stat = subprocess.Popen(cmd,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
@@ -73,7 +72,6 @@ def _live_job_states():
 
 
 def _compile_script(target):
-    options = target.options
     out = []
     out.append('#!/bin/bash')
 
@@ -90,9 +88,9 @@ def _compile_script(target):
     ]
 
     out.extend(
-        "#SBATCH {0}{1}".format(slurm_flag, options[gwf_name])
+        "#SBATCH {0}{1}".format(slurm_flag, target.options[gwf_name])
         for slurm_flag, gwf_name in option_table
-        if gwf_name in options
+        if gwf_name in target.options
     )
 
     out.append('')
@@ -123,9 +121,12 @@ class SlurmBackend(Backend):
             self.job_db = {}
 
         self.live_job_states = _live_job_states()
-        for target_name, job_id in self.job_db.items():
-            if job_id not in self.live_job_states:
-                del self.job_db[target_name]
+        logger.debug('found %d jobs', len(self.live_job_states))
+
+        with timer('filtering jobs took %.2f ms', logger=logger):
+            for target_name, job_id in self.job_db.items():
+                if job_id not in self.live_job_states:
+                    del self.job_db[target_name]
 
     def close(self):
         # TODO: error handling
@@ -149,8 +150,7 @@ class SlurmBackend(Backend):
             if dep.name in self.job_db
         ]
 
-        sbatch = _find_slurm_executable("sbatch")
-        cmd = [sbatch, "--parsable"]
+        cmd = [SBATCH, "--parsable"]
         if dependency_ids:
             cmd.append(
                 "--dependency=afterok:{}".format(",".join(dependency_ids))
@@ -162,9 +162,8 @@ class SlurmBackend(Backend):
         new_job_id, error_text = proc.communicate(script_contents)
         new_job_id = new_job_id.strip()
         if proc.returncode != 0:
-            # TODO: better error handling
-            print(error_text, file=sys.stderr)
-            sys.exit(1)
+            raise BackendError(error_text)
+
         self.job_db[target.name] = new_job_id
         # New jobs are assumed to be on-hold until the next time gwf is invoked
         self.live_job_states[new_job_id] = 'H'
@@ -173,7 +172,6 @@ class SlurmBackend(Backend):
         """Cancel a target."""
         target_job_id = self.job_db.get(target.name, '?')
         if target_job_id in self.live_job_states:
-            scancel = _find_slurm_executable("scancel")
-            proc = subprocess.Popen([scancel, "-j", target_job_id])
+            proc = subprocess.Popen([SCANCEL, "-j", target_job_id])
             stdout, stderr = proc.communicate()
             # TODO: error handling
