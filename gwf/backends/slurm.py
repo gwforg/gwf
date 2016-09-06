@@ -1,30 +1,35 @@
 """This modules implements a GWF backend for the Slurm workload manager."""
-from __future__ import absolute_import
-from __future__ import print_function
 
-import sys
+from __future__ import absolute_import, print_function
+
+import distutils.spawn
+import json
+import logging
 import os
 import os.path
 import subprocess
-import distutils.spawn
-import json
+import sys
 
-import gwf
+from ..core import PreparedWorkflow
+from ..exceptions import WorkflowNotPreparedError
+from ..utils import cache, dfs
+from .base import Backend
 
-from gwf.backends.base import Backend
-from gwf.helpers import make_absolute_path, escape_file_name
+logger = logging.getLogger(__name__)
 
 
 class SlurmBackend(Backend):
     """Backend for the slurm workload manager."""
 
+    name = 'slurm'
+
     def __init__(self, workflow):
-        if not isinstance(workflow, PreparedWorkflow):
-            raise WorkflowNotPreparedError()
-        self.workflow = workflow
+        super().__init__(workflow)
+
         # TODO: maybe use some sort of actual db instead of a file?
         if os.path.exists(".gwf/slurm-backend-jobdb.json"):
-            self.job_db = json.loads(open(".gwf/slurm-backend-jobdb.json").read())
+            self.job_db = json.loads(
+                open(".gwf/slurm-backend-jobdb.json").read())
         else:
             self.job_db = dict()
 
@@ -40,7 +45,8 @@ class SlurmBackend(Backend):
         with open(".gwf/slurm-backend-jobdb-new.json", "w") as f:
             f.write(encoded)
             f.write("\n")
-        os.rename(".gwf/slurm-backend-jobdb-new.json", ".gwf/slurm-backend-jobdb.json")
+        os.rename(".gwf/slurm-backend-jobdb-new.json",
+                  ".gwf/slurm-backend-jobdb.json")
 
     def submitted(self, target):
         """Return whether the target has been submitted."""
@@ -51,10 +57,10 @@ class SlurmBackend(Backend):
         target_job_id = self.job_db.get(target.name, None)
         return self.live_job_states.get(target_job_id, '?') == 'R'
 
-    def submit(self, target, dependencies):
+    def submit(self, target):
         """Submit a target."""
         dependency_ids = []
-        for dep in dependencies:
+        for dep in self.workflow.dependencies[target]:
             if dep.name in self.job_db:
                 dependency_ids.append(self.job_db[dep.name])
         sbatch = _find_slurm_executable("sbatch")
@@ -82,21 +88,6 @@ class SlurmBackend(Backend):
             stdout, stderr = proc.communicate()
             # TODO: error handling
 
-    def schedule(self, target):
-        """Schedule and submit a :class:`Target`s and its dependencies."""
-        if self.submitted(target):
-            return []
-
-        deps = self.workflow.dependencies
-        scheduled = []
-        for scheduled_target in dfs(target, deps):
-            logger.info('Scheduling target %s', scheduled_target.name)
-            if not self.submitted(target) and self.workflow.should_run(target):
-                logger.info('Submitting target %s', scheduled_target.name)
-                self.submit(scheduled_target, deps[scheduled_target])
-                scheduled.append(scheduled_target)
-        return scheduled
-
 
 def _compile_script(target):
     options = target.options
@@ -104,21 +95,21 @@ def _compile_script(target):
     out.append('#!/bin/bash')
 
     option_table = [
-            ("-N ", "nodes"),
-            ("-c ", "cores"),
-            ("--mem=", "memory"),
-            ("-t ", "walltime"),
-            ("-p ", "queue"),
-            ("-A ", "account"),
-            ("-C ", "constraint"),
-            ("--mail-type=", "mail_type"),
-            ("--mail-user=", "mail_user"),
-            ]
+        ("-N ", "nodes"),
+        ("-c ", "cores"),
+        ("--mem=", "memory"),
+        ("-t ", "walltime"),
+        ("-p ", "queue"),
+        ("-A ", "account"),
+        ("-C ", "constraint"),
+        ("--mail-type=", "mail_type"),
+        ("--mail-user=", "mail_user"),
+    ]
     out.extend(
-            "#SBATCH {0}{1}".format(slurm_flag, options[gwf_name])
-            for slurm_flag, gwf_name in option_table
-            if gwf_name in options
-            )
+        "#SBATCH {0}{1}".format(slurm_flag, options[gwf_name])
+        for slurm_flag, gwf_name in option_table
+        if gwf_name in options
+    )
 
     out.append('')
     out.append('# GWF generated code ...')
