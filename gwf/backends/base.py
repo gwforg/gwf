@@ -64,6 +64,10 @@ class Backend(metaclass=BackendType):
         """Cancel a target."""
         pass
 
+    def close():
+        """Close the backend."""
+        pass
+
     def schedule(self, target):
         """Schedule and submit a :class:`Target`s and its dependencies."""
         logger.debug('Scheduling target %s.', target.name)
