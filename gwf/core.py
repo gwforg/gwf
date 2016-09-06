@@ -34,6 +34,31 @@ def _delete_file(path):
         pass
 
 
+def normalized_paths_property(name):
+    """Define a normalized paths property.
+
+    This function can be used to define a property on an object which expects
+    the value to be a list of paths. When the attribute is used, this function
+    ensures that the paths will always be normalized and absolute.
+
+    For an example of its usage, see the `inputs` and `outputs` attributes
+    on :class:`~gwf.Target`. For a more general description of this approach
+    to reusable attributes, see:
+
+        http://chimera.labs.oreilly.com/books/1230000000393/ch09.html#_problem_164
+    """
+    storage_name = '_' + name
+
+    @property
+    def prop(self):
+        return _norm_paths(self.working_dir, getattr(self, storage_name))
+
+    @prop.setter
+    def prop(self, value):
+        setattr(self, storage_name, value)
+    return prop
+
+
 class Target(object):
     """Represents a target.
 
@@ -55,35 +80,19 @@ class Target(object):
         The specification of the target.
     """
 
+    inputs = normalized_paths_property('inputs')
+    outputs = normalized_paths_property('outputs')
+
     def __init__(self, name, inputs, outputs, options, working_dir, spec=None):
         self.name = name
 
         self.options = options
         self.working_dir = working_dir
 
-        self._inputs = []
-        self._outputs = []
-
         self.inputs = inputs
         self.outputs = outputs
 
         self.spec = spec
-
-    @property
-    def inputs(self):
-        return _norm_paths(self.working_dir, self._inputs)
-
-    @inputs.setter
-    def inputs(self, values):
-        self._inputs = values
-
-    @property
-    def outputs(self):
-        return _norm_paths(self.working_dir, self._outputs)
-
-    @outputs.setter
-    def outputs(self, values):
-        self._outputs = values
 
     @property
     def is_source(self):
