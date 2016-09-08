@@ -1,3 +1,6 @@
+from __future__ import (absolute_import, print_function, division,
+                        unicode_literals)
+
 import os
 
 from setuptools import find_packages, setup
@@ -29,7 +32,9 @@ setup(
     url="https://mailund.github.io/gwf",
     description="A flexible, pragmatic workflow tool.",
     long_description=read('README.rst'),
-
+    install_requires=[
+        'six>=1.10'
+    ],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Console",
