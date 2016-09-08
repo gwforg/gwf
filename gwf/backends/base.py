@@ -37,10 +37,17 @@ class BackendType(type):
 
 class Backend(metaclass=BackendType):
 
-    """Representation of a backend.
+    """Abstract base class for backends.
+
+    All backends should inherit from this class and implement the necessary
+    methods.
+
+    Note that :func:`schedule` and :func:`schedule_many` should not be
+    overridden since their implementation is provided by this class. In fact,
+    overriding any of these two methods will raise an exception.
 
     A backend is initialized with an instance of
-    :class:`gwf.core.PreparedWorkflow`.
+    :class:`~gwf.core.PreparedWorkflow`.
     """
 
     def __init__(self, workflow):
@@ -65,7 +72,7 @@ class Backend(metaclass=BackendType):
         pass
 
     def schedule(self, target):
-        """Schedule and submit a :class:`Target`s and its dependencies."""
+        """Schedule and submit a :class:`gwf.Target` and its dependencies."""
         logger.debug('Scheduling target %s.', target.name)
 
         if self.submitted(target):
@@ -102,7 +109,7 @@ class Backend(metaclass=BackendType):
         return scheduled
 
     def schedule_many(self, targets):
-        """Schedule a list of :class:`Target`s and their dependencies.
+        """Schedule a list of :class:`gwf.Target` and their dependencies.
 
         Will schedule the targets in `targets` with :func:`schedule`
         and return a list of schedules.
