@@ -1,4 +1,7 @@
-from __future__ import absolute_import, print_function
+# -*- coding: utf-8 -*-
+
+from __future__ import (absolute_import, print_function, division,
+                        unicode_literals)
 
 import inspect
 import itertools
@@ -7,6 +10,9 @@ import os.path
 import sys
 from collections import defaultdict
 
+import six
+
+from .compat import FileNotFoundError
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
@@ -59,6 +65,7 @@ def normalized_paths_property(name):
     return prop
 
 
+@six.python_2_unicode_compatible
 class Target(object):
     """Represents a target.
 
@@ -217,7 +224,7 @@ class Workflow(object):
             outputs = []
 
         new_target = Target(
-            name, inputs, outputs, options, working_dir=self.working_dir
+            name, inputs=inputs, outputs=outputs, options=options, working_dir=self.working_dir
         )
 
         self._add_target(new_target)
@@ -314,7 +321,7 @@ class Workflow(object):
         """
         if isinstance(other_workflow, Workflow):
             self.include_workflow(other_workflow, namespace=namespace)
-        elif isinstance(other_workflow, str):
+        elif isinstance(other_workflow, six.string_types):
             self.include_path(other_workflow, namespace=namespace)
         elif inspect.ismodule(other_workflow):
             self.include_workflow(

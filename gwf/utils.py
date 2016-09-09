@@ -1,11 +1,18 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import (absolute_import, print_function, division,
+                        unicode_literals)
+
+import six
+
 import functools
 import imp
 import logging
 import os.path
 import time
-from contextlib import ContextDecorator
 
-from gwf.exceptions import GWFError
+from .compat import ContextDecorator
+from .exceptions import GWFError
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +20,7 @@ logger = logging.getLogger(__name__)
 def cache(obj):
     _cache = obj._cache = {}
 
-    @functools.wraps(obj)
+    @six.wraps(obj)
     def memoizer(*args, **kwargs):
         if args not in _cache:
             _cache[args] = obj(*args, **kwargs)

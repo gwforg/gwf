@@ -1,14 +1,18 @@
+from __future__ import (absolute_import, print_function, division,
+                        unicode_literals)
+
 import os
 import os.path
 import unittest
-from unittest.mock import Mock, call, create_autospec, patch
 
 from gwf import template
+from gwf.compat import FileNotFoundError, Mock, TestCase, call, patch
 from gwf.core import PreparedWorkflow, Target, Workflow
 from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
                             FileRequiredButNotProvidedError,
                             IncludeWorkflowError, TargetExistsError)
+
 
 
 def create_test_target(name='TestTarget', inputs=[], outputs=[], options={}, working_dir=''):
@@ -418,7 +422,7 @@ class TestPreparedWorkflow(unittest.TestCase):
         self.assertSetEqual(prepared_workflow.endpoints(), {target2, target3})
 
 
-class TestShouldRun(unittest.TestCase):
+class TestShouldRun(TestCase):
 
     def setUp(self):
         workflow = Workflow(working_dir='/some/dir')

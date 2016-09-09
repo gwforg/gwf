@@ -1,4 +1,11 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import (absolute_import, print_function, division,
+                        unicode_literals)
+
 import logging
+
+import six
 
 from ..core import PreparedWorkflow
 from ..exceptions import GWFError, WorkflowNotPreparedError
@@ -35,7 +42,8 @@ class BackendType(type):
         return cls
 
 
-class Backend(metaclass=BackendType):
+@six.add_metaclass(BackendType)
+class Backend(object):
 
     """Abstract base class for backends.
 
