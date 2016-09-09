@@ -65,6 +65,7 @@ def normalized_paths_property(name):
     return prop
 
 
+@six.python_2_unicode_compatible
 class Target(object):
     """Represents a target.
 
@@ -156,7 +157,6 @@ class Target(object):
             self.spec,
         )
 
-    @six.python_2_unicode_compatible
     def __str__(self):
         return self.name
 
