@@ -11,7 +11,6 @@ from setuptools import find_packages, setup
 
 requires = ['six>=1.10']
 if sys.version_info.major == 2:
-    requires.append('mock')
     requires.append('contextdecorator')
 
 # Utility function to read the README file.  Used for the
