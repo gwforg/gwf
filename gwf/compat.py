@@ -3,6 +3,8 @@ import collections
 import logging
 import unittest
 
+import six
+
 try:
     from unittest.mock import Mock, patch, call
 except ImportError:
@@ -121,12 +123,12 @@ class TestCaseShim(unittest.TestCase):
         return _AssertLogsContext(self, logger, level)
 
 
-if sys.version_info.major == 2:
+if six.PY2:
     bytes = str
     str = unicode
     basestring = basestring
     TestCase = TestCaseShim
-elif sys.version_info.major == 3:
+elif six.PY3:
     bytes = bytes
     str = str
     basestring = (str, bytes)
