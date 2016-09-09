@@ -1,10 +1,18 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import (absolute_import, print_function, division,
                         unicode_literals)
 
+import sys
 import os
 
 from setuptools import find_packages, setup
 
+
+requires = ['six>=1.10']
+if sys.version_info.major == 2:
+    requires.append('mock')
+    requires.append('contextdecorator')
 
 # Utility function to read the README file.  Used for the
 # long_description.  It's nice, because now 1) we have a top level
@@ -32,9 +40,7 @@ setup(
     url="https://mailund.github.io/gwf",
     description="A flexible, pragmatic workflow tool.",
     long_description=read('README.rst'),
-    install_requires=[
-        'six>=1.10'
-    ],
+    install_requires=requires,
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Console",

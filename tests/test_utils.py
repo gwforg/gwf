@@ -2,8 +2,10 @@ from __future__ import (absolute_import, print_function, division,
                         unicode_literals)
 
 import unittest
-from unittest.mock import Mock, patch
 
+import six
+
+from gwf.compat import Mock, patch
 from gwf.exceptions import GWFError
 from gwf.utils import (_split_import_path, cache, get_file_timestamp,
                        import_object)
@@ -67,7 +69,7 @@ class TestImportObject(unittest.TestCase):
         self.assertEqual(mock_load_module.call_count, 1)
 
     def test_trying_to_load_workflow_from_nonexisting_path_raises_exception(self):
-        with self.assertRaisesRegex(GWFError, '.*this/workflow\.py.*'):
+        with six.assertRaisesRegex(self, GWFError, '.*this/workflow\.py.*'):
             import_object('this/workflow.py')
 
 

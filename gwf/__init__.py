@@ -1,7 +1,11 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import (absolute_import, print_function, division,
                         unicode_literals)
 
-from gwf.core import PreparedWorkflow, Target, Workflow
+import six
+
+from .core import PreparedWorkflow, Target, Workflow
 
 
 class template(object):
@@ -16,7 +20,7 @@ class template(object):
 
     def __call__(self, **substitutions):
         def substitute(s):
-            if type(s) == str:
+            if isinstance(s, six.string_types):
                 return s.format(**substitutions)
             elif hasattr(s, '__iter__'):
                 return [substitute(x) for x in s]
