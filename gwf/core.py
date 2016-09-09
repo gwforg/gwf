@@ -156,6 +156,7 @@ class Target(object):
             self.spec,
         )
 
+    @six.python_2_unicode_compatible
     def __str__(self):
         return self.name
 
