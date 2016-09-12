@@ -105,9 +105,11 @@ class SlurmBackend(Backend):
         logger.debug('found %d jobs', len(self.live_job_states))
 
         with timer('filtering jobs took %.2f ms', logger=logger):
-            for target_name, job_id in self.job_db.items():
-                if job_id not in self.live_job_states:
-                    del self.job_db[target_name]
+            self.job_db = {
+                target_name: job_id
+                for target_name, job_id in self.job_db.items()
+                if job_id in self.live_job_states
+            }
 
     @cache
     @timer('fetching slurm job states with sqeueu took %0.2fms', logger=logger)
