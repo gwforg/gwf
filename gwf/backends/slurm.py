@@ -116,11 +116,6 @@ class SlurmBackend(Backend):
 
         for option_name, option_value in target.options.items():
             if option_name not in self.supported_options:
-                logger.warn(
-                    'Unsupported option "%s" on target "%s".',
-                    option_name,
-                    target.name
-                )
                 continue
 
             out.append(

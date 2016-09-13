@@ -55,6 +55,18 @@ class Backend(metaclass=BackendType):
             raise WorkflowNotPreparedError()
         self.workflow = workflow
 
+        all_options = {option_name
+                       for target in workflow.targets.values()
+                       for option_name in target.options}
+
+        for option_name in all_options:
+            if option_name not in self.supported_options:
+                logger.warn(
+                    'Backend "%s" does not support option "%s".',
+                    self.name,
+                    option_name
+                )
+
 
     def configure(self, **options):
         """Configure the backend.

@@ -1,3 +1,4 @@
+import logging
 import unittest
 from unittest.mock import patch
 
@@ -95,3 +96,21 @@ class TestBaseBackend(unittest.TestCase):
                 schedule = backend.schedule(target4)
                 self.assertListEqual(
                     schedule, [target1, target2, target3, target4])
+
+    def test_warn_if_target_uses_option_not_supported_by_backend(self):
+        class TestingBackend(Backend):
+            name = 'testing'
+            supported_options = set(['cores', 'memory'])
+
+        workflow = Workflow(working_dir='/some/dir')
+        workflow.target('TestTarget', inputs=[],
+                        outputs=[], walltime='01:00:00')
+
+        prepared_workflow = PreparedWorkflow(workflow)
+        with self.assertLogs(level=logging.WARN) as logs:
+            TestingBackend(prepared_workflow)
+
+            self.assertIn(
+                'Backend "testing" does not support option "walltime".',
+                logs.output[0]
+            )
