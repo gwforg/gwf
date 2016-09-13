@@ -81,7 +81,7 @@ class Backend(metaclass=BackendType):
         """Cancel a target."""
         pass
 
-    def close():
+    def close(self):
         """Close the backend."""
         pass
 
