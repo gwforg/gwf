@@ -55,6 +55,16 @@ class Backend(metaclass=BackendType):
             raise WorkflowNotPreparedError()
         self.workflow = workflow
 
+
+    def configure(self, **options):
+        """Configure the backend.
+
+        This method *must* be called before any other method on the backend
+        is used. Unless the backend is initialized directly, *gwf* is
+        responsible for calling :func:`configure` to configure the backend.
+        """
+        pass
+
     def submitted(self, target):
         """Return whether the target has been submitted."""
         pass

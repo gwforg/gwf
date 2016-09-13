@@ -1,8 +1,9 @@
+import io
 import unittest
-from unittest.mock import patch
+from unittest.mock import mock_open, patch
 
 from gwf import PreparedWorkflow, Target, Workflow
-from gwf.backends.slurm import SlurmBackend, _compile_script
+from gwf.backends.slurm import SlurmBackend
 
 
 @patch('gwf.backends.slurm.subprocess.Popen')
@@ -10,6 +11,8 @@ from gwf.backends.slurm import SlurmBackend, _compile_script
 class TestSlurmBackend(unittest.TestCase):
 
     def test_job_script_is_properly_compile_with_all_options(self, mock_find_exe, mock_popen):
+        backend = SlurmBackend(PreparedWorkflow())
+
         target = Target(
             name='TestTarget',
             inputs=[],
@@ -28,7 +31,7 @@ class TestSlurmBackend(unittest.TestCase):
             spec='echo hello world'
         )
 
-        script = _compile_script(target)
+        script = backend._compile_script(target)
 
         self.assertIn('#!/bin/bash', script)
         self.assertIn('#SBATCH -c 16', script)
@@ -42,3 +45,29 @@ class TestSlurmBackend(unittest.TestCase):
         self.assertIn('cd /some/dir', script)
         self.assertIn('export GWF_JOBID=$SLURM_JOBID', script)
         self.assertIn('echo hello world', script)
+
+    def test_jobdb_is_empty_if_job_db_file_does_not_exist(self, mock_find_exe, mock_popen):
+        workflow = Workflow()
+        prepared_workflow = PreparedWorkflow(workflow)
+
+        with patch('builtins.open', side_effect=FileNotFoundError) as mock_open_:
+            backend = SlurmBackend(prepared_workflow)
+            backend.configure()
+
+            mock_open_.assert_called_once_with('.gwf/slurm-backend-jobdb.json')
+            self.assertDictEqual(backend._job_db, {})
+
+    def test_jobdb_is_loaded_from_job_db_file_when_it_exists(self, mock_find_exe, mock_popen):
+        workflow = Workflow()
+        prepared_workflow = PreparedWorkflow(workflow)
+
+        with patch('builtins.open', mock_open(read_data='{"TestTarget": 1000}')) as mock_open_:
+            backend = SlurmBackend(prepared_workflow)
+            with patch.object(backend, '_live_job_states') as mock_live_job_states:
+                mock_live_job_states.return_value = {1000: 'R'}
+
+                backend.configure()
+                mock_open_.assert_called_once_with(
+                    '.gwf/slurm-backend-jobdb.json'
+                )
+                self.assertDictEqual(backend._job_db, {'TestTarget': 'R'})
