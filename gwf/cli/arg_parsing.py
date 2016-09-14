@@ -41,8 +41,7 @@ class ArgumentDispatching(object):
                                  default = "workflow.py")
 
         # Prepare for sub-commands
-        self.subparsers = self.parser.add_subparsers(title = "commands",
-                                                     description = "Subcommands to execute. The default is 'run'.")
+        self.subparsers = self.parser.add_subparsers(title = "commands", description = "Subcommands to execute")
 
     def install_subcommand(self, name, description, handler):
         """Install a sub-command with "name" and with functionality implemented

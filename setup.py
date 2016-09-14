@@ -20,6 +20,7 @@ setup(
     ]},
     test_suite='tests',
     install_requires=[
+        "colorama",
     ],
 
     # metadata for upload to PyPI
