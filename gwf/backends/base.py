@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 from ..core import PreparedWorkflow
 from ..exceptions import GWFError, WorkflowNotPreparedError
@@ -26,9 +27,15 @@ class BackendType(type):
         if name == 'Backend':
             return cls
 
-        if not hasattr(cls, 'name'):
+        if 'name' not in class_dict:
             raise GWFError(
                 'Backend {} does not declare name class variable.'.format(name)
+            )
+
+        if 'schedule' in class_dict or 'schedule_all' in class_dict:
+            warnings.warn(
+                'Subclasses of Backend should not override schedule() or '
+                'schedule_all().'
             )
 
         register_backend(getattr(cls, 'name'), cls)
@@ -48,6 +55,28 @@ class Backend(metaclass=BackendType):
             raise WorkflowNotPreparedError()
         self.workflow = workflow
 
+        all_options = {option_name
+                       for target in workflow.targets.values()
+                       for option_name in target.options}
+
+        for option_name in all_options:
+            if option_name not in self.supported_options:
+                logger.warn(
+                    'Backend "%s" does not support option "%s".',
+                    self.name,
+                    option_name
+                )
+
+
+    def configure(self, **options):
+        """Configure the backend.
+
+        This method *must* be called before any other method on the backend
+        is used. Unless the backend is initialized directly, *gwf* is
+        responsible for calling :func:`configure` to configure the backend.
+        """
+        pass
+
     def submitted(self, target):
         """Return whether the target has been submitted."""
         pass
@@ -62,6 +91,10 @@ class Backend(metaclass=BackendType):
 
     def cancel(self, target):
         """Cancel a target."""
+        pass
+
+    def close(self):
+        """Close the backend."""
         pass
 
     def schedule(self, target):
@@ -102,6 +135,14 @@ class Backend(metaclass=BackendType):
         return scheduled
 
     def schedule_many(self, targets):
+        """Schedule a list of :class:`Target`s and their dependencies.
+
+        Will schedule the targets in `targets` with :func:`schedule`
+        and return a list of schedules.
+
+        :param list targets: A list of targets to be scheduled.
+        :return: A list of schedules, one for each target in `targets`.
+        """
         schedules = []
         for target in targets:
             schedules.append(self.schedule(target))

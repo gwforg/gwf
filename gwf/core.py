@@ -27,6 +27,38 @@ def _norm_paths(working_dir, paths):
     return [_norm_path(working_dir, path) for path in paths]
 
 
+def _delete_file(path):
+    try:
+        os.remove(path)
+    except FileNotFoundError:
+        pass
+
+
+def normalized_paths_property(name):
+    """Define a normalized paths property.
+
+    This function can be used to define a property on an object which expects
+    the value to be a list of paths. When the attribute is used, this function
+    ensures that the paths will always be normalized and absolute.
+
+    For an example of its usage, see the `inputs` and `outputs` attributes
+    on :class:`~gwf.Target`. For a more general description of this approach
+    to reusable attributes, see:
+
+        http://chimera.labs.oreilly.com/books/1230000000393/ch09.html#_problem_164
+    """
+    storage_name = '_' + name
+
+    @property
+    def prop(self):
+        return _norm_paths(self.working_dir, getattr(self, storage_name))
+
+    @prop.setter
+    def prop(self, value):
+        setattr(self, storage_name, value)
+    return prop
+
+
 class Target(object):
     """Represents a target.
 
@@ -48,35 +80,19 @@ class Target(object):
         The specification of the target.
     """
 
+    inputs = normalized_paths_property('inputs')
+    outputs = normalized_paths_property('outputs')
+
     def __init__(self, name, inputs, outputs, options, working_dir, spec=None):
         self.name = name
 
         self.options = options
         self.working_dir = working_dir
 
-        self._inputs = []
-        self._outputs = []
-
         self.inputs = inputs
         self.outputs = outputs
 
         self.spec = spec
-
-    @property
-    def inputs(self):
-        return _norm_paths(self.working_dir, self._inputs)
-
-    @inputs.setter
-    def inputs(self, values):
-        self._inputs = values
-
-    @property
-    def outputs(self):
-        return _norm_paths(self.working_dir, self._outputs)
-
-    @outputs.setter
-    def outputs(self, values):
-        self._outputs = values
 
     @property
     def is_source(self):
@@ -93,13 +109,25 @@ class Target(object):
         """
         return not self.outputs
 
+    def clean(self):
+        """Delete all output files produced by this target.
+
+        Any output files that do not exist will be ignored.
+        """
+        for path in self.outputs:
+            logging.debug(
+                'Deleting output file "%s" from target "%s".',
+                path,
+                self.name
+            )
+
+            _delete_file(path)
+
     def __lshift__(self, spec):
         if isinstance(spec, tuple):
             options, spec = spec
-            self.inputs = _norm_paths(
-                self.working_dir, options.pop('inputs', list))
-            self.outputs = _norm_paths(
-                self.working_dir, options.pop('outputs', list))
+            self.inputs = options.pop('inputs', list)
+            self.outputs = options.pop('outputs', list)
             self.options = options
             self.spec = spec
         else:
@@ -301,7 +329,7 @@ class Workflow(object):
         )
 
 
-class PreparedWorkflow:
+class PreparedWorkflow(object):
 
     """Represents a finalized workflow graph.
 
@@ -463,6 +491,10 @@ class PreparedWorkflow:
         )
 
         return youngest_in_ts > oldest_out_ts
+
+    def endpoints(self):
+        """Return a set of all targets that are not depended on by other targets."""
+        return set(self.targets.values()) - set(self.dependents.keys())
 
     def __repr__(self):
         return '{}(working_dir={!r}, targets={!r})'.format(

@@ -1,6 +1,7 @@
+import os
 import os.path
 import unittest
-from unittest.mock import Mock, create_autospec, patch
+from unittest.mock import Mock, call, create_autospec, patch
 
 from gwf import template
 from gwf.core import PreparedWorkflow, Target, Workflow
@@ -254,6 +255,31 @@ class TestTarget(unittest.TestCase):
         self.assertIsNotNone(target.spec)
         self.assertEqual(target.spec, 'this is a spec')
 
+    @patch('gwf.core.os.remove', spec=os.remove)
+    def test_clean_with_existing_output_files(self, mock_remove):
+        target = create_test_target(outputs=['test1.txt', 'test2.txt'],
+                                    working_dir='/some/path')
+        target.clean()
+
+        mock_remove.assert_has_calls([
+            call('/some/path/test1.txt'),
+            call('/some/path/test2.txt'),
+        ])
+
+        self.assertEqual(mock_remove.call_count, 2)
+
+    @patch('gwf.core.os.remove', spec=os.remove, side_effect=[None, FileNotFoundError])
+    def test_clean_with_nonexisting_output_files(self, mock_remove):
+        target = create_test_target(outputs=['test1.txt', 'test2.txt'],
+                                    working_dir='/some/path')
+        target.clean()
+
+        mock_remove.assert_has_calls([
+            call('/some/path/test1.txt'),
+            call('/some/path/test2.txt'),
+        ])
+        self.assertEqual(mock_remove.call_count, 2)
+
     def test_str_on_target(self):
         target = Target(
             'TestTarget',
@@ -383,6 +409,13 @@ class TestPreparedWorkflow(unittest.TestCase):
 
         with self.assertRaises(CircularDependencyError):
             PreparedWorkflow(self.workflow)
+
+    def test_endpoints_only_includes_target_with_no_dependents(self):
+        target1 = self.workflow.target('TestTarget1', outputs=['test.txt'])
+        target2 = self.workflow.target('TestTarget2', inputs=['test.txt'])
+        target3 = self.workflow.target('TestTarget3', inputs=['test.txt'])
+        prepared_workflow = PreparedWorkflow(self.workflow)
+        self.assertSetEqual(prepared_workflow.endpoints(), {target2, target3})
 
 
 class TestShouldRun(unittest.TestCase):
