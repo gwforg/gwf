@@ -7,8 +7,6 @@ from setuptools import find_packages, setup
 # long_description.  It's nice, because now 1) we have a top level
 # README file and 2) it's easier to type in the README file than to put
 # a raw string in below ...
-
-
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
@@ -17,11 +15,11 @@ setup(
     version="1.0.0",
 
     packages=find_packages(),
-    scripts=['scripts/gwf'],
-
+    entry_points={'console_scripts': [
+        'gwf = gwf.cli.__main__:main',
+    ]},
     test_suite='tests',
     install_requires=[
-        'begins>=0.9',
     ],
 
     # metadata for upload to PyPI
