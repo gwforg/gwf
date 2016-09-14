@@ -48,6 +48,7 @@ Getting Started
    configuration
    tutorial
    best_practices
+   backends
 
 Extending gwf
 -------------
