@@ -6,10 +6,9 @@ import os
 import subprocess
 from distutils.spawn import find_executable
 
-from ..core import PreparedWorkflow
+from . import Backend
 from ..exceptions import BackendError
-from ..utils import cache, dfs, timer
-from .base import Backend
+from ..utils import cache, timer
 
 logger = logging.getLogger(__name__)
 

@@ -21,7 +21,7 @@ setup(
         'console_scripts': [
             'gwf = gwf.cli:CommandLineInterface.main',
         ],
-        'gwf.backend': [
+        'gwf.ext': [
             'slurm = gwf.backends.slurm:SlurmBackend',
         ]
     },

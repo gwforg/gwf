@@ -1,39 +1,15 @@
+import abc
 import logging
-import warnings
-
-from pkg_resources import iter_entry_points
 
 from ..core import PreparedWorkflow
-from ..exceptions import GWFError, WorkflowNotPreparedError
+from ..exceptions import WorkflowNotPreparedError
+from ..ext import Extension
 from ..utils import dfs
 
 logger = logging.getLogger(__name__)
 
 
-class BackendType(type):
-
-    def __new__(meta, name, bases, class_dict):
-        cls = type.__new__(meta, name, bases, class_dict)
-
-        # Do not register the base Backend class.
-        if name == 'Backend':
-            return cls
-
-        if 'name' not in class_dict:
-            raise GWFError(
-                'Backend {} does not declare name class variable.'.format(name)
-            )
-
-        if 'schedule' in class_dict or 'schedule_all' in class_dict:
-            warnings.warn(
-                'Subclasses of Backend should not override schedule() or '
-                'schedule_all().'
-            )
-
-        return cls
-
-
-class Backend(metaclass=BackendType):
+class Backend(Extension):
 
     """Base class for backends.
 
@@ -65,16 +41,21 @@ class Backend(metaclass=BackendType):
                     option_name
                 )
 
-    def setup_argument_parser(self, parser):
-        """Modify the main argument parser.
+    @property
+    @abc.abstractmethod
+    def name(self):
+        """User-friendly, single word name of the backend."""
 
-        This static method is called with an instance of
-        :class:`argparse.ArgumentParser` and the backend may add any
-        subcommands and arguments to the parser as long as they don't conflict
-        with other subcommands/arguments.
-        """
-        pass
+    @property
+    def supported_options(self):
+        """Return the options supported on targets."""
 
+    @property
+    def option_defaults(self):
+        """Return defaults for required target options."""
+        return {}
+
+    @abc.abstractmethod
     def configure(self, **options):
         """Configure the backend.
 
@@ -82,27 +63,25 @@ class Backend(metaclass=BackendType):
         is used. Unless the backend is initialized directly, *gwf* is
         responsible for calling :func:`configure` to configure the backend.
         """
-        pass
 
+    @abc.abstractmethod
     def submitted(self, target):
         """Return whether the target has been submitted."""
-        pass
 
+    @abc.abstractmethod
     def running(self, target):
         """Return whether the target is running."""
-        pass
 
+    @abc.abstractmethod
     def submit(self, target):
         """Submit a target."""
-        pass
 
+    @abc.abstractmethod
     def cancel(self, target):
         """Cancel a target."""
-        pass
 
     def close(self):
         """Close the backend."""
-        pass
 
     def schedule(self, target):
         """Schedule and submit a :class:`Target`s and its dependencies."""

@@ -1,6 +1,5 @@
 from __future__ import absolute_import, print_function
 
-from gwf.backends.base import Backend
 from gwf.core import PreparedWorkflow, Target, Workflow
 
 
@@ -31,4 +30,4 @@ class template(object):
             self.__class__.__name__, self.options, self.spec)
 
 
-__all__ = ('Target', 'Workflow', 'PreparedWorkflow', 'Backend', 'template')
+__all__ = ('Target', 'Workflow', 'PreparedWorkflow', 'template')
