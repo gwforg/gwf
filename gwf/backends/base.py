@@ -25,6 +25,10 @@ class Backend(Extension):
     """
 
     def __init__(self, workflow):
+        """Initialize the backend.
+
+        This method should never be overriden by subclasses.
+        """
         if not isinstance(workflow, PreparedWorkflow):
             raise WorkflowNotPreparedError()
         self.workflow = workflow
@@ -35,16 +39,11 @@ class Backend(Extension):
 
         for option_name in all_options:
             if option_name not in self.supported_options:
-                logger.warn(
+                logger.warning(
                     'Backend "%s" does not support option "%s".',
                     self.name,
                     option_name
                 )
-
-    @property
-    @abc.abstractmethod
-    def name(self):
-        """User-friendly, single word name of the backend."""
 
     @property
     def supported_options(self):

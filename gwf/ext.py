@@ -11,25 +11,25 @@ class Extension(abc.ABC):
     @property
     @abc.abstractmethod
     def name(self):
-        pass
+        """Single-word, user-friendly name for the extension."""
 
     @abc.abstractmethod
     def configure(self, *args, **kwargs):
-        pass
+        """Called to configure the extension."""
 
     @abc.abstractmethod
     def close(self, *args, **kwargs):
-        pass
+        """Called when the extension is closed."""
 
-    def setup_argument_parser(self, parser):
+    @classmethod
+    def setup_argument_parser(cls, parser):
         """Modify the main argument parser.
 
         This static method is called with an instance of
-        :class:`argparse.ArgumentParser` and the backend may add any
+        :class:`argparse.ArgumentParser` and the extension may add any
         subcommands and arguments to the parser as long as they don't conflict
         with other subcommands/arguments.
         """
-        pass
 
 
 class Plugin(Extension):
@@ -38,13 +38,15 @@ class Plugin(Extension):
 
 class ExtensionManager:
 
+    group = 'gwf.ext'
+
     def __init__(self):
         self.extensions = self.reload()
 
     def reload(self):
         return [
             entry_point.load()
-            for entry_point in iter_entry_points(group='gwf.ext', name=None)
+            for entry_point in iter_entry_points(group=self.group, name=None)
         ]
 
     def list(self, parent=None):
