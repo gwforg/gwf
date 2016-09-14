@@ -17,7 +17,14 @@ setup(
     version="1.0.0",
 
     packages=find_packages(),
-    scripts=['scripts/gwf'],
+    entry_points={
+        'console_scripts': [
+            'gwf = gwf.cli:CommandLineInterface.main',
+        ],
+        'gwf.backend': [
+            'slurm = gwf.backends.slurm:SlurmBackend',
+        ]
+    },
 
     test_suite='tests',
 
