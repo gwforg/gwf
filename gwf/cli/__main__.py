@@ -25,5 +25,4 @@ def main():
     dispatcher = ArgumentDispatching()
     dispatcher.install_subcommand("run", "submit targets", RunCommand())
     dispatcher.install_subcommand("status", "check status of targets", StatusCommand())
-    dispatcher.set_default_command("run")
     dispatcher.dispatch(sys.argv[1:])
