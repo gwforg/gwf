@@ -20,4 +20,7 @@ def main():
     dispatcher = ArgumentDispatching()
     dispatcher.install_subcommand("run", "submit targets", RunCommand())
     dispatcher.install_subcommand("status", "check status of targets", StatusCommand())
-    dispatcher.dispatch(sys.argv[1:])
+    try:
+        dispatcher.dispatch(sys.argv[1:])
+    except Exception as e:
+        print("Error: " + str(e))
