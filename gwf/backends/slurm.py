@@ -80,12 +80,24 @@ class SlurmBackend(Backend):
 
     **Target options:**
 
-    * **cores:** the number of cores allocated to this target (default: 1).
-    * **memory:** the amount of memory allocated to this target (default: 1).
-    * **walltime:** the time limit for this target (default: 1 hour).
+    * **cores (int):**
+      Number of cores allocated to this target (default: 1).
+    * **memory (str):**
+      Memory allocated to this target (default: 1).
+    * **walltime (str):**
+      Time limit for this target (default: 01:00:00).
+    * **queue (str):**
+      Queue to submit the target to. To specify multiple queues, specify a
+      comma-separated list of queue names.
+    * **account (str):**
+      Account to be used when running the target.
+    * **constraint (str):**
+      Constraint string. Equivalent to setting the `--constraint` flag on
+      `sbatch`.
     """
 
     name = 'slurm'
+
     supported_options = set(OPTION_TABLE.keys())
     option_defaults = {
         'cores': 1,
