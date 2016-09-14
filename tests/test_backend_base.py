@@ -97,3 +97,86 @@ class TestBaseBackend(unittest.TestCase):
                 'Backend "testing" does not support option "walltime".',
                 logs.output[0]
             )
+
+    def test_option_defaults_is_empty_dict(self):
+        workflow = Workflow(working_dir='/some/dir')
+        prepared_workflow = PreparedWorkflow(workflow)
+        backend = TestingBackend(prepared_workflow)
+        self.assertDictEqual(backend.option_defaults, {})
+
+    def test_scheduling_a_submitted_dependency_does_not_submit_the_dependency(self):
+        workflow = Workflow(working_dir='/some/dir')
+
+        target1 = workflow.target(
+            'TestTarget1',
+            outputs=['test_output1.txt']
+        )
+        target2 = workflow.target(
+            'TestTarget2',
+            outputs=['test_output2.txt']
+        )
+        target3 = workflow.target(
+            'TestTarget3',
+            inputs=['test_output1.txt', 'test_output2.txt'],
+            outputs=['test_output3.txt']
+        )
+
+        prepared_workflow = PreparedWorkflow(workflow)
+        backend = TestingBackend(prepared_workflow)
+        with patch.object(backend, 'submitted', side_effect=[False, True, False, False]):
+            schedule = backend.schedule(target3)
+            self.assertEqual(schedule, [target2, target3])
+
+    def test_scheduling_non_submitted_targets_that_should_not_run_does_not_submit_any_targets(self):
+        workflow = Workflow(working_dir='/some/dir')
+
+        target1 = workflow.target(
+            'TestTarget1',
+            outputs=['test_output1.txt']
+        )
+        target2 = workflow.target(
+            'TestTarget2',
+            outputs=['test_output2.txt']
+        )
+        target3 = workflow.target(
+            'TestTarget3',
+            inputs=['test_output1.txt', 'test_output2.txt'],
+            outputs=['test_output3.txt']
+        )
+
+        prepared_workflow = PreparedWorkflow(workflow)
+        backend = TestingBackend(prepared_workflow)
+        with patch.object(backend, 'submitted', return_value=False):
+            with patch.object(prepared_workflow, 'should_run', side_effect=[False, False, False, False]):
+                schedule = backend.schedule(target3)
+                self.assertEqual(schedule, [])
+
+    def test_scheduling_many_targets_calls_schedule_for_each_target(self):
+        workflow = Workflow(working_dir='/some/dir')
+
+        target1 = workflow.target(
+            'TestTarget1',
+            outputs=['test_output1.txt']
+        )
+        target2 = workflow.target(
+            'TestTarget2',
+            outputs=['test_output2.txt']
+        )
+        target3 = workflow.target(
+            'TestTarget3',
+            inputs=['test_output1.txt'],
+            outputs=['test_output3.txt']
+        )
+        target4 = workflow.target(
+            'TestTarget4',
+            inputs=['test_output2.txt'],
+            outputs=['test_output4.txt']
+        )
+
+        prepared_workflow = PreparedWorkflow(workflow)
+        backend = TestingBackend(prepared_workflow)
+        with patch.object(backend, 'submitted', return_value=False):
+            with patch.object(prepared_workflow, 'should_run', return_value=True):
+                schedule = backend.schedule_many([target3, target4])
+                self.assertEqual(
+                    schedule, [[target1, target3], [target2, target4]])
