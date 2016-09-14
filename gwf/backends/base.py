@@ -1,21 +1,13 @@
 import logging
 import warnings
 
+from pkg_resources import iter_entry_points
+
 from ..core import PreparedWorkflow
 from ..exceptions import GWFError, WorkflowNotPreparedError
 from ..utils import dfs
 
-BACKENDS = {}
-
 logger = logging.getLogger(__name__)
-
-
-def register_backend(name, backend_cls):
-    BACKENDS[name] = backend_cls
-
-
-def get_backends():
-    return dict(BACKENDS)
 
 
 class BackendType(type):
@@ -38,16 +30,22 @@ class BackendType(type):
                 'schedule_all().'
             )
 
-        register_backend(getattr(cls, 'name'), cls)
         return cls
 
 
 class Backend(metaclass=BackendType):
 
-    """Representation of a backend.
+    """Base class for backends.
 
     A backend is initialized with an instance of
     :class:`gwf.core.PreparedWorkflow`.
+
+    .. warning::
+      You should never override `__init__` in subclasses of :class:`Backend`
+      unless you really know what you're doing.
+
+    :cvar supported_options list: A list of the names of supported options.
+    :cvar defaults dict: A dictionary with option defaults.
     """
 
     def __init__(self, workflow):
@@ -67,6 +65,15 @@ class Backend(metaclass=BackendType):
                     option_name
                 )
 
+    def setup_argument_parser(self, parser):
+        """Modify the main argument parser.
+
+        This static method is called with an instance of
+        :class:`argparse.ArgumentParser` and the backend may add any
+        subcommands and arguments to the parser as long as they don't conflict
+        with other subcommands/arguments.
+        """
+        pass
 
     def configure(self, **options):
         """Configure the backend.
