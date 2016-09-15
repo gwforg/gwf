@@ -1,15 +1,18 @@
+import io
+import subprocess
 import unittest
-from unittest.mock import mock_open, patch
+from unittest.mock import Mock, mock_open, patch
 
 from gwf import PreparedWorkflow, Target, Workflow
 from gwf.backends.slurm import SlurmBackend
+from gwf.exceptions import BackendError
 
 
 @patch('gwf.backends.slurm.subprocess.Popen')
 @patch('gwf.backends.slurm._find_exe', side_effect=['squeue', 'sbatch', 'scancel'])
 class TestSlurmBackend(unittest.TestCase):
 
-    def test_job_script_is_properly_compile_with_all_options(self, mock_find_exe, mock_popen):
+    def test_job_script_is_properly_compiled_with_all_supported_options(self, mock_find_exe, mock_popen):
         backend = SlurmBackend(PreparedWorkflow())
 
         target = Target(
@@ -25,7 +28,8 @@ class TestSlurmBackend(unittest.TestCase):
                 'account': 'someaccount',
                 'constraint': 'graphics*4',
                 'mail_type': 'BEGIN,END,FAIL',
-                'mail_user': 'test@domain.com'
+                'mail_user': 'test@domain.com',
+                'unsupported_option': 'unsupported value'
             },
             spec='echo hello world'
         )
@@ -45,6 +49,9 @@ class TestSlurmBackend(unittest.TestCase):
         self.assertIn('export GWF_JOBID=$SLURM_JOBID', script)
         self.assertIn('echo hello world', script)
 
+        # Now check that the unsupported option never made it into the script.
+        self.assertNotIn('unsupported value', script)
+
     def test_jobdb_is_empty_if_job_db_file_does_not_exist(self, mock_find_exe, mock_popen):
         workflow = Workflow()
         prepared_workflow = PreparedWorkflow(workflow)
@@ -62,11 +69,168 @@ class TestSlurmBackend(unittest.TestCase):
 
         with patch('builtins.open', mock_open(read_data='{"TestTarget": 1000}')) as mock_open_:
             backend = SlurmBackend(prepared_workflow)
-            with patch.object(backend, '_live_job_states') as mock_live_job_states:
-                mock_live_job_states.return_value = {1000: 'R'}
+            with patch.object(
+                    backend,
+                    '_get_live_job_states',
+                    return_value={1000: 'R'}):
 
                 backend.configure()
                 mock_open_.assert_called_once_with(
                     '.gwf/slurm-backend-jobdb.json'
                 )
                 self.assertDictEqual(backend._job_db, {'TestTarget': 'R'})
+
+    def test_live_job_states_are_correctly_parser(self, mock_find_exe, mock_popen):
+        workflow = Workflow()
+        prepared_workflow = PreparedWorkflow(workflow)
+        backend = SlurmBackend(prepared_workflow)
+
+        fake_squeue_output = io.StringIO('\n'.join([
+            "36971043;PD;afterok:36970708,afterok:36970710,afterok:36971042",
+            "36971044;R;afterok:36971043",
+            "36971045;PD;",
+        ]))
+
+        mock_popen_instance = Mock(spec=subprocess.Popen)
+        mock_popen_instance.stdout = fake_squeue_output
+        mock_popen.return_value = mock_popen_instance
+
+        backend.squeue = 'squeue'
+        result = backend._get_live_job_states()
+
+        self.assertDictEqual(result, {
+            '36971043': 'H',
+            '36971044': 'R',
+            '36971045': 'Q',
+        })
+
+    @patch('gwf.backends.slurm.dump_atomic')
+    def test_closing_backend_dumps_database_atomically(self, mock_dump_atomic, mock_find_exe, mock_popen):
+        workflow = Workflow()
+        prepared_workflow = PreparedWorkflow(workflow)
+
+        backend = SlurmBackend(prepared_workflow)
+        backend.configure()
+        backend.close()
+
+        mock_dump_atomic.assert_called_once_with(
+            {}, '.gwf/slurm-backend-jobdb.json')
+
+    def test_submitted_should_return_true_if_target_is_in_job_db(self, mock_find_exe, mock_popen):
+        workflow = Workflow()
+        target1 = workflow.target('TestTarget1')
+        target2 = workflow.target('TestTarget2')
+
+        prepared_workflow = PreparedWorkflow(workflow)
+
+        backend = SlurmBackend(prepared_workflow)
+        backend._job_db = {'TestTarget1': '1000'}
+
+        self.assertTrue(backend.submitted(target1))
+        self.assertFalse(backend.submitted(target2))
+
+    def test_running_should_return_true_if_target_is_in_job_db_and_is_running(self, mock_find_exe, mock_popen):
+        workflow = Workflow()
+        target1 = workflow.target('TestTarget1')
+        target2 = workflow.target('TestTarget2')
+        target3 = workflow.target('TestTarget3')
+
+        prepared_workflow = PreparedWorkflow(workflow)
+
+        backend = SlurmBackend(prepared_workflow)
+        backend._job_db = {'TestTarget1': '1000', 'TestTarget2': '2000'}
+        backend._live_job_states = {'1000': 'R', '2000': 'H'}
+
+        self.assertTrue(backend.running(target1))
+        self.assertFalse(backend.running(target2))
+        self.assertFalse(backend.running(target3))
+
+    def test_submitting_target_correctly_sets_dependency_flag_for_sbatch(self, mock_find_exe, mock_popen):
+        workflow = Workflow()
+        target1 = workflow.target(
+            'TestTarget1',
+            outputs=['test_output1.txt']
+        )
+        target2 = workflow.target(
+            'TestTarget2',
+            outputs=['test_output2.txt']
+        )
+        target3 = workflow.target(
+            'TestTarget3',
+            inputs=['test_output1.txt', 'test_output2.txt'],
+            outputs=['test_output3.txt']
+        )
+
+        prepared_workflow = PreparedWorkflow(workflow)
+
+        backend = SlurmBackend(prepared_workflow)
+        backend.sbatch = 'sbatch'
+        backend._job_db = {'TestTarget1': '1000', 'TestTarget2': '2000'}
+        backend._live_job_states = {}
+
+        mock_popen_instance = Mock()
+        mock_popen_instance.returncode = 0
+        mock_popen_instance.communicate.return_value = ('3000\n', '')
+        mock_popen.return_value = mock_popen_instance
+
+        backend.submit(target3)
+
+        mock_popen.assert_called_once_with([
+            'sbatch',
+            '--parsable',
+            '--dependency=afterok:1000,2000',
+        ])
+
+        self.assertEqual(backend._job_db['TestTarget3'], '3000')
+        self.assertEqual(backend._live_job_states['3000'], 'H')
+
+    def test_submitting_target_raises_exception_if_sbatch_cannot_be_called(self, mock_find_exe, mock_popen):
+        workflow = Workflow()
+        target1 = workflow.target(
+            'TestTarget1',
+            outputs=['test_output1.txt']
+        )
+        target2 = workflow.target(
+            'TestTarget2',
+            outputs=['test_output2.txt']
+        )
+        target3 = workflow.target(
+            'TestTarget3',
+            inputs=['test_output1.txt', 'test_output2.txt'],
+            outputs=['test_output3.txt']
+        )
+
+        prepared_workflow = PreparedWorkflow(workflow)
+
+        backend = SlurmBackend(prepared_workflow)
+        backend.sbatch = 'sbatch'
+        backend._job_db = {'TestTarget1': '1000', 'TestTarget2': '2000'}
+        backend._live_job_states = {}
+
+        mock_popen_instance = Mock()
+        mock_popen_instance.returncode = 1
+        mock_popen_instance.communicate.return_value = ('', '')
+        mock_popen.return_value = mock_popen_instance
+
+        with self.assertRaises(BackendError):
+            backend.submit(target3)
+
+    def test_cancelling_a_target_calls_scancel_with_correct_job_id(self, mock_find_exe, mock_popen):
+        workflow = Workflow()
+        target = workflow.target('TestTarget')
+
+        prepared_workflow = PreparedWorkflow(workflow)
+
+        backend = SlurmBackend(prepared_workflow)
+        backend.scancel = 'scancel'
+
+        backend._job_db = {'TestTarget': '1000'}
+        backend._live_job_states = {'1000': 'R'}
+
+        backend.cancel(target)
+
+        mock_popen.assert_called_once_with([
+            'scancel',
+            '-j',
+            '1000'
+        ])
