@@ -52,7 +52,7 @@ class StatusCommand(SubCommand):
 
     def print_progress(self, target_names):
         columns = self.ts.columns
-        name_width = status_width = int((columns - 2) / 2)
+        name_width = status_width = int((columns) / 2)
         status_string = " {{:.<{}}} {{:^{}}}".format(name_width, status_width)
 
         def get_width(left, n, k):
