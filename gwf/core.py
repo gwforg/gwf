@@ -83,7 +83,7 @@ class Target(object):
     inputs = normalized_paths_property('inputs')
     outputs = normalized_paths_property('outputs')
 
-    def __init__(self, name, inputs, outputs, options, working_dir, spec=None):
+    def __init__(self, name, inputs, outputs, options, working_dir, spec=''):
         self.name = name
 
         self.options = options
