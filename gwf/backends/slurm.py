@@ -223,6 +223,9 @@ class SlurmBackend(Backend):
         # New jobs are assumed to be on-hold until the next time gwf is invoked
         self._live_job_states[new_job_id] = 'H'
 
+    def logs(self, target, stderr=False, rewind=0):
+        pass
+
     def cancel(self, target):
         """Cancel a target."""
         target_job_id = self._job_db.get(target.name, '?')

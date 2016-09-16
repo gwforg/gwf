@@ -64,3 +64,7 @@ class IncludeWorkflowError(GWFError):
 
 class BackendError(GWFError):
     pass
+
+
+class NoLogFoundError(BackendError):
+    pass

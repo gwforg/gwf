@@ -11,17 +11,10 @@ logger = logging.getLogger(__name__)
 
 class Backend(Extension):
 
-    """Base class for backends.
+    """Abstract base class for backends.
 
     A backend is initialized with an instance of
     :class:`gwf.core.PreparedWorkflow`.
-
-    .. warning::
-      You should never override `__init__` in subclasses of :class:`Backend`
-      unless you really know what you're doing.
-
-    :cvar supported_options list: A list of the names of supported options.
-    :cvar defaults dict: A dictionary with option defaults.
     """
 
     def __init__(self, workflow):
@@ -79,11 +72,39 @@ class Backend(Extension):
     def cancel(self, target):
         """Cancel a target."""
 
+    @abc.abstractmethod
+    def logs(self, target, stderr=False, rewind=0):
+        """Return log files for a target.
+
+        If `target` has been run multiple times, the latest log will be
+        shown by default. To retrieve logs from an earlier run of the target,
+        specify how many runs to rewind using the `rewind` parameter. E.g. to
+        see the log from three runs ago, specify `rewind=2`. If the backend
+        cannot return logs for the specified time point a
+        :class:`~gwf.exceptions.NoLogFoundError` is raised.
+
+        By default only standard output (stdout) is returned. If `stderr=True`
+        the function will return a tuple (stdout, stderr).
+
+        :param gwf.Target target:
+            Target to return logs for.
+        :param bool stderr:
+            default: False. If true, the method will return a tuple consisting
+            of both the standard and error output.
+        :param int rewind:
+            default: 0. Specify this parameter to obtain logs from earlier
+            runs of the target. By default the latest log will be returned.
+            To obtain logs from the previous run, specify `rewind=1` etc.
+        :raises gwf.exceptions.NoLogFoundError:
+            if the backend could not find a log for the given target at the
+            given time point.
+        """
+
     def close(self):
         """Close the backend."""
 
     def schedule(self, target):
-        """Schedule and submit a :class:`Target`s and its dependencies."""
+        """Schedule and submit a :class:`gwf.Target` and its dependencies."""
         logger.debug('Scheduling target %s.', target.name)
 
         if self.submitted(target):
@@ -120,7 +141,7 @@ class Backend(Extension):
         return scheduled
 
     def schedule_many(self, targets):
-        """Schedule a list of :class:`Target`s and their dependencies.
+        """Schedule a list of :class:`gwf.Target` and their dependencies.
 
         Will schedule the targets in `targets` with :func:`schedule`
         and return a list of schedules.

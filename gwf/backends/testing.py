@@ -24,3 +24,6 @@ class TestingBackend(Backend):
 
     def running(self, target):
         return False
+
+    def logs(self, target, stderr=False, rewind=0):
+        pass
