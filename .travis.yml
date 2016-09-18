@@ -1,7 +1,7 @@
 language: python
 sudo: required
 addons:
-  hostname: test
+  hostname: cibox
 python:
   - "3.4"
   - "3.5"

@@ -24,7 +24,6 @@ install-slurm:
 	sudo /usr/sbin/create-munge-key -f
 	sudo /etc/init.d/munge restart
 	sudo /etc/init.d/slurm-llnl restart
-	sleep 3
 
 integration-test:
 	cd examples/minimal-workflow/ && gwf
