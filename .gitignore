@@ -38,4 +38,5 @@ examples/readmapping/gwf_log/SortBAM.stdout
 examples/readmapping/gwf_log/UnZipGenome.stderr
 examples/readmapping/gwf_log/UnZipGenome.stdout
 .coverage
+.vagrant/
 _build/
