@@ -9,7 +9,7 @@ python:
   - "3.5"
 install:
 - make init
-- make install-slurm
+- make init-slurm
 - pip install coveralls==1.1
 script: make test && make integration-test
 after_success:
