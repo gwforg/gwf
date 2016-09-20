@@ -1,10 +1,16 @@
 language: python
+sudo: required
+addons:
+  hosts:
+    - cibox
+  hostname: cibox
 python:
-- "3.4"
-- "3.5"
+  - "3.4"
+  - "3.5"
 install:
 - make init
+- make init-slurm
 - pip install coveralls==1.1
-script: make test
+script: make test && make integration-test
 after_success:
 - coveralls

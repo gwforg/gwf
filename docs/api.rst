@@ -1,9 +1,6 @@
 API
 ===
 
-Overview
---------
-
 The implementation of *gwf* consists of a few main abstractions. Units of work
 are defined by creating :class:`~gwf.Target` instances which also define
 the files used and produced by the target. A :class:`~gwf.Workflow` ties
@@ -18,8 +15,14 @@ should be run (see :meth:`~gwf.PreparedWorkflow.should_run`).
 A :class:`~gwf.PreparedWorkflow` can be given to a :class:`~gwf.Backend`
 implementation which will then execute the workflow.
 
-Details
--------
+Core
+----
 
 .. automodule:: gwf
+   :members:
+
+Backends
+--------
+
+.. autoclass:: gwf.backends.base.Backend
    :members:
