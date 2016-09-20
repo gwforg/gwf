@@ -95,6 +95,9 @@ class Backend(Extension):
             default: 0. Specify this parameter to obtain logs from earlier
             runs of the target. By default the latest log will be returned.
             To obtain logs from the previous run, specify `rewind=1` etc.
+        :return:
+            A file-like object or a tuple (stdout, stderr) of file-like objects.
+            The user is responsible for closing the returned file(s) after use.
         :raises gwf.exceptions.NoLogFoundError:
             if the backend could not find a log for the given target at the
             given time point.
@@ -104,7 +107,10 @@ class Backend(Extension):
         """Close the backend."""
 
     def schedule(self, target):
-        """Schedule and submit a :class:`gwf.Target` and its dependencies."""
+        """Schedule and submit a :class:`gwf.Target` and its dependencies.
+
+        This method is provided by :class:`Backend` and should not be overriden.
+        """
         logger.debug('Scheduling target %s.', target.name)
 
         if self.submitted(target):
@@ -145,6 +151,8 @@ class Backend(Extension):
 
         Will schedule the targets in `targets` with :func:`schedule`
         and return a list of schedules.
+
+        This method is provided by :class:`Backend` and should not be overriden.
 
         :param list targets: A list of targets to be scheduled.
         :return: A list of schedules, one for each target in `targets`.
