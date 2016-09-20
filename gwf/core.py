@@ -74,8 +74,8 @@ class Target(object):
     :ivar dict options:
         Options such as number of cores, memory requirements etc. Options are
         backend-dependent.
-    :ivar str working_dir:
-        Working directory of the workflow that this target was defined in.
+    :ivar gwf.Workflow workflow:
+        Workflow that the target is associated to.
     :ivar str spec:
         The specification of the target.
     """
@@ -83,16 +83,27 @@ class Target(object):
     inputs = normalized_paths_property('inputs')
     outputs = normalized_paths_property('outputs')
 
-    def __init__(self, name, inputs, outputs, options, working_dir, spec=None):
+    def __init__(self, name, inputs, outputs, options, workflow, namespace=None, spec=None):
         self.name = name
 
         self.options = options
-        self.working_dir = working_dir
+        self.workflow = workflow
 
         self.inputs = inputs
         self.outputs = outputs
 
         self.spec = spec
+
+    def qualname(self, namespace):
+        if namespace is not None:
+            return '{}.{}'.format(namespace, self.name)
+        if self.workflow.name is not None:
+            return '{}.{}'.format(self.workflow.name, self.name)
+        return self.name
+
+    @property
+    def working_dir(self):
+        return self.workflow.working_dir
 
     @property
     def is_source(self):
@@ -181,11 +192,12 @@ class Workflow(object):
             filename = inspect.getfile(sys._getframe(1))
             self.working_dir = os.path.dirname(os.path.realpath(filename))
 
-    def _add_target(self, target):
-        if target.name in self.targets:
+    def _add_target(self, target, namespace=None):
+        qualname = target.qualname(namespace)
+        if qualname in self.targets:
             raise TargetExistsError(target)
 
-        self.targets[target.name] = target
+        self.targets[qualname] = target
 
     def target(self, name, inputs=None, outputs=None, **options):
         """Create a target and add it to the :class:`gwf.Workflow`.
@@ -217,7 +229,7 @@ class Workflow(object):
             outputs = []
 
         new_target = Target(
-            name, inputs, outputs, options, working_dir=self.working_dir
+            name, inputs, outputs, options, workflow=self
         )
 
         self._add_target(new_target)
@@ -250,8 +262,7 @@ class Workflow(object):
             )
 
         for target in other_workflow.targets.values():
-            target.name = '{}.{}'.format(namespace_prefix, target.name)
-            self._add_target(target)
+            self._add_target(target, namespace)
 
     def include(self, other_workflow, namespace=None):
         """Include targets from another :class:`gwf.Workflow` into this workflow.
