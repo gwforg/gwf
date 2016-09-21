@@ -385,18 +385,21 @@ class PreparedWorkflow(object):
         self.working_dir = workflow.working_dir
 
         logger.debug(
-            'preparing workflow with %s targets defined.',
+            'Preparing workflow with %s targets defined.',
             len(self.targets)
         )
 
+        # The order is important here!
         self.provides = self.prepare_file_providers()
-        self.dependencies = self.prepare_dependencies(self.provides)
-        self.dependents = self.prepare_dependents(self.dependencies)
+        self.dependencies = self.prepare_dependencies()
+        self.dependents = self.prepare_dependents()
+
         self._check_for_circular_dependencies()
 
         self.file_cache = self.prepare_file_cache()
+        logger.debug('Cached %d files.', len(self.file_cache))
 
-    @timer('prepared file providers in %.3fms.', logger=logger)
+    @timer('Prepared file providers in %.3fms.', logger=logger)
     def prepare_file_providers(self):
         provides = {}
         for target, path in iter_outputs(self.targets.values()):
@@ -408,8 +411,8 @@ class PreparedWorkflow(object):
             provides[path] = target
         return provides
 
-    @timer('prepared dependencies in %.3fms.', logger=logger)
-    def prepare_dependencies(self, rovides):
+    @timer('Prepared dependencies in %.3fms.', logger=logger)
+    def prepare_dependencies(self):
         dependencies = defaultdict(list)
         for target, path in iter_inputs(self.targets.values()):
             if os.path.exists(path):
@@ -420,22 +423,22 @@ class PreparedWorkflow(object):
             dependencies[target].append(self.provides[path])
         return dependencies
 
-    @timer('prepared dependents in %.3fms.', logger=logger)
-    def prepare_dependents(self, dependencies):
+    @timer('Prepared dependents in %.3fms.', logger=logger)
+    def prepare_dependents(self):
         dependents = defaultdict(list)
         for target, deps in self.dependencies.items():
             for dep in deps:
                 dependents[dep].append(target)
         return dependents
 
-    @timer('prepared file cache in %.3fms.', logger=logger)
+    @timer('Prepared file cache in %.3fms.', logger=logger)
     def prepare_file_cache(self):
         input_iter = iter_inputs(self.targets.values())
         output_iter = iter_outputs(self.targets.values())
         return {path: get_file_timestamp(path)
                 for _, path in itertools.chain(input_iter, output_iter)}
 
-    @timer('checked for circular dependencies in %.3fms.', logger=logger)
+    @timer('Checked for circular dependencies in %.3fms.', logger=logger)
     def _check_for_circular_dependencies(self):
         for target in self.targets.values():
             for dep in self.dependencies[target]:
