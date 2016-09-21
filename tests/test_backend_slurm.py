@@ -37,7 +37,7 @@ class TestSlurmBackend(unittest.TestCase):
             name='TestTarget',
             inputs=[],
             outputs=[],
-            working_dir='/some/dir',
+            workflow=self.workflow,
             options={
                 'cores': 16,
                 'memory': '16g',
@@ -155,17 +155,17 @@ class TestSlurmBackend(unittest.TestCase):
         workflow = Workflow()
         target1 = workflow.target(
             'TestTarget1',
-            outputs=['test_output1.txt']
-        )
+            outputs=['test_output1.txt'],
+        ) << ''
         target2 = workflow.target(
             'TestTarget2',
             outputs=['test_output2.txt']
-        )
+        ) << ''
         target3 = workflow.target(
             'TestTarget3',
             inputs=['test_output1.txt', 'test_output2.txt'],
             outputs=['test_output3.txt']
-        )
+        ) << ''
 
         prepared_workflow = PreparedWorkflow(workflow)
 
@@ -193,7 +193,7 @@ class TestSlurmBackend(unittest.TestCase):
 
     def test_no_dependency_flag_is_set_if_target_has_no_dependencies(self, mock_makedirs, mock_find_exe, mock_popen):
         workflow = Workflow()
-        target = workflow.target('TestTarget')
+        target = workflow.target('TestTarget') << ''
 
         prepared_workflow = PreparedWorkflow(workflow)
 
@@ -214,7 +214,7 @@ class TestSlurmBackend(unittest.TestCase):
 
     def test_submitting_target_adds_job_id_to_job_history(self, mock_makedirs, mock_find_exe, mock_popen):
         workflow = Workflow()
-        target = workflow.target('TestTarget')
+        target = workflow.target('TestTarget') << ''
 
         prepared_workflow = PreparedWorkflow(workflow)
 
@@ -232,7 +232,7 @@ class TestSlurmBackend(unittest.TestCase):
 
     def test_submitting_target_twice_appends_new_job_id_to_job_history(self, mock_makedirs, mock_find_exe, mock_popen):
         workflow = Workflow()
-        target = workflow.target('TestTarget')
+        target = workflow.target('TestTarget') << ''
 
         prepared_workflow = PreparedWorkflow(workflow)
 
@@ -255,16 +255,16 @@ class TestSlurmBackend(unittest.TestCase):
         target1 = workflow.target(
             'TestTarget1',
             outputs=['test_output1.txt']
-        )
+        ) << ''
         target2 = workflow.target(
             'TestTarget2',
             outputs=['test_output2.txt']
-        )
+        ) << ''
         target3 = workflow.target(
             'TestTarget3',
             inputs=['test_output1.txt', 'test_output2.txt'],
             outputs=['test_output3.txt']
-        )
+        ) << ''
 
         prepared_workflow = PreparedWorkflow(workflow)
 
@@ -283,7 +283,7 @@ class TestSlurmBackend(unittest.TestCase):
 
     def test_cancelling_a_target_calls_scancel_with_correct_job_id(self, mock_makedirs, mock_find_exe, mock_popen):
         workflow = Workflow()
-        target = workflow.target('TestTarget')
+        target = workflow.target('TestTarget') << ''
 
         prepared_workflow = PreparedWorkflow(workflow)
 
