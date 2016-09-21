@@ -23,7 +23,7 @@ lint:
 	flake8
 
 coverage:
-	coverage report
+	coverage report --omit gwf/cli/__main__.py
 
 docs:
 	$(MAKE) -C docs html

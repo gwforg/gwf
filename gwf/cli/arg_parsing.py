@@ -5,25 +5,22 @@ import argparse
 
 
 class SubCommand(object):
+    """Super-class for sub-commands."""
 
     # Class variable used to get the active workflow.
     _workflow = None
     @property
     @cache
     def workflow(cls):
-        if cls._workflow is None:
-            sys.exit("Workflow not specified") # FIXME: exception
+        if cls._workflow is None: # pragma: no cover
+            sys.exit("Workflow not specified") # FIXME: exception, but it really should never happen since we have a default
         return PreparedWorkflow(import_object(cls._workflow))
 
-    """Super-class for sub-commands."""
-    def __init__(self):
-        pass
-
     def set_arguments(self, subparser):
-        pass
+        pass # pragma: no cover
 
-    def handle(self):
-        pass
+    def handle(self, arguments):
+        pass # pragma: no cover
 
 class ArgumentDispatching(object):
     """Class responsible for setting up the command line arguments and dispatching
