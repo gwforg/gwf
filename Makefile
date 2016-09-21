@@ -16,9 +16,6 @@ init-slurm:
 test:
 	coverage run --source gwf setup.py test
 
-integration-test:
-	cd examples/minimal-workflow/ && gwf
-
 lint:
 	flake8
 
