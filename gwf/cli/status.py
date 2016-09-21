@@ -6,35 +6,43 @@ from colorama import Fore, Back, Style
 import os
 from math import ceil
 
+
+__doc__ = """
+Implementation of the status command.
+"""
+
+
+
 class StatusCommand(SubCommand):
     def _split_target_list(self, targets):
         should_run, submitted, running, completed = [], [], [], []
         for target in targets:
             if self.workflow.should_run(target):
                 should_run.append(target)
-            #FIXME: check for queue status here...how do I get the backend?
+            # FIXME: check for queue status here...how do I get the backend?
             else:
                 completed.append(target)
 
         return should_run, submitted, running, completed
 
     def __init__(self):
-        self.ts = ts = os.get_terminal_size()
+        self.ts = os.get_terminal_size()
 
     def set_arguments(self, parser):
-        parser.add_argument("targets", metavar = "TARGET", nargs = "*",
-                            help = "Targets to show the status of (default all terminal targets)")
-        parser.add_argument("--verbose", action = "store_true",
-                            help = "Output verbose status output")
+        parser.add_argument("targets", metavar="TARGET", nargs="*",
+                            help="Targets to show the status of (default all terminal targets)")
+        parser.add_argument("--verbose", action="store_true",
+                            help="Output verbose status output")
 
-    def print_verbose(self, target_names): # pragma: no cover
+    def print_verbose(self, target_names):  # pragma: no cover
         columns = self.ts.columns
         status_string = " {{:.<{}}} {{:^10}}".format(columns - 13)
 
         for target_name in target_names:
             target = self.workflow.targets[target_name]
             dependencies = dfs(target, self.workflow.dependencies)
-            should_run, submitted, running, completed = self._split_target_list(dependencies)
+            should_run, submitted, running, completed = \
+                self._split_target_list(dependencies)
 
             print(" {}".format(Style.BRIGHT + target_name + Style.NORMAL))
             print("_" * columns)
@@ -59,7 +67,7 @@ class StatusCommand(SubCommand):
             if k == 0: return 0
             return int(ceil(left * n / k))
 
-        def make_status_bar(should_run, submitted, running, completed):
+        def make_status_bar(should_run, submitted, running, completed): # FIXME: move to IO module
             n_should_run = len(should_run)
             n_submitted = len(submitted)
             n_running = len(running)
