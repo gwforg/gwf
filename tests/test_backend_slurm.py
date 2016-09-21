@@ -94,6 +94,7 @@ class TestSlurmBackend(unittest.TestCase):
 
     def test_live_job_states_are_correctly_parser(self, mock_makedirs, mock_find_exe, mock_popen):
         backend = SlurmBackend(self.prepared_workflow)
+        backend.configure()
 
         fake_squeue_output = io.StringIO('\n'.join([
             "36971043;PD;afterok:36970708,afterok:36970710,afterok:36971042",
@@ -105,7 +106,6 @@ class TestSlurmBackend(unittest.TestCase):
         mock_popen_instance.stdout = fake_squeue_output
         mock_popen.return_value = mock_popen_instance
 
-        backend.squeue = 'squeue'
         result = backend._get_live_job_states()
 
         self.assertDictEqual(result, {
@@ -172,7 +172,6 @@ class TestSlurmBackend(unittest.TestCase):
         backend = SlurmBackend(prepared_workflow)
         backend.configure()
 
-        backend.sbatch = 'sbatch'
         backend._job_db = {'TestTarget1': '1000', 'TestTarget2': '2000'}
         backend._live_job_states = {}
 
@@ -201,8 +200,6 @@ class TestSlurmBackend(unittest.TestCase):
         backend = SlurmBackend(prepared_workflow)
         backend.configure()
 
-        backend.sbatch = 'sbatch'
-
         mock_popen_instance = Mock()
         mock_popen_instance.returncode = 0
         mock_popen_instance.communicate.return_value = ('3000\n', '')
@@ -214,6 +211,44 @@ class TestSlurmBackend(unittest.TestCase):
             'sbatch',
             '--parsable',
         ])
+
+    def test_submitting_target_adds_job_id_to_job_history(self, mock_makedirs, mock_find_exe, mock_popen):
+        workflow = Workflow()
+        target = workflow.target('TestTarget')
+
+        prepared_workflow = PreparedWorkflow(workflow)
+
+        backend = SlurmBackend(prepared_workflow)
+        backend.configure()
+
+        mock_popen_instance = Mock()
+        mock_popen_instance.returncode = 0
+        mock_popen_instance.communicate.return_value = ('1000\n', '')
+        mock_popen.return_value = mock_popen_instance
+
+        backend.submit(target)
+        self.assertIn('TestTarget', backend._job_history)
+        self.assertIn('1000', backend._job_history['TestTarget'])
+
+    def test_submitting_target_twice_appends_new_job_id_to_job_history(self, mock_makedirs, mock_find_exe, mock_popen):
+        workflow = Workflow()
+        target = workflow.target('TestTarget')
+
+        prepared_workflow = PreparedWorkflow(workflow)
+
+        backend = SlurmBackend(prepared_workflow)
+        backend.configure()
+
+        backend._job_history['TestTarget'] = ['1000']
+
+        mock_popen_instance = Mock()
+        mock_popen_instance.returncode = 0
+        mock_popen_instance.communicate.return_value = ('2000\n', '')
+        mock_popen.return_value = mock_popen_instance
+
+        backend.submit(target)
+        self.assertIn('TestTarget', backend._job_history)
+        self.assertEqual(backend._job_history['TestTarget'], ['1000', '2000'])
 
     def test_submitting_target_raises_exception_if_sbatch_cannot_be_called(self, mock_makedirs, mock_find_exe, mock_popen):
         workflow = Workflow()
@@ -235,7 +270,6 @@ class TestSlurmBackend(unittest.TestCase):
 
         backend = SlurmBackend(prepared_workflow)
         backend.configure()
-        backend.sbatch = 'sbatch'
         backend._job_db = {'TestTarget1': '1000', 'TestTarget2': '2000'}
         backend._live_job_states = {}
 
@@ -254,18 +288,29 @@ class TestSlurmBackend(unittest.TestCase):
         prepared_workflow = PreparedWorkflow(workflow)
 
         backend = SlurmBackend(prepared_workflow)
-        backend.scancel = 'scancel'
+        backend.configure()
 
         backend._job_db = {'TestTarget': '1000'}
         backend._live_job_states = {'1000': 'R'}
 
         backend.cancel(target)
 
-        mock_popen.assert_called_once_with([
-            'scancel',
-            '-j',
-            '1000'
-        ])
+        mock_popen.assert_any_call(['scancel', '-j', '1000'])
+
+    def test_cancelling_non_running_target_raises_exception(self,  mock_makedirs, mock_find_exe, mock_popen):
+        workflow = Workflow()
+        target = workflow.target('TestTarget')
+
+        prepared_workflow = PreparedWorkflow(workflow)
+
+        backend = SlurmBackend(prepared_workflow)
+        backend.configure()
+
+        backend._job_db = {'TestTarget': '1000'}
+        backend._live_job_states = {}
+
+        with self.assertRaises(BackendError):
+            backend.cancel(target)
 
     def test_logs_raises_exception_if_rewind_is_0_and_target_has_no_history(self, mock_makedirs, mock_find_exe, mock_popen):
         workflow = Workflow()

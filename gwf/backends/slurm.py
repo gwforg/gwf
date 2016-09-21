@@ -204,10 +204,10 @@ class SlurmBackend(Backend):
     def cancel(self, target):
         """Cancel a target."""
         target_job_id = self._job_db.get(target.name, '?')
-        if target_job_id in self._live_job_states:
-            proc = subprocess.Popen([self.scancel, "-j", target_job_id])
-            proc.communicate()
-            # TODO: error handling
+        if target_job_id not in self._live_job_states:
+            raise BackendError('Cannot cancel non-running target.')
+        proc = subprocess.Popen([self.scancel, "-j", target_job_id])
+        proc.communicate()
 
     def _get_stdout_log_path(self, target, job_id='%j'):
         return os.path.join(
