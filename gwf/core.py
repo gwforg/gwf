@@ -109,7 +109,8 @@ class Target(object):
     def is_source(self):
         """Return whether this target is a source.
 
-        A target is a source if it does not depend on any files."""
+        A target is a source if it does not depend on any files.
+        """
         return not self.inputs
 
     @property

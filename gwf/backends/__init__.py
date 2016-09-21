@@ -1,3 +1,3 @@
 from .base import Backend
 
-__all__ = ['Backend']
+__all__ = ('Backend',)

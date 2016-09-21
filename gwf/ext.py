@@ -1,8 +1,6 @@
 import abc
 import logging
 
-from pkg_resources import iter_entry_points
-
 logger = logging.getLogger(__name__)
 
 
