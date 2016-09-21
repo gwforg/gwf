@@ -1,19 +1,16 @@
-from __future__ import absolute_import, print_function
-from .arg_parsing import SubCommand
-from ..utils import dfs
-from ..exceptions import TargetDoesNotExistsError
-from colorama import Fore, Back, Style
-import os
-from math import ceil
-
-
-__doc__ = """
+"""
 Implementation of the status command.
 """
 
+import os
+from math import ceil
+from colorama import Fore, Style
+from .parsing import Command
+from ..utils import dfs
+from ..exceptions import TargetDoesNotExistError
 
 
-class StatusCommand(SubCommand):
+class StatusCommand(Command):
     def _split_target_list(self, targets):
         should_run, submitted, running, completed = [], [], [], []
         for target in targets:
@@ -57,30 +54,34 @@ class StatusCommand(SubCommand):
             print("=" * columns)
             print()
 
-
-    def print_progress(self, target_names): # pragma: no cover
+    def print_progress(self, target_names):  # pragma: no cover
         columns = self.ts.columns
         name_width = status_width = int((columns) / 2)
         status_string = " {{:.<{}}} {{:^{}}}".format(name_width, status_width)
 
         def get_width(left, n, k):
-            if k == 0: return 0
+            if k == 0:
+                return 0
             return int(ceil(left * n / k))
 
-        def make_status_bar(should_run, submitted, running, completed): # FIXME: move to IO module
+        # FIXME: move to IO module
+        def make_status_bar(should_run, submitted, running, completed):
             n_should_run = len(should_run)
             n_submitted = len(submitted)
             n_running = len(running)
             n_completed = len(completed)
-            n_total = n_should_run + n_submitted + n_running + n_completed
+            # n_total = n_should_run + n_submitted + n_running + n_completed
 
             # I am using two characters for brackets, so I have status_width - 2
             # characters to fill out. The less complete a job is, the more important
             # it is to show it.
-            n = left = int(status_width - 2)
-            should_run_width = get_width(left, n_should_run, n_should_run + n_submitted + n_running + n_completed)
+            left = int(status_width - 2)
+            should_run_width = get_width(left, n_should_run,
+                                         n_should_run + n_submitted +
+                                         n_running + n_completed)
             left -= should_run_width
-            submitted_width = get_width(left, n_submitted, n_submitted + n_running + n_completed)
+            submitted_width = get_width(left, n_submitted,
+                                        n_submitted + n_running + n_completed)
             left -= submitted_width
             running_width = get_width(left, n_running, n_running + n_completed)
             left -= running_width
@@ -93,14 +94,12 @@ class StatusCommand(SubCommand):
 
             return "[{}]".format(completed_bar + running_bar + submitted_bar + should_run_bar)
 
-
         for target_name in target_names:
             target = self.workflow.targets[target_name]
             dependencies = dfs(target, self.workflow.dependencies)
             should_run, submitted, running, completed = self._split_target_list(dependencies)
             status_bar = make_status_bar(should_run, submitted, running, completed)
             print(status_string.format(Style.BRIGHT + target_name + Style.NORMAL, status_bar))
-
 
     def handle(self, arguments):
         target_names = arguments.targets
@@ -110,7 +109,7 @@ class StatusCommand(SubCommand):
         # Check targets are in workflow
         for target_name in target_names:
             if target_name not in self.workflow.targets:
-                raise TargetDoesNotExistsError(target_name)
+                raise TargetDoesNotExistError(target_name)
 
         if arguments.verbose:
             self.print_verbose(target_names)

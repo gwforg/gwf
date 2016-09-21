@@ -1,14 +1,14 @@
-from __future__ import absolute_import, print_function
 import sys
 import colorama
-from .arg_parsing import ArgumentDispatching
-from .arg_parsing import SubCommand
+from .parsing import Dispatcher
+from .parsing import Command
 from .status import StatusCommand
 
-class RunCommand(SubCommand):
+
+class RunCommand(Command):
     def set_arguments(self, parser):
-        parser.add_argument("targets", metavar = "TARGET", nargs = "*",
-                            help = "Targets to run (default all terminal targets)")
+        parser.add_argument("targets", metavar="TARGET", nargs="*",
+                            help="Targets to run (default all terminal targets)")
 
     def handle(self, arguments):
         print("run: " + str(arguments))
@@ -17,7 +17,7 @@ class RunCommand(SubCommand):
 
 def main():
     colorama.init()
-    dispatcher = ArgumentDispatching()
+    dispatcher = Dispatcher()
     dispatcher.install_subcommand("run", "submit targets", RunCommand())
     dispatcher.install_subcommand("status", "check status of targets", StatusCommand())
     try:

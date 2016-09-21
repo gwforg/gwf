@@ -13,7 +13,7 @@ class TargetExistsError(GWFError):
 
         super(TargetExistsError, self).__init__(message)
 
-class TargetDoesNotExistsError(GWFError):
+class TargetDoesNotExistError(GWFError):
 
     def __init__(self, target_name):
         self.target_name = target_name
@@ -22,7 +22,7 @@ class TargetDoesNotExistsError(GWFError):
             'Target "{}" is not found in the workflow.'
         ).format(target_name)
 
-        super(TargetDoesNotExistsError, self).__init__(message)
+        super(TargetDoesNotExistError, self).__init__(message)
 
 class FileProvidedByMultipleTargetsError(GWFError):
 

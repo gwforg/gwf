@@ -15,7 +15,7 @@ setup(
 
     packages=find_packages(),
     entry_points={'console_scripts': [
-        'gwf = gwf.cli.__main__:main',
+        'gwf = gwf.cli.entrypoint:main',
     ],
         'gwf.ext': [
             'slurm = gwf.backends.slurm:SlurmBackend',
