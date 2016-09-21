@@ -1,117 +1,296 @@
-from __future__ import absolute_import
-from __future__ import print_function
-
+import csv
+import json
+import logging
 import os
 import os.path
 import subprocess
+from distutils.spawn import find_executable
 
-import gwf
+from . import Backend
+from ..exceptions import BackendError, NoLogFoundError
+from ..utils import timer
 
-from gwf.backends.base import Backend
-from gwf.helpers import make_absolute_path, escape_file_name
+logger = logging.getLogger(__name__)
 
 
-def _mkdir_if_not_exist(dirname):
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
+# see squeue man page under JOB STATE CODES
+JOB_STATE_CODES = {
+    'BF': '?',  # BOOT_FAIL
+    'CA': '?',  # CANCELLED
+    'CD': '?',  # COMPLETED
+    'CF': 'R',  # CONFIGURING
+    'CG': 'R',  # COMPLETING
+    'F': '?',   # FAILED
+    'NF': '?',  # NODE_FAIL
+    'PD': 'Q',  # PENDING
+    'PR': '?',  # PREEMPTED
+    'R': 'R',   # RUNNING
+    'S': 'R',   # SUSPENDED
+    'TO': '?',  # TIMEOUT
+    'SE': 'Q',  # SPECIAL_EXIT
+}
+
+
+OPTION_TABLE = {
+    "nodes": "-N ",
+    "cores": "-c ",
+    "memory": "--mem=",
+    "walltime": "-t ",
+    "queue": "-p ",
+    "account": "-A ",
+    "constraint": "-C ",
+    "mail_type": "--mail-type=",
+    "mail_user": "--mail-user=",
+}
+
+
+def _find_exe(name):
+    exe = find_executable(name)
+    if not exe:
+        raise BackendError('Could not find executable "{}".'.format(name))
+    return exe
+
+
+def dump_atomic(obj, path):
+    with open(path + '.new', 'w') as fileobj:
+        json.dump(obj, fileobj)
+        fileobj.flush()
+        os.fsync(fileobj.fileno())
+        fileobj.close()
+    os.rename(path + '.new', path)
+
+
+def _read_json(path):
+    try:
+        with open(path) as fileobj:
+            return json.load(fileobj)
+    except (OSError, ValueError):
+        # Catch ValueError for compatibility with Python 3.4.2. I haven't been
+        # able to figure out what is different between 3.4.2 and 3.5 that
+        # causes this. Essentially, 3.4.2 raises a ValueError saying that it
+        # cannot parse the empty string instead of raising an OSError
+        # (FileNotFoundError does not exist in 3.4.2) saying that the file does
+        # not exist.
+        return {}
 
 
 class SlurmBackend(Backend):
-    """Backend functionality for slurm."""
+    """Backend for the Slurm workload manager.
 
-    def _write_script(self, target):
-        """Write the code to a script that can be executed."""
+    To use this backend you must activate the `slurm` backend.
 
-        script_dir = make_absolute_path(target.working_dir, '.scripts')
-        script_name = make_absolute_path(target.script_dir, escape_file_name(target.name))
+    **Backend options:**
 
-        if not os.path.exists(script_dir):
-            os.makedirs(script_dir)
+    None available.
 
-        with open(script_name, 'w') as f:
-            print("#!/bin/bash", file=f)
+    **Target options:**
 
-            print('#SBATCH -N {}'.format(target.options['nodes']), file=f)
-            print('#SBATCH -c {}'.format(target.options['cores']), file=f)
-            print('#SBATCH --mem={}'.format(target.options['memory']), file=f)
-            print('#SBATCH -t {}'.format(target.options['walltime']), file=f)
-            if 'queue' in target.options:
-                print('#SBATCH -p {}'.format(target.options['queue']), file=f)
-            if 'account' in target.options:
-                print('#SBATCH -A {}'.format(target.options['account']), file=f)
-            if 'constraint' in target.options:
-                print('#SBATCH -C {}'.format(target.options['constraint']), file=f)
-            if 'mail_type' in target.options:
-                print('#SBATCH --mail-type={}'.format(target.options['mail_type']), file=f)
-            if 'mail_user' in target.options:
-                print('#SBATCH --mail-user={}'.format(target.options['mail_user']), file=f)
+    * **cores (int):**
+      Number of cores allocated to this target (default: 1).
+    * **memory (str):**
+      Memory allocated to this target (default: 1).
+    * **walltime (str):**
+      Time limit for this target (default: 01:00:00).
+    * **queue (str):**
+      Queue to submit the target to. To specify multiple queues, specify a
+      comma-separated list of queue names.
+    * **account (str):**
+      Account to be used when running the target.
+    * **constraint (str):**
+      Constraint string. Equivalent to setting the `--constraint` flag on
+      `sbatch`.
+    """
 
-            print(file=f)
+    name = 'slurm'
 
-            print('# GWF generated code ...', file=f)
-            print('cd %s' % target.working_dir, file=f)
-            print('export GWF_JOBID=$SLURM_JOBID', file=f)
-            print(f, "set -e", file=f)
-            print(file=f)
+    supported_options = set(OPTION_TABLE.keys())
+    option_defaults = {
+        'cores': 1,
+        'memory': '1g',
+        'walltime': '01:00:00',
+    }
 
-            print('# Script from workflow', file=f)
-            print(target.spec, file=f)
+    _JOB_DB_PATH = '.gwf/slurm-backend-jobdb.json'
+    _JOB_HISTORY_PATH = '.gwf/slurm-backend-jobhistory.json'
 
-    def get_state_of_jobs(self, job_ids):
-        result = dict((job_id, False) for job_id in job_ids)
-        map_state = {  # see squeue man page under JOB STATE CODES
-            'BF': '?',  # BOOT_FAIL
-            'CA': '?',  # CANCELLED
-            'CD': '?',  # COMPLETED
-            'CF': 'R',  # CONFIGURING
-            'CG': 'R',  # COMPLETING
-            'F': '?',  # FAILED
-            'NF': '?',  # NODE_FAIL
-            'PD': 'Q',  # PENDING
-            'PR': '?',  # PREEMPTED
-            'R': 'R',  # RUNNING
-            'S': 'R',  # SUSPENDED
-            'TO': '?',  # TIMEOUT
-            'SE': 'Q',  # SPECIAL_EXIT
-        }
-        try:
-            stat = subprocess.Popen(['squeue',
-                                     '--noheader',
-                                     '--format=%i;%t;%E'],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT)
-            for line in stat.stdout:
-                job_id, state, depends = line.strip().split(';')
-                simple_state = map_state[state]
-                if simple_state == 'Q' and depends != '':
-                    result[job_id] = 'H'
-                else:
-                    result[job_id] = simple_state
-        except:
-            pass
+    def configure(self, *args, **kwargs):
+        self.squeue = _find_exe('squeue')
+        self.sbatch = _find_exe('sbatch')
+        self.scancel = _find_exe('scancel')
+
+        # Make sure that directory for log files exists.
+        self._log_dir = os.path.join(self.workflow.working_dir, '.gwf/logs')
+        if not os.path.exists(self._log_dir):
+            logger.debug(
+                'Log directory "%s" does not exist. Creating.',
+                self._log_dir
+            )
+            os.makedirs(self._log_dir)
+
+        # TODO: maybe use some sort of actual db instead of a file?
+        self._job_db = _read_json(self._JOB_DB_PATH)
+        self._job_history = _read_json(self._JOB_HISTORY_PATH)
+
+        self._live_job_states = self._get_live_job_states()
+        logger.debug('found %d jobs', len(self._live_job_states))
+
+        with timer('filtering jobs took %.2f ms', logger=logger):
+            self._job_db = {
+                target_name: self._live_job_states[job_id]
+                for target_name, job_id in self._job_db.items()
+                if job_id in self._live_job_states
+            }
+
+    def close(self):
+        # TODO: error handling
+        dump_atomic(self._job_db, self._JOB_DB_PATH)
+        dump_atomic(self._job_history, self._JOB_HISTORY_PATH)
+
+    def submitted(self, target):
+        return target.name in self._job_db
+
+    def running(self, target):
+        target_job_id = self._job_db.get(target.name, None)
+        return self._live_job_states.get(target_job_id, '?') == 'R'
+
+    def submit(self, target):
+        dependency_ids = [
+            self._job_db[dep.name]
+            for dep in self.workflow.dependencies[target]
+            if dep.name in self._job_db
+        ]
+
+        cmd = [self.sbatch, "--parsable"]
+        if dependency_ids:
+            cmd.append(
+                "--dependency=afterok:{}".format(",".join(dependency_ids))
+            )
+
+        script_contents = self._compile_script(target)
+        logger.debug('Compiled script for target %s:\n%s',
+                     target.name, script_contents)
+
+        proc = subprocess.Popen(cmd)
+        new_job_id, error_text = proc.communicate(script_contents)
+        if proc.returncode != 0:
+            raise BackendError(error_text)
+
+        new_job_id = new_job_id.strip()
+
+        self._job_db[target.name] = new_job_id
+
+        if target.name not in self._job_history:
+            self._job_history[target.name] = []
+        self._job_history[target.name].append(new_job_id)
+
+        # New jobs are assumed to be on-hold until the next time gwf is
+        # invoked
+        self._live_job_states[new_job_id] = 'H'
+
+    def logs(self, target, stderr=False, rewind=0):
+        target_history = self._job_history.get(target.name, [])
+        if len(target_history) <= rewind:
+            raise NoLogFoundError(
+                'No log exists at this point in time.'
+            )
+
+        job_id = target_history[-1 - rewind]
+        stdout_path = self._get_stdout_log_path(target, job_id=job_id)
+        if stderr:
+            stderr_path = self._get_stderr_log_path(target, job_id=job_id)
+            return (open(stdout_path), open(stderr_path))
+        return open(stdout_path)
+
+    def cancel(self, target):
+        """Cancel a target."""
+        target_job_id = self._job_db.get(target.name, '?')
+        if target_job_id not in self._live_job_states:
+            raise BackendError('Cannot cancel non-running target.')
+        proc = subprocess.Popen([self.scancel, "-j", target_job_id])
+        proc.communicate()
+
+    def _get_stdout_log_path(self, target, job_id='%j'):
+        return os.path.join(
+            self._log_dir,
+            '{}.{}.stdout'.format(target.name, job_id)
+        )
+
+    def _get_stderr_log_path(self, target, job_id='%j'):
+        return os.path.join(
+            self._log_dir,
+            '{}.{}.stderr'.format(target.name, job_id)
+        )
+
+    def _compile_script(self, target):
+        option_str = "#SBATCH {0}{1}"
+
+        out = []
+        out.append('#!/bin/bash')
+        out.append('')
+        out.append('####################')
+        out.append('# Generated by GWF #')
+        out.append('####################')
+        out.append('')
+
+        for option_name, option_value in target.options.items():
+            if option_name not in self.supported_options:
+                continue
+
+            out.append(
+                option_str.format(
+                    OPTION_TABLE[option_name],
+                    option_value
+                )
+            )
+
+        out.append(option_str.format(
+            '--output=', self._get_stdout_log_path(target)))
+        out.append(option_str.format(
+            '--error=', self._get_stderr_log_path(target)))
+
+        out.append('')
+        out.append('cd {}'.format(target.working_dir))
+        out.append('export GWF_JOBID=$SLURM_JOBID')
+        out.append('export GWF_TARGET_NAME="{}"'.format(target.name))
+        out.append('set -e')
+        out.append('')
+        out.append(target.spec)
+        return '\n'.join(out)
+
+    @timer('fetching slurm job states with sqeueu took %0.2fms', logger=logger)
+    def _get_live_job_states(self):
+        """Ask Slurm for the state of all live jobs.
+
+        There are two reasons why we ask for all the jobs:
+
+            1. We don't want to spawn a subprocesses for each job
+            2. Asking for multiple specific jobs would involve building a
+               potentially very long commandline - which could fail if too long.
+
+        :return: a dict mapping from job id to either 'R', 'H', 'Q' or '?'.
+        """
+
+        # The only reason this is a method instead of a function outside the
+        # class is that the we need access to self.squeue. Maybe this should
+        cmd = [self.squeue, '--noheader', '--format=%i;%t;%E']
+
+        stat = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+
+        reader = csv.reader(
+            stat.stdout,
+            delimiter=';',
+            quoting=csv.QUOTE_NONE,
+        )
+
+        result = {}
+        for job_id, state, depends in reader:
+            simple_state = JOB_STATE_CODES[state]
+            if simple_state == 'Q' and depends:
+                result[job_id] = 'H'
+            else:
+                result[job_id] = simple_state
         return result
-
-    def _build_submit_command(self, target, script_name, dependents_ids):
-        log_dir = os.path.join(target.working_dir, 'gwf_log')
-        _mkdir_if_not_exist(log_dir)
-
-        command = ['sbatch', '-J', target.name, '--parsable',
-                   '-o', os.path.join(log_dir, target.name + '.%j.stdout'),
-                   '-e', os.path.join(log_dir, target.name + '.%j.stderr'),
-                   ]
-        if len(dependents_ids) > 0:
-            command.append('-d')
-            command.append('afterok:{}'.format(':'.join(dependents_ids)))
-        command.append(script_name)
-        return command
-
-    def submit_command(self, target, script_name, dependents_ids):
-        self._write_script(target)
-
-        command = self._build_submit_command(target, script_name, dependents_ids)
-        qsub = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        job_id = qsub.stdout.read().strip()
-        return job_id
-
-    def build_cancel_command(self, job_ids):
-        return ['scancel'] + map(str, job_ids)

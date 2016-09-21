@@ -60,3 +60,11 @@ class WorkflowNotPreparedError(GWFError):
 
 class IncludeWorkflowError(GWFError):
     pass
+
+
+class BackendError(GWFError):
+    pass
+
+
+class NoLogFoundError(BackendError):
+    pass

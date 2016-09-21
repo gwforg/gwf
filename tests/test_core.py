@@ -335,14 +335,6 @@ class TestPreparedWorkflow(unittest.TestCase):
 
         self.assertEqual(prepared_workflow.dependencies[target], [])
 
-    @patch('gwf.core.os.path.exists', return_value=True)
-    def test_existing_files_cause_no_dependencies(self, mock_os_path_exists):
-        target = self.workflow.target(
-            'TestTarget', inputs=['test_input.txt'], outputs=[])
-
-        prepared_workflow = PreparedWorkflow(self.workflow)
-        self.assertEqual(prepared_workflow.dependencies[target], [])
-
     @patch('gwf.core.os.path.exists', return_value=False)
     def test_non_existing_files_not_provided_by_other_target_raises_exception(self, mock_os_path_exists):
         self.workflow.target(
