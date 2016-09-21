@@ -24,7 +24,7 @@ class TestSlurmBackend(unittest.TestCase):
         mock_makedirs.assert_not_called()
 
     @patch('gwf.backends.slurm.os.path.exists', return_value=False)
-    def test_does_not_create_log_dir_if_it_already_exists(self, mock_exists, mock_makedirs, mock_find_exe, mock_popen):
+    def test_creates_log_dir_if_it_does_not_already_exist(self, mock_exists, mock_makedirs, mock_find_exe, mock_popen):
         backend = SlurmBackend(self.prepared_workflow)
         backend.configure()
         mock_makedirs.assert_called_once_with('/some/dir/.gwf/logs')
@@ -191,6 +191,29 @@ class TestSlurmBackend(unittest.TestCase):
 
         self.assertEqual(backend._job_db['TestTarget3'], '3000')
         self.assertEqual(backend._live_job_states['3000'], 'H')
+
+    def test_no_dependency_flag_is_set_if_target_has_no_dependencies(self, mock_makedirs, mock_find_exe, mock_popen):
+        workflow = Workflow()
+        target = workflow.target('TestTarget')
+
+        prepared_workflow = PreparedWorkflow(workflow)
+
+        backend = SlurmBackend(prepared_workflow)
+        backend.configure()
+
+        backend.sbatch = 'sbatch'
+
+        mock_popen_instance = Mock()
+        mock_popen_instance.returncode = 0
+        mock_popen_instance.communicate.return_value = ('3000\n', '')
+        mock_popen.return_value = mock_popen_instance
+
+        backend.submit(target)
+
+        mock_popen.assert_any_call([
+            'sbatch',
+            '--parsable',
+        ])
 
     def test_submitting_target_raises_exception_if_sbatch_cannot_be_called(self, mock_makedirs, mock_find_exe, mock_popen):
         workflow = Workflow()
