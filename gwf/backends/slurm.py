@@ -64,7 +64,13 @@ def _read_json(path):
     try:
         with open(path) as fileobj:
             return json.load(fileobj)
-    except FileNotFoundError:
+    except (OSError, ValueError):
+        # Catch ValueError for compatibility with Python 3.4.2. I haven't been
+        # able to figure out what is different between 3.4.2 and 3.5 that
+        # causes this. Essentially, 3.4.2 raises a ValueError saying that it
+        # cannot parse the empty string instead of raising an OSError
+        # (FileNotFoundError does not exist in 3.4.2) saying that the file does
+        # not exist.
         return {}
 
 
