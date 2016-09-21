@@ -15,7 +15,6 @@ class Extension(abc.ABC):
     def configure(self, *args, **kwargs):
         """Called to configure the extension."""
 
-    @abc.abstractmethod
     def close(self, *args, **kwargs):
         """Called when the extension is closed."""
 
