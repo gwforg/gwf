@@ -34,22 +34,3 @@ class Extension(abc.ABC):
 
 class Plugin(Extension):
     pass
-
-
-class ExtensionManager:
-
-    group = 'gwf.ext'
-
-    def __init__(self):
-        self.extensions = self.reload()
-
-    def reload(self):
-        return [
-            entry_point.load()
-            for entry_point in iter_entry_points(group=self.group, name=None)
-        ]
-
-    def list(self, parent=None):
-        if parent is None:
-            return list(self.extensions)
-        return [ext for ext in self.extensions if issubclass(ext, parent)]
