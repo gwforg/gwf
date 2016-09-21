@@ -27,7 +27,7 @@ class StatusCommand(SubCommand):
         parser.add_argument("--verbose", action = "store_true",
                             help = "Output verbose status output")
 
-    def print_verbose(self, target_names):
+    def print_verbose(self, target_names): # pragma: no cover
         columns = self.ts.columns
         status_string = " {{:.<{}}} {{:^10}}".format(columns - 13)
 
@@ -50,7 +50,7 @@ class StatusCommand(SubCommand):
             print()
 
 
-    def print_progress(self, target_names):
+    def print_progress(self, target_names): # pragma: no cover
         columns = self.ts.columns
         name_width = status_width = int((columns) / 2)
         status_string = " {{:.<{}}} {{:^{}}}".format(name_width, status_width)

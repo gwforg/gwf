@@ -17,10 +17,10 @@ class SubCommand(object):
         return PreparedWorkflow(import_object(cls._workflow))
 
     def set_arguments(self, subparser):
-        pass # pragma: no cover
+        "Provide the parser options for the sub-command."
 
     def handle(self, arguments):
-        pass # pragma: no cover
+        "Callback when this sub-command is invoked."
 
 class ArgumentDispatching(object):
     """Class responsible for setting up the command line arguments and dispatching
