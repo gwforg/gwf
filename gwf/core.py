@@ -74,8 +74,8 @@ class Target(object):
     :ivar dict options:
         Options such as number of cores, memory requirements etc. Options are
         backend-dependent.
-    :ivar str working_dir:
-        Working directory of the workflow that this target was defined in.
+    :ivar gwf.Workflow workflow:
+        Workflow that the target is associated to.
     :ivar str spec:
         The specification of the target.
     """
@@ -83,22 +83,34 @@ class Target(object):
     inputs = normalized_paths_property('inputs')
     outputs = normalized_paths_property('outputs')
 
-    def __init__(self, name, inputs, outputs, options, working_dir, spec=None):
+    def __init__(self, name, inputs, outputs, options, workflow, namespace=None, spec=None):
         self.name = name
 
         self.options = options
-        self.working_dir = working_dir
+        self.workflow = workflow
 
         self.inputs = inputs
         self.outputs = outputs
 
         self.spec = spec
 
+    def qualname(self, namespace):
+        if namespace is not None:
+            return '{}.{}'.format(namespace, self.name)
+        if self.workflow.name is not None:
+            return '{}.{}'.format(self.workflow.name, self.name)
+        return self.name
+
+    @property
+    def working_dir(self):
+        return self.workflow.working_dir
+
     @property
     def is_source(self):
         """Return whether this target is a source.
 
-        A target is a source if it does not depend on any files."""
+        A target is a source if it does not depend on any files.
+        """
         return not self.inputs
 
     @property
@@ -181,11 +193,12 @@ class Workflow(object):
             filename = inspect.getfile(sys._getframe(1))
             self.working_dir = os.path.dirname(os.path.realpath(filename))
 
-    def _add_target(self, target):
-        if target.name in self.targets:
+    def _add_target(self, target, namespace=None):
+        qualname = target.qualname(namespace)
+        if qualname in self.targets:
             raise TargetExistsError(target)
 
-        self.targets[target.name] = target
+        self.targets[qualname] = target
 
     def target(self, name, inputs=None, outputs=None, **options):
         """Create a target and add it to the :class:`gwf.Workflow`.
@@ -217,7 +230,7 @@ class Workflow(object):
             outputs = []
 
         new_target = Target(
-            name, inputs, outputs, options, working_dir=self.working_dir
+            name, inputs, outputs, options, workflow=self
         )
 
         self._add_target(new_target)
@@ -239,8 +252,9 @@ class Workflow(object):
         """
         if other_workflow.name is None and namespace is None:
             raise IncludeWorkflowError(
-                'The included workflow has not been assigned a name. To '
-                'include the workflow you must set the namespace argument.'
+                'The included workflow has not wbeen assigned a name. To '
+                'include the workflow you must assign a name to the included '
+                'workflow or set the namespace argument.'
             )
         namespace_prefix = namespace or other_workflow.name
         if namespace_prefix == self.name:
@@ -249,8 +263,7 @@ class Workflow(object):
             )
 
         for target in other_workflow.targets.values():
-            target.name = '{}.{}'.format(namespace_prefix, target.name)
-            self._add_target(target)
+            self._add_target(target, namespace)
 
     def include(self, other_workflow, namespace=None):
         """Include targets from another :class:`gwf.Workflow` into this workflow.
@@ -373,18 +386,21 @@ class PreparedWorkflow(object):
         self.working_dir = workflow.working_dir
 
         logger.debug(
-            'preparing workflow with %s targets defined.',
+            'Preparing workflow with %s targets defined.',
             len(self.targets)
         )
 
+        # The order is important here!
         self.provides = self.prepare_file_providers()
-        self.dependencies = self.prepare_dependencies(self.provides)
-        self.dependents = self.prepare_dependents(self.dependencies)
+        self.dependencies = self.prepare_dependencies()
+        self.dependents = self.prepare_dependents()
+
         self._check_for_circular_dependencies()
 
         self.file_cache = self.prepare_file_cache()
+        logger.debug('Cached %d files.', len(self.file_cache))
 
-    @timer('prepared file providers in %.3fms.', logger=logger)
+    @timer('Prepared file providers in %.3fms.', logger=logger)
     def prepare_file_providers(self):
         provides = {}
         for target, path in iter_outputs(self.targets.values()):
@@ -396,34 +412,31 @@ class PreparedWorkflow(object):
             provides[path] = target
         return provides
 
-    @timer('prepared dependencies in %.3fms.', logger=logger)
-    def prepare_dependencies(self, rovides):
+    @timer('Prepared dependencies in %.3fms.', logger=logger)
+    def prepare_dependencies(self):
         dependencies = defaultdict(list)
         for target, path in iter_inputs(self.targets.values()):
-            if os.path.exists(path):
-                continue
-
-            if path not in self.provides:
+            if path not in self.provides and not os.path.exists(path):
                 raise FileRequiredButNotProvidedError(path, target)
             dependencies[target].append(self.provides[path])
         return dependencies
 
-    @timer('prepared dependents in %.3fms.', logger=logger)
-    def prepare_dependents(self, dependencies):
+    @timer('Prepared dependents in %.3fms.', logger=logger)
+    def prepare_dependents(self):
         dependents = defaultdict(list)
         for target, deps in self.dependencies.items():
             for dep in deps:
                 dependents[dep].append(target)
         return dependents
 
-    @timer('prepared file cache in %.3fms.', logger=logger)
+    @timer('Prepared file cache in %.3fms.', logger=logger)
     def prepare_file_cache(self):
         input_iter = iter_inputs(self.targets.values())
         output_iter = iter_outputs(self.targets.values())
         return {path: get_file_timestamp(path)
                 for _, path in itertools.chain(input_iter, output_iter)}
 
-    @timer('checked for circular dependencies in %.3fms.', logger=logger)
+    @timer('Checked for circular dependencies in %.3fms.', logger=logger)
     def _check_for_circular_dependencies(self):
         for target in self.targets.values():
             for dep in self.dependencies[target]:

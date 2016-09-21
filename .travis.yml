@@ -11,6 +11,6 @@ install:
 - make init
 - make init-slurm
 - pip install coveralls==1.1
-script: make test && make integration-test
+script: make test && make lint
 after_success:
 - coveralls

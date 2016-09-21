@@ -1,7 +1,7 @@
 import os
 import os.path
 import unittest
-from unittest.mock import Mock, call, create_autospec, patch
+from unittest.mock import Mock, call, patch
 
 from gwf import template
 from gwf.core import PreparedWorkflow, Target, Workflow
@@ -11,9 +11,11 @@ from gwf.exceptions import (CircularDependencyError,
                             IncludeWorkflowError, TargetExistsError)
 
 
-def create_test_target(name='TestTarget', inputs=[], outputs=[], options={}, working_dir=''):
+def create_test_target(name='TestTarget', inputs=[], outputs=[], options={}, workflow=None):
     """A factory for `Target` objects."""
-    return Target(name, inputs, outputs, options, working_dir)
+    if workflow is None:
+        workflow = Workflow('/some/path')
+    return Target(name, inputs, outputs, options, workflow)
 
 
 class TestTemplate(unittest.TestCase):
@@ -39,11 +41,11 @@ class TestTemplate(unittest.TestCase):
         self.assertIn('cat input0.txt > output0.txt', spec)
 
     def test_target_created_from_template(self):
-        workflow = Workflow(working_dir='/some/dir')
+        workflow = Workflow(working_dir='/some/path')
         target = workflow.target('TestTarget') << self.test_template(idx=0)
 
-        self.assertEqual(target.inputs, ['/some/dir/input0.txt'])
-        self.assertEqual(target.outputs, ['/some/dir/output0.txt'])
+        self.assertEqual(target.inputs, ['/some/path/input0.txt'])
+        self.assertEqual(target.outputs, ['/some/path/output0.txt'])
         self.assertIn('cat input0.txt > output0.txt', target.spec)
 
 
@@ -188,10 +190,13 @@ class TestWorkflow(unittest.TestCase):
 
 class TestTarget(unittest.TestCase):
 
+    def setUp(self):
+        self.workflow = Workflow(working_dir='/some/path')
+
     def test_relative_input_paths_are_normalized(self):
         target = create_test_target(
             inputs=['test_input1.txt', 'test_input2.txt'],
-            working_dir='/some/path'
+            workflow=self.workflow
         )
 
         self.assertTrue(os.path.isabs(target.inputs[0]))
@@ -203,7 +208,7 @@ class TestTarget(unittest.TestCase):
     def test_relative_output_paths_are_normalized(self):
         target = create_test_target(
             outputs=['test_output1.txt', 'test_output2.txt'],
-            working_dir='/some/path'
+            workflow=self.workflow
         )
 
         self.assertTrue(os.path.isabs(target.outputs[0]))
@@ -215,7 +220,7 @@ class TestTarget(unittest.TestCase):
     def test_absolute_input_paths_are_not_normalized(self):
         target = create_test_target(
             inputs=['test_input1.txt', '/other/path/test_input2.txt'],
-            working_dir='/some/path'
+            workflow=self.workflow
         )
 
         self.assertTrue(target.inputs[0].startswith('/some/path'))
@@ -224,7 +229,7 @@ class TestTarget(unittest.TestCase):
     def test_absolute_output_paths_are_not_normalized(self):
         target = create_test_target(
             inputs=['test_output1.txt', '/other/path/test_output2.txt'],
-            working_dir='/some/path'
+            workflow=self.workflow
         )
 
         self.assertTrue(target.inputs[0].startswith('/some/path'))
@@ -257,8 +262,8 @@ class TestTarget(unittest.TestCase):
 
     @patch('gwf.core.os.remove', spec=os.remove)
     def test_clean_with_existing_output_files(self, mock_remove):
-        target = create_test_target(outputs=['test1.txt', 'test2.txt'],
-                                    working_dir='/some/path')
+        target = create_test_target(
+            outputs=['test1.txt', 'test2.txt'], workflow=self.workflow)
         target.clean()
 
         mock_remove.assert_has_calls([
@@ -270,8 +275,8 @@ class TestTarget(unittest.TestCase):
 
     @patch('gwf.core.os.remove', spec=os.remove, side_effect=[None, FileNotFoundError])
     def test_clean_with_nonexisting_output_files(self, mock_remove):
-        target = create_test_target(outputs=['test1.txt', 'test2.txt'],
-                                    working_dir='/some/path')
+        target = create_test_target(
+            outputs=['test1.txt', 'test2.txt'], workflow=self.workflow)
         target.clean()
 
         mock_remove.assert_has_calls([
@@ -286,7 +291,7 @@ class TestTarget(unittest.TestCase):
             inputs=[],
             outputs=[],
             options={},
-            working_dir='/some/dir'
+            workflow=self.workflow
         )
         self.assertEqual(str(target), 'TestTarget')
 
@@ -328,14 +333,6 @@ class TestPreparedWorkflow(unittest.TestCase):
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
         prepared_workflow = PreparedWorkflow(self.workflow)
 
-        self.assertEqual(prepared_workflow.dependencies[target], [])
-
-    @patch('gwf.core.os.path.exists', return_value=True)
-    def test_existing_files_cause_no_dependencies(self, mock_os_path_exists):
-        target = self.workflow.target(
-            'TestTarget', inputs=['test_input.txt'], outputs=[])
-
-        prepared_workflow = PreparedWorkflow(self.workflow)
         self.assertEqual(prepared_workflow.dependencies[target], [])
 
     @patch('gwf.core.os.path.exists', return_value=False)

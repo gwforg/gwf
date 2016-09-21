@@ -1,5 +1,4 @@
 import os
-
 from setuptools import find_packages, setup
 
 
@@ -17,7 +16,12 @@ setup(
     packages=find_packages(),
     entry_points={'console_scripts': [
         'gwf = gwf.cli.__main__:main',
-    ]},
+    ],
+        'gwf.ext': [
+            'slurm = gwf.backends.slurm:SlurmBackend',
+    ]
+    },
+
     test_suite='tests',
     install_requires=[
         "colorama",
