@@ -1,26 +1,17 @@
 import sys
+
 import colorama
-from .parsing import Dispatcher
-from .parsing import Command
-from .status import StatusCommand
 
-
-class RunCommand(Command):
-    def set_arguments(self, parser):
-        parser.add_argument("targets", metavar="TARGET", nargs="*",
-                            help="Targets to run (default all terminal targets)")
-
-    def handle(self, arguments):
-        print("run: " + str(arguments))
-        print(self.workflow)
+from ..exceptions import GWFError
+from .parsing import App
 
 
 def main():
     colorama.init()
-    dispatcher = Dispatcher()
-    dispatcher.install_subcommand("run", "submit targets", RunCommand())
-    dispatcher.install_subcommand("status", "check status of targets", StatusCommand())
+
+    app = App()
     try:
-        dispatcher.dispatch(sys.argv[1:])
-    except Exception as e:
-        print("Error: " + str(e))
+        app.run(sys.argv[1:])
+    except GWFError as e:
+        print("[Error] {}".format(str(e)))
+        sys.exit(1)

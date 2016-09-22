@@ -11,32 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Backend(Extension):
 
-    """Abstract base class for backends.
-
-    A backend is initialized with an instance of
-    :class:`gwf.core.PreparedWorkflow`.
-    """
-
-    def __init__(self, workflow):
-        """Initialize the backend.
-
-        This method should never be overriden by subclasses.
-        """
-        if not isinstance(workflow, PreparedWorkflow):
-            raise WorkflowNotPreparedError()
-        self.workflow = workflow
-
-        all_options = {option_name
-                       for target in workflow.targets.values()
-                       for option_name in target.options}
-
-        for option_name in all_options:
-            if option_name not in self.supported_options:
-                logger.warning(
-                    'Backend "%s" does not support option "%s".',
-                    self.name,
-                    option_name
-                )
+    """Abstract base class for backends."""
 
     @property
     def supported_options(self):

@@ -11,7 +11,7 @@ class TestingBackend(Backend):
     supported_options = set(['cores', 'memory'])
 
     def configure(self, *args, **kwargs):
-        pass
+        self.workflow = kwargs['workflow']
 
     def submit(self, target):
         pass

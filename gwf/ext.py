@@ -11,23 +11,25 @@ class Extension(abc.ABC):
     def name(self):
         """Single-word, user-friendly name for the extension."""
 
-    @abc.abstractmethod
     def configure(self, *args, **kwargs):
         """Called to configure the extension."""
 
-    @abc.abstractmethod
-    def close(self, *args, **kwargs):
+    def close(self):
         """Called when the extension is closed."""
 
-    @classmethod
-    def setup_argument_parser(cls, parser):
-        """Modify the main argument parser.
+    def setup_argument_parser(self, parser, subparsers):
+        """Modify the main argument parser and subparsers.
 
         This static method is called with an instance of
         :class:`argparse.ArgumentParser` and the extension may add any
         subcommands and arguments to the parser as long as they don't conflict
         with other subcommands/arguments.
         """
+
+    def setup_subparser(self, subparsers, name, description, handler):
+        subparser = subparsers.add_parser(name, description=description)
+        subparser.set_defaults(func=handler)
+        return subparser
 
 
 class Plugin(Extension):

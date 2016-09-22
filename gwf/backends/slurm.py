@@ -113,7 +113,9 @@ class SlurmBackend(Backend):
     _JOB_DB_PATH = '.gwf/slurm-backend-jobdb.json'
     _JOB_HISTORY_PATH = '.gwf/slurm-backend-jobhistory.json'
 
-    def configure(self, *args, **kwargs):
+    def configure(self, workflow=None, **kwargs):
+        self.workflow = workflow
+
         self.squeue = _find_exe('squeue')
         self.sbatch = _find_exe('sbatch')
         self.scancel = _find_exe('scancel')
