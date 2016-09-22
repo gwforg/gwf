@@ -1,4 +1,5 @@
 import argparse
+
 from ..core import PreparedWorkflow
 from ..utils import cache, import_object
 
@@ -8,10 +9,11 @@ class Command(object):
 
     # Class variable used to get the active workflow.
     _workflow = None
+
     @property
     @cache
     def workflow(cls):
-        return PreparedWorkflow(import_object(cls._workflow))
+        return PreparedWorkflow(workflow=import_object(cls._workflow))
 
     def set_arguments(self, subparser):
         "Provide the parser options for the sub-command."
@@ -50,6 +52,6 @@ class Dispatcher(object):
     def dispatch(self, argv):
         """Parse command line arguments in argv and dispatch to subcommand."""
         args = self.parser.parse_args(argv)
-        SubCommand._workflow = args.file
+        Command._workflow = args.file
         if hasattr(args, "func"):
             args.func(args)
