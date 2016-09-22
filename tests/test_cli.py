@@ -1,10 +1,12 @@
 import unittest
+
 from gwf.cli.parsing import Command, Dispatcher
 from gwf.cli.status import StatusCommand
 from gwf.exceptions import GWFError, TargetDoesNotExistError
 
 
 class TestHandler(Command):
+
     def __init__(self):
         self.was_called = False
 
@@ -49,8 +51,8 @@ class TestCLI(unittest.TestCase):
 
         test_handler = TestHandler()
         dispatcher.install_subcommand("test", "", test_handler)
-        dispatcher.dispatch(["-f", "examples/minimal-workflow/workflow.py", "test"])
-        test_handler.workflow
+        dispatcher.dispatch(
+            ["-f", "examples/minimal-workflow/workflow.py", "test"])
 
 
 class MockStatusCommand(StatusCommand):
@@ -78,23 +80,27 @@ class TestStatusSubcommand(unittest.TestCase):
         self.dispatcher.install_subcommand("status", "", self.handler)
 
     def test_status_verbose(self):
-        self.dispatcher.dispatch(["-f", "examples/minimal-workflow/workflow.py", "status", "--verbose"])
+        self.dispatcher.dispatch(
+            ["-f", "examples/minimal-workflow/workflow.py", "status", "--verbose"])
         self.assertTrue(self.handler.verbose_called)
         self.assertFalse(self.handler.progress_called)
         self.assertListEqual(self.handler.targets, ['All'])
 
     def test_status_progress(self):
-        self.dispatcher.dispatch(["-f", "examples/minimal-workflow/workflow.py", "status"])
+        self.dispatcher.dispatch(
+            ["-f", "examples/minimal-workflow/workflow.py", "status"])
         self.assertFalse(self.handler.verbose_called)
         self.assertTrue(self.handler.progress_called)
         self.assertListEqual(self.handler.targets, ['All'])
 
     def test_status_with_named_targets(self):
-        self.dispatcher.dispatch(["-f", "examples/minimal-workflow/workflow.py", "status", "World", "Universe"])
+        self.dispatcher.dispatch(
+            ["-f", "examples/minimal-workflow/workflow.py", "status", "World", "Universe"])
         self.assertFalse(self.handler.verbose_called)
         self.assertTrue(self.handler.progress_called)
         self.assertListEqual(self.handler.targets, ["World", "Universe"])
 
     def test_exception_with_nonexisting_target(self):
         with self.assertRaises(TargetDoesNotExistError):
-            self.dispatcher.dispatch(["-f", "examples/minimal-workflow/workflow.py", "status", "nonexisting_target"])
+            self.dispatcher.dispatch(
+                ["-f", "examples/minimal-workflow/workflow.py", "status", "nonexisting_target"])
