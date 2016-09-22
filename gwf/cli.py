@@ -1,48 +1,15 @@
 import argparse
 import logging
+import sys
 
+import colorama
 from pkg_resources import iter_entry_points
 
-from ..core import PreparedWorkflow
-from ..ext import Plugin
-from ..utils import import_object
+from .core import PreparedWorkflow
+from .exceptions import GWFError
+from .utils import import_object
 
 logger = logging.getLogger(__name__)
-
-
-class RunCommand(Plugin):
-
-    name = 'run'
-
-    def setup_argument_parser(self, parser, subparsers):
-        subparser = self.setup_subparser(
-            subparsers,
-            'run',
-            'Command for running a workflow.',
-            self.on_run
-        )
-
-        subparser.add_argument(
-            "targets",
-            metavar="TARGET",
-            nargs="*",
-            help="Targets to run (default: all terminal targets)"
-        )
-
-    def configure(self, workflow, backend, config, args):
-        self.workflow = workflow
-        self.backend = backend
-        self.config = config
-        self.args = args
-
-    def on_run(self):
-        if not self.args.targets:
-            targets = self.workflow.endpoints()
-        else:
-            targets = [self.workflow.targets[target]
-                       for target in self.args.targets]
-
-        self.backend.schedule_many(targets)
 
 
 class App:
@@ -161,3 +128,14 @@ class App:
         # Dispatch to subcommand.
         if hasattr(self.args, "func"):
             self.args.func()
+
+
+def main():
+    colorama.init()
+
+    app = App()
+    try:
+        app.run(sys.argv[1:])
+    except GWFError as e:
+        print("[Error] {}".format(str(e)))
+        sys.exit(1)

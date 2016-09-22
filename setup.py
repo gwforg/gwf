@@ -17,14 +17,14 @@ setup(
     packages=find_packages(),
     entry_points={
         'console_scripts': [
-            'gwf = gwf.cli.entrypoint:main',
+            'gwf = gwf.cli:main',
         ],
         'gwf.backends': [
             'slurm = gwf.backends.slurm:SlurmBackend',
             'testing = gwf.backends.testing:TestingBackend',
         ],
         'gwf.plugins': [
-            'run = gwf.cli.parsing:RunCommand',
+            'run = gwf.commands.run:RunCommand',
         ]
     },
 
