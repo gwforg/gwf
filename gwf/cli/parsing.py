@@ -4,7 +4,7 @@ from ..core import PreparedWorkflow
 from ..utils import cache, import_object
 
 
-class Command(object):
+class Command:
     """Super-class for sub-commands."""
 
     # Class variable used to get the active workflow.
@@ -22,7 +22,7 @@ class Command(object):
         "Callback when this sub-command is invoked."
 
 
-class Dispatcher(object):
+class Dispatcher:
     """Class responsible for setting up the command line arguments and dispatching
     to sub-commands when invoked."""
 
