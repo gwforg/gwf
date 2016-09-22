@@ -24,7 +24,7 @@ setup(
             'testing = gwf.backends.testing:TestingBackend',
         ],
         'gwf.plugins': [
-            'run = gwf.commands.run:RunCommand',
+            'run = gwf.plugins.run:RunCommand',
         ]
     },
 

@@ -30,7 +30,3 @@ class Extension(abc.ABC):
         subparser = subparsers.add_parser(name, description=description)
         subparser.set_defaults(func=handler)
         return subparser
-
-
-class Plugin(Extension):
-    pass
