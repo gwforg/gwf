@@ -1,4 +1,5 @@
 import os
+
 from setuptools import find_packages, setup
 
 
@@ -24,7 +25,7 @@ setup(
 
     test_suite='tests',
     install_requires=[
-        "colorama",
+        "colorama>=0.3.7",
     ],
 
     # metadata for upload to PyPI
