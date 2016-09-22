@@ -13,6 +13,7 @@ class TargetExistsError(GWFError):
 
         super(TargetExistsError, self).__init__(message)
 
+
 class TargetDoesNotExistError(GWFError):
 
     def __init__(self, target_name):
@@ -23,6 +24,7 @@ class TargetDoesNotExistError(GWFError):
         ).format(target_name)
 
         super(TargetDoesNotExistError, self).__init__(message)
+
 
 class FileProvidedByMultipleTargetsError(GWFError):
 
