@@ -496,14 +496,16 @@ class PreparedWorkflow(object):
             youngest_in_ts
         )
 
-        logger.debug(
-            '%s should run since %s is larger than %s.',
-            target.name,
-            youngest_in_ts,
-            oldest_out_ts
-        )
+        if youngest_in_ts > oldest_out_ts:
+            logger.debug(
+                '%s should run since %s is larger than %s.',
+                target.name,
+                youngest_in_ts,
+                oldest_out_ts
+            )
+            return True
 
-        return youngest_in_ts > oldest_out_ts
+        return False
 
     def endpoints(self):
         """Return a set of all targets that are not depended on by other targets."""
