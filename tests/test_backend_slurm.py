@@ -19,19 +19,19 @@ class TestSlurmBackend(unittest.TestCase):
 
     @patch('gwf.backends.slurm.os.path.exists', return_value=True)
     def test_does_not_create_log_dir_if_it_already_exists(self, mock_exists, mock_makedirs, mock_find_exe, mock_popen):
-        backend = SlurmBackend(self.prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=self.prepared_workflow)
         mock_makedirs.assert_not_called()
 
     @patch('gwf.backends.slurm.os.path.exists', return_value=False)
     def test_creates_log_dir_if_it_does_not_already_exist(self, mock_exists, mock_makedirs, mock_find_exe, mock_popen):
-        backend = SlurmBackend(self.prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=self.prepared_workflow)
         mock_makedirs.assert_called_once_with('/some/dir/.gwf/logs')
 
     def test_job_script_is_properly_compiled_with_all_supported_options(self, mock_makedirs, mock_find_exe, mock_popen):
-        backend = SlurmBackend(self.prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=self.prepared_workflow)
 
         target = Target(
             name='TestTarget',
@@ -72,29 +72,29 @@ class TestSlurmBackend(unittest.TestCase):
 
     def test_jobdb_is_empty_if_job_db_file_does_not_exist(self, mock_makedirs, mock_find_exe, mock_popen):
         with patch('builtins.open', side_effect=FileNotFoundError) as mock_open_:
-            backend = SlurmBackend(self.prepared_workflow)
-            backend.configure()
+            backend = SlurmBackend()
+            backend.configure(workflow=self.prepared_workflow)
 
             mock_open_.assert_any_call('.gwf/slurm-backend-jobdb.json')
             self.assertDictEqual(backend._job_db, {})
 
     def test_jobdb_is_loaded_from_job_db_file_when_it_exists(self, mock_makedirs, mock_find_exe, mock_popen):
         with patch('builtins.open', mock_open(read_data='{"TestTarget": 1000}')) as mock_open_:
-            backend = SlurmBackend(self.prepared_workflow)
+            backend = SlurmBackend()
             with patch.object(
                     backend,
                     '_get_live_job_states',
                     return_value={1000: 'R'}):
 
-                backend.configure()
+                backend.configure(workflow=self.prepared_workflow)
                 mock_open_.assert_any_call(
                     '.gwf/slurm-backend-jobdb.json'
                 )
                 self.assertDictEqual(backend._job_db, {'TestTarget': 'R'})
 
     def test_live_job_states_are_correctly_parser(self, mock_makedirs, mock_find_exe, mock_popen):
-        backend = SlurmBackend(self.prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=self.prepared_workflow)
 
         fake_squeue_output = io.StringIO('\n'.join([
             "36971043;PD;afterok:36970708,afterok:36970710,afterok:36971042",
@@ -116,8 +116,8 @@ class TestSlurmBackend(unittest.TestCase):
 
     @patch('gwf.backends.slurm.dump_atomic')
     def test_closing_backend_dumps_database_atomically(self, mock_dump_atomic, mock_makedirs, mock_find_exe, mock_popen):
-        backend = SlurmBackend(self.prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=self.prepared_workflow)
         backend.close()
 
         mock_dump_atomic.assert_any_call({}, '.gwf/slurm-backend-jobdb.json')
@@ -129,7 +129,8 @@ class TestSlurmBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
 
-        backend = SlurmBackend(prepared_workflow)
+        backend = SlurmBackend()
+        backend.configure(workflow=prepared_workflow)
         backend._job_db = {'TestTarget1': '1000'}
 
         self.assertTrue(backend.submitted(target1))
@@ -143,7 +144,8 @@ class TestSlurmBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
 
-        backend = SlurmBackend(prepared_workflow)
+        backend = SlurmBackend()
+        backend.configure(workflow=prepared_workflow)
         backend._job_db = {'TestTarget1': '1000', 'TestTarget2': '2000'}
         backend._live_job_states = {'1000': 'R', '2000': 'H'}
 
@@ -169,8 +171,8 @@ class TestSlurmBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
 
-        backend = SlurmBackend(prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=prepared_workflow)
 
         backend._job_db = {'TestTarget1': '1000', 'TestTarget2': '2000'}
         backend._live_job_states = {}
@@ -197,8 +199,8 @@ class TestSlurmBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
 
-        backend = SlurmBackend(prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=prepared_workflow)
 
         mock_popen_instance = Mock()
         mock_popen_instance.returncode = 0
@@ -218,8 +220,8 @@ class TestSlurmBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
 
-        backend = SlurmBackend(prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=prepared_workflow)
 
         mock_popen_instance = Mock()
         mock_popen_instance.returncode = 0
@@ -236,8 +238,8 @@ class TestSlurmBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
 
-        backend = SlurmBackend(prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=prepared_workflow)
 
         backend._job_history['TestTarget'] = ['1000']
 
@@ -268,8 +270,8 @@ class TestSlurmBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
 
-        backend = SlurmBackend(prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=prepared_workflow)
         backend._job_db = {'TestTarget1': '1000', 'TestTarget2': '2000'}
         backend._live_job_states = {}
 
@@ -287,8 +289,8 @@ class TestSlurmBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
 
-        backend = SlurmBackend(prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=prepared_workflow)
 
         backend._job_db = {'TestTarget': '1000'}
         backend._live_job_states = {'1000': 'R'}
@@ -303,8 +305,8 @@ class TestSlurmBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
 
-        backend = SlurmBackend(prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=prepared_workflow)
 
         backend._job_db = {'TestTarget': '1000'}
         backend._live_job_states = {}
@@ -318,8 +320,8 @@ class TestSlurmBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
 
-        backend = SlurmBackend(prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=prepared_workflow)
 
         with self.assertRaises(NoLogFoundError):
             backend.logs(target)
@@ -330,8 +332,8 @@ class TestSlurmBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
 
-        backend = SlurmBackend(prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=prepared_workflow)
         backend._job_history[target.name] = [1000]
 
         m = mock_open(read_data='this is the log file')
@@ -347,8 +349,8 @@ class TestSlurmBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
 
-        backend = SlurmBackend(prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=prepared_workflow)
         backend._job_history[target.name] = [200, 1000]
 
         m = mock_open(read_data='this is the log file')
@@ -364,8 +366,8 @@ class TestSlurmBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
 
-        backend = SlurmBackend(prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=prepared_workflow)
         backend._job_history[target.name] = [200, 1000]
 
         with self.assertRaises(NoLogFoundError):
@@ -377,8 +379,8 @@ class TestSlurmBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
 
-        backend = SlurmBackend(prepared_workflow)
-        backend.configure()
+        backend = SlurmBackend()
+        backend.configure(workflow=prepared_workflow)
         backend._job_history[target.name] = [1000]
 
         m = mock_open()
