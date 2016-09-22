@@ -40,3 +40,4 @@ examples/readmapping/gwf_log/UnZipGenome.stdout
 .coverage
 .vagrant/
 _build/
+.eggs/
