@@ -416,8 +416,10 @@ class PreparedWorkflow(object):
     def prepare_dependencies(self):
         dependencies = defaultdict(list)
         for target, path in iter_inputs(self.targets.values()):
-            if path not in self.provides and not os.path.exists(path):
-                raise FileRequiredButNotProvidedError(path, target)
+            if path not in self.provides:
+                if not os.path.exists(path):
+                    raise FileRequiredButNotProvidedError(path, target)
+                continue
             dependencies[target].append(self.provides[path])
         return dependencies
 
