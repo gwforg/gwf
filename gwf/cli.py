@@ -16,6 +16,12 @@ class App:
 
     description = "A flexible, pragmatic workflow tool."
 
+    epilog = (
+        'gwf is a flexible, pragmatic workflow tool for building and running '
+        'large, scientific workflows developed at the Bioinformatics Research '
+        'Centre (BiRC), Aarhus University.'
+    )
+
     def __init__(self):
         self.config = {'defaults': {'cores': 16}, 'backend': 'testing'}
 
@@ -27,6 +33,7 @@ class App:
 
         self.parser = argparse.ArgumentParser(
             description=self.description,
+            epilog=self.epilog,
         )
 
         # Set global options here. Options for sub-commands will be set by the
@@ -56,7 +63,7 @@ class App:
 
         # Prepare for sub-commands
         self.subparsers = \
-            self.parser.add_subparsers(title="Commands")
+            self.parser.add_subparsers(title="commands")
 
     def load_extensions(self, group):
         exts = {}
@@ -86,8 +93,6 @@ class App:
             )
 
     def run(self, argv):
-        """Parse command line arguments in argv and dispatch to subcommand."""
-
         # Initialize plugins.
         self.init_plugins()
 
@@ -140,5 +145,5 @@ def main():
     try:
         app.run(sys.argv[1:])
     except GWFError as e:
-        print("[Error] {}".format(str(e)))
+        print("[ERROR] {}".format(str(e)))
         sys.exit(1)
