@@ -34,7 +34,7 @@ class App:
         self.parser.add_argument(
             "-f",
             "--file",
-            help="workflow file/object (default: workflow.py).",
+            help="workflow file/object (default: workflow.py:gwf).",
             default="workflow.py:gwf"
         )
 
@@ -49,7 +49,7 @@ class App:
         self.parser.add_argument(
             '-v',
             '--verbosity',
-            help='set verbosity level (default: 1).',
+            help='increase verbosity level.',
             default=1,
             action='count',
         )
