@@ -128,6 +128,9 @@ class App:
         # Dispatch to subcommand.
         if hasattr(self.args, "func"):
             self.args.func()
+        else:
+            self.parser.print_help()
+            sys.exit(1)
 
 
 def main():
