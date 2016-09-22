@@ -2,6 +2,7 @@
 
 import json
 import os.path
+from collections import ChainMap
 from collections.abc import MutableMapping
 
 USER_CONFIG_FILE = os.path.expanduser("~/.gwfrc")
@@ -56,5 +57,11 @@ class Config(MutableMapping):
             json.dump(self.dct, fileobj)
 
 
-local_config = Config(LOCAL_CONFIG_FILE)
-user_config = Config(USER_CONFIG_FILE)
+local_settings = Config(LOCAL_CONFIG_FILE)
+user_settings = Config(USER_CONFIG_FILE)
+
+defaults = {
+    'backend': 'testing'
+}
+
+settings = ChainMap(local_settings, user_settings, defaults)

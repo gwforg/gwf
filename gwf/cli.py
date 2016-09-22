@@ -5,6 +5,7 @@ import sys
 import colorama
 from pkg_resources import iter_entry_points
 
+from .conf import settings
 from .core import PreparedWorkflow
 from .exceptions import GWFError
 from .utils import import_object
@@ -23,8 +24,6 @@ class App:
     )
 
     def __init__(self):
-        self.config = {'defaults': {'cores': 16}, 'backend': 'testing'}
-
         self.plugin_classes = self.load_extensions('gwf.plugins')
         self.backend_classes = self.load_extensions('gwf.backends')
 
@@ -50,7 +49,7 @@ class App:
             '--backend',
             help='backend used to run the workflow.',
             choices=self.backend_classes.keys(),
-            default=self.config['backend'],
+            default=settings['backend'],
         )
 
         self.parser.add_argument(
@@ -88,7 +87,7 @@ class App:
             plugin.configure(
                 workflow=self.prepared_workflow,
                 backend=self.backend,
-                config=self.config,
+                config=settings,
                 args=self.args,
             )
 
@@ -123,7 +122,7 @@ class App:
         logger.debug('Configuring backend: %s.', backend_cls.name)
         self.backend.configure(
             workflow=self.prepared_workflow,
-            config=self.config,
+            config=settings,
             args=self.args,
         )
 
