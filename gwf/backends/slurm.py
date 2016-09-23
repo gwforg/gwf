@@ -146,7 +146,7 @@ def _get_live_job_states():
     stdout, stderr = _call_squeue()
 
     reader = csv.reader(
-        stdout,
+        stdout.splitlines(),
         delimiter=';',
         quoting=csv.QUOTE_NONE,
     )

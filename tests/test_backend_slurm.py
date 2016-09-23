@@ -82,13 +82,13 @@ class TestSlurmBackendConfigure(SlurmTestCase):
 class TestSlurmBackendGetLiveJobStates(SlurmTestCase):
 
     def test_live_job_states_are_correctly_parser(self):
-        fake_squeue_stdout = io.StringIO('\n'.join([
+        fake_squeue_stdout = '\n'.join([
             "36971043;PD;afterok:36970708,afterok:36970710,afterok:36971042",
             "36971044;R;afterok:36971043",
             "36971045;PD;",
-        ]))
+        ])
 
-        fake_squeue_stderr = io.StringIO('')
+        fake_squeue_stderr = ''
 
         self.mock_call_squeue.return_value = (
             fake_squeue_stdout, fake_squeue_stderr
