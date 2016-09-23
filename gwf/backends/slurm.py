@@ -47,12 +47,12 @@ OPTION_TABLE = {
 @cache
 def _find_exe(name):
     exe = find_executable(name)
-    if not exe:
+    if exe is None:
         raise BackendError('Could not find executable "{}".'.format(name))
     return exe
 
 
-def dump_atomic(obj, path):
+def _dump_atomic(obj, path):
     with open(path + '.new', 'w') as fileobj:
         json.dump(obj, fileobj)
         fileobj.flush()
@@ -82,11 +82,13 @@ def _call_squeue():
     proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stderr=subprocess.PIPE,
         stdin=subprocess.PIPE,
         universal_newlines=True,
     )
     stdout, stderr = proc.communicate()
+    if proc.returncode != 0:
+        raise BackendError(stderr)
     return stdout, stderr
 
 
@@ -226,8 +228,8 @@ class SlurmBackend(Backend):
 
     def close(self):
         # TODO: error handling
-        dump_atomic(self._job_db, self._JOB_DB_PATH)
-        dump_atomic(self._job_history, self._JOB_HISTORY_PATH)
+        _dump_atomic(self._job_db, self._JOB_DB_PATH)
+        _dump_atomic(self._job_history, self._JOB_HISTORY_PATH)
 
     def submitted(self, target):
         return target.name in self._job_db

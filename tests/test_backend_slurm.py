@@ -1,19 +1,25 @@
 import io
+import subprocess
 import unittest
-from unittest.mock import ANY, Mock, call, mock_open, patch
+from unittest.mock import ANY, call, mock_open, patch
 
 from gwf import PreparedWorkflow, Target, Workflow
-from gwf.backends.slurm import SlurmBackend, _get_live_job_states
+from gwf.backends.slurm import (SlurmBackend, _call_scancel, _call_squeue,
+                                _dump_atomic, _find_exe, _get_live_job_states,
+                                _read_json)
 from gwf.exceptions import BackendError, NoLogFoundError
 
 
-class SlurmTestCase(unittest.TestCase):
+class GWFTestCase(unittest.TestCase):
 
     def create_patch(self, name):
         patcher = patch(name)
         thing = patcher.start()
         self.addCleanup(patcher.stop)
         return thing
+
+
+class SlurmTestCase(GWFTestCase):
 
     def setUp(self):
         self.workflow = Workflow(working_dir='/some/dir')
@@ -42,7 +48,7 @@ class SlurmTestCase(unittest.TestCase):
             'gwf.backends.slurm._call_scancel'
         )
         self.mock_dump_atomic = self.create_patch(
-            'gwf.backends.slurm.dump_atomic'
+            'gwf.backends.slurm._dump_atomic'
         )
 
 
@@ -386,4 +392,151 @@ class TestSlurmBackendClose(SlurmTestCase):
         self.mock_dump_atomic.assert_any_call(
             {},
             '.gwf/slurm-backend-jobdb.json'
+        )
+
+
+class TestFindExe(GWFTestCase):
+
+    def setUp(self):
+        self.mock_find_executable = self.create_patch(
+            'gwf.backends.slurm.find_executable'
+        )
+
+    def test_calls_find_executable_with_name_and_return_result_if_not_none(self):
+        self.mock_find_executable.return_value = '/bin/test'
+
+        # Access the decorated function, that is, the actual _find_exe function.
+        # If we do not do this, the cache will cache the /bin/test result for
+        # 'test' and mess up the remaining tests.
+        result = _find_exe.__wrapped__('test')
+
+        self.mock_find_executable.assert_called_once_with('test')
+        self.assertEqual(result, '/bin/test')
+
+    def test_raises_exception_if_find_executable_returns_none(self):
+        self.mock_find_executable.return_value = None
+
+        with self.assertRaises(BackendError):
+            _find_exe.__wrapped__('test')
+
+        self.mock_find_executable.assert_called_once_with('test')
+
+
+class TestDumpAtomic(GWFTestCase):
+
+    def setUp(self):
+        self.mock_open = self.create_patch(
+            'builtins.open'
+        )
+        self.mock_json_dump = self.create_patch(
+            'gwf.backends.slurm.json.dump'
+        )
+        self.mock_os_fsync = self.create_patch(
+            'gwf.backends.slurm.os.fsync'
+        )
+        self.mock_os_rename = self.create_patch(
+            'gwf.backends.slurm.os.rename'
+        )
+
+    def test_dumps_file_atomically(self):
+        mock_fileobj = self.mock_open.return_value.__enter__.return_value
+        mock_fileobj.fileno.return_value = 3
+
+        _dump_atomic({'hello': 'world'}, '/some/dir/db.json')
+
+        self.mock_open.assert_called_once_with(
+            '/some/dir/db.json.new', 'w'
+        )
+        self.mock_json_dump.assert_called_once_with(
+            {'hello': 'world'}, mock_fileobj
+        )
+        mock_fileobj.flush.assert_called_once_with()
+        self.mock_os_fsync.assert_called_with(3)
+        mock_fileobj.close.assert_called_once_with()
+        self.mock_os_rename.assert_called_once_with('/some/dir/db.json.new',
+                                                    '/some/dir/db.json')
+
+
+class TestReadJson(GWFTestCase):
+
+    def setUp(self):
+        self.mock_open = self.create_patch(
+            'builtins.open'
+        )
+        self.mock_json_load = self.create_patch(
+            'gwf.backends.slurm.json.load'
+        )
+
+    def test_return_results_of_json_load_if_file_exists(self):
+        mock_fileobj = self.mock_open.return_value.__enter__.return_value
+        self.mock_json_load.return_value = {'hello': 'world'}
+
+        result = _read_json('test.json')
+
+        self.mock_json_load.assert_called_once_with(mock_fileobj)
+        self.assertDictEqual(result, {'hello': 'world'})
+
+    def test_return_empty_dict_if_file_does_not_exist(self):
+        self.mock_open.side_effect = OSError
+
+        result = _read_json('test.json')
+        self.assertDictEqual(result, {})
+
+
+class TestCallSqueue(GWFTestCase):
+
+    def setUp(self):
+        self.mock_find_exe = self.create_patch(
+            'gwf.backends.slurm._find_exe'
+        )
+        self.mock_popen = self.create_patch(
+            'gwf.backends.slurm.subprocess.Popen'
+        )
+
+    def test_cmd_uses_executable_found_and_returns_stdout_and_stderr(self):
+        self.mock_find_exe.return_value = '/bin/squeue'
+        self.mock_popen.return_value.returncode = 0
+        self.mock_popen.return_value.communicate.return_value = (
+            'this is stdout', 'this is stderr'
+        )
+
+        stdout, stderr = _call_squeue()
+
+        self.mock_popen.assert_called_once_with(
+            ['/bin/squeue', '--noheader', '--format=%i;%t;%E'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            universal_newlines=True,
+        )
+
+        self.assertEqual(stdout, 'this is stdout')
+        self.assertEqual(stderr, 'this is stderr')
+
+
+class TestCallScancel(GWFTestCase):
+
+    def setUp(self):
+        self.mock_find_exe = self.create_patch(
+            'gwf.backends.slurm._find_exe'
+        )
+        self.mock_popen = self.create_patch(
+            'gwf.backends.slurm.subprocess.Popen'
+        )
+
+    def test_cmd_uses_executable_found_and_runs_it_correctly(self):
+        self.mock_find_exe.return_value = '/bin/scancel'
+        self.mock_popen.return_value.returncode = 0
+        self.mock_popen.return_value.communicate.return_value = (
+            'this is stdout', 'this is stderr'
+        )
+
+        _call_scancel('1000')
+
+        self.mock_popen.assert_called_once_with(
+            ['/bin/scancel', '-j', '1000'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            universal_newlines=True,
         )
