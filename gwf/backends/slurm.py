@@ -8,7 +8,7 @@ from distutils.spawn import find_executable
 
 from . import Backend
 from ..exceptions import BackendError, NoLogFoundError
-from ..utils import timer
+from ..utils import cache, timer
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ OPTION_TABLE = {
 }
 
 
+@cache
 def _find_exe(name):
     exe = find_executable(name)
     if not exe:
@@ -72,6 +73,90 @@ def _read_json(path):
         # (FileNotFoundError does not exist in 3.4.2) saying that the file does
         # not exist.
         return {}
+
+
+def _call_squeue():
+    squeue_path = _find_exe('squeue')
+    cmd = [squeue_path, '--noheader', '--format=%i;%t;%E']
+
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    stdout, stderr = proc.communicate()
+    return stdout, stderr
+
+
+def _call_scancel(job_id):
+    scancel_path = _find_exe('scancel')
+    proc = subprocess.Popen(
+        [scancel_path, "-j", job_id],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        stdin=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    stdout, stderr = proc.communicate()
+    if proc.returncode != 0:
+        raise BackendError(stderr)
+
+
+def _call_sbatch(script, dependencies):
+    sbatch_path = _find_exe('sbatch')
+
+    cmd = [sbatch_path, "--parsable"]
+    if dependencies:
+        cmd.append(
+            "--dependency=afterok:{}".format(",".join(dependencies))
+        )
+
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        stdin=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    stdout, stderr = proc.communicate(script)
+    if proc.returncode != 0:
+        raise BackendError(stderr)
+    return stdout, stderr
+
+
+@timer('fetching slurm job states with sqeueu took %0.2fms', logger=logger)
+def _get_live_job_states():
+    """Ask Slurm for the state of all live jobs.
+
+    There are two reasons why we ask for all the jobs:
+
+        1. We don't want to spawn a subprocesses for each job
+        2. Asking for multiple specific jobs would involve building a
+           potentially very long commandline - which could fail if too long.
+
+    :return: a dict mapping from job id to either 'R', 'H', 'Q' or '?'.
+    """
+
+    # The only reason this is a method instead of a function outside the
+    # class is that the we need access to self.squeue. Maybe this should
+    stdout, stderr = _call_squeue()
+
+    reader = csv.reader(
+        stdout,
+        delimiter=';',
+        quoting=csv.QUOTE_NONE,
+    )
+
+    result = {}
+    for job_id, state, depends in reader:
+        simple_state = JOB_STATE_CODES[state]
+        if simple_state == 'Q' and depends:
+            result[job_id] = 'H'
+        else:
+            result[job_id] = simple_state
+    return result
 
 
 class SlurmBackend(Backend):
@@ -116,10 +201,6 @@ class SlurmBackend(Backend):
     def configure(self, workflow=None, **kwargs):
         self.workflow = workflow
 
-        self.squeue = _find_exe('squeue')
-        self.sbatch = _find_exe('sbatch')
-        self.scancel = _find_exe('scancel')
-
         # Make sure that directory for log files exists.
         self._log_dir = os.path.join(self.workflow.working_dir, '.gwf/logs')
         if not os.path.exists(self._log_dir):
@@ -133,12 +214,12 @@ class SlurmBackend(Backend):
         self._job_db = _read_json(self._JOB_DB_PATH)
         self._job_history = _read_json(self._JOB_HISTORY_PATH)
 
-        self._live_job_states = self._get_live_job_states()
+        self._live_job_states = _get_live_job_states()
         logger.debug('found %d jobs', len(self._live_job_states))
 
         with timer('filtering jobs took %.2f ms', logger=logger):
             self._job_db = {
-                target_name: self._live_job_states[job_id]
+                target_name: job_id
                 for target_name, job_id in self._job_db.items()
                 if job_id in self._live_job_states
             }
@@ -162,22 +243,15 @@ class SlurmBackend(Backend):
             if dep.name in self._job_db
         ]
 
-        cmd = [self.sbatch, "--parsable"]
-        if dependency_ids:
-            cmd.append(
-                "--dependency=afterok:{}".format(",".join(dependency_ids))
-            )
+        script = self._compile_script(target)
+        logger.debug(
+            'Compiled script for target %s:\n%s',
+            target.name,
+            script
+        )
 
-        script_contents = self._compile_script(target)
-        logger.debug('Compiled script for target %s:\n%s',
-                     target.name, script_contents)
-
-        proc = subprocess.Popen(cmd)
-        new_job_id, error_text = proc.communicate(script_contents)
-        if proc.returncode != 0:
-            raise BackendError(error_text)
-
-        new_job_id = new_job_id.strip()
+        stdout, stderr = _call_sbatch(script, dependency_ids)
+        new_job_id = stdout.strip()
 
         self._job_db[target.name] = new_job_id
 
@@ -205,11 +279,10 @@ class SlurmBackend(Backend):
 
     def cancel(self, target):
         """Cancel a target."""
-        target_job_id = self._job_db.get(target.name, '?')
-        if target_job_id not in self._live_job_states:
+        job_id = self._job_db.get(target.name, '?')
+        if job_id not in self._live_job_states:
             raise BackendError('Cannot cancel non-running target.')
-        proc = subprocess.Popen([self.scancel, "-j", target_job_id])
-        proc.communicate()
+        _call_scancel(job_id)
 
     def _get_stdout_log_path(self, target, job_id='%j'):
         return os.path.join(
@@ -258,41 +331,3 @@ class SlurmBackend(Backend):
         out.append('')
         out.append(target.spec)
         return '\n'.join(out)
-
-    @timer('fetching slurm job states with sqeueu took %0.2fms', logger=logger)
-    def _get_live_job_states(self):
-        """Ask Slurm for the state of all live jobs.
-
-        There are two reasons why we ask for all the jobs:
-
-            1. We don't want to spawn a subprocesses for each job
-            2. Asking for multiple specific jobs would involve building a
-               potentially very long commandline - which could fail if too long.
-
-        :return: a dict mapping from job id to either 'R', 'H', 'Q' or '?'.
-        """
-
-        # The only reason this is a method instead of a function outside the
-        # class is that the we need access to self.squeue. Maybe this should
-        cmd = [self.squeue, '--noheader', '--format=%i;%t;%E']
-
-        stat = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-
-        reader = csv.reader(
-            stat.stdout,
-            delimiter=';',
-            quoting=csv.QUOTE_NONE,
-        )
-
-        result = {}
-        for job_id, state, depends in reader:
-            simple_state = JOB_STATE_CODES[state]
-            if simple_state == 'Q' and depends:
-                result[job_id] = 'H'
-            else:
-                result[job_id] = simple_state
-        return result
