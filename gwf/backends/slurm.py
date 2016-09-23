@@ -128,7 +128,7 @@ def _call_sbatch(script, dependencies):
     return stdout, stderr
 
 
-@timer('fetching slurm job states with sqeueu took %0.2fms', logger=logger)
+@timer('Fetching slurm job states with squeue took %0.2fms', logger=logger)
 def _get_live_job_states():
     """Ask Slurm for the state of all live jobs.
 
