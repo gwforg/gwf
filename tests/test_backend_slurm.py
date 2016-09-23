@@ -4,9 +4,9 @@ import unittest
 from unittest.mock import ANY, call, mock_open, patch
 
 from gwf import PreparedWorkflow, Target, Workflow
-from gwf.backends.slurm import (SlurmBackend, _call_scancel, _call_squeue,
-                                _dump_atomic, _find_exe, _get_live_job_states,
-                                _read_json)
+from gwf.backends.slurm import (SlurmBackend, _call_sbatch, _call_scancel,
+                                _call_squeue, _dump_atomic, _find_exe,
+                                _get_live_job_states, _read_json)
 from gwf.exceptions import BackendError, NoLogFoundError
 
 
@@ -513,6 +513,16 @@ class TestCallSqueue(GWFTestCase):
         self.assertEqual(stdout, 'this is stdout')
         self.assertEqual(stderr, 'this is stderr')
 
+    def test_raises_exception_with_stderr_if_command_fails(self):
+        self.mock_find_exe.return_value = '/bin/squeue'
+        self.mock_popen.return_value.returncode = 42
+        self.mock_popen.return_value.communicate.return_value = (
+            'this is stdout', 'this is stderr'
+        )
+
+        with self.assertRaisesRegex(BackendError, 'this is stderr'):
+            _call_squeue()
+
 
 class TestCallScancel(GWFTestCase):
 
@@ -540,3 +550,82 @@ class TestCallScancel(GWFTestCase):
             stdin=subprocess.PIPE,
             universal_newlines=True,
         )
+
+    def test_raises_exception_with_stderr_if_command_fails(self):
+        self.mock_find_exe.return_value = '/bin/scancel'
+        self.mock_popen.return_value.returncode = 42
+        self.mock_popen.return_value.communicate.return_value = (
+            'this is stdout', 'this is stderr'
+        )
+
+        with self.assertRaisesRegex(BackendError, 'this is stderr'):
+            _call_scancel('1000')
+
+
+class TestCallSbatch(GWFTestCase):
+
+    def setUp(self):
+        self.mock_find_exe = self.create_patch(
+            'gwf.backends.slurm._find_exe'
+        )
+        self.mock_popen = self.create_patch(
+            'gwf.backends.slurm.subprocess.Popen'
+        )
+
+    def test_cmd_uses_executable_found_and_runs_correctly_when_no_dependencies(self):
+        self.mock_find_exe.return_value = '/bin/sbatch'
+        self.mock_popen.return_value.returncode = 0
+        self.mock_popen.return_value.communicate.return_value = (
+            'this is stdout', 'this is stderr'
+        )
+
+        script = 'this is the script'
+
+        stdout, stderr = _call_sbatch(script, [])
+
+        self.mock_popen.assert_called_once_with(
+            ['/bin/sbatch', '--parsable'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            universal_newlines=True,
+        )
+
+        self.mock_popen.return_value.communicate.assert_called_once_with(
+            script
+        )
+
+    def test_cmd_uses_executable_found_and_runs_correctly_with_dependencies(self):
+        self.mock_find_exe.return_value = '/bin/sbatch'
+        self.mock_popen.return_value.returncode = 0
+        self.mock_popen.return_value.communicate.return_value = (
+            'this is stdout', 'this is stderr'
+        )
+
+        script = 'this is the script'
+
+        stdout, stderr = _call_sbatch(script, ['1', '2'])
+
+        self.mock_popen.assert_called_once_with(
+            ['/bin/sbatch', '--parsable', '--dependency=afterok:1,2'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            universal_newlines=True,
+        )
+
+        self.mock_popen.return_value.communicate.assert_called_once_with(
+            script
+        )
+
+    def test_raises_exception_with_stderr_if_command_fails(self):
+        self.mock_find_exe.return_value = '/bin/sbatch'
+        self.mock_popen.return_value.returncode = 42
+        self.mock_popen.return_value.communicate.return_value = (
+            'this is stdout', 'this is stderr'
+        )
+
+        script = 'this is the script'
+
+        with self.assertRaisesRegex(BackendError, 'this is stderr'):
+            _call_sbatch(script, [])
