@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import Mock, call, patch
 
 from gwf import template
+from gwf.backends.testing import TestingBackend
 from gwf.core import PreparedWorkflow, Target, Workflow
 from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
@@ -315,6 +316,7 @@ class TestPreparedWorkflow(unittest.TestCase):
 
     def setUp(self):
         self.workflow = Workflow(working_dir='/some/dir')
+        self.backend = TestingBackend()
 
     def test_finds_no_providers_in_empty_workflow(self):
         prepared_workflow = PreparedWorkflow(self.workflow)
@@ -330,7 +332,8 @@ class TestPreparedWorkflow(unittest.TestCase):
         self.workflow.target(
             'TestTarget', inputs=[], outputs=['/test_output.txt'], working_dir='')
 
-        prepared_workflow = PreparedWorkflow(self.workflow)
+        prepared_workflow = PreparedWorkflow(
+            self.workflow, backend=self.backend)
         self.assertIn('/test_output.txt', prepared_workflow.provides)
         self.assertEqual(
             prepared_workflow.provides['/test_output.txt'].name, 'TestTarget')

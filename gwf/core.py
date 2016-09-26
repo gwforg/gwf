@@ -10,7 +10,7 @@ from .exceptions import (CircularDependencyError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
                          InvalidNameError, TargetExistsError)
 from .utils import (cache, dfs, get_file_timestamp, import_object,
-                    is_valid_name, iter_inputs, iter_outputs, timer)
+                    is_valid_name, iter_inputs, iter_outputs, merge, timer)
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +183,7 @@ class Workflow(object):
         the working directory.
     """
 
-    def __init__(self, name=None, working_dir=None):
+    def __init__(self, name=None, working_dir=None, defaults=None):
         self.name = name
         if self.name is not None and not is_valid_name(self.name):
             raise InvalidNameError(
@@ -191,6 +191,7 @@ class Workflow(object):
             )
 
         self.targets = {}
+        self.defaults = defaults or {}
 
         self.working_dir = working_dir
         if self.working_dir is None:
@@ -364,7 +365,7 @@ class PreparedWorkflow(object):
     :ivar dependents: initial value: None
     """
 
-    def __init__(self, workflow=None):
+    def __init__(self, workflow=None, config=None, backend=None):
         self.targets = {}
         self.working_dir = None
 
@@ -374,9 +375,9 @@ class PreparedWorkflow(object):
         self.file_cache = None
 
         if workflow is not None:
-            self.prepare(workflow)
+            self.prepare(workflow, config, backend)
 
-    def prepare(self, workflow):
+    def prepare(self, workflow, config, backend):
         """Prepare this workflow given a :class:`gwf.Workflow` instance.
 
         :param gwf.Workflow workflow:
@@ -389,6 +390,10 @@ class PreparedWorkflow(object):
         :raises CircularDependencyError:
             Raised if the workflow contains a circular dependency.
         """
+        self.workflow = workflow
+        self.config = config or {}
+        self.backend = backend
+
         self.targets = workflow.targets
         self.working_dir = workflow.working_dir
 
@@ -397,12 +402,15 @@ class PreparedWorkflow(object):
             len(self.targets)
         )
 
+        logger.debug('Received configuration: %r.', config)
+
         # The order is important here!
         self.provides = self.prepare_file_providers()
         self.dependencies = self.prepare_dependencies()
         self.dependents = self.prepare_dependents()
 
         self._check_for_circular_dependencies()
+        self._inherit_target_options()
 
         self.file_cache = self.prepare_file_cache()
         logger.debug('Cached %d files.', len(self.file_cache))
@@ -451,6 +459,14 @@ class PreparedWorkflow(object):
             for dep in self.dependencies[target]:
                 if target in dfs(dep, self.dependencies):
                     raise CircularDependencyError(target)
+
+    def _inherit_target_options(self):
+        for target_name, target in self.targets.items():
+            self.targets[target_name].options = merge(self.config, {
+                option: value
+                for option, value in target.options.items()
+                if option in self.backend.supported_options
+            })
 
     @cache
     def should_run(self, target):

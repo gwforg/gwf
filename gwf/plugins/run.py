@@ -28,12 +28,11 @@ class RunCommand(Plugin):
 
     def on_run(self):
         targets = []
-        if not self.config.targets:
+        if not self.config['targets']:
             targets = self.workflow.endpoints()
         else:
-            for name in self.config.targets:
+            for name in self.config['targets']:
                 if name not in self.workflow.targets:
                     raise TargetDoesNotExistError(name)
                 targets.append(self.workflow.targets[name])
-
         self.backend.schedule_many(targets)

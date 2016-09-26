@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 from gwf.backends.testing import TestingBackend
 from gwf.core import PreparedWorkflow, Workflow
-from gwf.exceptions import WorkflowNotPreparedError
 
 
 class TestBaseBackend(unittest.TestCase):
@@ -101,12 +100,15 @@ class TestBaseBackend(unittest.TestCase):
                 logs.output[0]
             )
 
-    def test_option_defaults_is_empty_dict(self):
+    def test_option_defaults_contains_specified_option_defaults(self):
         workflow = Workflow(working_dir='/some/dir')
         prepared_workflow = PreparedWorkflow(workflow)
         backend = TestingBackend()
         backend.configure(workflow=prepared_workflow)
-        self.assertDictEqual(backend.option_defaults, {})
+        self.assertDictEqual(
+            backend.option_defaults,
+            {'cores': 2, 'memory': '18gb'}
+        )
 
     def test_scheduling_a_submitted_dependency_does_not_submit_the_dependency(self):
         workflow = Workflow(working_dir='/some/dir')

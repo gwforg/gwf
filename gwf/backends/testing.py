@@ -9,6 +9,7 @@ class TestingBackend(Backend):
 
     name = 'testing'
     supported_options = set(['cores', 'memory'])
+    option_defaults = {'cores': 2, 'memory': '18gb'}
 
     def configure(self, *args, **kwargs):
         self.workflow = kwargs['workflow']

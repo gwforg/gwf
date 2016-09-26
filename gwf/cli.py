@@ -11,7 +11,7 @@ from configargparse import ArgParser
 from .core import PreparedWorkflow
 from .exceptions import GWFError
 from .ext import ExtensionManager
-from .utils import get_gwf_version, import_object
+from .utils import get_gwf_version, import_object, merge
 
 logger = logging.getLogger(__name__)
 
@@ -85,15 +85,9 @@ class App:
                 'warning': logging.WARNING,
                 'info': logging.INFO,
                 'debug': logging.DEBUG,
-            }[self.config.verbosity],
+            }[self.config['verbosity']],
             format='%(levelname)-6s|  %(message)s',
         )
-
-    def load_workflow(self):
-        logger.debug('Loading workflow from: %s.', self.config.file)
-        workflow = import_object(self.config.file)
-        workflow._config = self.config
-        self.prepared_workflow = PreparedWorkflow(workflow=workflow)
 
     def run(self, argv):
         sys.path.insert(0, os.path.abspath('.'))
@@ -110,7 +104,11 @@ class App:
             self.parser, self.subparsers
         )
 
-        self.config = self.parser.parse_args(argv)
+        self.config = vars(self.parser.parse_args(argv))
+
+        # If a subcommand is being called, the handler will be the function to
+        # call when all loading is done.
+        handler = self.config.pop('func', None)
 
         self.configure_logging()
 
@@ -118,11 +116,27 @@ class App:
         logger.debug('GWF version: %s.', get_gwf_version())
         logger.debug('Python version: %s.', platform.python_version())
         logger.debug('Node: %s.', platform.node())
-        logger.debug('Config:\n\n%s', self.parser.format_values())
 
-        self.load_workflow()
+        backend_name = self.config['backend']
+        logger.debug('Setting active backend: %s.', backend_name)
+        self.active_backend = self.backends_manager.exts[backend_name]
 
-        self.active_backend = self.backends_manager.exts[self.config.backend]
+        logger.debug('Loading workflow from: %s.', self.config['file'])
+        workflow = import_object(self.config['file'])
+
+        # Update configuration with defaults from backend and workflow.
+        self.config = merge(
+            self.active_backend.option_defaults,
+            self.config,
+            workflow.defaults,
+        )
+
+        self.prepared_workflow = PreparedWorkflow(
+            workflow=workflow,
+            config=self.config,
+            backend=self.active_backend,
+        )
+
         self.active_backend.configure(
             workflow=self.prepared_workflow,
             config=self.config,
@@ -136,8 +150,8 @@ class App:
         )
 
         # Dispatch to subcommand.
-        if hasattr(self.config, "func"):
-            self.config.func()
+        if handler is not None:
+            handler()
         else:
             self.parser.print_help()
             sys.exit(1)

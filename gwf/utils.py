@@ -129,3 +129,11 @@ def get_gwf_version():
 
 def is_valid_name(candidate):
     return re.match(r'^[a-zA-Z_][a-zA-Z0-9._]*$', candidate) is not None
+
+
+def merge(*args):
+    first, *rest = args
+    res = first.copy()
+    for dct in rest:
+        res.update(dct)
+    return res
