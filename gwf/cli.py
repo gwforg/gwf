@@ -69,9 +69,8 @@ class App:
         self.parser.add_argument(
             '-v',
             '--verbosity',
-            help='increase verbosity level.',
-            default=1,
-            type=int,
+            help='set verbosity level.',
+            default='warning',
         )
 
         # Prepare for sub-commands
@@ -81,9 +80,9 @@ class App:
     def configure_logging(self):
         logging.basicConfig(
             level={
-                1: logging.WARNING,
-                2: logging.INFO,
-                3: logging.DEBUG,
+                'warning': logging.WARNING,
+                'info': logging.INFO,
+                'debug': logging.DEBUG,
             }[self.args.verbosity],
             format='%(levelname)-6s|  %(message)s',
         )
