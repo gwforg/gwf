@@ -1,14 +1,15 @@
 import argparse
 import logging
+import platform
 import sys
 
 import colorama
-from pkg_resources import iter_entry_points
 
 from .conf import settings
 from .core import PreparedWorkflow
 from .exceptions import GWFError
-from .utils import import_object
+from .ext import ExtensionManager
+from .utils import get_gwf_version, import_object
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +25,11 @@ class App:
     )
 
     def __init__(self):
-        self.plugin_classes = self.load_extensions('gwf.plugins')
-        self.backend_classes = self.load_extensions('gwf.backends')
+        self.plugins_manager = ExtensionManager(group='gwf.plugins')
+        self.backends_manager = ExtensionManager(group='gwf.backends')
 
-        self.plugins = {}
         self.backend = None
+        self.workflow = None
 
         self.parser = argparse.ArgumentParser(
             description=self.description,
@@ -48,7 +49,7 @@ class App:
             '-b',
             '--backend',
             help='backend used to run the workflow.',
-            choices=self.backend_classes.keys(),
+            choices=self.backends_manager.exts.keys(),
             default=settings['backend'],
         )
 
@@ -64,41 +65,7 @@ class App:
         self.subparsers = \
             self.parser.add_subparsers(title="commands")
 
-    def load_extensions(self, group):
-        exts = {}
-        for entry_point in iter_entry_points(group=group, name=None):
-            ext_cls = entry_point.load()
-            logger.debug('Loaded extension: %s.', ext_cls.name)
-            exts[ext_cls.name] = ext_cls
-        return exts
-
-    def init_plugins(self):
-        for plugin_name, plugin_cls in self.plugin_classes.items():
-            logger.debug('Initializing plugin: %s.', plugin_name)
-
-            plugin = plugin_cls()
-            plugin.setup_argument_parser(self.parser, self.subparsers)
-            self.plugins[plugin.name] = plugin
-
-    def configure_plugins(self):
-        for plugin_name, plugin in self.plugins.items():
-            logger.debug('Configuring plugin: %s.', plugin_name)
-
-            plugin.configure(
-                workflow=self.prepared_workflow,
-                backend=self.backend,
-                config=settings,
-                args=self.args,
-            )
-
-    def run(self, argv):
-        # Initialize plugins.
-        self.init_plugins()
-
-        # Parse arguments.
-        self.args = self.parser.parse_args(argv)
-
-        # Configure logging.
+    def configure_logging(self):
         logging.basicConfig(
             level={
                 1: logging.WARNING,
@@ -108,26 +75,44 @@ class App:
             format='[%(levelname)s] %(message)s',
         )
 
-        # Read and prepare the workflow.
-        logging.debug('Loading workflow from: %s.', self.args.file)
+    def load_workflow(self):
+        logger.debug('Loading workflow from: %s.', self.args.file)
         workflow = import_object(self.args.file)
         self.prepared_workflow = PreparedWorkflow(workflow=workflow)
 
-        # Initialize and configure backend.
-        backend_cls = self.backend_classes[self.args.backend]
+    def run(self, argv):
+        self.plugins_manager.load_extensions()
+        self.backends_manager.load_extensions()
 
-        logger.debug('Initializing backend: %s.', backend_cls.name)
-        self.backend = backend_cls()
+        self.plugins_manager.setup_argument_parsers(
+            self.parser, self.subparsers)
+        self.backends_manager.setup_argument_parsers(
+            self.parser, self.subparsers)
 
-        logger.debug('Configuring backend: %s.', backend_cls.name)
+        self.args = self.parser.parse_args(argv)
+
+        self.configure_logging()
+
+        logger.debug('Platform: %s.', platform.platform())
+        logger.debug('GWF version: %s.', get_gwf_version())
+        logger.debug('Python version: %s.', platform.python_version())
+        logger.debug('Node: %s.', platform.node())
+
+        self.load_workflow()
+
+        self.backend = self.backends_manager.exts[self.args.backend]
         self.backend.configure(
             workflow=self.prepared_workflow,
             config=settings,
             args=self.args,
         )
 
-        # Initialize and configure all plugins.
-        self.configure_plugins()
+        self.plugins_manager.configure_extensions(
+            workflow=self.prepared_workflow,
+            backend=self.backend,
+            config=settings,
+            args=self.args,
+        )
 
         # Dispatch to subcommand.
         if hasattr(self.args, "func"):

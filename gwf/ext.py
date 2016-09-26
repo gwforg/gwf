@@ -1,6 +1,8 @@
 import abc
 import logging
 
+from pkg_resources import iter_entry_points
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,3 +32,48 @@ class Extension(abc.ABC):
         subparser = subparsers.add_parser(name, description=description)
         subparser.set_defaults(func=handler)
         return subparser
+
+
+class ExtensionManager:
+
+    def __init__(self, group, ignores=None):
+        self.group = group
+        self.exts = {}
+
+    def load_extensions(self, ignores=None):
+        ignores = ignores or []
+        for entry_point in iter_entry_points(group=self.group, name=None):
+            ext_cls = entry_point.load()
+
+            logger.debug(
+                'Loaded extension: %s (%s).',
+                ext_cls.name,
+                self.group
+            )
+
+            if ext_cls.name in ignores:
+                logger.debug(
+                    'Ignoring extension: %s (%s).',
+                    ext_cls.name,
+                    self.group
+                )
+                continue
+
+            logger.debug(
+                'Initializing extension: %s (%s).',
+                ext_cls.name,
+                self.group
+            )
+            self.exts[ext_cls.name] = ext_cls()
+
+    def configure_extensions(self, *args, **kwargs):
+        for ext in self.exts.values():
+            ext.configure(*args, **kwargs)
+
+    def close_extensions(self):
+        for ext in self.exts.values():
+            ext.close()
+
+    def setup_argument_parsers(self, parser, subparsers):
+        for ext in self.exts.values():
+            ext.setup_argument_parser(parser, subparsers)

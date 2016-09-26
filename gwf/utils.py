@@ -119,3 +119,8 @@ def dfs(root, dependencies):
 
     dfs_inner(root)
     return path
+
+
+def get_gwf_version():
+    import pkg_resources
+    return pkg_resources.get_distribution('gwf').version
