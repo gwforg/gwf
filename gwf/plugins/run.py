@@ -21,18 +21,17 @@ class RunCommand(Plugin):
             help="Targets to run (default: all terminal targets)"
         )
 
-    def configure(self, workflow, backend, config, args):
+    def configure(self, workflow, backend, config):
         self.workflow = workflow
         self.backend = backend
         self.config = config
-        self.args = args
 
     def on_run(self):
         targets = []
-        if not self.args.targets:
+        if not self.config.targets:
             targets = self.workflow.endpoints()
         else:
-            for name in self.args.targets:
+            for name in self.config.targets:
                 if name not in self.workflow.targets:
                     raise TargetDoesNotExistError(name)
                 targets.append(self.workflow.targets[name])

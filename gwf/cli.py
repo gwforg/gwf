@@ -1,11 +1,11 @@
-import argparse
 import logging
 import platform
 import sys
 
 import colorama
 
-from .conf import settings
+from configargparse import ArgParser
+
 from .core import PreparedWorkflow
 from .exceptions import GWFError
 from .ext import ExtensionManager
@@ -24,6 +24,9 @@ class App:
         'Centre (BiRC), Aarhus University.'
     )
 
+    USER_CONFIG_FILE = '~/.gwfrc'
+    LOCAL_CONFIG_FILE = '.gwfrc'
+
     def __init__(self):
         self.plugins_manager = ExtensionManager(group='gwf.plugins')
         self.backends_manager = ExtensionManager(group='gwf.backends')
@@ -31,9 +34,12 @@ class App:
         self.backend = None
         self.workflow = None
 
-        self.parser = argparse.ArgumentParser(
+        self.parser = ArgParser(
             description=self.description,
             epilog=self.epilog,
+            default_config_files=[
+                self.USER_CONFIG_FILE, self.LOCAL_CONFIG_FILE
+            ],
         )
 
         # Set global options here. Options for sub-commands will be set by the
@@ -50,7 +56,14 @@ class App:
             '--backend',
             help='backend used to run the workflow.',
             choices=self.backends_manager.exts.keys(),
-            default=settings['backend'],
+            default='slurm',
+        )
+
+        self.parser.add_argument(
+            '-c',
+            '--config',
+            is_config_file=True,
+            help='path to a specific configuration file.'
         )
 
         self.parser.add_argument(
@@ -58,7 +71,7 @@ class App:
             '--verbosity',
             help='increase verbosity level.',
             default=1,
-            action='count',
+            type=int,
         )
 
         # Prepare for sub-commands
@@ -72,7 +85,7 @@ class App:
                 2: logging.INFO,
                 3: logging.DEBUG,
             }[self.args.verbosity],
-            format='[%(levelname)s] %(message)s',
+            format='%(levelname)-6s|  %(message)s',
         )
 
     def load_workflow(self):
@@ -97,21 +110,20 @@ class App:
         logger.debug('GWF version: %s.', get_gwf_version())
         logger.debug('Python version: %s.', platform.python_version())
         logger.debug('Node: %s.', platform.node())
+        logger.debug('Config:\n\n%s', self.parser.format_values())
 
         self.load_workflow()
 
         self.backend = self.backends_manager.exts[self.args.backend]
         self.backend.configure(
             workflow=self.prepared_workflow,
-            config=settings,
-            args=self.args,
+            config=self.args,
         )
 
         self.plugins_manager.configure_extensions(
             workflow=self.prepared_workflow,
             backend=self.backend,
-            config=settings,
-            args=self.args,
+            config=self.args,
         )
 
         # Dispatch to subcommand.
