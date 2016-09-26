@@ -1,3 +1,4 @@
+import atexit
 import logging
 import platform
 import sys
@@ -31,7 +32,7 @@ class App:
         self.plugins_manager = ExtensionManager(group='gwf.plugins')
         self.backends_manager = ExtensionManager(group='gwf.backends')
 
-        self.backend = None
+        self.active_backend = None
         self.workflow = None
 
         self.parser = ArgParser(
@@ -96,6 +97,8 @@ class App:
         self.plugins_manager.load_extensions()
         self.backends_manager.load_extensions()
 
+        atexit.register(self.plugins_manager.close_extensions)
+
         self.plugins_manager.setup_argument_parsers(
             self.parser, self.subparsers)
         self.backends_manager.setup_argument_parsers(
@@ -113,15 +116,17 @@ class App:
 
         self.load_workflow()
 
-        self.backend = self.backends_manager.exts[self.args.backend]
-        self.backend.configure(
+        self.active_backend = self.backends_manager.exts[self.args.backend]
+        self.active_backend.configure(
             workflow=self.prepared_workflow,
             config=self.args,
         )
 
+        atexit.register(self.active_backend.close)
+
         self.plugins_manager.configure_extensions(
             workflow=self.prepared_workflow,
-            backend=self.backend,
+            backend=self.active_backend,
             config=self.args,
         )
 
