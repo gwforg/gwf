@@ -2,11 +2,11 @@ language: python
 sudo: required
 addons:
   hosts:
-    - cibox
+  - cibox
   hostname: cibox
 python:
-  - "3.4"
-  - "3.5"
+- '3.4'
+- '3.5'
 install:
 - make init
 - make init-slurm
@@ -14,3 +14,10 @@ install:
 script: make test && make lint
 after_success:
 - coveralls
+deploy:
+  provider: pypi
+  user: dansondergaard
+  password:
+    secure: JI9D/xzh1/8qIn1buwaAslPN6mn9FpLlS7Tm7lAFXCZcgcreD59ZWk/dOHQEeCrUtH97xsAz8fmYo1NsIM/ynRBBkmJBX/ayXI/YFCNMn1Hm4CkHhPIss8v9uKGsON3h1w55rLNzv9dYDXycq0ScuncirFj/9afLzRnD3bmlm2trmi9dDOaKSLQgQHFya8yB9M+boOUeG47UjUhkqOkPQUNOie49/0IqxtCdHtidnUik++x4gSLs0V59w4GgbfHtWthgIjMzasuRML84NfqkeqCRcgyMInlB09WGC69+mO/A9VakTNhNERL6ePU37ksFFQerSAFqBH2PjjdBNl6S0iaTvDlofDHkZV1zqhGFPYeP5D6dGMZHaMppHLdW45HuerHe+FFTN7lcfRtrikiFh6EOTMYNN7srFsHT1DI28O3iTLSib9JzA9am3VcRFKJGgDPrCYOL8LSIjNMKH8mUhEqm0jEJjEx4rEds7P54hajky+Mo+GJtqhl+zkJI/8fToIvURx47cvEPD987qCz4rVcbI2ucF0hdeJpkxi+Emv+W6E30EJVmv19jkp0yJB8b4HeHlNckoaVC1Ju86InknE0WNp/nS8ZeNg4hKyXhoF4tZXanuQ5Llp3pzzE1v0+7D5fEM6LcKpwA0kMKUWb0KiqdMX9wx4N5pa6/SfHXihQ=
+  distributions: sdist bdist_wheel
+  server: https://testpypi.python.org/pypi
