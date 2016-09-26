@@ -29,9 +29,9 @@ class App:
     USER_CONFIG_FILE = '~/.gwfrc'
     LOCAL_CONFIG_FILE = '.gwfrc'
 
-    def __init__(self):
-        self.plugins_manager = ExtensionManager(group='gwf.plugins')
-        self.backends_manager = ExtensionManager(group='gwf.backends')
+    def __init__(self, plugins_manager, backends_manager):
+        self.plugins_manager = plugins_manager
+        self.backends_manager = backends_manager
 
         self.active_backend = None
         self.workflow = None
@@ -92,6 +92,7 @@ class App:
     def load_workflow(self):
         logger.debug('Loading workflow from: %s.', self.config.file)
         workflow = import_object(self.config.file)
+        workflow._config = self.config
         self.prepared_workflow = PreparedWorkflow(workflow=workflow)
 
     def run(self, argv):
@@ -144,9 +145,14 @@ class App:
 
 def main():
     colorama.init()
-
-    app = App()
     try:
+        plugins_manager = ExtensionManager(group='gwf.plugins')
+        backends_manager = ExtensionManager(group='gwf.backends')
+
+        app = App(
+            plugins_manager=plugins_manager,
+            backends_manager=backends_manager=,
+        )
         app.run(sys.argv[1:])
     except GWFError as e:
         logger.error("{}".format(str(e)))
