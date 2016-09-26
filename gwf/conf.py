@@ -17,7 +17,7 @@ class Config(MutableMapping):
         try:
             with open(self.path) as fileobj:
                 self.dct = json.load(fileobj)
-        except FileNotFoundError:
+        except IOError:
             self.dct = {}
 
     def _find_option(self, dct, name):
