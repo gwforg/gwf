@@ -259,7 +259,7 @@ class Workflow(object):
         namespace_prefix = namespace or other_workflow.name
         if namespace_prefix == self.name:
             raise IncludeWorkflowError(
-                'The included workflow has the same name as this workflow'
+                'The included workflow has the same name as this workflow.'
             )
 
         for target in other_workflow.targets.values():
