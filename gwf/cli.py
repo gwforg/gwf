@@ -140,5 +140,5 @@ def main():
     try:
         app.run(sys.argv[1:])
     except GWFError as e:
-        print("[ERROR] {}".format(str(e)))
+        logger.error("{}".format(str(e)))
         sys.exit(1)
