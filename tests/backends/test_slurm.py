@@ -202,6 +202,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         script = backend._compile_script(target)
 
         self.assertIn('#!/bin/bash', script)
+        self.assertIn('#SBATCH --job-name=TestTarget', script)
         self.assertIn('#SBATCH -c 16', script)
         self.assertIn('#SBATCH --mem=16g', script)
         self.assertIn('#SBATCH -t 12:00:00', script)
