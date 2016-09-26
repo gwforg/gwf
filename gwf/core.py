@@ -252,7 +252,7 @@ class Workflow(object):
         """
         if other_workflow.name is None and namespace is None:
             raise IncludeWorkflowError(
-                'The included workflow has not wbeen assigned a name. To '
+                'The included workflow has not been assigned a name. To '
                 'include the workflow you must assign a name to the included '
                 'workflow or set the namespace argument.'
             )
