@@ -151,7 +151,7 @@ def main():
 
         app = App(
             plugins_manager=plugins_manager,
-            backends_manager=backends_manager=,
+            backends_manager=backends_manager,
         )
         app.run(sys.argv[1:])
     except GWFError as e:
