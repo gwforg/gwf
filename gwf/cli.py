@@ -103,9 +103,11 @@ class App:
         atexit.register(self.plugins_manager.close_extensions)
 
         self.plugins_manager.setup_argument_parsers(
-            self.parser, self.subparsers)
+            self.parser, self.subparsers
+        )
         self.backends_manager.setup_argument_parsers(
-            self.parser, self.subparsers)
+            self.parser, self.subparsers
+        )
 
         self.args = self.parser.parse_args(argv)
 
