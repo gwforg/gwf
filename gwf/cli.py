@@ -85,13 +85,13 @@ class App:
                 'warning': logging.WARNING,
                 'info': logging.INFO,
                 'debug': logging.DEBUG,
-            }[self.args.verbosity],
+            }[self.config.verbosity],
             format='%(levelname)-6s|  %(message)s',
         )
 
     def load_workflow(self):
-        logger.debug('Loading workflow from: %s.', self.args.file)
-        workflow = import_object(self.args.file)
+        logger.debug('Loading workflow from: %s.', self.config.file)
+        workflow = import_object(self.config.file)
         self.prepared_workflow = PreparedWorkflow(workflow=workflow)
 
     def run(self, argv):
@@ -109,7 +109,7 @@ class App:
             self.parser, self.subparsers
         )
 
-        self.args = self.parser.parse_args(argv)
+        self.config = self.parser.parse_args(argv)
 
         self.configure_logging()
 
@@ -121,23 +121,22 @@ class App:
 
         self.load_workflow()
 
-        self.active_backend = self.backends_manager.exts[self.args.backend]
+        self.active_backend = self.backends_manager.exts[self.config.backend]
         self.active_backend.configure(
             workflow=self.prepared_workflow,
-            config=self.args,
+            config=self.config,
         )
-
         atexit.register(self.active_backend.close)
 
         self.plugins_manager.configure_extensions(
             workflow=self.prepared_workflow,
             backend=self.active_backend,
-            config=self.args,
+            config=self.config,
         )
 
         # Dispatch to subcommand.
-        if hasattr(self.args, "func"):
-            self.args.func()
+        if hasattr(self.config, "func"):
+            self.config.func()
         else:
             self.parser.print_help()
             sys.exit(1)
