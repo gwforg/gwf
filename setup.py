@@ -49,7 +49,6 @@ setup(
         "Topic :: Utilities",
         "Topic :: System :: Distributed Computing",
         "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: GNU General Public License (GPLv3)",
         "Programming Language :: Python",
     ],
 )
