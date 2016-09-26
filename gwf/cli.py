@@ -1,5 +1,6 @@
 import atexit
 import logging
+import os.path
 import platform
 import sys
 
@@ -94,6 +95,8 @@ class App:
         self.prepared_workflow = PreparedWorkflow(workflow=workflow)
 
     def run(self, argv):
+        sys.path.insert(0, os.path.abspath('.'))
+
         self.plugins_manager.load_extensions()
         self.backends_manager.load_extensions()
 
