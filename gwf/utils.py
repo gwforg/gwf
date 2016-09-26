@@ -2,6 +2,7 @@ import functools
 import imp
 import logging
 import os.path
+import re
 import time
 from contextlib import ContextDecorator
 
@@ -124,3 +125,7 @@ def dfs(root, dependencies):
 def get_gwf_version():
     import pkg_resources
     return pkg_resources.get_distribution('gwf').version
+
+
+def is_valid_name(candidate):
+    return re.match(r'^[a-zA-Z_][a-zA-Z0-9._]*$', candidate) is not None

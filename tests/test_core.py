@@ -8,13 +8,14 @@ from gwf.core import PreparedWorkflow, Target, Workflow
 from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
                             FileRequiredButNotProvidedError,
-                            IncludeWorkflowError, TargetExistsError)
+                            IncludeWorkflowError, InvalidNameError,
+                            TargetExistsError)
 
 
 def create_test_target(name='TestTarget', inputs=[], outputs=[], options={}, workflow=None):
     """A factory for `Target` objects."""
     if workflow is None:
-        workflow = Workflow('/some/path')
+        workflow = Workflow(working_dir='/some/path')
     return Target(name, inputs, outputs, options, workflow)
 
 
@@ -50,6 +51,10 @@ class TestTemplate(unittest.TestCase):
 
 
 class TestWorkflow(unittest.TestCase):
+
+    def test_workflow_with_invalid_name_raises_error(self):
+        with self.assertRaises(InvalidNameError):
+            Workflow(name='123abc')
 
     def test_target_with_no_input_has_empty_inputs_attribute(self):
         workflow = Workflow()
@@ -192,6 +197,16 @@ class TestTarget(unittest.TestCase):
 
     def setUp(self):
         self.workflow = Workflow(working_dir='/some/path')
+
+    def test_target_with_invalid_name_raises_exception(self):
+        with self.assertRaises(InvalidNameError):
+            Target(
+                '123abc',
+                inputs=[],
+                outputs=[],
+                options={},
+                workflow=self.workflow
+            )
 
     def test_relative_input_paths_are_normalized(self):
         target = create_test_target(

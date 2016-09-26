@@ -2,6 +2,10 @@ class GWFError(Exception):
     pass
 
 
+class InvalidNameError(GWFError):
+    pass
+
+
 class TargetExistsError(GWFError):
 
     def __init__(self, target):

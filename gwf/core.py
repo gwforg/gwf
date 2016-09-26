@@ -8,9 +8,9 @@ from collections import defaultdict
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
-                         TargetExistsError)
-from .utils import (cache, dfs, get_file_timestamp, import_object, iter_inputs,
-                    iter_outputs, timer)
+                         InvalidNameError, TargetExistsError)
+from .utils import (cache, dfs, get_file_timestamp, import_object,
+                    is_valid_name, iter_inputs, iter_outputs, timer)
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +83,10 @@ class Target(object):
 
     def __init__(self, name, inputs, outputs, options, workflow, namespace=None, spec=None):
         self.name = name
+        if not is_valid_name(self.name):
+            raise InvalidNameError(
+                'Target defined with invalid name: "{}".'.format(self.name)
+            )
 
         self.options = options
         self.workflow = workflow
@@ -181,6 +185,11 @@ class Workflow(object):
 
     def __init__(self, name=None, working_dir=None):
         self.name = name
+        if self.name is not None and not is_valid_name(self.name):
+            raise InvalidNameError(
+                'Workflow defined with invalid name: "{}".'.format(self.name)
+            )
+
         self.targets = {}
 
         self.working_dir = working_dir
