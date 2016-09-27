@@ -1,6 +1,5 @@
 import io
 import subprocess
-import unittest
 from unittest.mock import ANY, call, mock_open, patch
 
 from gwf import PreparedWorkflow, Target, Workflow
@@ -9,14 +8,7 @@ from gwf.backends.slurm import (SlurmBackend, _call_sbatch, _call_scancel,
                                 _get_live_job_states, _read_json)
 from gwf.exceptions import BackendError, NoLogFoundError
 
-
-class GWFTestCase(unittest.TestCase):
-
-    def create_patch(self, name):
-        patcher = patch(name)
-        thing = patcher.start()
-        self.addCleanup(patcher.stop)
-        return thing
+from .. import GWFTestCase
 
 
 class SlurmTestCase(GWFTestCase):
@@ -115,16 +107,16 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         target1 = self.workflow.target(
             'TestTarget1',
             outputs=['test_output1.txt'],
-        ) 
+        )
         target2 = self.workflow.target(
             'TestTarget2',
             outputs=['test_output2.txt']
-        ) 
+        )
         target3 = self.workflow.target(
             'TestTarget3',
             inputs=['test_output1.txt', 'test_output2.txt'],
             outputs=['test_output3.txt']
-        ) 
+        )
 
         prepared_workflow = PreparedWorkflow(self.workflow)
 
@@ -142,7 +134,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.mock_get_live_job_states.return_value = {}
         self.mock_call_sbatch.return_value = ('1000', '')
 
-        target = self.workflow.target('TestTarget') 
+        target = self.workflow.target('TestTarget')
         prepared_workflow = PreparedWorkflow(self.workflow)
 
         backend = SlurmBackend()
@@ -162,7 +154,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.mock_get_live_job_states.return_value = {'1000': 'R'}
         self.mock_call_sbatch.return_value = ('2000', '')
 
-        target = self.workflow.target('TestTarget') 
+        target = self.workflow.target('TestTarget')
         prepared_workflow = PreparedWorkflow(self.workflow)
 
         backend = SlurmBackend()
@@ -227,7 +219,7 @@ class TestSlurmBackendCancel(SlurmTestCase):
         ]
         self.mock_get_live_job_states.return_value = {'1000': 'R'}
 
-        target = self.workflow.target('TestTarget') 
+        target = self.workflow.target('TestTarget')
         prepared_workflow = PreparedWorkflow(self.workflow)
 
         backend = SlurmBackend()
