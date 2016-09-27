@@ -312,9 +312,6 @@ class SlurmBackend(Backend):
         out.append(option_str.format('--job-name=', target.name))
 
         for option_name, option_value in target.options.items():
-            if option_name not in self.supported_options:
-                continue
-
             out.append(
                 option_str.format(
                     OPTION_TABLE[option_name],

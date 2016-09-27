@@ -194,7 +194,6 @@ class TestSlurmBackendSubmit(SlurmTestCase):
                 'constraint': 'graphics*4',
                 'mail_type': 'BEGIN,END,FAIL',
                 'mail_user': 'test@domain.com',
-                'unsupported_option': 'unsupported value'
             },
             spec='echo hello world'
         )
