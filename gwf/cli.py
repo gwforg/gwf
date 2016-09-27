@@ -20,14 +20,14 @@ class App:
 
     description = "A flexible, pragmatic workflow tool."
 
-    epilog = (
-        'gwf is a flexible, pragmatic workflow tool for building and running '
-        'large, scientific workflows developed at the Bioinformatics Research '
-        'Centre (BiRC), Aarhus University.'
-    )
-
     USER_CONFIG_FILE = '~/.gwfrc'
     LOCAL_CONFIG_FILE = '.gwfrc'
+
+    VERBOSITY_LEVELS = {
+        'warning': logging.WARNING,
+        'info': logging.INFO,
+        'debug': logging.DEBUG,
+    }
 
     def __init__(self, plugins_manager, backends_manager):
         self.plugins_manager = plugins_manager
@@ -38,7 +38,9 @@ class App:
 
         self.parser = ArgParser(
             description=self.description,
-            epilog=self.epilog,
+            add_config_file_help=False,
+            add_env_var_help=False,
+            auto_env_var_prefix='GWF_',
             default_config_files=[
                 self.USER_CONFIG_FILE, self.LOCAL_CONFIG_FILE
             ],
@@ -73,6 +75,7 @@ class App:
             '--verbosity',
             help='set verbosity level.',
             default='warning',
+            choices=self.VERBOSITY_LEVELS.keys()
         )
 
         # Prepare for sub-commands
@@ -81,11 +84,7 @@ class App:
 
     def configure_logging(self):
         logging.basicConfig(
-            level={
-                'warning': logging.WARNING,
-                'info': logging.INFO,
-                'debug': logging.DEBUG,
-            }[self.config['verbosity']],
+            level=self.VERBOSITY_LEVELS[self.config['verbosity']],
             format='%(levelname)-6s|  %(message)s',
         )
 
