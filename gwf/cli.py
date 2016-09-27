@@ -16,12 +16,13 @@ from .utils import get_gwf_version, import_object, merge
 logger = logging.getLogger(__name__)
 
 
+USER_CONFIG_FILE = '~/.gwfrc'
+LOCAL_CONFIG_FILE = '.gwfrc'
+
+
 class App:
 
     description = "A flexible, pragmatic workflow tool."
-
-    USER_CONFIG_FILE = '~/.gwfrc'
-    LOCAL_CONFIG_FILE = '.gwfrc'
 
     VERBOSITY_LEVELS = {
         'warning': logging.WARNING,
@@ -29,7 +30,7 @@ class App:
         'debug': logging.DEBUG,
     }
 
-    def __init__(self, plugins_manager, backends_manager):
+    def __init__(self, plugins_manager, backends_manager, config_files):
         self.plugins_manager = plugins_manager
         self.backends_manager = backends_manager
 
@@ -41,9 +42,7 @@ class App:
             add_config_file_help=False,
             add_env_var_help=False,
             auto_env_var_prefix='GWF_',
-            default_config_files=[
-                self.USER_CONFIG_FILE, self.LOCAL_CONFIG_FILE
-            ],
+            default_config_files=config_files,
         )
 
         # Set global options here. Options for sub-commands will be set by the
@@ -95,7 +94,7 @@ class App:
             self.parser, self.subparsers
         )
 
-    def configure_logging(self):
+    def _configure_logging(self):
         logging.basicConfig(
             level=self.VERBOSITY_LEVELS[self.config['verbosity']],
             format='%(levelname)-6s|  %(message)s',
@@ -113,7 +112,7 @@ class App:
         # call when all loading is done.
         handler = self.config.pop('func', None)
 
-        self.configure_logging()
+        self._configure_logging()
 
         logger.debug('Platform: %s.', platform.platform())
         logger.debug('GWF version: %s.', get_gwf_version())
@@ -164,12 +163,15 @@ class App:
 def main():
     colorama.init()
     try:
+        config_files = [USER_CONFIG_FILE, LOCAL_CONFIG_FILE]
+
         plugins_manager = ExtensionManager(group='gwf.plugins')
         backends_manager = ExtensionManager(group='gwf.backends')
 
         app = App(
             plugins_manager=plugins_manager,
             backends_manager=backends_manager,
+            config_files=config_files,
         )
         app.run(sys.argv[1:])
     except GWFError as e:
