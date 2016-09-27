@@ -78,19 +78,11 @@ class App:
             choices=self.VERBOSITY_LEVELS.keys()
         )
 
-        # Prepare for sub-commands
+        # Prepare for subcommands
         self.subparsers = \
             self.parser.add_subparsers(title="commands")
 
-    def configure_logging(self):
-        logging.basicConfig(
-            level=self.VERBOSITY_LEVELS[self.config['verbosity']],
-            format='%(levelname)-6s|  %(message)s',
-        )
-
-    def run(self, argv):
-        sys.path.insert(0, os.path.abspath('.'))
-
+        # Load plugins and register their arguments and subcommands.
         self.plugins_manager.load_extensions()
         self.backends_manager.load_extensions()
 
@@ -103,7 +95,19 @@ class App:
             self.parser, self.subparsers
         )
 
+    def configure_logging(self):
+        logging.basicConfig(
+            level=self.VERBOSITY_LEVELS[self.config['verbosity']],
+            format='%(levelname)-6s|  %(message)s',
+        )
+
+    def run(self, argv):
         self.config = vars(self.parser.parse_args(argv))
+
+        # Add path of workflow file to python path to make it possible to load
+        # modules placed in the directory directly.
+        sys.path.insert(0, os.path.dirname(
+            os.path.abspath(self.config['file'])))
 
         # If a subcommand is being called, the handler will be the function to
         # call when all loading is done.
@@ -115,6 +119,7 @@ class App:
         logger.debug('GWF version: %s.', get_gwf_version())
         logger.debug('Python version: %s.', platform.python_version())
         logger.debug('Node: %s.', platform.node())
+        logger.debug('Python path: %s.', sys.path)
 
         backend_name = self.config['backend']
         logger.debug('Setting active backend: %s.', backend_name)
