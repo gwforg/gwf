@@ -84,7 +84,7 @@ class Backend(Extension):
 
         This method is provided by :class:`Backend` and should not be overriden.
         """
-        logger.debug('Scheduling target %s.', target.name)
+        logger.info('Scheduling target %s.', target.name)
 
         if self.submitted(target):
             logger.debug('Target %s has already been submitted.', target.name)
@@ -92,11 +92,12 @@ class Backend(Extension):
 
         scheduled = []
         for dependency in dfs(target, self.workflow.dependencies):
-            logger.info(
-                'Scheduling dependency %s of %s',
-                dependency.name,
-                target.name
-            )
+            if dependency.name != target.name:
+                logger.info(
+                    'Scheduling dependency %s of %s',
+                    dependency.name,
+                    target.name
+                )
 
             if self.submitted(dependency):
                 logger.debug(
@@ -112,7 +113,7 @@ class Backend(Extension):
                 )
                 continue
 
-            logger.info('Submitting dependency %s', dependency.name)
+            logger.info('Submitting target %s', dependency.name)
 
             self.submit(dependency)
             scheduled.append(dependency)
