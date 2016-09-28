@@ -1,3 +1,4 @@
+import errno
 import logging
 import os
 import os.path
@@ -109,12 +110,13 @@ class App:
         # Make sure that a .gwf directory exists in the workflow directory.
         try:
             os.mkdir(os.path.join(workflow_dir, '.gwf'))
-        except IOError:
-            raise GWFError(
-                'Could not create directory in workflow directory "{}".'.format(
-                    workflow_dir
-                )
-            )
+        except IOError as e:
+            if e.errno != errno.EEXIST:
+                raise GWFError(
+                    'Could not create directory in workflow directory "{}".'.format(
+                        workflow_dir
+                    )
+                ) from e
 
         # If a subcommand is being called, the handler will be the function to
         # call when all loading is done.
