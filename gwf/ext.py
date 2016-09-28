@@ -36,28 +36,19 @@ class Extension(abc.ABC):
 
 class ExtensionManager:
 
-    def __init__(self, group, ignores=None):
+    def __init__(self, group):
         self.group = group
         self.exts = {}
 
-    def load_extensions(self, ignores=None):
-        ignores = ignores or []
+    def load_extensions(self):
         for entry_point in iter_entry_points(group=self.group, name=None):
             ext_cls = entry_point.load()
 
             logger.debug(
-                'Loaded extension: %s (%s).',
+                'Loading extension: %s (%s).',
                 ext_cls.name,
                 self.group
             )
-
-            if ext_cls.name in ignores:
-                logger.debug(
-                    'Ignoring extension: %s (%s).',
-                    ext_cls.name,
-                    self.group
-                )
-                continue
 
             logger.debug(
                 'Initializing extension: %s (%s).',
