@@ -94,7 +94,7 @@ class Backend(Extension):
         for dependency in dfs(target, self.workflow.dependencies):
             if dependency.name != target.name:
                 logger.info(
-                    'Scheduling dependency %s of %s',
+                    'Scheduling dependency %s of %s.',
                     dependency.name,
                     target.name
                 )
@@ -113,7 +113,7 @@ class Backend(Extension):
                 )
                 continue
 
-            logger.info('Submitting target %s', dependency.name)
+            logger.info('Submitting target %s.', dependency.name)
 
             self.submit(dependency)
             scheduled.append(dependency)
