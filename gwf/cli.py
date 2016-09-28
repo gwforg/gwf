@@ -1,5 +1,5 @@
-import atexit
 import logging
+import os
 import os.path
 import platform
 import sys
@@ -85,8 +85,6 @@ class App:
         self.plugins_manager.load_extensions()
         self.backends_manager.load_extensions()
 
-        atexit.register(self.plugins_manager.close_extensions)
-
         self.plugins_manager.setup_argument_parsers(
             self.parser, self.subparsers
         )
@@ -105,8 +103,18 @@ class App:
 
         # Add path of workflow file to python path to make it possible to load
         # modules placed in the directory directly.
-        sys.path.insert(0, os.path.dirname(
-            os.path.abspath(self.config['file'])))
+        workflow_dir = os.path.dirname(os.path.abspath(self.config['file']))
+        sys.path.insert(0, workflow_dir)
+
+        # Make sure that a .gwf directory exists in the workflow directory.
+        try:
+            os.mkdir(os.path.join(workflow_dir, '.gwf'))
+        except IOError:
+            raise GWFError(
+                'Could not create directory in workflow directory "{}".'.format(
+                    workflow_dir
+                )
+            )
 
         # If a subcommand is being called, the handler will be the function to
         # call when all loading is done.
@@ -144,7 +152,6 @@ class App:
             workflow=self.prepared_workflow,
             config=self.config,
         )
-        atexit.register(self.active_backend.close)
 
         self.plugins_manager.configure_extensions(
             workflow=self.prepared_workflow,
@@ -157,23 +164,30 @@ class App:
             handler()
         else:
             self.parser.print_help()
-            sys.exit(1)
+
+    def exit(self):
+        logger.debug('Exiting...')
+        self.plugins_manager.close_extensions()
+        self.active_backend.close()
 
 
 def main():
     colorama.init()
+
+    config_files = [USER_CONFIG_FILE, LOCAL_CONFIG_FILE]
+
+    plugins_manager = ExtensionManager(group='gwf.plugins')
+    backends_manager = ExtensionManager(group='gwf.backends')
+
+    app = App(
+        plugins_manager=plugins_manager,
+        backends_manager=backends_manager,
+        config_files=config_files,
+    )
+
     try:
-        config_files = [USER_CONFIG_FILE, LOCAL_CONFIG_FILE]
-
-        plugins_manager = ExtensionManager(group='gwf.plugins')
-        backends_manager = ExtensionManager(group='gwf.backends')
-
-        app = App(
-            plugins_manager=plugins_manager,
-            backends_manager=backends_manager,
-            config_files=config_files,
-        )
         app.run(sys.argv[1:])
     except GWFError as e:
-        logger.error("{}".format(str(e)))
-        sys.exit(1)
+        logger.error(str(e))
+    finally:
+        app.exit()
