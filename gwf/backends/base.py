@@ -16,7 +16,7 @@ class Backend(Extension):
         """Return the options supported on targets."""
 
     @property
-    def option_defaults(self):
+    def option_defaults(self):  # pragma: no cover
         """Return defaults for required target options."""
         return {}
 

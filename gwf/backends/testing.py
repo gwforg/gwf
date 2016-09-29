@@ -5,7 +5,7 @@ from . import Backend
 logger = logging.getLogger(__name__)
 
 
-class TestingBackend(Backend):
+class TestingBackend(Backend):  # pragma: no cover
 
     name = 'testing'
     supported_options = set(['cores', 'memory'])
@@ -24,4 +24,4 @@ class TestingBackend(Backend):
         return False
 
     def logs(self, target, stderr=False, rewind=0):
-        pass
+        return ''
