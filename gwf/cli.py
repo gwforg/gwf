@@ -9,16 +9,13 @@ import colorama
 
 from configargparse import ArgParser
 
+from . import LOCAL_CONFIG_FILE, USER_CONFIG_FILE
 from .core import PreparedWorkflow
 from .exceptions import GWFError
 from .ext import ExtensionManager
 from .utils import get_gwf_version, import_object, merge
 
 logger = logging.getLogger(__name__)
-
-
-USER_CONFIG_FILE = '~/.gwfrc'
-LOCAL_CONFIG_FILE = '.gwfrc'
 
 
 class App:

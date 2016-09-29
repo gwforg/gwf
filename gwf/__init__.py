@@ -2,6 +2,9 @@ from __future__ import absolute_import, print_function
 
 from gwf.core import PreparedWorkflow, Target, Workflow
 
+USER_CONFIG_FILE = '~/.gwfrc'
+LOCAL_CONFIG_FILE = '.gwfrc'
+
 
 class template(object):
 
