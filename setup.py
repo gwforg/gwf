@@ -26,6 +26,7 @@ setup(
         'gwf.plugins': [
             'run = gwf.plugins.run:RunCommand',
             'config = gwf.plugins.config:ConfigCommand',
+            'status = gwf.plugins.status:StatusCommand',
         ]
     },
 
@@ -33,6 +34,7 @@ setup(
     install_requires=[
         "colorama>=0.3.7",
         "configargparse>=0.11",
+        "statusbar>=0.1.0",
     ],
 
     # metadata for upload to PyPI
