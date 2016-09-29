@@ -1,3 +1,4 @@
+import errno
 from unittest.mock import ANY, Mock, sentinel
 
 from gwf.backends.testing import TestingBackend
@@ -90,12 +91,12 @@ class TestApp(GWFTestCase):
         self.app.run(['-f', '/some/dir/workflow.py', '-b', 'testing'])
         self.mock_os_mkdir.assert_called_once_with('/some/dir/.gwf')
 
-    def test_run_raises_exception_if_workflow_dir_does_not_exist(self):
-        self.mock_os_mkdir.side_effect = IOError
+    def test_run_raises_exception_if_workflow_dir_could_not_be_created_and_it_does_not_exist_already(self):
+        self.mock_os_mkdir.side_effect = IOError(Mock(errno=-1))
         with self.assertRaisesRegex(GWFError, 'Could not create directory.*'):
             self.app.run(['-f', '/some/dir/workflow.py', '-b', 'testing'])
 
-    def test_run_with_no_subcommand_prints_help_and_exits_with_code_1(self):
+    def test_run_with_no_subcommand_prints_help(self):
         self.app.run(['-f', '/some/dir/workflow.py', '-b', 'backend1'])
         self.app.parser.print_help.assert_called_once_with()
 

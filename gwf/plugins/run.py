@@ -21,11 +21,6 @@ class RunCommand(Plugin):
             help="Targets to run (default: all terminal targets)"
         )
 
-    def configure(self, workflow, backend, config):
-        self.workflow = workflow
-        self.backend = backend
-        self.config = config
-
     def on_run(self):
         targets = []
         if not self.config['targets']:
