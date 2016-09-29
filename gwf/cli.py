@@ -170,7 +170,8 @@ class App:
     def exit(self):
         logger.debug('Exiting...')
         self.plugins_manager.close_extensions()
-        self.active_backend.close()
+        if self.active_backend is not None:
+            self.active_backend.close()
 
 
 def main():
