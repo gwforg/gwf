@@ -64,6 +64,7 @@ class StatusCommand(Plugin):
             print()
 
     def print_progress(self, target_names):  # pragma: no cover
+        table = statusbar.StatusTable()
         # FIXME: make status table here.
         # for target_name in target_names:
         #     target = self.workflow.targets[target_name]
@@ -71,7 +72,7 @@ class StatusCommand(Plugin):
         #     should_run, submitted, running, completed = self._split_target_list(dependencies)
         #     status_bar = make_status_bar(should_run, submitted, running, completed)
         #     print(status_string.format(Style.BRIGHT + target_name + Style.NORMAL, status_bar))
-        pass
+        print("\n".join(table.format_table()))
 
     def setup_argument_parser(self, parser, subparsers):
         subparser = self.setup_subparser(
