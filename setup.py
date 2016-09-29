@@ -25,6 +25,7 @@ setup(
         ],
         'gwf.plugins': [
             'run = gwf.plugins.run:RunCommand',
+            'config = gwf.plugins.config:ConfigCommand',
         ]
     },
 
