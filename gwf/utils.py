@@ -84,7 +84,7 @@ def import_object(path, default_obj='gwf'):
     except AttributeError as e:
         logger.debug(e)
         raise GWFError(
-            'Module "{}" does not declare the attribute "{}".'.format(
+            'Module "{}" does not declare the attribute "{}".'.format(
                 filename,
                 objname
             )
