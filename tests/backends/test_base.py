@@ -13,7 +13,7 @@ class TestBaseBackend(unittest.TestCase):
         target = workflow.target('TestTarget')
 
         backend = TestingBackend()
-        backend.configure(workflow=PreparedWorkflow(workflow))
+        backend.configure(workflow=PreparedWorkflow(workflow), config={})
         with patch.object(backend, 'submitted', return_value=True):
             schedule = backend.schedule(target)
             self.assertListEqual(schedule, [])
@@ -24,7 +24,7 @@ class TestBaseBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
         backend = TestingBackend()
-        backend.configure(workflow=prepared_workflow)
+        backend.configure(workflow=prepared_workflow, config={})
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
                 schedule = backend.schedule(target)
@@ -37,7 +37,7 @@ class TestBaseBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
         backend = TestingBackend()
-        backend.configure(workflow=prepared_workflow)
+        backend.configure(workflow=prepared_workflow, config={})
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
                 schedule = backend.schedule(target2)
@@ -55,7 +55,7 @@ class TestBaseBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
         backend = TestingBackend()
-        backend.configure(workflow=prepared_workflow)
+        backend.configure(workflow=prepared_workflow, config={})
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
                 schedule = backend.schedule(target4)
@@ -77,7 +77,7 @@ class TestBaseBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
         backend = TestingBackend()
-        backend.configure(workflow=prepared_workflow)
+        backend.configure(workflow=prepared_workflow, config={})
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
                 schedule = backend.schedule(target4)
@@ -93,7 +93,7 @@ class TestBaseBackend(unittest.TestCase):
         prepared_workflow = PreparedWorkflow(workflow)
         with self.assertLogs(level=logging.WARN) as logs:
             backend = TestingBackend()
-            backend.configure(workflow=prepared_workflow)
+            backend.configure(workflow=prepared_workflow, config={})
 
             self.assertIn(
                 'Backend "testing" does not support option "walltime".',
@@ -104,7 +104,7 @@ class TestBaseBackend(unittest.TestCase):
         workflow = Workflow(working_dir='/some/dir')
         prepared_workflow = PreparedWorkflow(workflow)
         backend = TestingBackend()
-        backend.configure(workflow=prepared_workflow)
+        backend.configure(workflow=prepared_workflow, config={})
         self.assertDictEqual(
             backend.option_defaults,
             {'cores': 2, 'memory': '18gb'}
@@ -129,7 +129,7 @@ class TestBaseBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
         backend = TestingBackend()
-        backend.configure(workflow=prepared_workflow)
+        backend.configure(workflow=prepared_workflow, config={})
         with patch.object(backend, 'submitted', side_effect=[False, True, False, False]):
             schedule = backend.schedule(target3)
             self.assertEqual(schedule, [target2, target3])
@@ -153,7 +153,7 @@ class TestBaseBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
         backend = TestingBackend()
-        backend.configure(workflow=prepared_workflow)
+        backend.configure(workflow=prepared_workflow, config={})
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', side_effect=[False, False, False, False]):
                 schedule = backend.schedule(target3)
@@ -183,7 +183,7 @@ class TestBaseBackend(unittest.TestCase):
 
         prepared_workflow = PreparedWorkflow(workflow)
         backend = TestingBackend()
-        backend.configure(workflow=prepared_workflow)
+        backend.configure(workflow=prepared_workflow, config={})
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
                 schedule = backend.schedule_many([target3, target4])

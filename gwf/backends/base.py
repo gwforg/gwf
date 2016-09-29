@@ -20,14 +20,15 @@ class Backend(Extension):
         """Return defaults for required target options."""
         return {}
 
-    @abc.abstractmethod
-    def configure(self, **options):
+    def configure(self, workflow, config):
         """Configure the backend.
 
         This method *must* be called before any other method on the backend
         is used. Unless the backend is initialized directly, *gwf* is
         responsible for calling :func:`configure` to configure the backend.
         """
+        self.workflow = workflow
+        self.config = config
 
     @abc.abstractmethod
     def submitted(self, target):

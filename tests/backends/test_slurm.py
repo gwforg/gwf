@@ -17,6 +17,7 @@ class SlurmTestCase(GWFTestCase):
         self.workflow = Workflow(working_dir='/some/dir')
         self.prepared_workflow = PreparedWorkflow(self.workflow)
         self.backend = SlurmBackend()
+        self.config = {}
 
         self.mock_get_live_job_states = self.create_patch(
             'gwf.backends.slurm._get_live_job_states'
@@ -48,17 +49,20 @@ class TestSlurmBackendConfigure(SlurmTestCase):
 
     def test_does_not_create_log_dir_if_it_already_exists(self):
         self.mock_exists.return_value = True
-        self.backend.configure(workflow=self.prepared_workflow)
+        self.backend.configure(workflow=self.prepared_workflow,
+                               config=self.config)
         self.mock_makedirs.assert_not_called()
 
     def test_creates_log_dir_if_it_does_not_already_exist(self):
         self.mock_exists.return_value = False
-        self.backend.configure(workflow=self.prepared_workflow)
+        self.backend.configure(workflow=self.prepared_workflow,
+                               config=self.config)
         self.mock_makedirs.assert_called_once_with('/some/dir/.gwf/logs')
 
     def test_jobdb_is_empty_if_job_db_file_does_not_exist(self):
         self.mock_exists.return_value = True
-        self.backend.configure(workflow=self.prepared_workflow)
+        self.backend.configure(workflow=self.prepared_workflow,
+                               config=self.config)
         self.mock_read_json.assert_any_call(
             '.gwf/slurm-backend-jobdb.json')
         self.assertDictEqual(self.backend._job_db, {})
@@ -66,7 +70,8 @@ class TestSlurmBackendConfigure(SlurmTestCase):
     def test_jobdb_is_loaded_from_job_db_file_when_it_exists(self):
         self.mock_read_json.return_value = {"TestTarget": '1000'}
         self.mock_get_live_job_states.return_value = {'1000': 'R'}
-        self.backend.configure(workflow=self.prepared_workflow)
+        self.backend.configure(workflow=self.prepared_workflow,
+                               config=self.config)
         self.mock_read_json.assert_any_call('.gwf/slurm-backend-jobdb.json')
         self.assertDictEqual(self.backend._job_db, {'TestTarget': '1000'})
 
@@ -121,7 +126,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         prepared_workflow = PreparedWorkflow(self.workflow)
 
         backend = SlurmBackend()
-        backend.configure(workflow=prepared_workflow)
+        backend.configure(workflow=prepared_workflow, config=self.config)
         backend.submit(target3)
 
         self.mock_call_sbatch.assert_any_call(ANY, ['1000', '2000'])
@@ -138,7 +143,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         prepared_workflow = PreparedWorkflow(self.workflow)
 
         backend = SlurmBackend()
-        backend.configure(workflow=prepared_workflow)
+        backend.configure(workflow=prepared_workflow, config=self.config)
         backend.submit(target)
 
         self.mock_call_sbatch.assert_any_call(ANY, [])
@@ -158,7 +163,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         prepared_workflow = PreparedWorkflow(self.workflow)
 
         backend = SlurmBackend()
-        backend.configure(workflow=prepared_workflow)
+        backend.configure(workflow=prepared_workflow, config=self.config)
         backend.submit(target)
 
         self.assertEqual(backend._job_db['TestTarget'], '2000')
@@ -170,7 +175,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         prepared_workflow = PreparedWorkflow(workflow=self.workflow)
 
         backend = SlurmBackend()
-        backend.configure(workflow=prepared_workflow)
+        backend.configure(workflow=prepared_workflow, config=self.config)
 
         target = Target(
             name='TestTarget',
@@ -223,7 +228,7 @@ class TestSlurmBackendCancel(SlurmTestCase):
         prepared_workflow = PreparedWorkflow(self.workflow)
 
         backend = SlurmBackend()
-        backend.configure(workflow=prepared_workflow)
+        backend.configure(workflow=prepared_workflow, config=self.config)
         backend.cancel(target)
 
         self.mock_call_scancel.assert_any_call('1000')
@@ -239,7 +244,7 @@ class TestSlurmBackendCancel(SlurmTestCase):
         prepared_workflow = PreparedWorkflow(self.workflow)
 
         backend = SlurmBackend()
-        backend.configure(workflow=prepared_workflow)
+        backend.configure(workflow=prepared_workflow, config=self.config)
 
         with self.assertRaises(BackendError):
             backend.cancel(target)
@@ -258,7 +263,7 @@ class TestSlurmBackendSubmitted(SlurmTestCase):
         target2 = self.workflow.target('TestTarget2')
 
         prepared_workflow = PreparedWorkflow(workflow=self.workflow)
-        self.backend.configure(workflow=prepared_workflow)
+        self.backend.configure(workflow=prepared_workflow, config=self.config)
 
         self.assertTrue(self.backend.submitted(target1))
         self.assertFalse(self.backend.submitted(target2))
@@ -278,7 +283,7 @@ class TestSlurmBackendRunning(SlurmTestCase):
         target3 = self.workflow.target('TestTarget3')
 
         prepared_workflow = PreparedWorkflow(self.workflow)
-        self.backend.configure(workflow=prepared_workflow)
+        self.backend.configure(workflow=prepared_workflow, config=self.config)
 
         self.assertTrue(self.backend.running(target1))
         self.assertFalse(self.backend.running(target2))
@@ -290,7 +295,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
     def test_logs_raises_exception_if_rewind_is_0_and_target_has_no_history(self):
         target = self.workflow.target('TestTarget')
         prepared_workflow = PreparedWorkflow(self.workflow)
-        self.backend.configure(workflow=prepared_workflow)
+        self.backend.configure(workflow=prepared_workflow, config=self.config)
 
         with self.assertRaises(NoLogFoundError):
             self.backend.logs(target)
@@ -304,7 +309,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
 
         target = self.workflow.target('TestTarget')
         prepared_workflow = PreparedWorkflow(self.workflow)
-        self.backend.configure(workflow=prepared_workflow)
+        self.backend.configure(workflow=prepared_workflow, config=self.config)
 
         m = mock_open(read_data='this is the log file')
         with patch('builtins.open', m):
@@ -322,7 +327,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
 
         target = self.workflow.target('TestTarget')
         prepared_workflow = PreparedWorkflow(self.workflow)
-        self.backend.configure(workflow=prepared_workflow)
+        self.backend.configure(workflow=prepared_workflow, config=self.config)
 
         m = mock_open(read_data='this is the log file')
         with patch('builtins.open', m):
@@ -344,7 +349,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
 
         target = self.workflow.target('TestTarget')
         prepared_workflow = PreparedWorkflow(self.workflow)
-        self.backend.configure(workflow=prepared_workflow)
+        self.backend.configure(workflow=prepared_workflow, config=self.config)
 
         with self.assertRaises(NoLogFoundError):
             self.backend.logs(target, rewind=2)
@@ -358,7 +363,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
 
         target = self.workflow.target('TestTarget')
         prepared_workflow = PreparedWorkflow(self.workflow)
-        self.backend.configure(workflow=prepared_workflow)
+        self.backend.configure(workflow=prepared_workflow, config=self.config)
 
         m = mock_open()
         m.side_effect = [
@@ -379,7 +384,10 @@ class TestSlurmBackendLogs(SlurmTestCase):
 class TestSlurmBackendClose(SlurmTestCase):
 
     def test_closing_backend_dumps_database_atomically(self):
-        self.backend.configure(workflow=self.prepared_workflow)
+        self.backend.configure(
+            workflow=self.prepared_workflow,
+            config=self.config
+        )
         self.backend.close()
         self.mock_dump_atomic.assert_any_call(
             {},

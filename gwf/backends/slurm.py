@@ -200,8 +200,8 @@ class SlurmBackend(Backend):
     _JOB_DB_PATH = '.gwf/slurm-backend-jobdb.json'
     _JOB_HISTORY_PATH = '.gwf/slurm-backend-jobhistory.json'
 
-    def configure(self, workflow=None, **kwargs):
-        self.workflow = workflow
+    def configure(self, workflow, config):
+        super().configure(workflow, config)
 
         # Make sure that directory for log files exists.
         self._log_dir = os.path.join(self.workflow.working_dir, '.gwf/logs')
