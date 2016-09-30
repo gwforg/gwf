@@ -14,13 +14,22 @@ class LogsCommandTest(GWFTestCase):
             'gwf.plugins.logs.LogsCommand.setup_subparser'
         )
 
-        self.logs_command = LogsCommand()
+        self.mock_print = self.create_patch(
+            'builtins.print'
+        )
 
-        self.mock_backend = Mock(name='backend', spec_set=Backend)
+        self.mock_backend = Mock(
+            name='backend', spec_set=Backend
+        )
+
         self.mock_workflow = Mock(
             name='workflow',
             spec_set=['targets', 'endpoints']
         )
+
+        self.logs_command = LogsCommand()
+        self.logs_command.backend = self.mock_backend
+        self.logs_command.workflow = self.mock_workflow
 
     def test_sets_up_logs_subcommand(self):
         self.logs_command.setup_argument_parser(
@@ -39,4 +48,61 @@ class LogsCommandTest(GWFTestCase):
         ])
 
     def test_shows_stdout_log_for_target_in_workflow(self):
-        pass
+        self.mock_workflow.targets = {
+            'TestTarget': sentinel.TestTarget,
+        }
+
+        self.logs_command.config = {
+            'target': 'TestTarget',
+            'stderr': False,
+        }
+
+        self.mock_backend.logs.return_value = 'this is the log...'
+
+        self.logs_command.on_run()
+
+        self.mock_backend.logs.assert_called_once_with(
+            sentinel.TestTarget, stderr=False,
+        )
+
+        self.mock_print.assert_called_once_with(
+            'this is the log...', end=''
+        )
+
+    def test_raises_exception_if_target_name_does_not_exist_in_workflow(self):
+        self.mock_workflow.targets = {
+            'TestTarget': sentinel.TestTarget,
+        }
+
+        self.logs_command.config = {
+            'target': 'WrongTarget',
+            'stderr': False,
+        }
+
+        self.mock_backend.logs.return_value = 'this is the log...'
+
+        with self.assertRaises(TargetDoesNotExistError) as ex:
+            self.logs_command.on_run()
+            self.assertEqual('WrongTarget', ex.target)
+
+    def test_requests_stderr_log_when_stderr_option_is_true(self):
+        self.mock_workflow.targets = {
+            'TestTarget': sentinel.TestTarget,
+        }
+
+        self.logs_command.config = {
+            'target': 'TestTarget',
+            'stderr': True,
+        }
+
+        self.mock_backend.logs.return_value = 'this is the log...'
+
+        self.logs_command.on_run()
+
+        self.mock_backend.logs.assert_called_once_with(
+            sentinel.TestTarget, stderr=True,
+        )
+
+        self.mock_print.assert_called_once_with(
+            'this is the log...', end=''
+        )
