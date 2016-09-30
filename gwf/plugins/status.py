@@ -63,15 +63,16 @@ class StatusCommand(Plugin):
             print("=" * columns)
             print()
 
-    def print_progress(self, target_names):  # pragma: no cover
+    def print_progress(self, targets):  # pragma: no cover
         table = statusbar.StatusTable()
-        # FIXME: make status table here.
-        # for target_name in target_names:
-        #     target = self.workflow.targets[target_name]
-        #     dependencies = dfs(target, self.workflow.dependencies)
-        #     should_run, submitted, running, completed = self._split_target_list(dependencies)
-        #     status_bar = make_status_bar(should_run, submitted, running, completed)
-        #     print(status_string.format(Style.BRIGHT + target_name + Style.NORMAL, status_bar))
+        for target in targets:
+            dependencies = dfs(target, self.workflow.dependencies)
+            should_run, submitted, running, completed = self._split_target_list(dependencies)
+            status_bar = table.add_status_line(target.name + ": ")
+            status_bar.add_progress(len(completed), "#", fg=colorama.Fore.GREEN)
+            status_bar.add_progress(len(running), "#", fg=colorama.Fore.BLUE)
+            status_bar.add_progress(len(submitted), "-", fg=colorama.Fore.YELLOW)
+            status_bar.add_progress(len(should_run), ".", fg=colorama.Fore.RED)
         print("\n".join(table.format_table()))
 
     def setup_argument_parser(self, parser, subparsers):
