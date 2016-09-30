@@ -24,7 +24,7 @@ class Extension(abc.ABC):
     def setup_argument_parser(self, parser, subparsers):
         """Modify the main argument parser and subparsers.
 
-        This static method is called with an instance of
+        This method is called with an instance of
         :class:`argparse.ArgumentParser` and the extension may add any
         subcommands and arguments to the parser as long as they don't conflict
         with other subcommands/arguments.
@@ -45,19 +45,6 @@ class ExtensionManager:
     def load_extensions(self):
         for entry_point in iter_entry_points(group=self.group, name=None):
             ext_cls = entry_point.load()
-
-            logger.debug(
-                'Loading extension: %s (%s).',
-                ext_cls.name,
-                self.group
-            )
-
-            logger.debug(
-                'Initializing extension: %s (%s).',
-                ext_cls.name,
-                self.group
-            )
-
             if ext_cls.name in self.exts:
                 raise GWFError(
                     'Extension with name "{}" already loaded.'.format(

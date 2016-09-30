@@ -126,6 +126,14 @@ class App:
         logger.debug('Python version: %s.', platform.python_version())
         logger.debug('Node: %s.', platform.node())
         logger.debug('Python path: %s.', sys.path)
+        logger.debug(
+            'Loaded plugins: %s.',
+            ', '.join(self.plugins_manager.exts.keys())
+        )
+        logger.debug(
+            'Loaded backends: %s.',
+            ', '.join(self.backends_manager.exts.keys())
+        )
 
         backend_name = self.config['backend']
         logger.debug('Setting active backend: %s.', backend_name)
