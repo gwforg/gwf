@@ -2,6 +2,13 @@ Upgrading from Pre-1.0
 ======================
 
 
+.. note::
+  *gwf* only runs on Python 3.4+. This means that you may have to upgrade your
+  Python installation. It is still possible to run workflows using scripts
+  written in Python 2.7 using e.g. environments. See
+  :ref:`best_practices`
+
+
 Pre-1.0 versions of *gwf* used a slightly different syntax for defining
 workflows. However, the changes are quite minimal and thus updating an
 existing workflow to run with version 1.0 and up should be straightforward.
@@ -18,8 +25,7 @@ Right after this, insert this line::
     gwf = Workflow()
 
 Now search for all occurrences of `target(` and replace them with `gwf.target(`.
-Your workflow should now run as before. For example, a workflow that previously
-looked like this::
+For example, a workflow that previously looked like this::
 
     from gwf import *
 
@@ -34,5 +40,16 @@ should now look like this::
     gwf = Workflow()
 
     gwf.target('Foo', input=['hello.txt'], output=['bye.txt']) << """
+    ...
+    """
+
+Finally, in target definitions you should rename `input` to `inputs` and
+`output` to `outputs`. The workflow then ends up looking like this::
+
+    from gwf import Workflow, template
+
+    gwf = Workflow()
+
+    gwf.target('Foo', inputs=['hello.txt'], outputs=['bye.txt']) << """
     ...
     """
