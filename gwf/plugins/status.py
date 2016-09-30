@@ -28,17 +28,16 @@ class StatusCommand(Plugin):
 
         return should_run, submitted, running, completed
 
-    def print_verbose(self, target_names):  # pragma: no cover
+    def print_verbose(self, targets):  # pragma: no cover
         columns = self.ts.columns
         status_string = " {{:.<{}}} {{:^10}}".format(columns - 13)
 
-        for target_name in target_names:
-            target = self.workflow.targets[target_name]
+        for target in targets:
             dependencies = dfs(target, self.workflow.dependencies)
             should_run, submitted, running, completed = \
                 self._split_target_list(dependencies)
 
-            print(" {}".format(colorama.Style.BRIGHT + target_name + colorama.Style.NORMAL))
+            print(" {}".format(colorama.Style.BRIGHT + target.name + colorama.Style.NORMAL))
             print("_" * columns)
             for t in completed:
                 print(status_string.format(
