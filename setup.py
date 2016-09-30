@@ -35,7 +35,7 @@ setup(
     install_requires=[
         "colorama>=0.3.7",
         "configargparse>=0.11",
-        "statusbar>=0.1.1",
+        "statusbar>=0.1.2",
     ],
 
     # metadata for upload to PyPI
