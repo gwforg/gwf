@@ -465,8 +465,13 @@ class PreparedWorkflow(object):
             self.targets[target_name].options = merge(self.config, {
                 option: value
                 for option, value in target.options.items()
-                if option in self.backend.supported_options
             })
+
+            self.targets[target_name].options = {
+                option: value
+                for option, value in target.options.items()
+                if option in self.backend.supported_options
+            }
 
     @cache
     def should_run(self, target):

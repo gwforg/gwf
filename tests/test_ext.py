@@ -1,5 +1,6 @@
 from unittest.mock import Mock, sentinel
 
+from gwf.exceptions import GWFError
 from gwf.ext import ExtensionManager
 
 from . import GWFTestCase
@@ -83,3 +84,11 @@ class TestExtensionManager(GWFTestCase):
         self.plugin2.return_value.setup_argument_parser.assert_called_once_with(
             sentinel.parser, sentinel.subparsers
         )
+
+    def test_loading_two_extensions_with_the_same_name_raises_exception(self):
+        self.plugin1.name = 'fooplugin'
+        self.plugin2.name = 'fooplugin'
+
+        em = ExtensionManager(group='myplugins')
+        with self.assertRaises(GWFError):
+            em.load_extensions()
