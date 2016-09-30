@@ -42,4 +42,4 @@ class LogsCommand(Plugin):
 
         target = self.workflow.targets[target_name]
         log = self.backend.logs(target, stderr=self.config['stderr'])
-        print(log, end='')
+        print(log.read(), end='')
