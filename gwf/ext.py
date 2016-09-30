@@ -3,6 +3,8 @@ import logging
 
 from pkg_resources import iter_entry_points
 
+from .exceptions import GWFError
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,6 +57,13 @@ class ExtensionManager:
                 ext_cls.name,
                 self.group
             )
+
+            if ext_cls.name in self.exts:
+                raise GWFError(
+                    'Extension with name "{}" already loaded.'.format(
+                        ext_cls.name
+                    )
+                )
             self.exts[ext_cls.name] = ext_cls()
 
     def configure_extensions(self, *args, **kwargs):
