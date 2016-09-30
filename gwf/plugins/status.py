@@ -12,7 +12,7 @@ from .base import Plugin
 
 class StatusCommand(Plugin):
 
-    name = "run"
+    name = "status"
 
     def __init__(self):
         self.ts = os.get_terminal_size()
