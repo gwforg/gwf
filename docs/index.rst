@@ -30,7 +30,9 @@ Or via conda::
 
     conda install gwf
 
-You can find the code `here <https://github.com/mailund/gwf>`_.
+You can find the code `here <https://github.com/mailund/gwf>`_. You are
+encouraged to report any issues through the
+`issue tracker <https://github.com/mailund/gwf/issues>`_.
 
 Upgrading from an Older Version
 -------------------------------
@@ -45,8 +47,8 @@ Getting Started
 .. toctree::
    :maxdepth: 2
 
-   configuration
    tutorial
+   configuration
    best_practices
    backends
 
