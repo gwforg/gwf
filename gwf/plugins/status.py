@@ -97,7 +97,9 @@ class StatusCommand(Plugin):
                     raise TargetDoesNotExistError(name)
                 targets.append(self.workflow.targets[name])
 
-        if self.config['verbose']:
+        # disabled coverage test on these since we don't actually test
+        # the printing code...
+        if self.config['verbose']:  # pragma: no cover
             self.print_verbose(targets)
-        else:
+        else:                      # pragma: no cover
             self.print_progress(targets)
