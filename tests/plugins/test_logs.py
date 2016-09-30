@@ -1,3 +1,4 @@
+from io import StringIO
 from unittest.mock import ANY, Mock, call, sentinel
 
 from gwf.backends.base import Backend
@@ -21,11 +22,15 @@ class LogsCommandTest(GWFTestCase):
         self.mock_backend = Mock(
             name='backend', spec_set=Backend
         )
+        self.mock_backend.logs.return_value = StringIO('this is the log...')
 
         self.mock_workflow = Mock(
             name='workflow',
             spec_set=['targets', 'endpoints']
         )
+        self.mock_workflow.targets = {
+            'TestTarget': sentinel.TestTarget,
+        }
 
         self.logs_command = LogsCommand()
         self.logs_command.backend = self.mock_backend
@@ -48,16 +53,10 @@ class LogsCommandTest(GWFTestCase):
         ])
 
     def test_shows_stdout_log_for_target_in_workflow(self):
-        self.mock_workflow.targets = {
-            'TestTarget': sentinel.TestTarget,
-        }
-
         self.logs_command.config = {
             'target': 'TestTarget',
             'stderr': False,
         }
-
-        self.mock_backend.logs.return_value = 'this is the log...'
 
         self.logs_command.on_run()
 
@@ -70,32 +69,20 @@ class LogsCommandTest(GWFTestCase):
         )
 
     def test_raises_exception_if_target_name_does_not_exist_in_workflow(self):
-        self.mock_workflow.targets = {
-            'TestTarget': sentinel.TestTarget,
-        }
-
         self.logs_command.config = {
             'target': 'WrongTarget',
             'stderr': False,
         }
-
-        self.mock_backend.logs.return_value = 'this is the log...'
 
         with self.assertRaises(TargetDoesNotExistError) as ex:
             self.logs_command.on_run()
             self.assertEqual('WrongTarget', ex.target)
 
     def test_requests_stderr_log_when_stderr_option_is_true(self):
-        self.mock_workflow.targets = {
-            'TestTarget': sentinel.TestTarget,
-        }
-
         self.logs_command.config = {
             'target': 'TestTarget',
             'stderr': True,
         }
-
-        self.mock_backend.logs.return_value = 'this is the log...'
 
         self.logs_command.on_run()
 
