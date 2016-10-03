@@ -15,14 +15,13 @@ should be run (see :meth:`~gwf.PreparedWorkflow.should_run`).
 A :class:`~gwf.PreparedWorkflow` can be given to a :class:`~gwf.Backend`
 implementation which will then execute the workflow.
 
-Core
-----
-
 .. automodule:: gwf
    :members:
 
-Backends
---------
+.. autoclass:: gwf.plugins.base.Plugin
+  :members:
+  :inherited-members:
+  :undoc-members:
 
 .. autoclass:: gwf.backends.base.Backend
    :members:
