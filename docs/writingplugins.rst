@@ -150,17 +150,86 @@ this to look up all targets in the workflow::
 Voilà! We now have a functioning plugin that prints a list of all targets in
 the workflow.
 
-Adding and Using Command Options
---------------------------------
+Adding and Using Command Arguments
+----------------------------------
 
+Let's add an argument to our subcommand that the user can ask to only have
+targets printed if they have been submitted. This will require us to interact
+with the active backend.
+
+First we'll add the argument to our subcommand::
+
+    # myplugin/myplugin.py
+    from gwf.plugins import Plugin
+
+    class MyPlugin(Plugin):
+        name = 'myplugin'
+
+        def setup_argument_parser(self, parser, subparsers):
+            subparser = self.setup_subparser(
+                subparsers,
+                'print-targets',
+                'A command for printing the name of all targets.',
+                self.on_run,
+            )
+
+            subparser.add_argument(
+                '-s',
+                '--only-submitted',
+                action='store_true',
+                help='only list submitted targets.',
+            )
+
+        def on_run(self):
+            for target_name in self.workflow.targets.keys():
+                print(target_name)
+
+In the :func:`on_run` we can access all settings and arguments given to *gwf*
+through :attr:`self.config` which is a simple dictionary mapping option names
+to their values. The active backend is accessed through :attr:`self.backend`.
+Now let's combine the two in our plugin::
+
+    # myplugin/myplugin.py
+    from gwf.plugins import Plugin
+
+    class MyPlugin(Plugin):
+        name = 'myplugin'
+
+        def setup_argument_parser(self, parser, subparsers):
+            subparser = self.setup_subparser(
+                subparsers,
+                'print-targets',
+                'A command for printing the name of all targets.',
+                self.on_run,
+            )
+
+            subparser.add_argument(
+                '-s',
+                '--only-submitted',
+                action='store_true',
+                help='only list submitted targets.',
+            )
+
+        def on_run(self):
+            only_submitted = self.config['only_submitted']
+            for target_name, target in self.workflow.targets.items():
+                if only_submitted:
+                    if self.backend.submitted(target):
+                        print(target_name)
+                else:
+                    print(target_name)
+
+Now, when the user runs ``gwf print-targets`` the name of all targets in the
+workflow will be printed. If the user runs ``gwf print-targets -only-submitted``
+only targets that have been submitted will be shown.
 
 Logging from a Plugin
 ---------------------
 
 Write something about logging...
 
-Documenting a Plugin
---------------------
+Documenting and Testing a Plugin
+--------------------------------
 
 
 Examples
