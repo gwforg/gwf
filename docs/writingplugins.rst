@@ -220,7 +220,7 @@ Now let's combine the two in our plugin::
                     print(target_name)
 
 Now, when the user runs ``gwf print-targets`` the name of all targets in the
-workflow will be printed. If the user runs ``gwf print-targets -only-submitted``
+workflow will be printed. If the user runs ``gwf print-targets --only-submitted``
 only targets that have been submitted will be shown.
 
 Logging from a Plugin
