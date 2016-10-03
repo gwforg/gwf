@@ -1,5 +1,5 @@
-Backends
-========
+Supported Backends
+==================
 
 *gwf* supports multiple backends for running workflows. If you don't find a
 backend that suits your needs here, it's easy to
