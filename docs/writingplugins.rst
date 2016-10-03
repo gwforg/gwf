@@ -22,7 +22,7 @@ a minimal (and completely useless) plugin looks like this::
     class MyPlugin(Plugin):
         name = 'myplugin'
 
-Registering the Plugin
+Registering a Plugin
 ----------------------
 
 This plugin does nothing, but let's try to hook it up to *gwf*. Plugins are
@@ -158,6 +158,9 @@ Logging from a Plugin
 ---------------------
 
 Write something about logging...
+
+Documenting a Plugin
+--------------------
 
 
 Examples
