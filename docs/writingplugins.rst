@@ -22,6 +22,9 @@ a minimal (and completely useless) plugin looks like this::
     class MyPlugin(Plugin):
         name = 'myplugin'
 
+Registering the Plugin
+----------------------
+
 This plugin does nothing, but let's try to hook it up to *gwf*. Plugins are
 registered with *gwf* through entry points specified in `setup.py`, so we have
 to write a `setup.py` file for our plugin::
@@ -48,6 +51,9 @@ Here we register our plugin under the `gwf.plugins` entrypoint. This means that
 for all entry points registered under the `gwf.plugins` identifier). Since the
 plugin is written for *gwf*, we also specify that our package requires at least
 version 1.0 of *gwf*.
+
+Installation and Sanity Check
+-----------------------------
 
 We can now install our plugin by running `python setup.py develop`. We install
 the plugin in development mode so that we can quickly test changes.
@@ -77,6 +83,9 @@ Some of the output has been cut away, but you should be able to locate
   with *gwf*, namely the `logs`, `run` and `config` plugins that provide the
   `logs`, `run` and `config` commands, respectively. In short, we eat our own
   dog food!
+
+Adding a Subcommand
+-------------------
 
 So now our plugin is loaded by *gwf*, but it doesn't do anything. Let's set up
 a subcommand that the user can run to get a list of all targets in the
@@ -109,6 +118,9 @@ Here we use the helper method :func:`setup_subparser` to
 hook up the ``on_run`` method to the subcommand. Running ``gwf -h`` should now
 list the ``print-targets`` subcommand and running ``gwf print-targets`` should
 print ``hello!`` to the screen.
+
+Accessing the Workflow
+----------------------
 
 Now we just need to get a list of all targets in the workflow and print their
 names. Plugins are by default configured with three attributes: :attr:`backend`,
