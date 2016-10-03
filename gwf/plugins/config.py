@@ -3,9 +3,9 @@ from collections import OrderedDict
 
 from configargparse import DefaultConfigFileParser
 
+from . import Plugin
 from .. import LOCAL_CONFIG_FILE, USER_CONFIG_FILE
 from ..exceptions import GWFError
-from .base import Plugin
 
 logger = logging.getLogger(__name__)
 

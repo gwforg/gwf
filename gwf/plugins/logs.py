@@ -1,7 +1,7 @@
 import logging
 
+from . import Plugin
 from ..exceptions import TargetDoesNotExistError
-from .base import Plugin
 
 logger = logging.getLogger(__name__)
 

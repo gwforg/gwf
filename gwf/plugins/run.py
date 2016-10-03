@@ -1,5 +1,5 @@
+from . import Plugin
 from ..exceptions import TargetDoesNotExistError
-from .base import Plugin
 
 
 class RunCommand(Plugin):

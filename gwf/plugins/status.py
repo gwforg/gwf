@@ -3,11 +3,14 @@ Implementation of the status command.
 """
 
 import os
+
 import colorama
+
 import statusbar
-from ..utils import dfs
+
+from . import Plugin
 from ..exceptions import TargetDoesNotExistError
-from .base import Plugin
+from ..utils import dfs
 
 
 class StatusCommand(Plugin):
@@ -37,7 +40,8 @@ class StatusCommand(Plugin):
             should_run, submitted, running, completed = \
                 self._split_target_list(dependencies)
 
-            print(" {}".format(colorama.Style.BRIGHT + target.name + colorama.Style.NORMAL))
+            print(" {}".format(colorama.Style.BRIGHT +
+                               target.name + colorama.Style.NORMAL))
             print("_" * columns)
             for t in completed:
                 print(status_string.format(
@@ -66,7 +70,8 @@ class StatusCommand(Plugin):
         table = statusbar.StatusTable()
         for target in targets:
             dependencies = dfs(target, self.workflow.dependencies)
-            should_run, submitted, running, completed = self._split_target_list(dependencies)
+            should_run, submitted, running, completed = self._split_target_list(
+                dependencies)
             status_bar = table.add_status_line(target.name + ": ")
             status_bar.add_progress(len(completed), "#", color="green")
             status_bar.add_progress(len(running), "#", color="blue")
