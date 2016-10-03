@@ -28,7 +28,7 @@ def _norm_paths(working_dir, paths):
 def _delete_file(path):
     try:
         os.remove(path)
-    except FileNotFoundError:
+    except OSError:
         pass
 
 

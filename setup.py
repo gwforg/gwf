@@ -28,6 +28,7 @@ setup(
             'config = gwf.plugins.config:ConfigCommand',
             'status = gwf.plugins.status:StatusCommand',
             'logs = gwf.plugins.logs:LogsCommand',
+            'clean = gwf.plugins.clean:CleanCommand',
         ]
     },
 
