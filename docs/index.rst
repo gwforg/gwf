@@ -51,6 +51,7 @@ Getting Started
    configuration
    best_practices
    backends
+   plugins
 
 Extending gwf
 -------------
