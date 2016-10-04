@@ -1,5 +1,5 @@
-Available Extensions
-====================
+Available Plugins
+=================
 
 This page contains a list of plugins for *gwf*. Want your plugin on the list?
 Then create a pull request with changes to this page. You should at least
