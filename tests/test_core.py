@@ -3,9 +3,8 @@ import os.path
 import unittest
 from unittest.mock import Mock, call, patch
 
-from gwf import template
+from gwf import Event, PreparedWorkflow, Target, Workflow, template
 from gwf.backends.testing import TestingBackend
-from gwf.core import PreparedWorkflow, Target, Workflow
 from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
                             FileRequiredButNotProvidedError,
@@ -360,35 +359,16 @@ class TestPreparedWorkflow(unittest.TestCase):
         with self.assertRaises(FileRequiredButNotProvidedError):
             PreparedWorkflow(self.workflow)
 
-    def test_existing_files_not_provided_by_other_target_not_listed_in_dependencies(self):
-        target1 = self.workflow.target(
-            'TestTarget1',
-            inputs=[],
-            outputs=['test_file.txt']
-        )
-        target2 = self.workflow.target(
-            'TestTarget2',
-            inputs=['test_file.txt', 'other_file.txt'],
-            outputs=['final_file.txt']
+    @patch('gwf.core.os.path.exists', return_value=True)
+    def test_existing_files_not_provided_by_other_target_has_no_dependencies(self, mock_exists):
+        target = self.workflow.target(
+            'TestTarget',
+            inputs=['test_file.txt'],
+            outputs=[],
         )
 
-        def new_exists(path):
-            if path == '/some/dir/test_file.txt':
-                return False
-            elif path == '/some/dir/other_file.txt':
-                return True
-            return False
-
-        with patch('gwf.core.os.path.exists', side_effect=new_exists):
-            prepared_workflow = PreparedWorkflow(workflow=self.workflow)
-            self.assertIn('/some/dir/test_file.txt',
-                          prepared_workflow.provides)
-            self.assertIn('/some/dir/final_file.txt',
-                          prepared_workflow.provides)
-            self.assertIn(target2, prepared_workflow.dependencies)
-            self.assertListEqual(prepared_workflow.dependencies[
-                                 target2], [target1])
-            self.assertListEqual(prepared_workflow.dependencies[target1], [])
+        prepared_workflow = PreparedWorkflow(workflow=self.workflow)
+        self.assertListEqual(prepared_workflow.dependencies[target], [])
 
     @patch('gwf.core.os.path.exists', return_value=False)
     def test_finds_non_existing_file_provided_by_other_target(self, mock_os_path_exists):
