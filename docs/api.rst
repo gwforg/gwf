@@ -49,3 +49,7 @@ Exceptions
    :members:
    :member-order: bysource
    :undoc-members:
+
+
+Events
+------

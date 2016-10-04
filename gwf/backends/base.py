@@ -1,6 +1,7 @@
 import abc
 import logging
 
+from ..events import post_schedule, pre_schedule
 from ..ext import Extension
 from ..utils import dfs
 
@@ -132,7 +133,11 @@ class Backend(Extension):
         :param list targets: A list of targets to be scheduled.
         :return: A list of schedules, one for each target in `targets`.
         """
+        pre_schedule.trigger(targets=targets)
+
         schedules = []
         for target in targets:
             schedules.append(self.schedule(target))
+
+        post_schedule.trigger(targets=targets, schedules=schedules)
         return schedules

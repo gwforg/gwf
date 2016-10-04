@@ -1,12 +1,13 @@
 from __future__ import absolute_import, print_function
 
-from gwf.core import PreparedWorkflow, Target, Workflow
+from gwf.core import Event, PreparedWorkflow, Target, Workflow
 
 USER_CONFIG_FILE = '~/.gwfrc'
 LOCAL_CONFIG_FILE = '.gwfrc'
 
 
 class template(object):
+    """A template with string substitution."""
 
     def __init__(self, **options):
         self.spec = None
@@ -33,4 +34,4 @@ class template(object):
             self.__class__.__name__, self.options, self.spec)
 
 
-__all__ = ('Target', 'Workflow', 'PreparedWorkflow', 'template')
+__all__ = ('Target', 'Workflow', 'PreparedWorkflow', 'template', 'Event',)
