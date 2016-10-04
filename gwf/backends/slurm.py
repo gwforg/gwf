@@ -214,7 +214,6 @@ class SlurmBackend(Backend):
 
         # TODO: maybe use some sort of actual db instead of a file?
         self._job_db = _read_json(self._JOB_DB_PATH)
-        self._job_history = _read_json(self._JOB_HISTORY_PATH)
 
         self._live_job_states = _get_live_job_states()
         logger.debug('found %d jobs', len(self._live_job_states))
@@ -229,7 +228,6 @@ class SlurmBackend(Backend):
     def close(self):
         # TODO: error handling
         _dump_atomic(self._job_db, self._JOB_DB_PATH)
-        _dump_atomic(self._job_history, self._JOB_HISTORY_PATH)
 
     def submitted(self, target):
         return target.name in self._job_db
@@ -257,27 +255,22 @@ class SlurmBackend(Backend):
 
         self._job_db[target.name] = new_job_id
 
-        if target.name not in self._job_history:
-            self._job_history[target.name] = []
-        self._job_history[target.name].append(new_job_id)
-
         # New jobs are assumed to be on-hold until the next time gwf is
         # invoked
         self._live_job_states[new_job_id] = 'H'
 
-    def logs(self, target, stderr=False, rewind=0):
-        target_history = self._job_history.get(target.name, [])
-        if len(target_history) <= rewind:
-            raise NoLogFoundError(
-                'No log exists at this point in time.'
-            )
+    def logs(self, target, stderr=False):
+        try:
+            job_id = self._job_db[target.name]
 
-        job_id = target_history[-1 - rewind]
-        stdout_path = self._get_stdout_log_path(target, job_id=job_id)
-        if stderr:
+            stdout_path = self._get_stdout_log_path(target, job_id=job_id)
             stderr_path = self._get_stderr_log_path(target, job_id=job_id)
-            return (open(stdout_path), open(stderr_path))
-        return open(stdout_path)
+
+            if stderr:
+                return open(stdout_path), open(stderr_path)
+            return open(stdout_path)
+        except Exception as e:
+            raise NoLogFoundError('Could not find logs.') from e
 
     def cancel(self, target):
         """Cancel a target."""

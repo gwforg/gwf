@@ -132,10 +132,9 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.mock_call_sbatch.assert_any_call(ANY, ['1000', '2000'])
         self.assertEqual(backend._job_db['TestTarget3'], '3000')
         self.assertEqual(backend._live_job_states['3000'], 'H')
-        self.assertEqual(backend._job_history['TestTarget3'], ['3000'])
 
     def test_no_dependency_flag_is_set_if_target_has_no_dependencies(self):
-        self.mock_read_json.side_effect = [{}, {}]
+        self.mock_read_json.side_effect = [{}]
         self.mock_get_live_job_states.return_value = {}
         self.mock_call_sbatch.return_value = ('1000', '')
 
@@ -149,27 +148,6 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.mock_call_sbatch.assert_any_call(ANY, [])
         self.assertEqual(backend._job_db['TestTarget'], '1000')
         self.assertEqual(backend._live_job_states['1000'], 'H')
-        self.assertEqual(backend._job_history['TestTarget'], ['1000'])
-
-    def test_submitting_target_twice_appends_new_job_id_to_job_history(self):
-        self.mock_read_json.side_effect = [
-            {'TestTarget': '1000'},
-            {'TestTarget': ['1000']}
-        ]
-        self.mock_get_live_job_states.return_value = {'1000': 'R'}
-        self.mock_call_sbatch.return_value = ('2000', '')
-
-        target = self.workflow.target('TestTarget')
-        prepared_workflow = PreparedWorkflow(self.workflow)
-
-        backend = SlurmBackend()
-        backend.configure(workflow=prepared_workflow, config=self.config)
-        backend.submit(target)
-
-        self.assertEqual(backend._job_db['TestTarget'], '2000')
-        self.assertEqual(backend._live_job_states['2000'], 'H')
-        self.assertEqual(backend._live_job_states['1000'], 'R')
-        self.assertEqual(backend._job_history['TestTarget'], ['1000', '2000'])
 
     def test_job_script_is_properly_compiled_with_all_supported_options(self):
         prepared_workflow = PreparedWorkflow(workflow=self.workflow)
@@ -300,12 +278,13 @@ class TestSlurmBackendLogs(SlurmTestCase):
         with self.assertRaises(NoLogFoundError):
             self.backend.logs(target)
 
-    def test_logs_returns_log_if_rewind_is_0_and_target_has_been_run_once(self):
+    def test_logs_returns_log_if_target_has_been_run_once(self):
         self.mock_read_json.side_effect = [
             {'TestTarget': '1000'},
-            {'TestTarget': ['1000']}
         ]
-        self.mock_get_live_job_states.return_value = {'1000': 'R'}
+        self.mock_get_live_job_states.return_value = {
+            '1000': 'R'
+        }
 
         target = self.workflow.target('TestTarget')
         prepared_workflow = PreparedWorkflow(self.workflow)
@@ -318,48 +297,13 @@ class TestSlurmBackendLogs(SlurmTestCase):
             m.assert_called_once_with(
                 '/some/dir/.gwf/logs/TestTarget.1000.stdout')
 
-    def test_logs_returns_log_if_rewind_is_1_and_target_has_been_run_twice(self):
-        self.mock_read_json.side_effect = [
-            {'TestTarget': '1000'},
-            {'TestTarget': ['200', '1000']}
-        ]
-        self.mock_get_live_job_states.return_value = {}
-
-        target = self.workflow.target('TestTarget')
-        prepared_workflow = PreparedWorkflow(self.workflow)
-        self.backend.configure(workflow=prepared_workflow, config=self.config)
-
-        m = mock_open(read_data='this is the log file')
-        with patch('builtins.open', m):
-            stdout = self.backend.logs(target, rewind=1)
-
-            self.assertEqual(
-                stdout.read(), 'this is the log file'
-            )
-            m.assert_called_once_with(
-                '/some/dir/.gwf/logs/TestTarget.200.stdout'
-            )
-
-    def test_logs_raises_exception_if_rewind_is_2_and_target_has_been_run_twice(self):
-        self.mock_read_json.side_effect = [
-            {'TestTarget': '1000'},
-            {'TestTarget': ['200', '1000']}
-        ]
-        self.mock_get_live_job_states.return_value = {}
-
-        target = self.workflow.target('TestTarget')
-        prepared_workflow = PreparedWorkflow(self.workflow)
-        self.backend.configure(workflow=prepared_workflow, config=self.config)
-
-        with self.assertRaises(NoLogFoundError):
-            self.backend.logs(target, rewind=2)
-
     def test_logs_returns_both_stdout_and_stderr_if_stderr_is_true(self):
         self.mock_read_json.side_effect = [
             {'TestTarget': '1000'},
-            {'TestTarget': ['1000']}
         ]
-        self.mock_get_live_job_states.return_value = {}
+        self.mock_get_live_job_states.return_value = {
+            '1000': 'R'
+        }
 
         target = self.workflow.target('TestTarget')
         prepared_workflow = PreparedWorkflow(self.workflow)

@@ -48,7 +48,7 @@ class Backend(Extension):
         """Cancel a target."""
 
     @abc.abstractmethod
-    def logs(self, target, stderr=False, rewind=0):
+    def logs(self, target, stderr=False):
         """Return log files for a target.
 
         If `target` has been run multiple times, the latest log will be
@@ -66,16 +66,11 @@ class Backend(Extension):
         :param bool stderr:
             default: False. If true, the method will return a tuple consisting
             of both the standard and error output.
-        :param int rewind:
-            default: 0. Specify this parameter to obtain logs from earlier
-            runs of the target. By default the latest log will be returned.
-            To obtain logs from the previous run, specify `rewind=1` etc.
         :return:
             A file-like object or a tuple (stdout, stderr) of file-like objects.
             The user is responsible for closing the returned file(s) after use.
         :raises gwf.exceptions.NoLogFoundError:
-            if the backend could not find a log for the given target at the
-            given time point.
+            if the backend could not find a log for the given target.
         """
 
     def close(self):
