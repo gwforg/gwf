@@ -562,13 +562,10 @@ class Event:
     given to :func:`trigger`.
     """
 
-    def __init__(self, name, doc=None):
+    def __init__(self, name):
         self.name = name
         self._callbacks = set()
         self._logger = logging.getLogger('{}.{}'.format(__name__, self.name))
-
-        if doc:
-            self.__doc__ = doc
 
     def register(self, callback):
         """Register a callback to this event.
