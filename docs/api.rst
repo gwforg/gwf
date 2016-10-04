@@ -12,16 +12,40 @@ computing the entire dependency graph of the workflow, checking the workflow
 for inconsistensies and circular dependencies, and figuring out which targets
 should be run (see :meth:`~gwf.PreparedWorkflow.should_run`).
 
-A :class:`~gwf.PreparedWorkflow` can be given to a :class:`~gwf.Backend`
-implementation which will then execute the workflow.
+A :class:`~gwf.PreparedWorkflow` can be given to a
+:class:`~gwf.backends.Backend` implementation which will then execute the
+workflow.
+
+
+Core
+----
 
 .. automodule:: gwf
-   :members:
+   :members: Target, template, Workflow, PreparedWorkflow, Event
+
+
+Plugins
+-------
 
 .. autoclass:: gwf.plugins.base.Plugin
   :members:
   :inherited-members:
   :undoc-members:
 
+
+Backends
+--------
+
 .. autoclass:: gwf.backends.base.Backend
    :members:
+   :inherited-members:
+   :undoc-members:
+
+
+Exceptions
+----------
+
+.. automodule:: gwf.exceptions
+   :members:
+   :member-order: bysource
+   :undoc-members:
