@@ -1,12 +1,13 @@
 class GWFError(Exception):
-    pass
+    """Base exception for all gwf exceptions."""
 
 
 class InvalidNameError(GWFError):
-    pass
+    """Invalid name."""
 
 
 class TargetExistsError(GWFError):
+    """Target already exists in the workflow."""
 
     def __init__(self, target):
         self.target = target
@@ -19,6 +20,7 @@ class TargetExistsError(GWFError):
 
 
 class TargetDoesNotExistError(GWFError):
+    """Target does not exist in the workflow."""
 
     def __init__(self, target_name):
         self.target_name = target_name
@@ -31,6 +33,12 @@ class TargetDoesNotExistError(GWFError):
 
 
 class FileProvidedByMultipleTargetsError(GWFError):
+    """File is provided by multiple targets.
+
+    :param str path: path of the file.
+    :param str gwf.Target: one of the targets providing the file.
+    :param str gwf.Target: the other target providing the file.
+    """
 
     def __init__(self, path, target, other_target):
         self.path = path
@@ -45,6 +53,13 @@ class FileProvidedByMultipleTargetsError(GWFError):
 
 
 class FileRequiredButNotProvidedError(GWFError):
+    """File required by a target does not exist and is not provided by a target.
+
+    :param str path:
+        path to the file.
+    :param gwf.Target target:
+        target that requires the file.
+    """
 
     def __init__(self, path, target):
         self.path = path
@@ -59,6 +74,11 @@ class FileRequiredButNotProvidedError(GWFError):
 
 
 class CircularDependencyError(GWFError):
+    """Circular dependency.
+
+    :param gwf.Target target:
+        target that depends on itself.
+    """
 
     def __init__(self, target):
         self.target = target
@@ -70,17 +90,13 @@ class CircularDependencyError(GWFError):
         super(CircularDependencyError, self).__init__(message)
 
 
-class WorkflowNotPreparedError(GWFError):
-    pass
-
-
 class IncludeWorkflowError(GWFError):
-    pass
+    """Workflow could not be included."""
 
 
 class BackendError(GWFError):
-    pass
+    """Base class for backend errors."""
 
 
 class NoLogFoundError(BackendError):
-    pass
+    """No log found for target."""
