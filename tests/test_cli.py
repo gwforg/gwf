@@ -1,4 +1,3 @@
-import errno
 from unittest.mock import ANY, Mock, sentinel
 
 from gwf.backends.testing import TestingBackend
