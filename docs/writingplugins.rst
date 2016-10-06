@@ -219,18 +219,73 @@ Now let's combine the two in our plugin::
                 else:
                     print(target_name)
 
-Now, when the user runs ``gwf print-targets`` the name of all targets in the
-workflow will be printed. If the user runs ``gwf print-targets --only-submitted``
-only targets that have been submitted will be shown.
+Now, when the user runs ``gwf -b testing print-targets`` the name of all targets in the
+workflow will be printed. If the user runs
+``gwf -b testing print-targets --only-submitted`` only targets that have been
+submitted will be shown (the testing backend never submits any targets, so
+it will say that none of the targets have been submitted and give an empty
+list).
 
 Logging from a Plugin
 ---------------------
 
-Write something about logging...
+Logging is used to show messages to the user and write out debug messages. It's
+good practice to create a logger instance for your plugin so that messages can
+be filtered and printed based on the plugin. We'll create a logger instance
+and use it to log a debugging message for our plugin like this::
 
-Documenting and Testing a Plugin
---------------------------------
+    # myplugin/myplugin.py
+    import logging
 
+    from gwf.plugins import Plugin
+
+    logger = logging.getLogger(__name__)
+
+    class MyPlugin(Plugin):
+        name = 'myplugin'
+
+        def setup_argument_parser(self, parser, subparsers):
+            subparser = self.setup_subparser(
+                subparsers,
+                'print-targets',
+                'A command for printing the name of all targets.',
+                self.on_run,
+            )
+
+            subparser.add_argument(
+                '-s',
+                '--only-submitted',
+                action='store_true',
+                help='only list submitted targets.',
+            )
+
+        def on_run(self):
+            only_submitted = self.config['only_submitted']
+            logger.debug('Only submitted was set to: %s.', only_submitted)
+            for target_name, target in self.workflow.targets.items():
+                if only_submitted:
+                    if self.backend.submitted(target):
+                        print(target_name)
+                else:
+                    print(target_name)
+
+Running ``gwf -b testing print-targets`` will not show anything since the
+default for *gwf* is to only show messages with a priority of warning or higher.
+However, if set the verbosity level with ``-v debug`` the message will be
+printed.
+
+Plugin Configuration
+--------------------
+
+In *gwf* all arguments that can be set on the command line can also be specified
+in a configuration file. This means that the user can specify defaults for e.g.
+which backend to use, the verbosity etc. The arguments defined by our plugin
+are also automatically read from the configuration file, so if the user always
+only wants to show submitted targets, the user can create a ``.gwfrc`` file in
+the workflow directory (or the user directory) with the following contents::
+
+    # .gwfrc
+    only-submitted = true
 
 Examples
 --------
@@ -238,8 +293,3 @@ Examples
 The plugins included with *gwf* are good examples of the kind of functionality
 that can be implemented through plugins. You can find them
 `here <https://github.com/mailund/gwf/tree/master/gwf/plugins>`_.
-
-Further Reading
----------------
-
-Link to Python Packaging guide.
