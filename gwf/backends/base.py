@@ -51,11 +51,7 @@ class Backend(Extension):
     def logs(self, target, stderr=False):
         """Return log files for a target.
 
-        If `target` has been run multiple times, the latest log will be
-        shown by default. To retrieve logs from an earlier run of the target,
-        specify how many runs to rewind using the `rewind` parameter. E.g. to
-        see the log from three runs ago, specify `rewind=2`. If the backend
-        cannot return logs for the specified time point a
+        If the backend cannot return logs a
         :class:`~gwf.exceptions.NoLogFoundError` is raised.
 
         By default only standard output (stdout) is returned. If `stderr=True`
