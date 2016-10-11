@@ -6,7 +6,6 @@ import platform
 import sys
 
 import colorama
-
 from configargparse import ArgParser
 
 from . import LOCAL_CONFIG_FILE, USER_CONFIG_FILE
@@ -26,6 +25,15 @@ class App:
         'warning': logging.WARNING,
         'info': logging.INFO,
         'debug': logging.DEBUG,
+    }
+
+    BASIC_FORMAT = '%(levelname)-6s|  %(message)s'
+    ADVANCED_FORMAT = '%(levelname)s:%(name)s:%(lineno)d| %(message)s'
+
+    LOGGING_FORMATS = {
+        'warning': BASIC_FORMAT,
+        'info': BASIC_FORMAT,
+        'debug': ADVANCED_FORMAT
     }
 
     def __init__(self, plugins_manager, backends_manager, config_files):
@@ -93,7 +101,7 @@ class App:
     def _configure_logging(self):
         logging.basicConfig(
             level=self.VERBOSITY_LEVELS[self.config['verbosity']],
-            format='%(levelname)-6s|  %(message)s',
+            format=self.LOGGING_FORMATS[self.config['verbosity']],
         )
 
     def run(self, argv):
