@@ -33,7 +33,7 @@ setup(
         ]
     },
     extras_require={
-        'ipyparallel':  ['ipyparallel>=5.2'],
+        'ipyparallel': ['ipyparallel>=5.2'],
     },
 
     test_suite='tests',
