@@ -1,7 +1,7 @@
 import abc
 import logging
 
-from pkg_resources import iter_entry_points
+from pkg_resources import DistributionNotFound, iter_entry_points
 
 from .exceptions import GWFError
 
@@ -77,7 +77,11 @@ class ExtensionManager:
 
     def load_extensions(self):
         for entry_point in iter_entry_points(group=self.group, name=None):
-            ext_cls = entry_point.load()
+            try:
+                ext_cls = entry_point.load()
+            except DistributionNotFound as e:
+                continue
+
             if ext_cls.name in self.exts:
                 raise GWFError(
                     'Extension with name "{}" already loaded.'.format(
