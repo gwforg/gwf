@@ -3,11 +3,17 @@ import logging
 import os
 import os.path
 import subprocess
-
-from ipyparallel import Client
+import warnings
 
 from . import Backend
 from ..exceptions import BackendError
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    from ipyparallel import Client
+
+
+warnings.simplefilter("ignore")
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +71,6 @@ class IPyParallelBackend(Backend):
 
     def configure(self, *args, **kwargs):
         super().configure(*args, **kwargs)
-
         self.client = Client()
         self.view = self.client.load_balanced_view()
         self.results = {}

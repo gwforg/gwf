@@ -110,7 +110,7 @@ class App:
         # Add path of workflow file to python path to make it possible to load
         # modules placed in the directory directly.
         workflow_dir = os.path.dirname(os.path.abspath(self.config['file']))
-        sys.path.insert(0, workflow_dir)
+        sys.path.insert(1, workflow_dir)
 
         # Make sure that a .gwf directory exists in the workflow directory.
         try:
