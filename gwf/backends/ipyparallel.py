@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import os.path
@@ -6,12 +7,25 @@ import subprocess
 from ipyparallel import Client
 
 from . import Backend
+from ..exceptions import BackendError
 
 logger = logging.getLogger(__name__)
 
 
+def _get_log_dir_path(target):
+    return os.path.join(target.working_dir, '.gwf', 'logs')
+
+
+def _get_stdout_path(target):
+    return os.path.join(_get_log_dir_path(target), '{}.stdout'.format(target.name))
+
+
+def _get_stderr_path(target):
+    return os.path.join(_get_log_dir_path(target), '{}.stderr'.format(target.name))
+
+
 def _make_log_dir(target):
-    log_dir = os.path.join(target.working_dir, '.gwf', 'logs')
+    log_dir = _get_log_dir_path(target)
     try:
         os.makedirs(log_dir)
     except OSError:
@@ -20,8 +34,6 @@ def _make_log_dir(target):
 
 
 def _run_target(target):
-    log_dir = _make_log_dir(target)
-
     process = subprocess.Popen(
         ['bash'],
         stdin=subprocess.PIPE,
@@ -33,53 +45,90 @@ def _run_target(target):
 
     stdout, stderr = process.communicate(target.spec)
 
-    stdout_filename = '{}.stdout'.format(target.name)
-    stdout_path = os.path.join(log_dir, stdout_filename)
-    with open(stdout_path, 'w') as stdout_fileobj:
+    with open(_get_stdout_path(target), 'w') as stdout_fileobj:
         stdout_fileobj.write(stdout)
 
-    stderr_filename = '{}.stderr'.format(target.name)
-    stderr_path = os.path.join(log_dir, stderr_filename)
-    with open(stderr_path, 'w') as stderr_fileobj:
+    with open(_get_stderr_path(target), 'w') as stderr_fileobj:
         stderr_fileobj.write(stderr)
 
     if process.returncode != 0:
-        raise Exception(stderr)
+        raise BackendError(stderr)
 
 
 class IPyParallelBackend(Backend):
+    """A backend that runs targets on an iPyParallel cluster."""
 
     name = 'ipyparallel'
+
     supported_options = []
+    option_defaults = {}
 
     def configure(self, *args, **kwargs):
         super().configure(*args, **kwargs)
+
         self.client = Client()
         self.view = self.client.load_balanced_view()
         self.results = {}
 
+        try:
+            with open('.gwf/ipyparallel-db.json', 'r') as fileobj:
+                self.results = json.load(fileobj)
+        except OSError:
+            logger.debug(
+                'Could not open job database. Assuming it is empty.'
+            )
+            self.results = {}
+
+        self.results = {
+            k: v
+            for k, v in self.results.items()
+            if k in self.client.outstanding
+        }
+
     def submit(self, target):
-        logger.debug(target)
-        logger.debug('self.results = %r', self.results)
-        deps = []
-        for dep in self.workflow.dependencies[target]:
-            if dep in self.results:
-                deps.append(self.results[dep])
+        deps = [
+            self.results[dep]
+            for dep in self.workflow.dependencies[target]
+            if dep in self.results
+        ]
 
         with self.view.temp_flags(after=deps, block=False):
-            self.results[target] = self.view.apply(_run_target, target)
+            result = self.view.apply(_run_target, target)
+
+            # Our messages never have any children, so we always only have one
+            # message id.
+            msg_id = result.msg_ids[0]
+            logger.debug(
+                'Target "{}" submitted, received id {}.'.format(
+                    target.name, msg_id,
+                )
+            )
+            self.results[target.name] = msg_id
 
     def cancel(self, target):
-        pass
+        msg_id = self.results.get(target.name)
+        if msg_id is None:
+            return
+        self.client.abort(jobs=[msg_id])
 
     def submitted(self, target):
-        return False
+        return target.name in self.results
 
     def running(self, target):
-        return False
+        msg_id = self.results.get(target.name)
+        if msg_id is None:
+            return False
+        return (msg_id in self.client.outstanding and
+                msg_id not in self.client.results)
 
     def logs(self, target, stderr=False):
-        return ''
+        if stderr:
+            stderr_path = _get_stderr_path(target)
+            return open(stderr_path)
+        stdout_path = _get_stdout_path(target)
+        return open(stdout_path)
 
     def close(self):
-        print(self.view.wait(self.results.values()))
+        self.client.close()
+        with open('.gwf/ipyparallel-db.json', 'w') as fileobj:
+            json.dump(self.results, fileobj)
