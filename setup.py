@@ -21,6 +21,7 @@ setup(
         ],
         'gwf.backends': [
             'slurm = gwf.backends.slurm:SlurmBackend',
+            'ipyparallel = gwf.backends.ipyparallel:IPyParallelBackend',
             'testing = gwf.backends.testing:TestingBackend',
         ],
         'gwf.plugins': [
