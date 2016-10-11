@@ -87,7 +87,7 @@ class IPyParallelBackend(Backend):
         self.results = {
             k: v
             for k, v in self.results.items()
-            if k in self.client.outstanding
+            if k in self.workflow.targets and v in self.client.outstanding
         }
 
     def submit(self, target):
