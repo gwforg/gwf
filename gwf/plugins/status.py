@@ -17,7 +17,8 @@ class StatusCommand(Plugin):
 
     name = "status"
 
-    def __init__(self):
+    def configure(self, *args, **kwargs):
+        super().configure(*args, **kwargs)
         self.ts = os.get_terminal_size()
 
     def _split_target_list(self, targets):
@@ -25,7 +26,10 @@ class StatusCommand(Plugin):
         for target in targets:
             if self.workflow.should_run(target):
                 should_run.append(target)
-            # FIXME: check for queue status here...how do I get the backend?
+                if self.backend.submitted(target):
+                    submitted.append(target)
+                elif self.backend.running(target):
+                    running.append(target)
             else:
                 completed.append(target)
 
