@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 class TestingBackend(Backend):  # pragma: no cover
 
-    name = 'testing'
     supported_options = set(['cores', 'memory'])
     option_defaults = {'cores': 2, 'memory': '18gb'}
 

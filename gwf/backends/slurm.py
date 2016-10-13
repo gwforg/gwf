@@ -188,8 +188,6 @@ class SlurmBackend(Backend):
       `sbatch`.
     """
 
-    name = 'slurm'
-
     supported_options = set(OPTION_TABLE.keys())
     option_defaults = {
         'cores': 1,

@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 class LogsCommand(Plugin):
 
-    name = 'logs'
     help_text = (
         'Display logs for the latest run of a target. By default only '
         'standard output is shown. Supply the --stderr flag to show standard '

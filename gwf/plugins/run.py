@@ -4,8 +4,6 @@ from ..exceptions import TargetDoesNotExistError
 
 class RunCommand(Plugin):
 
-    name = 'run'
-
     def setup_argument_parser(self, parser, subparsers):
         subparser = self.setup_subparser(
             subparsers,

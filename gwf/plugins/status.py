@@ -15,8 +15,6 @@ from ..utils import dfs
 
 class StatusCommand(Plugin):
 
-    name = "status"
-
     def configure(self, *args, **kwargs):
         super().configure(*args, **kwargs)
         self.ts = os.get_terminal_size()

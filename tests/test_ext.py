@@ -13,18 +13,18 @@ class TestExtensionManager(GWFTestCase):
             'gwf.ext.iter_entry_points'
         )
 
-        self.plugin1 = Mock(name='plugin1', spec_set=['name', '__init__'])
-        self.plugin1.name = 'plugin1'
+        self.plugin1 = Mock(name='plugin1', spec_set=['__init__'])
         self.plugin1.return_value = Mock(name='plugin1_inst')
 
-        self.plugin2 = Mock(name='plugin2', spec_set=['name', '__init__'])
-        self.plugin2.name = 'plugin2'
+        self.plugin2 = Mock(name='plugin2', spec_set=['__init__'])
         self.plugin1.return_value = Mock(name='plugin2_inst')
 
-        self.entrypoint1 = Mock(name='entrypoint1', spec_set=['load'])
+        self.entrypoint1 = Mock(name='entrypoint1', spec_set=['name', 'load'])
+        self.entrypoint1.name = 'plugin1'
         self.entrypoint1.load.return_value = self.plugin1
 
-        self.entrypoint2 = Mock(name='entrypoint2', spec_set=['load'])
+        self.entrypoint2 = Mock(name='entrypoint2', spec_set=['name', 'load'])
+        self.entrypoint2.name = 'plugin2'
         self.entrypoint2.load.return_value = self.plugin2
 
         self.mock_iter_entry_points.return_value = [
@@ -47,8 +47,8 @@ class TestExtensionManager(GWFTestCase):
         self.plugin1.assert_called_once_with()
         self.plugin2.assert_called_once_with()
 
-        self.assertIn(self.plugin1.name, em.exts)
-        self.assertIn(self.plugin2.name, em.exts)
+        self.assertIn(self.entrypoint1.name, em.exts)
+        self.assertIn(self.entrypoint2.name, em.exts)
         self.assertEqual(self.plugin1.return_value, em.exts['plugin1'])
         self.assertEqual(self.plugin2.return_value, em.exts['plugin2'])
 
@@ -86,8 +86,8 @@ class TestExtensionManager(GWFTestCase):
         )
 
     def test_loading_two_extensions_with_the_same_name_raises_exception(self):
-        self.plugin1.name = 'fooplugin'
-        self.plugin2.name = 'fooplugin'
+        self.entrypoint1.name = 'fooplugin'
+        self.entrypoint2.name = 'fooplugin'
 
         em = ExtensionManager(group='myplugins')
         with self.assertRaises(GWFError):

@@ -8,8 +8,6 @@ logger = logging.getLogger(__name__)
 
 class CleanCommand(Plugin):
 
-    name = 'clean'
-
     def setup_argument_parser(self, parser, subparsers):
         subparser = self.setup_subparser(
             subparsers,

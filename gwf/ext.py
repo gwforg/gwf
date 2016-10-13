@@ -10,11 +10,6 @@ logger = logging.getLogger(__name__)
 
 class Extension(abc.ABC):
 
-    @property
-    @abc.abstractmethod
-    def name(self):
-        """Single-word, user-friendly name for the extension."""
-
     def configure(self, *args, **kwargs):
         """Called to configure the extension."""
 
@@ -78,13 +73,13 @@ class ExtensionManager:
     def load_extensions(self):
         for entry_point in iter_entry_points(group=self.group, name=None):
             ext_cls = entry_point.load()
-            if ext_cls.name in self.exts:
+            if entry_point.name in self.exts:
                 raise GWFError(
                     'Extension with name "{}" already loaded.'.format(
-                        ext_cls.name
+                        entry_point.name
                     )
                 )
-            self.exts[ext_cls.name] = ext_cls()
+            self.exts[entry_point.name] = ext_cls()
 
     def configure_extensions(self, *args, **kwargs):
         for ext in self.exts.values():
