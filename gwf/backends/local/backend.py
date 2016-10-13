@@ -1,13 +1,9 @@
 import json
-import logging
 import os.path
 
 from .. import Backend
-from ...exceptions import BackendError
 from .client import Client
 from .server import State
-
-logger = logging.getLogger(__name__)
 
 
 class LocalBackend(Backend):
@@ -23,8 +19,10 @@ class LocalBackend(Backend):
         self.client = Client(('localhost', 25000))
 
         self._db_path = os.path.join(
-            self.workflow.working_dir, '.gwf/local-backend-jobdb.json'
+            self.workflow.working_dir,
+            '.gwf/local-backend-jobdb.json'
         )
+
         try:
             with open(self._db_path) as fileobj:
                 self._job_db = json.load(fileobj)
