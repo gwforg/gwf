@@ -21,7 +21,7 @@ setup(
         ],
         'gwf.backends': [
             'slurm = gwf.backends.slurm:SlurmBackend',
-            'ipyparallel = gwf.backends.ipyparallel:IPyParallelBackend [ipyparallel]',
+            'local = gwf.backends.local:LocalBackend',
             'testing = gwf.backends.testing:TestingBackend',
         ],
         'gwf.plugins': [
@@ -31,9 +31,6 @@ setup(
             'logs = gwf.plugins.logs:LogsCommand',
             'clean = gwf.plugins.clean:CleanCommand',
         ]
-    },
-    extras_require={
-        'ipyparallel': ['ipyparallel>=5.2'],
     },
 
     test_suite='tests',
