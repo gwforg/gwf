@@ -30,6 +30,7 @@ setup(
             'status = gwf.plugins.status:StatusCommand',
             'logs = gwf.plugins.logs:LogsCommand',
             'clean = gwf.plugins.clean:CleanCommand',
+            'workers = gwf.plugins.workers:WorkersPlugin'
         ]
     },
 

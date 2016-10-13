@@ -13,6 +13,9 @@ from ...exceptions import BackendError
 logger = logging.getLogger(__name__)
 
 
+__all__ = ('State', 'SubmitRequest', 'StatusRequest', 'start_server')
+
+
 def _gen_task_id():
     return uuid.uuid4().hex
 
@@ -206,7 +209,7 @@ def wait_for_clients(address, task_queue, status_dict):
             traceback.print_exc()
 
 
-def start(hostname='', port=25000, num_workers=None):
+def start_server(hostname='', port=25000, num_workers=None):
     try:
         with Manager() as manager:
             status_dict = manager.dict()
@@ -220,11 +223,9 @@ def start(hostname='', port=25000, num_workers=None):
                 initargs=(task_queue, status_dict, deps_dict, deps_lock),
             )
 
+            logging.info('Started %s workers on port %s.', num_workers, port)
             wait_for_clients((hostname, port), task_queue, status_dict)
     except KeyboardInterrupt:
         logger.debug('Shutting down...')
         workers.close()
         sys.exit(0)
-
-if __name__ == '__main__':
-    start(num_workers=8)
