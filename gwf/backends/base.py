@@ -54,17 +54,16 @@ class Backend(Extension):
         If the backend cannot return logs a
         :class:`~gwf.exceptions.NoLogFoundError` is raised.
 
-        By default only standard output (stdout) is returned. If `stderr=True`
-        the function will return a tuple (stdout, stderr).
+        By default standard output (stdout) is returned. If `stderr=True`
+        standard error will be returned instead.
 
         :param gwf.Target target:
             Target to return logs for.
         :param bool stderr:
-            default: False. If true, the method will return a tuple consisting
-            of both the standard and error output.
+            default: False. If true, return standard error.
         :return:
-            A file-like object or a tuple (stdout, stderr) of file-like objects.
-            The user is responsible for closing the returned file(s) after use.
+            A file-like object. The user is responsible for closing the
+            returned file(s) after use.
         :raises gwf.exceptions.NoLogFoundError:
             if the backend could not find a log for the given target.
         """

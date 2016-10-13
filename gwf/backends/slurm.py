@@ -261,11 +261,11 @@ class SlurmBackend(Backend):
         try:
             job_id = self._job_db[target.name]
 
-            stdout_path = self._get_stdout_log_path(target, job_id=job_id)
-            stderr_path = self._get_stderr_log_path(target, job_id=job_id)
-
             if stderr:
-                return open(stdout_path), open(stderr_path)
+                stderr_path = self._get_stderr_log_path(target, job_id=job_id)
+                return open(stderr_path)
+
+            stdout_path = self._get_stdout_log_path(target, job_id=job_id)
             return open(stdout_path)
         except Exception as e:
             raise NoLogFoundError('Could not find logs.') from e

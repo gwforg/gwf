@@ -297,7 +297,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
             m.assert_called_once_with(
                 '/some/dir/.gwf/logs/TestTarget.1000.stdout')
 
-    def test_logs_returns_both_stdout_and_stderr_if_stderr_is_true(self):
+    def test_logs_returns_stderr_if_stderr_is_true(self):
         self.mock_read_json.side_effect = [
             {'TestTarget': '1000'},
         ]
@@ -311,16 +311,13 @@ class TestSlurmBackendLogs(SlurmTestCase):
 
         m = mock_open()
         m.side_effect = [
-            io.StringIO('this is stdout'),
             io.StringIO('this is stderr')
         ]
 
         with patch('builtins.open', m):
-            stdout, stderr = self.backend.logs(target, stderr=True)
-            self.assertEqual(stdout.read(), 'this is stdout')
+            stderr = self.backend.logs(target, stderr=True)
             self.assertEqual(stderr.read(), 'this is stderr')
             m.assert_has_calls([
-                call('/some/dir/.gwf/logs/TestTarget.1000.stdout'),
                 call('/some/dir/.gwf/logs/TestTarget.1000.stderr')
             ])
 
