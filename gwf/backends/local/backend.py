@@ -12,8 +12,6 @@ logger = logging.getLogger(__name__)
 class LocalBackend(Backend):
     """A backend that runs targets on a local cluster."""
 
-    name = 'local'
-
     supported_options = []
     option_defaults = {}
 

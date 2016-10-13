@@ -6,8 +6,6 @@ from ..backends.local.server import start_server
 
 class WorkersPlugin(Plugin):
 
-    name = 'workers'
-
     def setup_argument_parser(self, parser, subparsers):
         subparser = self.setup_subparser(
             subparsers,
