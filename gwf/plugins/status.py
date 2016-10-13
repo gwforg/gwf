@@ -28,6 +28,8 @@ class StatusCommand(Plugin):
                     submitted.append(target)
                 elif self.backend.running(target):
                     running.append(target)
+                elif self.backend.completed(target) or self.backend.failed(target):
+                    completed.append(target)
             else:
                 completed.append(target)
 
