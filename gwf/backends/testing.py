@@ -22,5 +22,11 @@ class TestingBackend(Backend):  # pragma: no cover
     def running(self, target):
         return False
 
+    def failed(self, target):
+        return False
+
+    def completed(self, target):
+        return False
+
     def logs(self, target, stderr=False, rewind=0):
         return ''

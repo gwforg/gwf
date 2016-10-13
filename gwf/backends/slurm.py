@@ -15,18 +15,18 @@ logger = logging.getLogger(__name__)
 
 # see squeue man page under JOB STATE CODES
 JOB_STATE_CODES = {
-    'BF': '?',  # BOOT_FAIL
-    'CA': '?',  # CANCELLED
-    'CD': '?',  # COMPLETED
+    'BF': 'F',  # BOOT_FAIL
+    'CA': 'F',  # CANCELLED
+    'CD': 'C',  # COMPLETED
     'CF': 'R',  # CONFIGURING
     'CG': 'R',  # COMPLETING
-    'F': '?',   # FAILED
-    'NF': '?',  # NODE_FAIL
+    'F': 'F',   # FAILED
+    'NF': 'F',  # NODE_FAIL
     'PD': 'Q',  # PENDING
-    'PR': '?',  # PREEMPTED
+    'PR': 'F',  # PREEMPTED
     'R': 'R',   # RUNNING
     'S': 'R',   # SUSPENDED
-    'TO': '?',  # TIMEOUT
+    'TO': 'F',  # TIMEOUT
     'SE': 'Q',  # SPECIAL_EXIT
 }
 
@@ -233,6 +233,14 @@ class SlurmBackend(Backend):
     def running(self, target):
         target_job_id = self._job_db.get(target.name, None)
         return self._live_job_states.get(target_job_id, '?') == 'R'
+
+    def failed(self, target):
+        target_job_id = self._job_db.get(target.name, None)
+        return self._live_job_states.get(target_job_id, '?') == 'F'
+
+    def completed(self, target):
+        target_job_id = self._job_db.get(target.name, None)
+        return self._live_job_states.get(target_job_id, '?') == 'C'
 
     def submit(self, target):
         dependency_ids = [
