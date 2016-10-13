@@ -90,7 +90,7 @@ class StatusCommand(Plugin):
         )
 
         subparser.add_argument("targets", metavar="TARGET", nargs="*",
-                               help="Targets to show the status of (default all terminal targets)")
+                               help="Targets to show the status of (default: all terminal targets)")
         subparser.add_argument("--verbose", action="store_true",
                                help="Output verbose status output")
 
