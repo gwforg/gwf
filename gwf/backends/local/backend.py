@@ -58,6 +58,14 @@ class LocalBackend(Backend):
         job_id = self._job_db[target.name]
         return self.get_client().status()[job_id] == State.running
 
+    def failed(self, target):
+        job_id = self._job_db[target.name]
+        return self.get_client().status()[job_id] == State.failed
+
+    def completed(self, target):
+        job_id = self._job_db[target.name]
+        return self.get_client().status()[job_id] == State.completed
+
     def logs(self, target, stderr=False):
         pass
 
