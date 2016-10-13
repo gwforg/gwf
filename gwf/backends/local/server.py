@@ -8,6 +8,8 @@ from multiprocessing import Manager
 from multiprocessing.connection import Listener
 from multiprocessing.pool import ThreadPool as Pool
 
+from ...exceptions import BackendError
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,11 +22,17 @@ def _get_log_dir_path(target):
 
 
 def _get_stdout_path(target):
-    return os.path.join(_get_log_dir_path(target), '{}.stdout'.format(target.name))
+    return os.path.join(
+        _get_log_dir_path(target),
+        '{}.stdout'.format(target.name)
+    )
 
 
 def _get_stderr_path(target):
-    return os.path.join(_get_log_dir_path(target), '{}.stderr'.format(target.name))
+    return os.path.join(
+        _get_log_dir_path(target),
+        '{}.stderr'.format(target.name)
+    )
 
 
 def _make_log_dir(target):
@@ -36,7 +44,7 @@ def _make_log_dir(target):
     return log_dir
 
 
-class GWFServerError(Exception):
+class ServerError(BackendError):
     pass
 
 
@@ -48,7 +56,9 @@ class State:
 
 
 class Request:
-    pass
+
+    def handle(self, task_queue, status_queue):
+        raise NotImplemented()
 
 
 class SubmitRequest(Request):
@@ -66,12 +76,7 @@ class SubmitRequest(Request):
 
 class StatusRequest(Request):
 
-    def __init__(self, task_ids=None):
-        self.task_ids = task_ids
-
     def handle(self, task_queue, status_dict):
-        if self.task_ids is not None:
-            return {k: v for k, v in status_dict.items() if k in self.task_ids}
         return dict(status_dict)
 
 
