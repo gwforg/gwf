@@ -12,7 +12,7 @@ from . import LOCAL_CONFIG_FILE, USER_CONFIG_FILE
 from .core import PreparedWorkflow
 from .exceptions import GWFError
 from .ext import ExtensionManager
-from .utils import get_gwf_version, import_object, merge
+from .utils import cache, get_gwf_version, import_object, merge
 
 logger = logging.getLogger(__name__)
 
@@ -157,21 +157,26 @@ class App:
             workflow.defaults,
         )
 
-        self.prepared_workflow = PreparedWorkflow(
-            targets=workflow.targets,
-            working_dir=workflow.working_dir,
-            supported_options=self.active_backend.supported_options,
-            config=self.config,
-        )
+        @cache
+        def get_prepared_workflow():
+            return PreparedWorkflow(
+                targets=workflow.targets,
+                working_dir=workflow_dir,
+                supported_options=self.active_backend.supported_options,
+                config=self.config,
+            )
 
-        self.active_backend.configure(
-            working_dir=self.prepared_workflow.working_dir,
-            config=self.config,
-        )
+        @cache
+        def get_active_backend():
+            self.active_backend.configure(
+                working_dir=workflow_dir,
+                config=self.config,
+            )
+            return self.active_backend
 
         self.plugins_manager.configure_extensions(
-            workflow=self.prepared_workflow,
-            backend=self.active_backend,
+            get_prepared_workflow=get_prepared_workflow,
+            get_active_backend=get_active_backend,
             config=self.config,
         )
 

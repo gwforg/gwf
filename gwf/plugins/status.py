@@ -97,6 +97,9 @@ class StatusCommand(Plugin):
                                help="Output verbose status output")
 
     def on_run(self):
+        self.workflow = self.get_prepared_workflow()
+        self.backend = self.get_active_backend()
+
         targets = []
         if not self.config['targets']:
             targets = self.workflow.endpoints()

@@ -39,17 +39,20 @@ class CleanCommand(Plugin):
         )
 
     def on_clean(self):
+        workflow = self.get_prepared_workflow()
+        backend = self.get_active_backend()
+
         targets = []
         if not self.config['targets']:
-            targets = self.workflow.targets.values()
+            targets = workflow.targets.values()
         else:
             for name in self.config['targets']:
-                if name not in self.workflow.targets:
+                if name not in workflow.targets:
                     raise TargetDoesNotExistError(name)
-                targets.append(self.workflow.targets[name])
+                targets.append(workflow.targets[name])
 
         for target in targets:
-            if not self.config['only_failed'] or self.backend.failed(target):
+            if not self.config['only_failed'] or backend.failed(target):
                 logger.info('Cleaning up: %s.', target.name)
                 for path in target.outputs:
                     logging.debug(

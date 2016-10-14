@@ -40,7 +40,7 @@ class LocalBackend(FileLogsMixin, Backend):
         super().configure(*args, **kwargs)
 
         self._db_path = os.path.join(
-            self.workflow.working_dir,
+            self.working_dir,
             '.gwf/local-backend-jobdb.json'
         )
 
@@ -57,10 +57,10 @@ class LocalBackend(FileLogsMixin, Backend):
             if status[v] != State.completed
         }
 
-    def submit(self, target):
+    def submit(self, target, dependencies):
         deps = [
             self._job_db[dep.name]
-            for dep in self.workflow.dependencies[target]
+            for dep in dependencies
             if dep.name in self._job_db
         ]
         job_id = self.get_client().submit(target, deps=deps)

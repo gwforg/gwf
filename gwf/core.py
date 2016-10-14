@@ -556,7 +556,7 @@ def schedule(prepared_workflow, backend, target):
 
         logger.info('Submitting target %s.', dependency.name)
 
-        backend.submit(dependency)
+        backend.submit(dependency, prepared_workflow.dependencies[dependency])
         scheduled.append(dependency)
 
     return scheduled
