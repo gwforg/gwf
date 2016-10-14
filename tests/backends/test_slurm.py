@@ -270,7 +270,7 @@ class TestSlurmBackendRunning(SlurmTestCase):
 
 class TestSlurmBackendLogs(SlurmTestCase):
 
-    def test_logs_raises_exception_if_rewind_is_0_and_target_has_no_history(self):
+    def test_logs_raises_exception_target_has_no_log(self):
         target = self.workflow.target('TestTarget')
         prepared_workflow = PreparedWorkflow(self.workflow)
         self.backend.configure(workflow=prepared_workflow, config=self.config)
@@ -295,7 +295,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
             stdout = self.backend.logs(target)
             self.assertEqual(stdout.read(), 'this is the log file')
             m.assert_called_once_with(
-                '/some/dir/.gwf/logs/TestTarget.1000.stdout')
+                '/some/dir/.gwf/logs/TestTarget.stdout', 'r')
 
     def test_logs_returns_stderr_if_stderr_is_true(self):
         self.mock_read_json.side_effect = [
@@ -318,7 +318,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
             stderr = self.backend.logs(target, stderr=True)
             self.assertEqual(stderr.read(), 'this is stderr')
             m.assert_has_calls([
-                call('/some/dir/.gwf/logs/TestTarget.1000.stderr')
+                call('/some/dir/.gwf/logs/TestTarget.stderr', 'r')
             ])
 
 

@@ -1,10 +1,14 @@
 import os.path
 
 from ..exceptions import NoLogFoundError
+from ..utils import safe_mkdir
 from .base import Backend
 
 
 class FileLogsMixin:
+
+    def configure(self, *args, **kwargs):
+        super().configure(*args, **kwargs)
 
     def logs(self, target, stderr=False):
         try:
@@ -12,7 +16,7 @@ class FileLogsMixin:
                 return self.open_stderr(target)
             return self.open_stdout(target)
         except OSError as e:
-            raise NoLogFoundError('Could not find logs.') from e
+            raise NoLogFoundError() from e
 
     @staticmethod
     def log_dir(target):
@@ -20,19 +24,24 @@ class FileLogsMixin:
         return os.path.join(target.working_dir, '.gwf', 'logs')
 
     @staticmethod
+    def _log_path(target, extension):
+        log_dir = FileLogsMixin.log_dir(target)
+        safe_mkdir(log_dir)
+        return os.path.join(log_dir, '{}.{}'.format(target.name, extension))
+
+    @staticmethod
+    def stdout_path(target):
+        return FileLogsMixin._log_path(target, extension='stdout')
+
+    def stderr_path(target):
+        return FileLogsMixin._log_path(target, extension='stderr')
+
+    @staticmethod
     def open_stdout(target, mode='r'):
-        path = os.path.join(
-            FileLogsMixin.log_dir(target),
-            '{}.stdout'.format(target.name)
-        )
-        return open(path, mode)
+        return open(FileLogsMixin.stdout_path(target), mode)
 
     @staticmethod
     def open_stderr(target, mode='r'):
-        path = os.path.join(
-            FileLogsMixin.log_dir(target),
-            '{}.stderr'.format(target.name)
-        )
-        return open(path, mode)
+        return open(FileLogsMixin.stderr_path(target), mode)
 
 __all__ = ('Backend', 'FileLogsMixin',)

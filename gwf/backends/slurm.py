@@ -6,7 +6,7 @@ import os.path
 import subprocess
 from distutils.spawn import find_executable
 
-from . import Backend
+from . import Backend, FileLogsMixin
 from ..exceptions import BackendError, NoLogFoundError
 from ..utils import cache, timer
 
@@ -161,7 +161,7 @@ def _get_live_job_states():
     return result
 
 
-class SlurmBackend(Backend):
+class SlurmBackend(FileLogsMixin, Backend):
     """Backend for the Slurm workload manager.
 
     To use this backend you must activate the `slurm` backend.
@@ -265,37 +265,12 @@ class SlurmBackend(Backend):
         # invoked
         self._live_job_states[new_job_id] = 'H'
 
-    def logs(self, target, stderr=False):
-        try:
-            job_id = self._job_db[target.name]
-
-            if stderr:
-                stderr_path = self._get_stderr_log_path(target, job_id=job_id)
-                return open(stderr_path)
-
-            stdout_path = self._get_stdout_log_path(target, job_id=job_id)
-            return open(stdout_path)
-        except Exception as e:
-            raise NoLogFoundError('Could not find logs.') from e
-
     def cancel(self, target):
         """Cancel a target."""
         job_id = self._job_db.get(target.name, '?')
         if job_id not in self._live_job_states:
             raise BackendError('Cannot cancel non-running target.')
         _call_scancel(job_id)
-
-    def _get_stdout_log_path(self, target, job_id='%j'):
-        return os.path.join(
-            self._log_dir,
-            '{}.{}.stdout'.format(target.name, job_id)
-        )
-
-    def _get_stderr_log_path(self, target, job_id='%j'):
-        return os.path.join(
-            self._log_dir,
-            '{}.{}.stderr'.format(target.name, job_id)
-        )
 
     def _compile_script(self, target):
         option_str = "#SBATCH {0}{1}"
@@ -319,9 +294,9 @@ class SlurmBackend(Backend):
             )
 
         out.append(option_str.format(
-            '--output=', self._get_stdout_log_path(target)))
+            '--output=', FileLogsMixin.stdout_path(target)))
         out.append(option_str.format(
-            '--error=', self._get_stderr_log_path(target)))
+            '--error=', FileLogsMixin.stderr_path(target)))
 
         out.append('')
         out.append('cd {}'.format(target.working_dir))
