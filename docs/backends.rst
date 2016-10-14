@@ -10,3 +10,7 @@ SLURM
 
 .. autoclass::
    gwf.backends.slurm.SlurmBackend
+
+
+.. autoclass::
+  gwf.backends.local.LocalBackend

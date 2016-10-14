@@ -10,7 +10,17 @@ logger = logging.getLogger(__name__)
 
 
 class LocalBackend(FileLogsMixin, Backend):
-    """A backend that runs targets on a local cluster."""
+    """Backend that runs targets on a local cluster.
+
+    To use this backend you must activate the `local` backend and start a
+    local cluster (with one or more workers) that the backend can submit targets
+    to. To start a cluster with two workers run the command::
+
+        gwf -b local workers -n 2
+
+    If the local backend is your default backend you can of course omit the
+    ``-b local`` option.
+    """
 
     supported_options = []
     option_defaults = {}
