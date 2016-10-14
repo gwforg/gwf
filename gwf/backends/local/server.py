@@ -1,5 +1,4 @@
 import logging
-import os.path
 import subprocess
 import sys
 import traceback
@@ -8,6 +7,7 @@ from multiprocessing import Manager
 from multiprocessing.connection import Listener
 from multiprocessing.pool import ThreadPool as Pool
 
+from .. import FileLogsMixin
 from ...exceptions import BackendError
 
 logger = logging.getLogger(__name__)
@@ -18,33 +18,6 @@ __all__ = ('State', 'SubmitRequest', 'StatusRequest', 'start_server')
 
 def _gen_task_id():
     return uuid.uuid4().hex
-
-
-def _get_log_dir_path(target):
-    return os.path.join(target.working_dir, '.gwf', 'logs')
-
-
-def _get_stdout_path(target):
-    return os.path.join(
-        _get_log_dir_path(target),
-        '{}.stdout'.format(target.name)
-    )
-
-
-def _get_stderr_path(target):
-    return os.path.join(
-        _get_log_dir_path(target),
-        '{}.stderr'.format(target.name)
-    )
-
-
-def _make_log_dir(target):
-    log_dir = _get_log_dir_path(target)
-    try:
-        os.makedirs(log_dir)
-    except OSError:
-        pass
-    return log_dir
 
 
 class ServerError(BackendError):
@@ -149,9 +122,9 @@ def worker(task_queue, status_dict, deps_dict, deps_lock):
 
             stdout, stderr = process.communicate(request.target.spec)
 
-            with open(_get_stdout_path(request.target), 'w') as stdout_fileobj:
+            with FileLogsMixin.open_stdout(request.target, mode='w') as stdout_fileobj:
                 stdout_fileobj.write(stdout)
-            with open(_get_stderr_path(request.target), 'w') as stderr_fileobj:
+            with FileLogsMixin.open_stderr(request.target, mode='w') as stderr_fileobj:
                 stderr_fileobj.write(stderr)
 
             if process.returncode != 0:

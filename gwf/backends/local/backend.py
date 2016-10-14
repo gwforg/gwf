@@ -2,14 +2,14 @@ import json
 import logging
 import os.path
 
-from .. import Backend
+from .. import Backend, FileLogsMixin
 from .client import Client
 from .server import State
 
 logger = logging.getLogger(__name__)
 
 
-class LocalBackend(Backend):
+class LocalBackend(FileLogsMixin, Backend):
     """A backend that runs targets on a local cluster."""
 
     supported_options = []
@@ -40,10 +40,18 @@ class LocalBackend(Backend):
         except OSError:
             self._job_db = {}
 
+        status = self.get_client().status()
+        self._job_db = {
+            k: v
+            for k, v in self._job_db.items()
+            if status[v] != State.completed
+        }
+
     def submit(self, target):
         deps = [
             self._job_db[dep.name]
             for dep in self.workflow.dependencies[target]
+            if dep.name in self._job_db
         ]
         job_id = self.get_client().submit(target, deps=deps)
         self._job_db[target.name] = job_id
@@ -65,9 +73,6 @@ class LocalBackend(Backend):
     def completed(self, target):
         job_id = self._job_db[target.name]
         return self.get_client().status()[job_id] == State.completed
-
-    def logs(self, target, stderr=False):
-        pass
 
     def close(self):
         try:

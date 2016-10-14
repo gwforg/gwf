@@ -1,6 +1,8 @@
 import logging
+from io import StringIO
 
 from . import Backend
+from ..exceptions import NoLogFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -29,4 +31,4 @@ class TestingBackend(Backend):  # pragma: no cover
         return False
 
     def logs(self, target, stderr=False, rewind=0):
-        return ''
+        raise NoLogFoundError
