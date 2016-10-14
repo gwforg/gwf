@@ -1,5 +1,4 @@
 import logging
-from io import StringIO
 
 from . import Backend
 from ..exceptions import NoLogFoundError

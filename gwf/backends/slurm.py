@@ -7,7 +7,7 @@ import subprocess
 from distutils.spawn import find_executable
 
 from . import Backend, FileLogsMixin
-from ..exceptions import BackendError, NoLogFoundError
+from ..exceptions import BackendError
 from ..utils import cache, timer
 
 logger = logging.getLogger(__name__)
