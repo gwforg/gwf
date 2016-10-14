@@ -1,4 +1,5 @@
 import logging
+import os
 
 from . import Plugin
 from ..exceptions import TargetDoesNotExistError
@@ -6,9 +7,14 @@ from ..exceptions import TargetDoesNotExistError
 logger = logging.getLogger(__name__)
 
 
-class CleanCommand(Plugin):
+def _delete_file(path):
+    try:
+        os.remove(path)
+    except OSError:
+        pass
 
-    name = 'clean'
+
+class CleanCommand(Plugin):
 
     def setup_argument_parser(self, parser, subparsers):
         subparser = self.setup_subparser(
@@ -25,6 +31,13 @@ class CleanCommand(Plugin):
             help="Targets to clean up (default: all targets)"
         )
 
+        subparser.add_argument(
+            '-f',
+            '--only-failed',
+            action='store_true',
+            help='Only delete output files from failed targets.',
+        )
+
     def on_clean(self):
         targets = []
         if not self.config['targets']:
@@ -36,5 +49,13 @@ class CleanCommand(Plugin):
                 targets.append(self.workflow.targets[name])
 
         for target in targets:
-            logger.info('Cleaning up: %s.', target.name)
-            target.clean()
+            if not self.config['only_failed'] or self.backend.failed(target):
+                logger.info('Cleaning up: %s.', target.name)
+                for path in target.outputs:
+                    logging.debug(
+                        'Deleting output file "%s" from target "%s".',
+                        path,
+                        target.name
+                    )
+
+                    _delete_file(path)

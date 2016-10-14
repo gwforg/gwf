@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 class ConfigCommand(Plugin):
 
-    name = 'config'
     help_text = (
         'Set and unset configuration options. If a value is provided, the '
         'will be set to this value. If no value is given, the setting will be '

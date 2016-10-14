@@ -25,13 +25,6 @@ def _norm_paths(working_dir, paths):
     return [_norm_path(working_dir, path) for path in paths]
 
 
-def _delete_file(path):
-    try:
-        os.remove(path)
-    except OSError:
-        pass
-
-
 def normalized_paths_property(name):
     """Define a normalized paths property.
 
@@ -122,20 +115,6 @@ class Target(object):
         A target is a sink if it does not output any files.
         """
         return not self.outputs
-
-    def clean(self):
-        """Delete all output files produced by this target.
-
-        Any output files that do not exist will be ignored.
-        """
-        for path in self.outputs:
-            logging.debug(
-                'Deleting output file "%s" from target "%s".',
-                path,
-                self.name
-            )
-
-            _delete_file(path)
 
     def __lshift__(self, spec):
         if isinstance(spec, tuple):

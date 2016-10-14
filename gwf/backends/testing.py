@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 class TestingBackend(Backend):  # pragma: no cover
 
-    name = 'testing'
     supported_options = set(['cores', 'memory'])
     option_defaults = {'cores': 2, 'memory': '18gb'}
 
@@ -21,6 +20,12 @@ class TestingBackend(Backend):  # pragma: no cover
         return False
 
     def running(self, target):
+        return False
+
+    def failed(self, target):
+        return False
+
+    def completed(self, target):
         return False
 
     def logs(self, target, stderr=False, rewind=0):

@@ -15,18 +15,18 @@ logger = logging.getLogger(__name__)
 
 # see squeue man page under JOB STATE CODES
 JOB_STATE_CODES = {
-    'BF': '?',  # BOOT_FAIL
-    'CA': '?',  # CANCELLED
-    'CD': '?',  # COMPLETED
+    'BF': 'F',  # BOOT_FAIL
+    'CA': 'F',  # CANCELLED
+    'CD': 'C',  # COMPLETED
     'CF': 'R',  # CONFIGURING
     'CG': 'R',  # COMPLETING
-    'F': '?',   # FAILED
-    'NF': '?',  # NODE_FAIL
+    'F': 'F',   # FAILED
+    'NF': 'F',  # NODE_FAIL
     'PD': 'Q',  # PENDING
-    'PR': '?',  # PREEMPTED
+    'PR': 'F',  # PREEMPTED
     'R': 'R',   # RUNNING
     'S': 'R',   # SUSPENDED
-    'TO': '?',  # TIMEOUT
+    'TO': 'F',  # TIMEOUT
     'SE': 'Q',  # SPECIAL_EXIT
 }
 
@@ -188,8 +188,6 @@ class SlurmBackend(Backend):
       `sbatch`.
     """
 
-    name = 'slurm'
-
     supported_options = set(OPTION_TABLE.keys())
     option_defaults = {
         'cores': 1,
@@ -236,6 +234,14 @@ class SlurmBackend(Backend):
         target_job_id = self._job_db.get(target.name, None)
         return self._live_job_states.get(target_job_id, '?') == 'R'
 
+    def failed(self, target):
+        target_job_id = self._job_db.get(target.name, None)
+        return self._live_job_states.get(target_job_id, '?') == 'F'
+
+    def completed(self, target):
+        target_job_id = self._job_db.get(target.name, None)
+        return self._live_job_states.get(target_job_id, '?') == 'C'
+
     def submit(self, target):
         dependency_ids = [
             self._job_db[dep.name]
@@ -263,11 +269,11 @@ class SlurmBackend(Backend):
         try:
             job_id = self._job_db[target.name]
 
-            stdout_path = self._get_stdout_log_path(target, job_id=job_id)
-            stderr_path = self._get_stderr_log_path(target, job_id=job_id)
-
             if stderr:
-                return open(stdout_path), open(stderr_path)
+                stderr_path = self._get_stderr_log_path(target, job_id=job_id)
+                return open(stderr_path)
+
+            stdout_path = self._get_stdout_log_path(target, job_id=job_id)
             return open(stdout_path)
         except Exception as e:
             raise NoLogFoundError('Could not find logs.') from e
