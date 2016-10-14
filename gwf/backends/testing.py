@@ -11,7 +11,7 @@ class TestingBackend(Backend):  # pragma: no cover
     supported_options = set(['cores', 'memory'])
     option_defaults = {'cores': 2, 'memory': '18gb'}
 
-    def submit(self, target):
+    def submit(self, target, dependencies):
         pass
 
     def cancel(self, target):

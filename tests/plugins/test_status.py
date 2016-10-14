@@ -19,11 +19,14 @@ class StatusCommandTest(GWFTestCase):
         self.status_command.print_progress = lambda targets: None
 
         self.mock_backend = Mock(name='backend', spec_set=Backend)
+        self.mock_get_active_backend = Mock(return_value=self.mock_backend)
+
         self.mock_workflow = Mock(
             name='workflow',
             spec_set=['targets', 'endpoints', 'dependencies'],
             dependencies=[]
         )
+        self.mock_get_prepared_workflow = Mock(return_value=self.mock_workflow)
 
     def test_sets_up_status_subcommand(self):
         self.status_command.setup_argument_parser(
@@ -49,9 +52,11 @@ class StatusCommandTest(GWFTestCase):
 
         mock_config = {'targets': [], 'verbose': True}
 
-        self.status_command.configure(workflow=self.mock_workflow,
-                                      backend=self.mock_backend,
-                                      config=mock_config)
+        self.status_command.configure(
+            get_active_backend=self.mock_get_active_backend,
+            get_prepared_workflow=self.mock_get_prepared_workflow,
+            config=mock_config,
+        )
 
         self.status_command.on_run()
 
@@ -68,9 +73,11 @@ class StatusCommandTest(GWFTestCase):
             'verbose': True
         }
 
-        self.status_command.configure(workflow=self.mock_workflow,
-                                      backend=self.mock_backend,
-                                      config=mock_config)
+        self.status_command.configure(
+            get_active_backend=self.mock_get_active_backend,
+            get_prepared_workflow=self.mock_get_prepared_workflow,
+            config=mock_config,
+        )
 
         self.status_command.on_run()
 
@@ -86,9 +93,11 @@ class StatusCommandTest(GWFTestCase):
             'verbose': False
         }
 
-        self.status_command.configure(workflow=self.mock_workflow,
-                                      backend=self.mock_backend,
-                                      config=mock_config)
+        self.status_command.configure(
+            get_active_backend=self.mock_get_active_backend,
+            get_prepared_workflow=self.mock_get_prepared_workflow,
+            config=mock_config,
+        )
 
         with self.assertRaises(TargetDoesNotExistError) as ex:
             self.status_command.on_run()

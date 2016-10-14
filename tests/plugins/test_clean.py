@@ -15,6 +15,7 @@ class CleanCommandTest(GWFTestCase):
         )
 
         self.mock_backend = Mock(name='backend', spec_set=Backend)
+        self.mock_get_active_backend = Mock(return_value=self.mock_backend)
 
         self.clean_command = CleanCommand()
 
@@ -22,6 +23,7 @@ class CleanCommandTest(GWFTestCase):
             name='workflow',
             spec_set=['targets', 'endpoints', 'working_dir']
         )
+        self.mock_get_prepared_workflow = Mock(return_value=self.mock_workflow)
 
         self.mock_target1 = Mock(spec_set=['name', 'outputs'])
         self.mock_target1.name = 'target1'
@@ -59,9 +61,11 @@ class CleanCommandTest(GWFTestCase):
     def test_on_clean_cleans_all_targets_if_no_targets_are_given(self):
         mock_config = {'targets': [], 'only_failed': False}
 
-        self.clean_command.configure(workflow=self.mock_workflow,
-                                     backend=self.mock_backend,
-                                     config=mock_config)
+        self.clean_command.configure(
+            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_active_backend=self.mock_get_active_backend,
+            config=mock_config
+        )
 
         self.clean_command.on_clean()
 
@@ -73,9 +77,11 @@ class CleanCommandTest(GWFTestCase):
     def test_on_clean_cleans_with_targets_given_in_config(self):
         mock_config = {'targets': ['target1'], 'only_failed': False}
 
-        self.clean_command.configure(workflow=self.mock_workflow,
-                                     backend=self.mock_backend,
-                                     config=mock_config)
+        self.clean_command.configure(
+            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_active_backend=self.mock_get_active_backend,
+            config=mock_config
+        )
 
         self.clean_command.on_clean()
 
@@ -86,9 +92,11 @@ class CleanCommandTest(GWFTestCase):
     def test_on_clean_raises_exception_if_target_does_not_exist_in_workflow(self):
         mock_config = {'targets': ['target1', 'target3'], 'only_failed': False}
 
-        self.clean_command.configure(workflow=self.mock_workflow,
-                                     backend=self.mock_backend,
-                                     config=mock_config)
+        self.clean_command.configure(
+            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_active_backend=self.mock_get_active_backend,
+            config=mock_config
+        )
 
         with self.assertRaises(TargetDoesNotExistError) as ex:
             self.clean_command.on_clean()
@@ -99,8 +107,8 @@ class CleanCommandTest(GWFTestCase):
         self.mock_backend.failed.side_effect = [False, True]
 
         self.clean_command.configure(
-            workflow=self.mock_workflow,
-            backend=self.mock_backend,
+            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_active_backend=self.mock_get_active_backend,
             config=mock_config
         )
         self.clean_command.on_clean()

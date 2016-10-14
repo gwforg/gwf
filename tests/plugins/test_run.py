@@ -21,10 +21,13 @@ class RunCommandTest(GWFTestCase):
         self.run_command = RunCommand()
 
         self.mock_backend = Mock(name='backend', spec_set=Backend)
+        self.mock_get_active_backend = Mock(return_value=self.mock_backend)
+
         self.mock_workflow = Mock(
             name='workflow',
             spec_set=['targets', 'endpoints']
         )
+        self.mock_get_prepared_workflow = Mock(return_value=self.mock_workflow)
 
     def test_sets_up_run_subcommand(self):
         self.run_command.setup_argument_parser(
@@ -47,9 +50,11 @@ class RunCommandTest(GWFTestCase):
 
         mock_config = {'targets': []}
 
-        self.run_command.configure(workflow=self.mock_workflow,
-                                   backend=self.mock_backend,
-                                   config=mock_config)
+        self.run_command.configure(
+            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_active_backend=self.mock_get_active_backend,
+            config=mock_config
+        )
 
         self.run_command.on_run()
 
@@ -68,9 +73,11 @@ class RunCommandTest(GWFTestCase):
 
         mock_config = {'targets': ['target1', 'target2']}
 
-        self.run_command.configure(workflow=self.mock_workflow,
-                                   backend=self.mock_backend,
-                                   config=mock_config)
+        self.run_command.configure(
+            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_active_backend=self.mock_get_active_backend,
+            config=mock_config
+        )
 
         self.run_command.on_run()
 
@@ -87,9 +94,11 @@ class RunCommandTest(GWFTestCase):
 
         mock_config = {'targets': ['target1', 'target2']}
 
-        self.run_command.configure(workflow=self.mock_workflow,
-                                   backend=self.mock_backend,
-                                   config=mock_config)
+        self.run_command.configure(
+            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_active_backend=self.mock_get_active_backend,
+            config=mock_config
+        )
 
         with self.assertRaises(TargetDoesNotExistError) as ex:
             self.run_command.on_run()
