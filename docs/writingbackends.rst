@@ -17,7 +17,7 @@ To get started we must declare define a class that inherits from
     from gwf.backends import Backend
 
     class MyBackend(Backend):
-        name = 'mybackend'
+        pass
 
 Registering a Backend
 ---------------------
@@ -59,7 +59,6 @@ to be able specify the number of cores to be allocated for a given target::
     from gwf.backends import Backend
 
     class MyBackend(Backend):
-        name = 'mybackend'
         supported_options = ['cores']
 
 Targets in a workflow can now declare the number of cores they wish to allocate
@@ -73,7 +72,6 @@ so we should supply a sensible default. This is accomplished through
     from gwf.backends import Backend
 
     class MyBackend(Backend):
-        name = 'mybackend'
         supported_options = ['cores']
         option_defaults = {
             'cores': 1,
