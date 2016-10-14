@@ -1,7 +1,7 @@
 import abc
 import logging
 
-from pkg_resources import DistributionNotFound, iter_entry_points
+from pkg_resources import iter_entry_points
 
 from .exceptions import GWFError
 
