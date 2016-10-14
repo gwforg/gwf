@@ -14,6 +14,10 @@ class RunCommandTest(GWFTestCase):
             'gwf.plugins.run.RunCommand.setup_subparser'
         )
 
+        self.mock_schedule_many = self.create_patch(
+            'gwf.plugins.run.schedule_many'
+        )
+
         self.run_command = RunCommand()
 
         self.mock_backend = Mock(name='backend', spec_set=Backend)
@@ -50,9 +54,11 @@ class RunCommandTest(GWFTestCase):
         self.run_command.on_run()
 
         self.mock_workflow.endpoints.assert_called_once_with()
-        self.mock_backend.schedule_many.assert_called_once_with([
-            sentinel.target1, sentinel.target2
-        ])
+        self.mock_schedule_many.assert_called_once_with(
+            self.mock_workflow,
+            self.mock_backend,
+            [sentinel.target1, sentinel.target2]
+        )
 
     def test_on_run_runs_with_targets_given_in_config(self):
         self.mock_workflow.targets = {
@@ -69,9 +75,10 @@ class RunCommandTest(GWFTestCase):
         self.run_command.on_run()
 
         self.mock_workflow.endpoints.assert_not_called()
-        self.mock_backend.schedule_many.assert_called_once_with([
-            sentinel.target1, sentinel.target2
-        ])
+        self.mock_schedule_many.assert_called_once_with(
+            self.mock_workflow, self.mock_backend,
+            [sentinel.target1, sentinel.target2]
+        )
 
     def test_on_run_raises_exception_if_target_does_not_exist_in_workflow(self):
         self.mock_workflow.targets = {

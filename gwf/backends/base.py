@@ -1,9 +1,7 @@
 import abc
 import logging
 
-from ..events import post_schedule, pre_schedule
 from ..ext import Extension
-from ..utils import dfs
 
 logger = logging.getLogger(__name__)
 
@@ -21,14 +19,14 @@ class Backend(Extension):
         """Return defaults for required target options."""
         return {}
 
-    def configure(self, workflow, config):
+    def configure(self, working_dir, config):
         """Configure the backend.
 
         This method *must* be called before any other method on the backend
         is used. Unless the backend is initialized directly, *gwf* is
         responsible for calling :func:`configure` to configure the backend.
         """
-        self.workflow = workflow
+        self.working_dir = working_dir
         self.config = config
 
     @abc.abstractmethod
@@ -48,7 +46,7 @@ class Backend(Extension):
         """Return whether the target has completed."""
 
     @abc.abstractmethod
-    def submit(self, target):
+    def submit(self, target, dependencies):
         """Submit a target."""
 
     @abc.abstractmethod
@@ -78,64 +76,3 @@ class Backend(Extension):
 
     def close(self):
         """Close the backend."""
-
-    def schedule(self, target):
-        """Schedule and submit a :class:`gwf.Target` and its dependencies.
-
-        This method is provided by :class:`Backend` and should not be overriden.
-        """
-        logger.info('Scheduling target %s.', target.name)
-
-        if self.submitted(target):
-            logger.debug('Target %s has already been submitted.', target.name)
-            return []
-
-        scheduled = []
-        for dependency in dfs(target, self.workflow.dependencies):
-            if dependency.name != target.name:
-                logger.info(
-                    'Scheduling dependency %s of %s.',
-                    dependency.name,
-                    target.name
-                )
-
-            if self.submitted(dependency):
-                logger.debug(
-                    'Target %s has already been submitted.',
-                    dependency.name
-                )
-                continue
-
-            if not self.workflow.should_run(dependency):
-                logger.debug(
-                    'Target %s should not run.',
-                    dependency.name
-                )
-                continue
-
-            logger.info('Submitting target %s.', dependency.name)
-
-            self.submit(dependency)
-            scheduled.append(dependency)
-
-        return scheduled
-
-    def schedule_many(self, targets):
-        """Schedule a list of :class:`gwf.Target` and their dependencies.
-
-        Will schedule the targets in `targets` with :func:`schedule`
-        and return a list of schedules.
-
-        This method is provided by :class:`Backend` and should not be overriden.
-
-        :param list targets: A list of targets to be scheduled.
-        :return: A list of schedules, one for each target in `targets`.
-        """
-        pre_schedule.trigger(targets=targets)
-
-        schedules = []
-        for target in targets:
-            schedules.append(self.schedule(target))
-
-        post_schedule.trigger(targets=targets, schedules=schedules)
-        return schedules

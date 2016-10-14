@@ -198,11 +198,11 @@ class SlurmBackend(FileLogsMixin, Backend):
     _JOB_DB_PATH = '.gwf/slurm-backend-jobdb.json'
     _JOB_HISTORY_PATH = '.gwf/slurm-backend-jobhistory.json'
 
-    def configure(self, workflow, config):
-        super().configure(workflow, config)
+    def configure(self, working_dir, config):
+        super().configure(working_dir, config)
 
         # Make sure that directory for log files exists.
-        self._log_dir = os.path.join(self.workflow.working_dir, '.gwf/logs')
+        self._log_dir = os.path.join(self.working_dir, '.gwf/logs')
         if not os.path.exists(self._log_dir):
             logger.debug(
                 'Log directory "%s" does not exist. Creating.',
@@ -242,10 +242,10 @@ class SlurmBackend(FileLogsMixin, Backend):
         target_job_id = self._job_db.get(target.name, None)
         return self._live_job_states.get(target_job_id, '?') == 'C'
 
-    def submit(self, target):
+    def submit(self, target, dependencies):
         dependency_ids = [
             self._job_db[dep.name]
-            for dep in self.workflow.dependencies[target]
+            for dep in dependencies
             if dep.name in self._job_db
         ]
 

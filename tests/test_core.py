@@ -3,7 +3,9 @@ import os.path
 import unittest
 from unittest.mock import Mock, patch
 
-from gwf import Event, PreparedWorkflow, Target, Workflow, template
+from gwf import PreparedWorkflow, Target, Workflow, template
+from gwf.backends.testing import TestingBackend
+from gwf.core import PreparedWorkflow, Workflow, schedule, schedule_many
 from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
                             FileRequiredButNotProvidedError,
@@ -620,31 +622,210 @@ class TestShouldRun(unittest.TestCase):
             self.assertFalse(self.prepared_workflow.should_run(self.target4))
 
 
-class TestEvent(unittest.TestCase):
+class TestScheduling(unittest.TestCase):
 
-    def setUp(self):
-        self.event = Event(name='test_event')
-        self.mock_callback = Mock(name='test_callback')
+    def test_scheduling_workflow_with_one_target_that_is_already_submitted_returns_empty_schedule(self):
+        workflow = Workflow(working_dir='/some/dir')
+        target = workflow.target('TestTarget')
 
-    def test_registering_callback_and_triggering_event_calls_callback(self):
-        self.event.register(self.mock_callback)
-        self.event.trigger()
-        self.mock_callback.assert_called_once_with()
+        backend = TestingBackend()
+        prepared_workflow = PreparedWorkflow(
+            targets=workflow.targets,
+            working_dir=workflow.working_dir,
+            supported_options=backend.supported_options,
+            config={},
+        )
+        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        with patch.object(backend, 'submitted', return_value=True):
+            sched = schedule(prepared_workflow, backend, target)
+            self.assertListEqual(sched, [])
 
-    def test_registering_callback_and_triggering_event_with_args_calls_callback_with_args(self):
-        self.event.register(self.mock_callback)
-        self.event.trigger('hello', who='world')
-        self.mock_callback.assert_called_once_with('hello', who='world')
+    def test_scheduling_workflow_with_one_target_that_is_not_submitted_returns_schedule_with_target(self):
+        workflow = Workflow(working_dir='/some/dir')
+        target = workflow.target('TestTarget')
 
-    def test_registering_callback_twice_and_triggering_does_not_run_it_twice(self):
-        self.event.register(self.mock_callback)
-        self.event.register(self.mock_callback)
-        self.event.trigger()
-        self.mock_callback.assert_called_once_with()
+        backend = TestingBackend()
+        prepared_workflow = PreparedWorkflow(
+            targets=workflow.targets,
+            working_dir=workflow.working_dir,
+            supported_options=backend.supported_options,
+            config={},
+        )
+        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        with patch.object(backend, 'submitted', return_value=False):
+            with patch.object(prepared_workflow, 'should_run', return_value=True):
+                sched = schedule(prepared_workflow, backend, target)
+                self.assertListEqual(sched, [target])
 
-    def test_callback_is_not_called_when_it_has_been_unregistered(self):
-        self.event.register(self.mock_callback)
-        self.event.trigger()
-        self.event.unregister(self.mock_callback)
-        self.event.trigger()
-        self.mock_callback.assert_called_once_with()
+    def test_scheduling_workflow_with_target_with_deps_that_are_not_submitted(self):
+        workflow = Workflow(working_dir='/some/dir')
+        target1 = workflow.target('TestTarget1', outputs=['test_output.txt'])
+        target2 = workflow.target('TestTarget2', inputs=['test_output.txt'])
+
+        backend = TestingBackend()
+        prepared_workflow = PreparedWorkflow(
+            targets=workflow.targets,
+            working_dir=workflow.working_dir,
+            supported_options=backend.supported_options,
+            config={},
+        )
+        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        with patch.object(backend, 'submitted', return_value=False):
+            with patch.object(prepared_workflow, 'should_run', return_value=True):
+                sched = schedule(prepared_workflow, backend, target2)
+                self.assertListEqual(sched, [target1, target2])
+
+    def test_scheduling_workflow_with_deep_deps_that_are_not_submitted(self):
+        workflow = Workflow(working_dir='/some/dir')
+        target1 = workflow.target('TestTarget1', outputs=['test_output1.txt'])
+        target2 = workflow.target('TestTarget2', inputs=[
+                                  'test_output1.txt'], outputs=['test_output2.txt'])
+        target3 = workflow.target('TestTarget3', inputs=[
+                                  'test_output2.txt'], outputs=['test_output3.txt'])
+        target4 = workflow.target('TestTarget4', inputs=[
+                                  'test_output3.txt'], outputs=['final_output.txt'])
+
+        backend = TestingBackend()
+        prepared_workflow = PreparedWorkflow(
+            targets=workflow.targets,
+            working_dir=workflow.working_dir,
+            supported_options=backend.supported_options,
+            config={},
+        )
+        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        with patch.object(backend, 'submitted', return_value=False):
+            with patch.object(prepared_workflow, 'should_run', return_value=True):
+                sched = schedule(prepared_workflow, backend, target4)
+                self.assertListEqual(
+                    sched, [target1, target2, target3, target4])
+
+    def test_scheduling_workflow_with_branch_and_join_structure(self):
+        workflow = Workflow(working_dir='/some/dir')
+        target1 = workflow.target('TestTarget1', outputs=['test_output1.txt'])
+        target2 = workflow.target('TestTarget2', inputs=[
+                                  'test_output1.txt'], outputs=['test_output2.txt'])
+        target3 = workflow.target('TestTarget3', inputs=[
+                                  'test_output1.txt'], outputs=['test_output3.txt'])
+        target4 = workflow.target(
+            'TestTarget4',
+            inputs=['test_output2.txt', 'test_output3.txt'],
+            outputs=['final_output.txt']
+        )
+
+        backend = TestingBackend()
+        prepared_workflow = PreparedWorkflow(
+            targets=workflow.targets,
+            working_dir=workflow.working_dir,
+            supported_options=backend.supported_options,
+            config={},
+        )
+        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        with patch.object(backend, 'submitted', return_value=False):
+            with patch.object(prepared_workflow, 'should_run', return_value=True):
+                sched = schedule(prepared_workflow, backend, target4)
+                self.assertListEqual(
+                    sched, [target1, target2, target3, target4])
+
+    def test_option_defaults_contains_specified_option_defaults(self):
+        backend = TestingBackend()
+        backend.configure(working_dir='/some/dir', config={})
+        self.assertDictEqual(
+            backend.option_defaults,
+            {'cores': 2, 'memory': '18gb'}
+        )
+
+    def test_scheduling_a_submitted_dependency_does_not_submit_the_dependency(self):
+        workflow = Workflow(working_dir='/some/dir')
+
+        target1 = workflow.target(
+            'TestTarget1',
+            outputs=['test_output1.txt']
+        )
+        target2 = workflow.target(
+            'TestTarget2',
+            outputs=['test_output2.txt']
+        )
+        target3 = workflow.target(
+            'TestTarget3',
+            inputs=['test_output1.txt', 'test_output2.txt'],
+            outputs=['test_output3.txt']
+        )
+
+        backend = TestingBackend()
+        prepared_workflow = PreparedWorkflow(
+            targets=workflow.targets,
+            working_dir=workflow.working_dir,
+            supported_options=backend.supported_options,
+            config={},
+        )
+        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        with patch.object(backend, 'submitted', side_effect=[False, True, False, False]):
+            sched = schedule(prepared_workflow, backend, target3)
+            self.assertEqual(sched, [target2, target3])
+
+    def test_scheduling_non_submitted_targets_that_should_not_run_does_not_submit_any_targets(self):
+        workflow = Workflow(working_dir='/some/dir')
+
+        target1 = workflow.target(
+            'TestTarget1',
+            outputs=['test_output1.txt']
+        )
+        target2 = workflow.target(
+            'TestTarget2',
+            outputs=['test_output2.txt']
+        )
+        target3 = workflow.target(
+            'TestTarget3',
+            inputs=['test_output1.txt', 'test_output2.txt'],
+            outputs=['test_output3.txt']
+        )
+
+        backend = TestingBackend()
+        prepared_workflow = PreparedWorkflow(
+            targets=workflow.targets,
+            working_dir=workflow.working_dir,
+            supported_options=backend.supported_options,
+            config={},
+        )
+        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        with patch.object(backend, 'submitted', return_value=False):
+            with patch.object(prepared_workflow, 'should_run', side_effect=[False, False, False, False]):
+                sched = schedule(prepared_workflow, backend, target3)
+                self.assertEqual(sched, [])
+
+    def test_scheduling_many_targets_calls_schedule_for_each_target(self):
+        workflow = Workflow(working_dir='/some/dir')
+
+        target1 = workflow.target(
+            'TestTarget1',
+            outputs=['test_output1.txt']
+        )
+        target2 = workflow.target(
+            'TestTarget2',
+            outputs=['test_output2.txt']
+        )
+        target3 = workflow.target(
+            'TestTarget3',
+            inputs=['test_output1.txt'],
+            outputs=['test_output3.txt']
+        )
+        target4 = workflow.target(
+            'TestTarget4',
+            inputs=['test_output2.txt'],
+            outputs=['test_output4.txt']
+        )
+
+        backend = TestingBackend()
+        prepared_workflow = PreparedWorkflow(
+            targets=workflow.targets,
+            working_dir=workflow.working_dir,
+            supported_options=backend.supported_options,
+            config={},
+        )
+        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        with patch.object(backend, 'submitted', return_value=False):
+            with patch.object(prepared_workflow, 'should_run', return_value=True):
+                sched = schedule_many(
+                    prepared_workflow, backend, [target3, target4])
+                self.assertEqual(
+                    sched, [[target1, target3], [target2, target4]])

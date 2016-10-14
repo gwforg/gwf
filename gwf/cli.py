@@ -165,7 +165,7 @@ class App:
         )
 
         self.active_backend.configure(
-            workflow=self.prepared_workflow,
+            working_dir=self.prepared_workflow.working_dir,
             config=self.config,
         )
 

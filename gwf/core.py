@@ -5,6 +5,7 @@ import os.path
 import sys
 from collections import defaultdict
 
+from .events import post_schedule, pre_schedule
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
@@ -519,64 +520,64 @@ class PreparedWorkflow(object):
         )
 
 
-class Event:
-    """A simple event implementation.
+def schedule(prepared_workflow, backend, target):
+    """Schedule and submit a :class:`gwf.Target` and its dependencies.
 
-    This class implements the observer pattern in a reusable fashion. Event
-    objects can be created anywhere (in modules, class definitions etc.) and
-    anyone can register for the event or trigger it.
-
-    .. note::
-        Even though it is possible to trigger any event, please only trigger
-        your own events unless you really know what you're doing.
-
-    Triggering an event will call all registered callbacks with the arguments
-    given to :func:`trigger`.
+    This method is provided by :class:`Backend` and should not be overriden.
     """
+    logger.info('Scheduling target %s.', target.name)
 
-    def __init__(self, name):
-        self.name = name
-        self._callbacks = set()
-        self._logger = logging.getLogger('{}.{}'.format(__name__, self.name))
+    if backend.submitted(target):
+        logger.debug('Target %s has already been submitted.', target.name)
+        return []
 
-    def register(self, callback):
-        """Register a callback to this event.
-
-        :param callable callback:
-            a callable do call whenever the event is triggered.
-
-        Registering the same callback twice will only add the callback once.
-        """
-        if callback not in self._callbacks:
-            self._logger.debug('Registered callback: %r.', callback)
-            self._callbacks.add(callback)
-
-    def unregister(self, callback):
-        """Unregister a callback.
-
-        :param callable callback:
-            a callable to unregister.
-
-        It is safe to unregister the same callback twice. The second call to
-        :func:`unregister` will be a no-op.
-        """
-        self._logger.debug('Unregistered callback: %r.', callback)
-        self._callbacks.discard(callback)
-
-    def trigger(self, *args, **kwargs):
-        """Trigger the event.
-
-        All arguments will be forwarded to the callbacks. Callbacks are called
-        in no particular order.
-        """
-        for callback in self._callbacks:
-            self._logger.debug(
-                'Triggering callback: %r with args %r and kwargs %r.',
-                callback,
-                args,
-                kwargs,
+    scheduled = []
+    for dependency in dfs(target, prepared_workflow.dependencies):
+        if dependency.name != target.name:
+            logger.info(
+                'Scheduling dependency %s of %s.',
+                dependency.name,
+                target.name
             )
-            callback(*args, **kwargs)
 
-    def __repr__(self):
-        return '{}(name={})'.format(self.__class__.__name__, self.name)
+        if backend.submitted(dependency):
+            logger.debug(
+                'Target %s has already been submitted.',
+                dependency.name
+            )
+            continue
+
+        if not prepared_workflow.should_run(dependency):
+            logger.debug(
+                'Target %s should not run.',
+                dependency.name
+            )
+            continue
+
+        logger.info('Submitting target %s.', dependency.name)
+
+        backend.submit(dependency)
+        scheduled.append(dependency)
+
+    return scheduled
+
+
+def schedule_many(prepared_workflow, backend, targets):
+    """Schedule a list of :class:`gwf.Target` and their dependencies.
+
+    Will schedule the targets in `targets` with :func:`schedule`
+    and return a list of schedules.
+
+    This method is provided by :class:`Backend` and should not be overriden.
+
+    :param list targets: A list of targets to be scheduled.
+    :return: A list of schedules, one for each target in `targets`.
+    """
+    pre_schedule.trigger(targets=targets)
+
+    schedules = []
+    for target in targets:
+        schedules.append(schedule(prepared_workflow, backend, target))
+
+    post_schedule.trigger(targets=targets, schedules=schedules)
+    return schedules
