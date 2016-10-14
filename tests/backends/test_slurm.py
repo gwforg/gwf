@@ -15,7 +15,12 @@ class SlurmTestCase(GWFTestCase):
 
     def setUp(self):
         self.workflow = Workflow(working_dir='/some/dir')
-        self.prepared_workflow = PreparedWorkflow(self.workflow)
+        self.prepared_workflow = PreparedWorkflow(
+            targets=self.workflow.targets,
+            working_dir=self.workflow.working_dir,
+            supported_options=SlurmBackend.supported_options,
+            config={},
+        )
         self.backend = SlurmBackend()
         self.config = {}
 
@@ -123,9 +128,14 @@ class TestSlurmBackendSubmit(SlurmTestCase):
             outputs=['test_output3.txt']
         )
 
-        prepared_workflow = PreparedWorkflow(self.workflow)
-
         backend = SlurmBackend()
+        prepared_workflow = PreparedWorkflow(
+            targets=self.workflow.targets,
+            working_dir=self.workflow.working_dir,
+            supported_options=SlurmBackend,
+            config={},
+        )
+
         backend.configure(workflow=prepared_workflow, config=self.config)
         backend.submit(target3)
 
@@ -139,7 +149,12 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.mock_call_sbatch.return_value = ('1000', '')
 
         target = self.workflow.target('TestTarget')
-        prepared_workflow = PreparedWorkflow(self.workflow)
+        prepared_workflow = PreparedWorkflow(
+            targets=self.workflow.targets,
+            working_dir=self.workflow.working_dir,
+            supported_options=SlurmBackend.supported_options,
+            config={},
+        )
 
         backend = SlurmBackend()
         backend.configure(workflow=prepared_workflow, config=self.config)
@@ -150,7 +165,12 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.assertEqual(backend._live_job_states['1000'], 'H')
 
     def test_job_script_is_properly_compiled_with_all_supported_options(self):
-        prepared_workflow = PreparedWorkflow(workflow=self.workflow)
+        prepared_workflow = PreparedWorkflow(
+            targets=self.workflow.targets,
+            working_dir=self.workflow.working_dir,
+            supported_options=SlurmBackend.supported_options,
+            config={},
+        )
 
         backend = SlurmBackend()
         backend.configure(workflow=prepared_workflow, config=self.config)
@@ -203,7 +223,12 @@ class TestSlurmBackendCancel(SlurmTestCase):
         self.mock_get_live_job_states.return_value = {'1000': 'R'}
 
         target = self.workflow.target('TestTarget')
-        prepared_workflow = PreparedWorkflow(self.workflow)
+        prepared_workflow = PreparedWorkflow(
+            targets=self.workflow.targets,
+            working_dir=self.workflow.working_dir,
+            supported_options=SlurmBackend.supported_options,
+            config={},
+        )
 
         backend = SlurmBackend()
         backend.configure(workflow=prepared_workflow, config=self.config)
@@ -219,7 +244,12 @@ class TestSlurmBackendCancel(SlurmTestCase):
         self.mock_get_live_job_states.return_value = {}
 
         target = self.workflow.target('TestTarget')
-        prepared_workflow = PreparedWorkflow(self.workflow)
+        prepared_workflow = PreparedWorkflow(
+            targets=self.workflow.targets,
+            working_dir=self.workflow.working_dir,
+            supported_options=SlurmBackend.supported_options,
+            config={},
+        )
 
         backend = SlurmBackend()
         backend.configure(workflow=prepared_workflow, config=self.config)
@@ -240,7 +270,12 @@ class TestSlurmBackendSubmitted(SlurmTestCase):
         target1 = self.workflow.target('TestTarget1')
         target2 = self.workflow.target('TestTarget2')
 
-        prepared_workflow = PreparedWorkflow(workflow=self.workflow)
+        prepared_workflow = PreparedWorkflow(
+            targets=self.workflow.targets,
+            working_dir=self.workflow.working_dir,
+            supported_options=SlurmBackend.supported_options,
+            config={},
+        )
         self.backend.configure(workflow=prepared_workflow, config=self.config)
 
         self.assertTrue(self.backend.submitted(target1))
@@ -260,7 +295,12 @@ class TestSlurmBackendRunning(SlurmTestCase):
         target2 = self.workflow.target('TestTarget2')
         target3 = self.workflow.target('TestTarget3')
 
-        prepared_workflow = PreparedWorkflow(self.workflow)
+        prepared_workflow = PreparedWorkflow(
+            targets=self.workflow.targets,
+            working_dir=self.workflow.working_dir,
+            supported_options=SlurmBackend.supported_options,
+            config={},
+        )
         self.backend.configure(workflow=prepared_workflow, config=self.config)
 
         self.assertTrue(self.backend.running(target1))
@@ -272,7 +312,12 @@ class TestSlurmBackendLogs(SlurmTestCase):
 
     def test_logs_raises_exception_target_has_no_log(self):
         target = self.workflow.target('TestTarget')
-        prepared_workflow = PreparedWorkflow(self.workflow)
+        prepared_workflow = PreparedWorkflow(
+            targets=self.workflow.targets,
+            working_dir=self.workflow.working_dir,
+            supported_options=SlurmBackend.supported_options,
+            config={},
+        )
         self.backend.configure(workflow=prepared_workflow, config=self.config)
 
         with self.assertRaises(NoLogFoundError):
@@ -287,7 +332,12 @@ class TestSlurmBackendLogs(SlurmTestCase):
         }
 
         target = self.workflow.target('TestTarget')
-        prepared_workflow = PreparedWorkflow(self.workflow)
+        prepared_workflow = PreparedWorkflow(
+            targets=self.workflow.targets,
+            working_dir=self.workflow.working_dir,
+            supported_options=SlurmBackend.supported_options,
+            config={},
+        )
         self.backend.configure(workflow=prepared_workflow, config=self.config)
 
         m = mock_open(read_data='this is the log file')
@@ -306,7 +356,12 @@ class TestSlurmBackendLogs(SlurmTestCase):
         }
 
         target = self.workflow.target('TestTarget')
-        prepared_workflow = PreparedWorkflow(self.workflow)
+        prepared_workflow = PreparedWorkflow(
+            targets=self.workflow.targets,
+            working_dir=self.workflow.working_dir,
+            supported_options=SlurmBackend.supported_options,
+            config={},
+        )
         self.backend.configure(workflow=prepared_workflow, config=self.config)
 
         m = mock_open()

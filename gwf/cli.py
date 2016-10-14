@@ -158,9 +158,10 @@ class App:
         )
 
         self.prepared_workflow = PreparedWorkflow(
-            workflow=workflow,
+            targets=workflow.targets,
+            working_dir=workflow.working_dir,
+            supported_options=self.active_backend.supported_options,
             config=self.config,
-            backend=self.active_backend,
         )
 
         self.active_backend.configure(

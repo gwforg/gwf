@@ -344,19 +344,20 @@ class PreparedWorkflow(object):
     :ivar dependents: initial value: None
     """
 
-    def __init__(self, workflow=None, config=None, backend=None):
-        self.targets = {}
-        self.working_dir = None
+    def __init__(self, targets, working_dir, supported_options, config):
+        self.targets = targets
+        self.working_dir = working_dir
+        self.supported_options = supported_options
+        self.config = config
 
         self.provides = None
         self.dependencies = None
         self.dependents = None
         self.file_cache = None
 
-        if workflow is not None:
-            self.prepare(workflow, config, backend)
+        self.prepare()
 
-    def prepare(self, workflow, config, backend):
+    def prepare(self):
         """Prepare this workflow given a :class:`gwf.Workflow` instance.
 
         :param gwf.Workflow workflow:
@@ -369,19 +370,11 @@ class PreparedWorkflow(object):
         :raises CircularDependencyError:
             Raised if the workflow contains a circular dependency.
         """
-        self.workflow = workflow
-        self.config = config or {}
-        self.backend = backend
-
-        self.targets = workflow.targets
-        self.working_dir = workflow.working_dir
 
         logger.debug(
             'Preparing workflow with %s targets defined.',
             len(self.targets)
         )
-
-        logger.debug('Received configuration: %r.', config)
 
         # The order is important here!
         self.provides = self.prepare_file_providers()
@@ -449,7 +442,7 @@ class PreparedWorkflow(object):
             self.targets[target_name].options = {
                 option: value
                 for option, value in target.options.items()
-                if option in self.backend.supported_options
+                if option in self.supported_options
             }
 
     @cache
