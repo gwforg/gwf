@@ -2,4 +2,3 @@ coverage==4.2
 flake8==3.0.4
 sphinx==1.4.5
 sphinx_rtd_theme==0.1.9
-ipyparallel==5.2
