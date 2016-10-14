@@ -25,9 +25,6 @@ class LocalBackend(FileLogsMixin, Backend):
     supported_options = []
     option_defaults = {}
 
-    def get_client(self):
-        return Client(('localhost', int(self.config['workers_port'])))
-
     def setup_argument_parser(self, parser, subparsers):
         parser.add_argument(
             '--workers-port',
@@ -50,11 +47,13 @@ class LocalBackend(FileLogsMixin, Backend):
         except OSError:
             self._job_db = {}
 
-        status = self.get_client().status()
+        self.client = Client(('localhost', self.config['workers_port']))
+
+        status = self.client.status()
         self._job_db = {
             k: v
             for k, v in self._job_db.items()
-            if status[v] != State.completed
+            if v in status and status[v] != State.completed
         }
 
     def submit(self, target, dependencies):
@@ -63,7 +62,7 @@ class LocalBackend(FileLogsMixin, Backend):
             for dep in dependencies
             if dep.name in self._job_db
         ]
-        job_id = self.get_client().submit(target, deps=deps)
+        job_id = self.client.submit(target, deps=deps)
         self._job_db[target.name] = job_id
 
     def cancel(self, target):
@@ -74,15 +73,15 @@ class LocalBackend(FileLogsMixin, Backend):
 
     def running(self, target):
         job_id = self._job_db[target.name]
-        return self.get_client().status()[job_id] == State.running
+        return self.client.status()[job_id] == State.running
 
     def failed(self, target):
         job_id = self._job_db[target.name]
-        return self.get_client().status()[job_id] == State.failed
+        return self.client.status()[job_id] == State.failed
 
     def completed(self, target):
         job_id = self._job_db[target.name]
-        return self.get_client().status()[job_id] == State.completed
+        return self.client.status()[job_id] == State.completed
 
     def close(self):
         try:
