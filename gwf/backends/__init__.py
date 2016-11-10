@@ -7,9 +7,6 @@ from .base import Backend
 
 class FileLogsMixin:
 
-    def configure(self, *args, **kwargs):
-        super().configure(*args, **kwargs)
-
     def logs(self, target, stderr=False):
         try:
             if stderr:
