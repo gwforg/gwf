@@ -1,7 +1,7 @@
 import multiprocessing
 
 from . import Plugin
-from ..backends.local.server import start_server
+from ..backends.local import Server
 
 
 class WorkersPlugin(Plugin):
@@ -33,4 +33,5 @@ class WorkersPlugin(Plugin):
     def on_start_workers(self):
         port = self.config['port']
         num_workers = self.config['num_workers']
-        start_server(port=port, num_workers=num_workers)
+        server = Server(port=port, num_workers=num_workers)
+        server.start()
