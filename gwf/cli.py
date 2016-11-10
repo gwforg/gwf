@@ -189,7 +189,7 @@ class App:
     def exit(self):
         logger.debug('Exiting...')
         self.plugins_manager.close_extensions()
-        if self.active_backend is not None:
+        if self.active_backend:
             self.active_backend.close()
 
 
