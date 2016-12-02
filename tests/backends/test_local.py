@@ -1,6 +1,6 @@
 import time
 from multiprocessing import Process
-from unittest.mock import Mock
+from unittest import skip
 
 from gwf.backends.local import Client, Server, State
 from gwf.core import Target, Workflow
@@ -8,6 +8,7 @@ from gwf.core import Target, Workflow
 from .. import GWFTestCase
 
 
+@skip('Local backend is experimental')
 class ServerTestCase(GWFTestCase):
 
     def setUp(self):
@@ -44,6 +45,7 @@ class ServerTestCase(GWFTestCase):
         )
 
 
+@skip('Local backend is experimental')
 class TestServer(ServerTestCase):
 
     def test_can_get_status_when_no_jobs_have_been_submitted(self):
@@ -93,9 +95,11 @@ class TestServer(ServerTestCase):
         pass
 
 
+@skip('Local backend is experimental')
 class TestClient(GWFTestCase):
     pass
 
 
+@skip('Local backend is experimental')
 class TestBackend(GWFTestCase):
     pass

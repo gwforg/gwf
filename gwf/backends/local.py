@@ -101,8 +101,24 @@ class LocalBackend(FileLogsMixin, Backend):
 
         gwf -b local workers -n 2
 
+    in the working directory of your project. The workflow file must be accessible
+    to *gwf*. Thus, if your workflow file is not called `workflow.py` or the
+    workflow object is not called `gwf`, you must specify this so that *gwf* can
+    locate the workflow::
+
+        gwf -f myworkflow.py:wf1 -b local workers -n 2
+
     If the local backend is your default backend you can of course omit the
     ``-b local`` option.
+
+    If the ``-n`` option is omitted, *gwf* will detect the number of cores
+    available and use all of them.
+
+    To run your workflow, open another terminal and then type::
+
+        gwf -b local run
+
+    To stop the pool of workers press :kbd:`Control-c`.
     """
 
     supported_options = []
