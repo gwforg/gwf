@@ -211,7 +211,7 @@ class SlurmBackend(FileLogsMixin, Backend):
             os.makedirs(self._log_dir)
 
         # TODO: maybe use some sort of actual db instead of a file?
-        self._job_db = _read_json(self._JOB_DB_PATH)
+        self._job_db = _read_json(os.path.join(working_dir, self._JOB_DB_PATH))
 
         self._live_job_states = _get_live_job_states()
         logger.debug('found %d jobs', len(self._live_job_states))
@@ -225,7 +225,10 @@ class SlurmBackend(FileLogsMixin, Backend):
 
     def close(self):
         # TODO: error handling
-        _dump_atomic(self._job_db, self._JOB_DB_PATH)
+        _dump_atomic(
+            self._job_db,
+            os.path.join(self.working_dir, self._JOB_DB_PATH)
+        )
 
     def submitted(self, target):
         return target.name in self._job_db

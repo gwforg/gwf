@@ -69,7 +69,7 @@ class TestSlurmBackendConfigure(SlurmTestCase):
         self.backend.configure(working_dir='/some/dir',
                                config=self.config)
         self.mock_read_json.assert_any_call(
-            '.gwf/slurm-backend-jobdb.json')
+            '/some/dir/.gwf/slurm-backend-jobdb.json')
         self.assertDictEqual(self.backend._job_db, {})
 
     def test_jobdb_is_loaded_from_job_db_file_when_it_exists(self):
@@ -77,7 +77,7 @@ class TestSlurmBackendConfigure(SlurmTestCase):
         self.mock_get_live_job_states.return_value = {'1000': 'R'}
         self.backend.configure(working_dir='/some/dir',
                                config=self.config)
-        self.mock_read_json.assert_any_call('.gwf/slurm-backend-jobdb.json')
+        self.mock_read_json.assert_any_call('/some/dir/.gwf/slurm-backend-jobdb.json')
         self.assertDictEqual(self.backend._job_db, {'TestTarget': '1000'})
 
 
@@ -397,7 +397,7 @@ class TestSlurmBackendClose(SlurmTestCase):
         self.backend.close()
         self.mock_dump_atomic.assert_any_call(
             {},
-            '.gwf/slurm-backend-jobdb.json'
+            '/some/dir/.gwf/slurm-backend-jobdb.json'
         )
 
 
