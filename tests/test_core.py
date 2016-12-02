@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 from gwf import PreparedWorkflow, Target, Workflow, template
 from gwf.backends.testing import TestingBackend
-from gwf.core import PreparedWorkflow, Workflow, schedule, schedule_many
+from gwf.core import schedule, schedule_many
 from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
                             FileRequiredButNotProvidedError,
