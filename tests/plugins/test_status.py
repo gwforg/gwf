@@ -28,6 +28,9 @@ class StatusCommandTest(GWFTestCase):
         )
         self.mock_get_prepared_workflow = Mock(return_value=self.mock_workflow)
 
+        self.mock_get_terminal_size = self.create_patch('gwf.plugins.status.os.get_terminal_size')
+        self.mock_get_terminal_size.return_value = 80
+
     def test_sets_up_status_subcommand(self):
         self.status_command.setup_argument_parser(
             sentinel.parser, sentinel.subparsers
