@@ -206,7 +206,7 @@ class Workflow(object):
 
         :param str name: Name of the target.
         :param iterable inputs: List of files that this target depends on.
-        :param iterable output: List of files that this target produces.
+        :param iterable outputs: List of files that this target produces.
 
         Any further keyword arguments are passed to the backend.
         """
