@@ -1,6 +1,6 @@
 package:
   name: gwf
-  version: $GIT_BUILD_STR
+  version: "1.0.0b1"
 
 source:
   path: ..
