@@ -22,8 +22,8 @@ install:
 - conda install --use-local gwf
 
 # Run test
-script:
-- make test
+#script:
+#- make test
 
 after_success:
 # Change permissions for Anaconda deployment script
