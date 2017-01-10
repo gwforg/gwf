@@ -45,7 +45,7 @@ setup(
     author_email='mailund@birc.au.dk, das@birc.au.dk',
     license='GPLv3',
     keywords='grid computing workflow',
-    url='https://mailund.github.io/gwf',
+    url='http://gwf.readthedocs.io/',
     description='A flexible, pragmatic workflow tool.',
     long_description=read('README.rst'),
 
