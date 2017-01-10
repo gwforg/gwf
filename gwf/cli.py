@@ -5,7 +5,6 @@ import os.path
 import platform
 import sys
 
-import colorama
 from configargparse import ArgParser
 
 from . import LOCAL_CONFIG_FILE, USER_CONFIG_FILE
@@ -194,8 +193,6 @@ class App:
 
 
 def main():
-    colorama.init()
-
     config_files = [USER_CONFIG_FILE, LOCAL_CONFIG_FILE]
 
     plugins_manager = ExtensionManager(group='gwf.plugins')
