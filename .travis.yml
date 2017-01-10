@@ -9,10 +9,3 @@ install:
 script: make test && make lint
 after_success:
 - coveralls
-deploy:
-  provider: pypi
-  user: dansondergaard
-  distributions: sdist bdist_wheel
-  server: https://testpypi.python.org/pypi
-  password:
-    secure: s+i4ZjsMSo/XujYLY/pHj+PA8XyyUoBc9rODakZPE0P7j607M6cTAjdMlfL8aIv4SiK0XkKIq15AFUhwDI9vwFh43Avf7qGYdkQqSs39ywOPVaKXLgOvG06//49LWIilc78+QtsHerUNN+wvQX+C3EJiIZ/+6cwlc6Ykx5ry3n5B6ehD8n6fM4up4ShC1enHNDNIdAxBDR5jCck+lsxhVsRdN5AF0GtUYGDsglUuMY95JP5EVpAb1AAgwG60WzC/2bIhRZSIFPplzNZM9tw8ZzHrms8WlPGPCVyIS7zIXua+XYppTXIqJOJbD3TzchdIqgs+MyT3O7HTtXXbTAJi7jJMhrvDT91cZxGsm0wIj6jQrbp98ohIb1BtpDJ5qg6CHGzxAnDEPwi7aO6RJhXNPdr7pGravEt8OUBuX1Uhn8ETGsLGxvpFRKAII9rbuTFHEFomDvDp9p/sJc0CkV2HhYaDgn20POxeQXCOtsj5JKZsNomEdmphjriEA9pNoOJnr4yd/RMEqQGR/FDX1gzDKnPTXvyPdtq9K+UJ1SXMwvI35zXtsGB6WB9S/LqAs08cyKn5z0kphF7346rnCAqOBmuawzKLydbG/wLd5JNqQrnRz+v/EEALRP6Q/ridXnujGEStuqZIV+JnHouQzZFx4C75lZBAaNEM10JdPRLTMxQ=
