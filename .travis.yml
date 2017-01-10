@@ -20,6 +20,7 @@ install:
 - conda install -q python=$TRAVIS_PYTHON_VERSION pip conda-build anaconda-client
 - conda build conda/
 - conda install --use-local gwf
+- pip install coveralls==1.*
 
 # Run test
 script:
