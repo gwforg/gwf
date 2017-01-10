@@ -11,8 +11,8 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name="gwf",
-    version="1.0.0",
+    name='gwf',
+    version='1.0.0',
 
     packages=find_packages(),
     entry_points={
@@ -21,6 +21,7 @@ setup(
         ],
         'gwf.backends': [
             'slurm = gwf.backends.slurm:SlurmBackend',
+            'local = gwf.backends.local:LocalBackend',
             'testing = gwf.backends.testing:TestingBackend',
         ],
         'gwf.plugins': [
@@ -29,31 +30,31 @@ setup(
             'status = gwf.plugins.status:StatusCommand',
             'logs = gwf.plugins.logs:LogsCommand',
             'clean = gwf.plugins.clean:CleanCommand',
+            'workers = gwf.plugins.workers:WorkersPlugin'
         ]
     },
 
     test_suite='tests',
     install_requires=[
-        "colorama>=0.3.7",
-        "configargparse>=0.11",
-        "statusbar>=0.1.2",
+        'configargparse>=0.11',
+        'statusbar>=0.1.2',
     ],
 
     # metadata for upload to PyPI
-    author="Thomas Mailund, Dan Søndergaard",
-    author_email="mailund@birc.au.dk, das@birc.au.dk",
-    license="GPLv3",
-    keywords="grid computing workflow",
-    url="https://mailund.github.io/gwf",
-    description="A flexible, pragmatic workflow tool.",
+    author='Thomas Mailund, Dan Søndergaard',
+    author_email='mailund@birc.au.dk, das@birc.au.dk',
+    license='GPLv3',
+    keywords='grid computing workflow',
+    url='https://mailund.github.io/gwf',
+    description='A flexible, pragmatic workflow tool.',
     long_description=read('README.rst'),
 
     classifiers=[
-        "Development Status :: 4 - Beta",
-        "Environment :: Console",
-        "Topic :: Utilities",
-        "Topic :: System :: Distributed Computing",
-        "Intended Audience :: Science/Research",
-        "Programming Language :: Python",
+        'Development Status :: 4 - Beta',
+        'Environment :: Console',
+        'Topic :: Utilities',
+        'Topic :: System :: Distributed Computing',
+        'Intended Audience :: Science/Research',
+        'Programming Language :: Python',
     ],
 )

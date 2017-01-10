@@ -1,6 +1,6 @@
 [run]
 branch = True
-omit = gwf/cli/entrypoint.py
+concurrency = multiprocessing
 
 [report]
 # Regexes for lines to exclude from consideration

@@ -1,4 +1,5 @@
 from . import Plugin
+from ..core import schedule_many
 from ..exceptions import TargetDoesNotExistError
 
 
@@ -20,12 +21,15 @@ class RunCommand(Plugin):
         )
 
     def on_run(self):
+        workflow = self.get_prepared_workflow()
+        backend = self.get_active_backend()
+
         targets = []
         if not self.config['targets']:
-            targets = self.workflow.endpoints()
+            targets = workflow.endpoints()
         else:
             for name in self.config['targets']:
-                if name not in self.workflow.targets:
+                if name not in workflow.targets:
                     raise TargetDoesNotExistError(name)
-                targets.append(self.workflow.targets[name])
-        self.backend.schedule_many(targets)
+                targets.append(workflow.targets[name])
+        schedule_many(workflow, backend, targets)

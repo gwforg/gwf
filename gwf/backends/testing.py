@@ -1,6 +1,7 @@
 import logging
 
 from . import Backend
+from ..exceptions import NoLogFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +11,7 @@ class TestingBackend(Backend):  # pragma: no cover
     supported_options = set(['cores', 'memory'])
     option_defaults = {'cores': 2, 'memory': '18gb'}
 
-    def submit(self, target):
+    def submit(self, target, dependencies):
         pass
 
     def cancel(self, target):
@@ -29,4 +30,4 @@ class TestingBackend(Backend):  # pragma: no cover
         return False
 
     def logs(self, target, stderr=False, rewind=0):
-        return ''
+        raise NoLogFoundError

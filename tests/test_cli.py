@@ -60,10 +60,6 @@ class TestApp(GWFTestCase):
             'backend1': self.testing_backend1,
         }
 
-        self.mock_sys_path = self.create_patch(
-            'gwf.cli.sys.path'
-        )
-
         self.mock_import_object = self.create_patch(
             'gwf.cli.import_object'
         )
@@ -80,11 +76,6 @@ class TestApp(GWFTestCase):
 
         self.app.parser.print_help = Mock()
         self.app.parser.print_usage = Mock()
-
-    def test_run_adds_workflow_directory_to_python_path_and_exits(self):
-        self.app.run(['-f', '/some/dir/workflow.py', '-b', 'backend1'])
-        self.mock_sys_path.insert.assert_called_once_with(0, '/some/dir')
-        self.app.parser.print_help.assert_called_once_with()
 
     def test_run_makes_gwf_directory_if_it_does_not_exist(self):
         self.app.run(['-f', '/some/dir/workflow.py', '-b', 'testing'])

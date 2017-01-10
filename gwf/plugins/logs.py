@@ -35,10 +35,13 @@ class LogsCommand(Plugin):
         )
 
     def on_run(self):
+        workflow = self.get_prepared_workflow()
+        backend = self.get_active_backend()
+
         target_name = self.config['target']
-        if target_name not in self.workflow.targets:
+        if target_name not in workflow.targets:
             raise TargetDoesNotExistError(target_name)
 
-        target = self.workflow.targets[target_name]
-        log = self.backend.logs(target, stderr=self.config['stderr'])
+        target = workflow.targets[target_name]
+        log = backend.logs(target, stderr=self.config['stderr'])
         print(log.read(), end='')

@@ -32,4 +32,4 @@ class template(object):
             self.__class__.__name__, self.options, self.spec)
 
 
-__all__ = ('Target', 'Workflow', 'PreparedWorkflow', 'template', 'Event',)
+__all__ = ('Target', 'Workflow', 'PreparedWorkflow', 'template',)

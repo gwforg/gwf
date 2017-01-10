@@ -23,6 +23,7 @@ class LogsCommandTest(GWFTestCase):
             name='backend', spec_set=Backend
         )
         self.mock_backend.logs.return_value = StringIO('this is the log...')
+        self.mock_get_active_backend = Mock(return_value=self.mock_backend)
 
         self.mock_workflow = Mock(
             name='workflow',
@@ -32,9 +33,11 @@ class LogsCommandTest(GWFTestCase):
             'TestTarget': sentinel.TestTarget,
         }
 
+        self.mock_get_prepared_workflow = Mock(return_value=self.mock_workflow)
+
         self.logs_command = LogsCommand()
-        self.logs_command.backend = self.mock_backend
-        self.logs_command.workflow = self.mock_workflow
+        self.logs_command.get_active_backend = self.mock_get_active_backend
+        self.logs_command.get_prepared_workflow = self.mock_get_prepared_workflow
 
     def test_sets_up_logs_subcommand(self):
         self.logs_command.setup_argument_parser(

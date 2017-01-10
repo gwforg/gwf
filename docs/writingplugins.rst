@@ -20,7 +20,7 @@ a minimal (and completely useless) plugin looks like this::
     from gwf.plugins import Plugin
 
     class MyPlugin(Plugin):
-        name = 'myplugin'
+        pass
 
 Registering a Plugin
 ----------------------
@@ -101,7 +101,6 @@ We can override this method to add our subcommand as follows::
     from gwf.plugins import Plugin
 
     class MyPlugin(Plugin):
-        name = 'myplugin'
 
         def setup_argument_parser(self, parser, subparsers):
             subparser = self.setup_subparser(
@@ -132,7 +131,6 @@ this to look up all targets in the workflow::
     from gwf.plugins import Plugin
 
     class MyPlugin(Plugin):
-        name = 'myplugin'
 
         def setup_argument_parser(self, parser, subparsers):
             subparser = self.setup_subparser(
@@ -163,7 +161,6 @@ First we'll add the argument to our subcommand::
     from gwf.plugins import Plugin
 
     class MyPlugin(Plugin):
-        name = 'myplugin'
 
         def setup_argument_parser(self, parser, subparsers):
             subparser = self.setup_subparser(
@@ -193,7 +190,6 @@ Now let's combine the two in our plugin::
     from gwf.plugins import Plugin
 
     class MyPlugin(Plugin):
-        name = 'myplugin'
 
         def setup_argument_parser(self, parser, subparsers):
             subparser = self.setup_subparser(
@@ -242,7 +238,6 @@ and use it to log a debugging message for our plugin like this::
     logger = logging.getLogger(__name__)
 
     class MyPlugin(Plugin):
-        name = 'myplugin'
 
         def setup_argument_parser(self, parser, subparsers):
             subparser = self.setup_subparser(

@@ -100,3 +100,7 @@ class BackendError(GWFError):
 
 class NoLogFoundError(BackendError):
     """No log found for target."""
+
+    def __init__(self):
+        message = 'No log found.'
+        super(NoLogFoundError, self).__init__(message)

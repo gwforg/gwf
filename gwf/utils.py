@@ -137,3 +137,10 @@ def merge(*args):
     for dct in rest:
         res.update(dct)
     return res
+
+
+def safe_mkdir(path):
+    try:
+        os.makedirs(path)
+    except OSError:
+        pass
