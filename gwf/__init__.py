@@ -1,4 +1,4 @@
-from gwf.core import Event, PreparedWorkflow, Target, Workflow
+from gwf.core import PreparedWorkflow, Target, Workflow
 
 USER_CONFIG_FILE = '~/.gwfrc'
 LOCAL_CONFIG_FILE = '.gwfrc'
