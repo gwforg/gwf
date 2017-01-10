@@ -1,6 +1,9 @@
 .PHONY: init test lint coverage docs integration-tests init-slurm
 
 init:
+    pip install .
+
+init-dev:
 	pip install -r requirements.txt
 	pip install -e .
 
