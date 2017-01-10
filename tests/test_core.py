@@ -223,6 +223,12 @@ class TestWorkflow(unittest.TestCase):
         res = list(workflow.iglob('/other/path/*.fa'))
         self.assertEqual(res, ['/other/path/A.fa', '/other/path/B.fa'])
 
+    @patch('gwf.core.subprocess.check_output')
+    def test_shell_calls_subprocess_with_same_working_dir_as_workflow_in_a_shell(self, mock_check_output):
+        workflow = Workflow(working_dir='/some/path')
+        workflow.shell('echo hello')
+        mock_check_output.assert_called_once_with('echo hello', cwd='/some/path', shell=True)
+
 
 class TestTarget(unittest.TestCase):
 
