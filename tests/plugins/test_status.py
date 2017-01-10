@@ -15,7 +15,6 @@ class StatusCommandTest(GWFTestCase):
         )
 
         self.status_command = StatusCommand()
-        self.status_command.print_verbose = lambda targets: None
         self.status_command.print_progress = lambda targets: None
 
         self.mock_backend = Mock(name='backend', spec_set=Backend)
@@ -41,9 +40,6 @@ class StatusCommandTest(GWFTestCase):
         )
 
         mock_subparser = self.mock_setup_subparser.return_value
-        mock_subparser.add_argument.assert_any_call(
-            '--verbose', action="store_true", help=ANY,
-        )
         mock_subparser.add_argument.assert_any_call(
             'targets', metavar="TARGET", nargs='*', help=ANY,
         )
@@ -73,7 +69,6 @@ class StatusCommandTest(GWFTestCase):
 
         mock_config = {
             'targets': ['target1', 'target2'],
-            'verbose': True
         }
 
         self.status_command.configure(
@@ -93,7 +88,6 @@ class StatusCommandTest(GWFTestCase):
 
         mock_config = {
             'targets': ['target1', 'target2'],
-            'verbose': False
         }
 
         self.status_command.configure(
