@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 echo "Converting conda package..."
 conda convert --platform all $HOME/miniconda3/conda-bld/linux-64/gwf-*.tar.bz2 --output-dir conda-bld/
 
