@@ -1,0 +1,32 @@
+package:
+  name: gwf
+  version: $GIT_BUILD_STR
+
+source:
+  path: ..
+
+requirements:
+  build:
+    - setuptools
+    - python >=3.4
+    - statusbar >=0.1.2
+
+  run:
+    - python >=3.4
+    - statusbar >=0.1.2
+
+build:
+  noarch_python: True
+  entrypoints:
+    - gwf = gwf.cli:main
+
+test:
+  imports:
+    - gwf
+    - gwf.Workflow
+    - gwf.template
+
+about:
+  home: https://github.com/mailund/gwf
+  license: GPLv3
+  license_file: LICENSE
