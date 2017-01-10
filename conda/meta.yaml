@@ -8,11 +8,11 @@ source:
 requirements:
   build:
     - setuptools
-    - python >=3.4
+    - python
     - statusbar >=0.1.2
 
   run:
-    - python >=3.4
+    - python
     - statusbar >=0.1.2
 
 build:
