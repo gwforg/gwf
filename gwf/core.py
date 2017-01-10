@@ -4,6 +4,8 @@ import logging
 import os.path
 import sys
 from collections import defaultdict
+from glob import glob as _glob
+from glob import iglob as _iglob
 
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
@@ -322,6 +324,28 @@ class Workflow(object):
         else:
             raise TypeError('First argument must be either a string or a '
                             'Workflow object.')
+
+    def glob(self, pathname, *args, **kwargs):
+        """Return a list of paths matching `pathname`.
+
+        This method is equivalent to :func:`python:glob.glob`, but searches with
+        relative paths will be performed relative to the working directory
+        of the workflow.
+        """
+        if not os.path.isabs(pathname):
+            pathname = os.path.join(self.working_dir, pathname)
+        return _glob(pathname, *args, **kwargs)
+
+    def iglob(self, pathname, *args, **kwargs):
+        """Return an iterator which yields paths matching `pathname`.
+
+        This method is equivalent to :func:`python:glob.iglob`, but searches with
+        relative paths will be performed relative to the working directory
+        of the workflow.
+        """
+        if not os.path.isabs(pathname):
+            pathname = os.path.join(self.working_dir, pathname)
+        return _iglob(pathname, *args, **kwargs)
 
     def __repr__(self):
         return '{}(name={!r}, working_dir={!r}, targets={!r})'.format(
