@@ -16,7 +16,6 @@ requirements:
     - statusbar >=0.1.2
 
 build:
-  noarch_python: True
   entrypoints:
     - gwf = gwf.cli:main
 
