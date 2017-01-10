@@ -35,4 +35,4 @@ deploy:
   skip_cleanup: true
   script: chmod +x deploy_anaconda.sh && deploy_anaconda.sh
   on:
-    branch: master
+    tags: true
