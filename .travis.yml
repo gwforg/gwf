@@ -13,6 +13,7 @@ before_install:
 - conda update --yes -q conda
 - conda config --set always_yes true
 - conda config --set anaconda_upload no
+- conda config --add channels dansondergaard
 
 # Install packages
 install:
