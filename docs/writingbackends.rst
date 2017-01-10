@@ -4,7 +4,7 @@ Writing Backends
 ================
 
 Backends in *gwf* are the interface between *gwf* and whatever can be used to
-execute a target. A backend for the `Slurm Workload Manager`_.
+execute a target.
 
 To implement a backend you should first read
 :ref:`writing_plugins` since backends are implemented and registered
