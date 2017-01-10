@@ -1,8 +1,8 @@
 language: python
 python:
-  - 3.4
-  - 3.5
-  - 3.6
+- 3.4
+- 3.5
+- 3.6
 
 # Setup anaconda
 before_install:
@@ -22,8 +22,8 @@ install:
 - conda install --use-local gwf
 
 # Run test
-#script:
-#- make test
+script:
+- make test
 
 after_success:
 # Change permissions for Anaconda deployment script
