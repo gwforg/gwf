@@ -6,7 +6,7 @@ python:
 - pypy3
 install:
 - pip install coveralls==1.*
-- pip install --user -r requirements.txt
+- pip install -r requirements.txt
 - pip install .
 script: make test
 deploy:
