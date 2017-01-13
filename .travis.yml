@@ -1,33 +1,17 @@
 language: python
 python:
-- 3.4
-- 3.5
-
-# Setup anaconda
-before_install:
-- wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-- chmod +x miniconda.sh
-- ./miniconda.sh -b
-- export PATH=$HOME/miniconda3/bin:$PATH
-- conda update --yes -q conda
-- conda config --set always_yes true
-- conda config --set anaconda_upload no
-- conda config --add channels dansondergaard
-
-# Install packages
+- '3.4'
+- '3.5'
+- '3.6'
+- pypy3
 install:
-- conda install -q python=$TRAVIS_PYTHON_VERSION pip conda-build anaconda-client
-- conda build conda/
-- conda install --use-local gwf
 - pip install coveralls==1.*
-
-# Run test
-script:
-- make test
-
+- pip install --user -r requirements.txt
+- pip install .
+script: make test
 deploy:
-- provider: script
-  skip_cleanup: true
-  script: chmod +x deploy_anaconda.sh && deploy_anaconda.sh
-  on:
-    tags: true
+  provider: pypi
+  username: dansondergaard
+  server: https://testpypi.python.org/pypi
+  password:
+    secure: EUIG+e1RTg/U1uqzEQB0IItiljiDDc5aR69ViLJLM5g3n0rfMLygx7NVl9FQwN2jY8AEkjM787Qcdws9TzFXhxVgXTtIYKpVHIZ9ZlevDgif6cP4mrXVqtiXqhWlbKhaqwOtqywSdMkOUo3Fo9ZMfC082Lrn8usVga8zFZ8Nagtsb8VeMV5Ugx/ZnTuTKh7msb5IlWjqRCah3xIdO+t9nJ4Z1/doGeHpD8PiD+9GvnJTDgJlj/AMeSx4TO66bnhdR0DmXlq90bJuVJ2I0jTpi+On+ZnPqcC0RNdUw2EZEwTrxp/GtXNxANhgRDSunznPRhlk0/946mJbBg2+e5s1VY7ZE65CmWRiexUs2GgCbgpMHzjYG4Q9bYzwdIOAht2bxkWtWILEluzVG0Pub6TySHN3mx6GZi9R6VzS+uh/EOuo+/wFjc5NrTXYVzFTXFdCO52ixH0lu7S+xkgmYgCoummE4w+O1PaGLBJndE3w3rDCvALl1gLqvKVH2vqibgt5v5qd1JtBcy+SD26QqH7lSQq6ukOrxriQmkVW8FBj9/n17MptROSt3TjOys9fgt+KEIDbskMX7rv3kjUIV3e0ovo85uG8C2byg138zbrDAygbTKTeKAjxAebIPPcZb6APVrtOHaB0r0E2mKsEELPHhh/yga9R4da//CHQqNWguq0=
