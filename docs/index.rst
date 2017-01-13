@@ -22,15 +22,17 @@ on your cluster? See the :ref:`writing_backends` section!
 Installation
 ------------
 
-To install *gwf* via pip just run::
+To install *gwf* via conda::
 
-    pip install gwf
+    conda install -c dansondergaard gwf
 
-Or via conda::
+We recommend that you install *gwf* in a project-specific environment::
 
-    conda install gwf
+    conda create -n myproject python=3.5 dep1 dep2 ...
+    source activate myproject
+    conda install -c dansondergaard gwf
 
-You can find the code `here <https://github.com/mailund/gwf>`_. You are
+You can find the code for *gwf* `here <https://github.com/mailund/gwf>`_. You are
 encouraged to report any issues through the
 `issue tracker <https://github.com/mailund/gwf/issues>`_.
 
