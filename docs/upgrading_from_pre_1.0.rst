@@ -29,7 +29,7 @@ For example, a workflow that previously looked like this::
 
     from gwf import *
 
-    target('Foo', input=['hello.txt'], output=['bye.txt']) << """
+    target('Foo', input='hello.txt', output=['bye.txt']) << """
     ...
     """
 
@@ -39,12 +39,24 @@ should now look like this::
 
     gwf = Workflow()
 
-    gwf.target('Foo', input=['hello.txt'], output=['bye.txt']) << """
+    gwf.target('Foo', input='hello.txt', output=['bye.txt']) << """
     ...
     """
 
-Finally, in target definitions you should rename `input` to `inputs` and
+In target definitions you should rename `input` to `inputs` and
 `output` to `outputs`. The workflow then ends up looking like this::
+
+    from gwf import Workflow, template
+
+    gwf = Workflow()
+
+    gwf.target('Foo', inputs='hello.txt', outputs=['bye.txt']) << """
+    ...
+    """
+
+Finally, in older versions of *gwf* you were allowed to just pass a string as input
+or output (as for `inputs` above). In 1.0, you must always pass an iterable. Thus,
+the workflow ends up like this::
 
     from gwf import Workflow, template
 
