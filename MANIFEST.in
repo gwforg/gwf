@@ -1,0 +1,2 @@
+include versioneer.py
+include gwf/_version.py

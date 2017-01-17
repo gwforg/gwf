@@ -2,6 +2,7 @@ import os
 
 from setuptools import find_packages, setup
 
+import versioneer
 
 # Utility function to read the README file.  Used for the
 # long_description.  It's nice, because now 1) we have a top level
@@ -12,8 +13,8 @@ def read(fname):
 
 setup(
     name='gwf',
-    version='1.0.0',
-
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     packages=find_packages(),
     entry_points={
         'console_scripts': [
