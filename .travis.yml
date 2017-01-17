@@ -4,11 +4,13 @@ python:
 - '3.5'
 - '3.6'
 install:
+- pip install --upgrade pip
 - pip install coveralls==1.*
 - pip install -r requirements.txt
 - pip install .
 script: make lint && make test
-after_success: coveralls
+after_success:
+  coveralls
 deploy:
   provider: pypi
   username: dansondergaard

@@ -20,7 +20,6 @@ lint:
 	flake8
 
 coverage:
-	coverage combine
 	coverage report
 
 docs:
