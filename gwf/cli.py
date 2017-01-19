@@ -11,7 +11,7 @@ from . import LOCAL_CONFIG_FILE, USER_CONFIG_FILE, __version__
 from .core import PreparedWorkflow
 from .exceptions import GWFError
 from .ext import ExtensionManager
-from .utils import cache, get_gwf_version, import_object, merge
+from .utils import cache, import_object, merge
 
 logger = logging.getLogger(__name__)
 
