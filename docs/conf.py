@@ -23,6 +23,8 @@
 
 import os
 
+import gwf
+
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -67,7 +69,6 @@ author = 'Thomas Mailund'
 #
 # The short X.Y version.
 
-import gwf
 verinfo = gwf.__version__
 version = verinfo.split('+')[0]
 # The full version, including alpha/beta/rc tags.
