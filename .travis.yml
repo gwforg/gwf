@@ -24,8 +24,4 @@ deploy:
     skip_upload_docs: true
     on:
       branch: master
-  - provider: script
-    script: build_conda.sh
-    skip_cleanup: true
-    on:
-      branch: master
+after_deploy: build_conda.sh
