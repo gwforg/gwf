@@ -7,7 +7,7 @@ import sys
 
 from configargparse import ArgParser
 
-from . import LOCAL_CONFIG_FILE, USER_CONFIG_FILE
+from . import LOCAL_CONFIG_FILE, USER_CONFIG_FILE, __version__
 from .core import PreparedWorkflow
 from .exceptions import GWFError
 from .ext import ExtensionManager
@@ -82,6 +82,12 @@ class App:
             choices=self.VERBOSITY_LEVELS.keys()
         )
 
+        self.parser.add_argument(
+            '--version',
+            action='version',
+            version=__version__
+        )
+
         # Prepare for subcommands
         self.subparsers = \
             self.parser.add_subparsers(title="commands")
@@ -129,7 +135,7 @@ class App:
         self._configure_logging()
 
         logger.debug('Platform: %s.', platform.platform())
-        logger.debug('GWF version: %s.', get_gwf_version())
+        logger.debug('GWF version: %s.', __version__)
         logger.debug('Python version: %s.', platform.python_version())
         logger.debug('Node: %s.', platform.node())
         logger.debug('Python path: %s.', sys.path)
@@ -155,6 +161,7 @@ class App:
             self.config,
             workflow.defaults,
         )
+        logger.debug('Merged configuration: %r.', self.config)
 
         @cache
         def get_prepared_workflow():
