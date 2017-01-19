@@ -56,9 +56,13 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
+        'Operating System :: OS Independent',
         'Topic :: Utilities',
         'Topic :: System :: Distributed Computing',
         'Intended Audience :: Science/Research',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)'
     ],
 )
