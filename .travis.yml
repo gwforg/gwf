@@ -24,4 +24,4 @@ deploy:
     skip_upload_docs: true
     on:
       branch: master
-after_deploy: build_conda.sh
+after_deploy: bash build_conda.sh
