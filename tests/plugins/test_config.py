@@ -73,45 +73,6 @@ class ConfigCommandTest(GWFTestCase):
                 mock_open_.return_value.write.call_args_list
             )
 
-    def test_set_an_option_on_non_existing_local_conf_file(self):
-        self.config_command.config = {
-            'option_name': 'foo',
-            'option_value': 'bar',
-            'user': True
-        }
-
-        m = mock_open()
-        with patch('builtins.open', m) as mock_open_:
-            mock_open_.side_effect = [IOError, m.return_value]
-
-            self.config_command.on_run()
-
-            self.assertIn(call('~/.gwfrc'), mock_open_.call_args_list)
-            self.assertIn(call('~/.gwfrc', 'w'), mock_open_.call_args_list)
-
-            self.assertIn(
-                call('foo = bar\n'),
-                mock_open_.return_value.write.call_args_list
-            )
-
-    def test_set_an_option_on_existing_local_conf_file(self):
-        self.config_command.config = {
-            'option_name': 'foo',
-            'option_value': 'bar',
-            'user': True
-        }
-
-        with patch('builtins.open', mock_open(read_data='boz = jax\n')) as mock_open_:
-            self.config_command.on_run()
-
-            self.assertIn(call('~/.gwfrc'), mock_open_.call_args_list)
-            self.assertIn(call('~/.gwfrc', 'w'), mock_open_.call_args_list)
-
-            self.assertIn(
-                call('boz = jax\nfoo = bar\n'),
-                mock_open_.return_value.write.call_args_list
-            )
-
     def test_unset_existing_option(self):
         self.config_command.config = {
             'option_name': 'foo',
