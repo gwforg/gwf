@@ -1,7 +1,7 @@
 Welcome to gwf
 ==============
 
-|ci-status| |coveralls| |docs| |license|
+|cistatus| |coveralls| |docs| |license|
 
 |downloads| |versions| |anacondadownloads| |anacondaversion|
 
@@ -76,6 +76,9 @@ API Reference
    api
 
 
+.. |cistatus| image:: https://img.shields.io/travis/rust-lang/rust.svg
+    :target: https://travis-ci.org/mailund/gwf
+    :alt: TravisCI
 .. |docs| image:: https://readthedocs.org/projects/gwf/badge/?version=latest&style=flat
     :target: http://gwf.readthedocs.io
     :alt: Documentation

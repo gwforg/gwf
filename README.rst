@@ -4,7 +4,7 @@ gwf
 
 A flexible, pragmatic workflow tool.
 
-|ci-status| |coveralls| |docs| |license|
+|cistatus| |coveralls| |docs| |license|
 
 |downloads| |versions| |anacondadownloads| |anacondaversion|
 
@@ -16,6 +16,10 @@ Coming from an older (pre-1.0) version of *gwf*? Learn how to upgrade_ your work
 .. _tutorial: http://gwf.readthedocs.io/en/latest/tutorial.html
 .. _upgrade: http://gwf.readthedocs.io/en/latest/upgrading_from_pre_1.0.html
 
+
+.. |cistatus| image:: https://img.shields.io/travis/rust-lang/rust.svg
+    :target: https://travis-ci.org/mailund/gwf
+    :alt: TravisCI
 .. |docs| image:: https://readthedocs.org/projects/gwf/badge/?version=latest&style=flat
     :target: http://gwf.readthedocs.io
     :alt: Documentation
