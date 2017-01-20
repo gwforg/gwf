@@ -12,7 +12,7 @@ from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
 from . import Backend, FileLogsMixin
-from ..exceptions import BackendError
+from ..exceptions import BackendError, GWFError
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +147,15 @@ class LocalBackend(FileLogsMixin, Backend):
         except Exception:
             self._job_db = {}
 
-        self.client = Client(('localhost', self.config['workers_port']))
+        try:
+            self.client = Client(('localhost', self.config['workers_port']))
+        except ConnectionRefusedError as e:
+            raise GWFError(
+                'Local backend could not connect to workers. '
+                'Workers can be started by running "gwf workers". '
+                'You can read more in the documentation: '
+                'http://gwf.readthedocs.io/en/latest/backends.html#local'
+            )
 
         status = self.client.status()
         self._job_db = {
