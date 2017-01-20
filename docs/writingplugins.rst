@@ -276,10 +276,10 @@ In *gwf* all arguments that can be set on the command line can also be specified
 in a configuration file. This means that the user can specify defaults for e.g.
 which backend to use, the verbosity etc. The arguments defined by our plugin
 are also automatically read from the configuration file, so if the user always
-only wants to show submitted targets, the user can create a ``.gwfrc`` file in
+only wants to show submitted targets, the user can create a ``.gwf`` file in
 the workflow directory (or the user directory) with the following contents::
 
-    # .gwfrc
+    # .gwf
     only-submitted = true
 
 Examples
