@@ -4,29 +4,36 @@ gwf
 
 A flexible, pragmatic workflow tool.
 
-|status| |docs| |license| |versions| |format| |ci-status| |coveralls| |downloads|
+|ci-status| |coveralls| |docs| |license|
 
-.. |ci-status| image:: 	https://img.shields.io/travis/mailund/gwf.svg
-    :target: https://travis-ci.org/mailund/gwf
-    :alt: Build status
+|downloads| |versions| |anacondadownloads| |anacondaversion|
+
+New to *gwf*? We've got a tutorial_ for you!
+
+Coming from an older (pre-1.0) version of *gwf*? Learn how to upgrade_ your workflows for newer versions.
+
+
+.. _tutorial: http://gwf.readthedocs.io/en/latest/tutorial.html
+.. _upgrade: http://gwf.readthedocs.io/en/latest/upgrading_from_pre_1.0.html
+
 .. |docs| image:: https://readthedocs.org/projects/gwf/badge/?version=latest&style=flat
     :target: http://gwf.readthedocs.io
     :alt: Documentation
-.. |format| image:: https://img.shields.io/pypi/format/gwf.svg
-    :target: https://pypi.python.org/pypi/gwf
-    :alt: Kit format
 .. |downloads| image:: https://img.shields.io/pypi/dm/gwf.svg
     :target: https://pypi.python.org/pypi/gwf
     :alt: Monthly PyPI downloads
 .. |versions| image:: https://img.shields.io/pypi/pyversions/gwf.svg
     :target: https://pypi.python.org/pypi/gwf
     :alt: Python versions supported
-.. |status| image:: https://img.shields.io/pypi/status/gwf.svg
-    :target: https://pypi.python.org/pypi/gwf
-    :alt: Package stability
 .. |license| image:: https://img.shields.io/pypi/mailund/gwf.svg
     :target: https://pypi.python.org/pypi/gwf
     :alt: License
 .. |coveralls| image:: https://img.shields.io/coveralls/mailund/gwf.svg
     :target: https://coveralls.io/github/mailund/gwf
     :alt: Coverage
+.. |anacondaversion| image:: https://anaconda.org/dansondergaard/gwf/badges/version.svg
+    :target: https://anaconda.org/dansondergaard/gwf
+    :alt: Version of Conda package
+.. |anacondadownloads| image:: https://anaconda.org/dansondergaard/gwf/badges/downloads.svg
+    :target: https://anaconda.org/dansondergaard/gwf
+    :alt: Downloads with Conda
