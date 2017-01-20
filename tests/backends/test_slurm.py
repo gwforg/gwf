@@ -389,7 +389,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
 
 class TestSlurmBackendClose(SlurmTestCase):
 
-    def test_closing_backend_dumps_database_atomically(self):
+    def test_close_dumps_job_db_if_configure_has_been_called(self):
         self.backend.configure(
             working_dir='/some/dir',
             config=self.config
@@ -399,6 +399,10 @@ class TestSlurmBackendClose(SlurmTestCase):
             {},
             '/some/dir/.gwf/slurm-backend-jobdb.json'
         )
+
+    def test_close_does_not_dump_job_db_if_configure_has_not_been_called(self):
+        self.backend.close()
+        self.mock_dump_atomic.assert_not_called()
 
 
 class TestFindExe(GWFTestCase):

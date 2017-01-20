@@ -196,7 +196,6 @@ class SlurmBackend(FileLogsMixin, Backend):
     }
 
     _JOB_DB_PATH = '.gwf/slurm-backend-jobdb.json'
-    _JOB_HISTORY_PATH = '.gwf/slurm-backend-jobhistory.json'
 
     def configure(self, working_dir, config):
         super().configure(working_dir, config)
@@ -224,11 +223,11 @@ class SlurmBackend(FileLogsMixin, Backend):
             }
 
     def close(self):
-        # TODO: error handling
-        _dump_atomic(
-            self._job_db,
-            os.path.join(self.working_dir, self._JOB_DB_PATH)
-        )
+        if hasattr(self, '_job_db'):
+            _dump_atomic(
+                self._job_db,
+                os.path.join(self.working_dir, self._JOB_DB_PATH)
+            )
 
     def submitted(self, target):
         return target.name in self._job_db
