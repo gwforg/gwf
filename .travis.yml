@@ -4,7 +4,7 @@ python:
 - '3.5'
 - '3.6'
 env:
-- PYPI_URL=https://testpypi.python.org/pypi
+- PYPI_URL=https://pypi.python.org/pypi
 install:
 - pip install --upgrade pip
 - pip install coveralls==1.*
@@ -23,5 +23,5 @@ deploy:
     skip_cleanup: true
     skip_upload_docs: true
     on:
-      branch: master
+      tags: true
 after_deploy: bash build_conda.sh
