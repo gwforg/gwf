@@ -252,11 +252,6 @@ class SlurmBackend(FileLogsMixin, Backend):
         ]
 
         script = self._compile_script(target)
-        logger.debug(
-            'Compiled script for target %s:\n%s',
-            target.name,
-            script
-        )
 
         stdout, stderr = _call_sbatch(script, dependency_ids)
         new_job_id = stdout.strip()
