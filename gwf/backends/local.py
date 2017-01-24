@@ -1,6 +1,7 @@
 import json
 import logging
 import multiprocessing
+import os
 import os.path
 import subprocess
 import sys
@@ -258,6 +259,9 @@ class Server(FileLogsMixin):
         )
 
         status_dict[task_id] = State.started
+
+        target_env = os.environ.copy()
+        target_env['GWF_TARGET_NAME'] = request.target.name
         try:
             process = subprocess.Popen(
                 ['bash'],
@@ -266,6 +270,7 @@ class Server(FileLogsMixin):
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
                 cwd=request.target.working_dir,
+                env=target_env,
             )
 
             stdout, stderr = process.communicate(request.target.spec)
