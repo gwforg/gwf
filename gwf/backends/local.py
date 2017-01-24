@@ -179,17 +179,20 @@ class LocalBackend(FileLogsMixin, Backend):
     def submitted(self, target):
         return target.name in self._job_db
 
-    def running(self, target):
-        job_id = self._job_db[target.name]
+    def _has_status(self, target, status):
+        job_id = self._job_db.get(target.name)
+        if job_id is None:
+            return False
         return self.client.status()[job_id] == State.running
 
+    def running(self, target):
+        return self._has_status(target, State.started)
+
     def failed(self, target):
-        job_id = self._job_db[target.name]
-        return self.client.status()[job_id] == State.failed
+        return self._has_status(target, State.failed)
 
     def completed(self, target):
-        job_id = self._job_db[target.name]
-        return self.client.status()[job_id] == State.completed
+        return self._has_status(target, State.completed)
 
     def close(self):
         try:
