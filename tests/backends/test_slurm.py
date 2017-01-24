@@ -192,6 +192,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
                 'constraint': 'graphics*4',
                 'mail_type': 'BEGIN,END,FAIL',
                 'mail_user': 'test@domain.com',
+                'qos': 'somename',
             },
             spec='echo hello world'
         )
@@ -208,6 +209,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.assertIn('#SBATCH -C graphics*4', script)
         self.assertIn('#SBATCH --mail-type=BEGIN,END,FAIL', script)
         self.assertIn('#SBATCH --mail-user=test@domain.com', script)
+        self.assertIn('#SBATCH --qos=somename', script)
         self.assertIn('cd /some/dir', script)
         self.assertIn('export GWF_JOBID=$SLURM_JOBID', script)
         self.assertIn('echo hello world', script)

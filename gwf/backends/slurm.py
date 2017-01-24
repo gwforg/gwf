@@ -41,6 +41,7 @@ OPTION_TABLE = {
     "constraint": "-C ",
     "mail_type": "--mail-type=",
     "mail_user": "--mail-user=",
+    "qos": "--qos="
 }
 
 
@@ -186,6 +187,9 @@ class SlurmBackend(FileLogsMixin, Backend):
     * **constraint (str):**
       Constraint string. Equivalent to setting the `--constraint` flag on
       `sbatch`.
+    * **qos (str):**
+      Quality-of-service strring. Equivalent to setting the `--qos` flog
+      on `sbatch`.
     """
 
     supported_options = set(OPTION_TABLE.keys())
