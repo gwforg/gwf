@@ -4,8 +4,8 @@ del get_versions
 
 from gwf.core import PreparedWorkflow, Target, Workflow  # noqa: E402
 
-USER_CONFIG_FILE = '~/.gwf'
-LOCAL_CONFIG_FILE = '.gwf'
+USER_CONFIG_FILE = '~/.gwf.conf'
+LOCAL_CONFIG_FILE = '.gwf.conf'
 
 
 class template(object):

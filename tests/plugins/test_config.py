@@ -47,8 +47,8 @@ class ConfigCommandTest(GWFTestCase):
 
             self.config_command.on_run()
 
-            self.assertIn(call('.gwf'), mock_open_.call_args_list)
-            self.assertIn(call('.gwf', 'w'), mock_open_.call_args_list)
+            self.assertIn(call('.gwf.conf'), mock_open_.call_args_list)
+            self.assertIn(call('.gwf.conf', 'w'), mock_open_.call_args_list)
 
             self.assertIn(
                 call('foo = bar\n'),
@@ -65,8 +65,8 @@ class ConfigCommandTest(GWFTestCase):
         with patch('builtins.open', mock_open(read_data='boz = jax\n')) as mock_open_:
             self.config_command.on_run()
 
-            self.assertIn(call('.gwf'), mock_open_.call_args_list)
-            self.assertIn(call('.gwf', 'w'), mock_open_.call_args_list)
+            self.assertIn(call('.gwf.conf'), mock_open_.call_args_list)
+            self.assertIn(call('.gwf.conf', 'w'), mock_open_.call_args_list)
 
             self.assertIn(
                 call('boz = jax\nfoo = bar\n'),
