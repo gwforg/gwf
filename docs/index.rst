@@ -1,9 +1,9 @@
 Welcome to gwf
 ==============
 
-|cistatus| |coveralls| |docs| |license|
+|docs| |anacondaversion| |cistatus| |coveralls|
 
-|downloads| |versions| |anacondadownloads| |anacondaversion|
+|versions| |downloads| |anacondadownloads|
 
 *gwf* is a flexible, pragmatic workflow tool for building and running large,
 scientific workflows developed at the Bioinformatics Research Centre
@@ -88,9 +88,6 @@ API Reference
 .. |versions| image:: https://img.shields.io/pypi/pyversions/gwf.svg
     :target: https://pypi.python.org/pypi/gwf
     :alt: Python versions supported
-.. |license| image:: https://img.shields.io/pypi/mailund/gwf.svg
-    :target: https://pypi.python.org/pypi/gwf
-    :alt: License
 .. |coveralls| image:: https://img.shields.io/coveralls/mailund/gwf.svg
     :target: https://coveralls.io/github/mailund/gwf
     :alt: Coverage

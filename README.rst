@@ -4,9 +4,9 @@ gwf
 
 A flexible, pragmatic workflow tool.
 
-|cistatus| |coveralls| |docs| |license|
+|docs| |anacondaversion| |cistatus| |coveralls|
 
-|downloads| |versions| |anacondadownloads| |anacondaversion|
+|versions| |downloads| |anacondadownloads|
 
 New to *gwf*? We've got a tutorial_ for you!
 
@@ -29,9 +29,6 @@ Coming from an older (pre-1.0) version of *gwf*? Learn how to upgrade_ your work
 .. |versions| image:: https://img.shields.io/pypi/pyversions/gwf.svg
     :target: https://pypi.python.org/pypi/gwf
     :alt: Python versions supported
-.. |license| image:: https://img.shields.io/pypi/mailund/gwf.svg
-    :target: https://pypi.python.org/pypi/gwf
-    :alt: License
 .. |coveralls| image:: https://img.shields.io/coveralls/mailund/gwf.svg
     :target: https://coveralls.io/github/mailund/gwf
     :alt: Coverage
