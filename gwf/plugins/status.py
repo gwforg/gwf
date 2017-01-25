@@ -35,23 +35,23 @@ class StatusCommand(Plugin):
             dependencies = dfs(target, self.workflow.dependencies)
             should_run, submitted, running, completed = self._split_target_list(
                 dependencies)
-            status_bar = table.add_status_line(target.name + ": ")
-            status_bar.add_progress(len(completed), "#", color="green")
-            status_bar.add_progress(len(running), "#", color="blue")
-            status_bar.add_progress(len(submitted), "-", color="yellow")
-            status_bar.add_progress(len(should_run), ".", color="red")
-        print("\n".join(table.format_table()))
+            status_bar = table.add_status_line(target.name)
+            status_bar.add_progress(len(completed), '#', color='green')
+            status_bar.add_progress(len(running), '#', color='blue')
+            status_bar.add_progress(len(submitted), '-', color='yellow')
+            status_bar.add_progress(len(should_run), '.', color='red')
+        print('\n'.join(table.format_table()))
 
     def setup_argument_parser(self, parser, subparsers):
         subparser = self.setup_subparser(
             subparsers,
-            "status",
-            "Command for getting the status of workflow targets.",
+            'status',
+            'Command for getting the status of workflow targets.',
             self.on_run
         )
 
-        subparser.add_argument("targets", metavar="TARGET", nargs="*",
-                               help="Targets to show the status of (default: all terminal targets)")
+        subparser.add_argument('targets', metavar='TARGET', nargs='*',
+                               help='Targets to show the status of (default: all terminal targets)')
 
     def on_run(self):
         self.workflow = self.get_prepared_workflow()
