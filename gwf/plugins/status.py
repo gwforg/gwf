@@ -1,4 +1,5 @@
 import os
+import textwrap
 
 import statusbar
 
@@ -8,6 +9,18 @@ from ..utils import dfs
 
 
 class StatusCommand(Plugin):
+    """
+    Show the status of targets.
+
+    By default, shows a progress bar for each endpoint in the workflow.
+    If one or more target names are supplied, progress bars are shown
+    for these targets.
+
+    A progress bar represents the target and its dependencies, and
+    shows how many of the dependencies either should run (red, .),
+    are submitted (yellow, -), are running (blue, +) or are
+    completed (green, #).
+    """
 
     def configure(self, *args, **kwargs):
         super().configure(*args, **kwargs)
@@ -37,7 +50,7 @@ class StatusCommand(Plugin):
                 dependencies)
             status_bar = table.add_status_line(target.name)
             status_bar.add_progress(len(completed), '#', color='green')
-            status_bar.add_progress(len(running), '#', color='blue')
+            status_bar.add_progress(len(running), '+', color='blue')
             status_bar.add_progress(len(submitted), '-', color='yellow')
             status_bar.add_progress(len(should_run), '.', color='red')
         print('\n'.join(table.format_table()))
@@ -46,9 +59,8 @@ class StatusCommand(Plugin):
         subparser = self.setup_subparser(
             subparsers,
             'status',
-            'Command for getting the status of workflow targets.',
-            self.on_run
-        )
+            textwrap.dedent(StatusCommand.__doc__),
+            self.on_run)
 
         subparser.add_argument('targets', metavar='TARGET', nargs='*',
                                help='Targets to show the status of (default: all terminal targets)')
