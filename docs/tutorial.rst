@@ -7,8 +7,42 @@ In this tutorial we will explore various concepts in *gwf*. We will define
 workflows and see how *gwf* can help us keep track of the progress of workflow
 execution, the output of targets and dependencies between targets. Have fun!
 
-A Minimal Example
------------------
+We'll assume that you have the Anaconda_ distribution installed and that you are
+familiar with how to install and manage packages and environments through the
+*conda* package manager.
+
+First, let's install *gwf* in its own conda environment. Create a new environment
+for your project, we'll call it *myproject*.
+
+.. code-block:: console
+
+    $ conda create -n myproject python=3.4
+    $ source activate myproject
+    $ conda install -c dansondergaard gwf
+
+You should now be able to run the following command.
+
+.. code-block:: console
+
+    $ gwf -h
+
+This should show you the commands and options available through *gwf*. If you just
+run:
+
+.. code-block:: console
+
+    $ gwf
+
+you'll get an error that looks something like this:
+
+.. code-block:: console
+
+    ERROR |  The file "/Users/das/Desktop/test-gwf/workflow.py" does not exist.
+
+We get this error since we didn't define a workflow file yet.
+
+A Minimal Workflow
+------------------
 
 To get started we must define a *workflow file* containing a workflow to which
 we can add targets. Unless *gwf* is told otherwise it assumes that the workflow
@@ -45,7 +79,7 @@ fix that too::
     echo hello world > greeting.txt
     """
 
-There ya' go! We have now declared a workflow with one target and that target
+There you go! We have now declared a workflow with one target and that target
 creates the file ``greeting.txt`` with the line ``hello world`` in it. Now let's
 try to run our workflow...
 
@@ -76,50 +110,108 @@ workflows utilizing all cores of your computer and thus it can be very useful
 for small workflows that don't require a lot of resources.
 
 First, open another terminal window and navigate to the ``myproject`` directory.
-Then run the command ``gwf workers``. This will start a pool of workers that
+Then run the command ``gwf -b local workers``. This will start a pool of workers that
 *gwf* can now submit targets to.
 
-Switch back to the other terminal and then run the command ``gwf run``. If
-everything is fine, you should see output like this::
+Switch back to the other terminal and then run:
 
-    ### EXAMPLE OUTPUT ###
+.. code-block:: console
 
-We can see that *gwf* scheduled and then submitted ``MyTarget``.
-Within a few seconds you should see ``greeting.txt`` in the project directory.
+    $ gwf -b local run
 
-What happens if we type ``gwf run`` again? Let's try!::
+*gwf* schedules and then submits ``MyTarget`` to the pool of workers you started in
+the other terminal window (the ``-b local`` flag tells *gwf* to use the
+:class:`~gwf.backends.local.LocalBackend`). This command doesn't output anything
+since *gwf* tries to only output something when explicitly told so, or if something
+is wrong.
 
-    ### EXAMPLE OUTPUT FROM SECOND RUN ###
+Within a few seconds you should see ``greeting.txt`` in the project directory. Try
+to open it in your favorite text editor!
 
-This time the target is not submitted to the backend since ``greeting.txt``
-already exists and is up to date. Try to delete ``greeting.txt``, then run
-the workflow again::
+To actually see what happens when you run ``gwf -b local run``, try to delete
+``greeting.txt`` and then run:
 
-    ## EXAMPLE OUTPUT FROM SECOND RUN ###
+.. code-block:: console
 
-The target was submitted again, what a relief!
+    $ gwf -b local -v info run
 
-Observing Running Targets
+The ``-v info`` flag tells *gwf* to output a bit more information when it runs.
+If you want even more information you may use ``-v debug``. The command show now
+output this:
+
+.. code-block:: console
+
+    INFO  |  Scheduling target MyTarget.
+    INFO  |  Submitting target MyTarget.
+
+This says that *gwf* considered the target for execution and then decided to submit
+it to the backend (in this case because the output file, ``greeting.txt``, does not
+already exist). After a few seconds, you should see that ``greeting.txt`` has been
+created again.
+
+Now try the same command again:
+
+.. code-block:: console
+
+    $ gwf -b local -v info run
+    INFO  |  Scheduling target MyTarget.
+
+This time, *gwf* considers the target for submission, but decides not to submit it
+since all of the output files (only one in this case) exist.
+
+Setting a Default Backend
 -------------------------
 
-Status, logs.
+By now you probably got really tired of typing ``-b local`` for every single command.
+To save some keystrokes, let's set the local backend as the default for this project.
 
+.. code-block:: console
+
+    $ gwf config backend local
+
+This creates a configuration file in the project folder and sets the backend to
+``local`` by default. To test it out, let's try to run the same command as before,
+but without the ``-b local`` flag.
+
+.. code-block:: console
+
+    $ gwf -v info run
+    INFO  |  Scheduling target MyTarget.
+
+*gwf* now uses the local backend by default, so everything works as before. If you
+are crazy about seeing what *gwf* does, you can also get rid of the ``-v info``
+flag by setting the default verbosity level.
+
+.. code-block:: console
+
+    $ gwf config verbosity info
+    $ gwf run
+    INFO  |  Scheduling target MyTarget.
+
+As we'd expect, *gwf* outputs the same as before, but this time we didn't have to
+set the ``-v info`` flag!
 
 Defining Targets With Dependencies
 ----------------------------------
+
+
+
+Observing Targets Execution
+---------------------------
+
+Status, logs.
 
 
 Reusable Targets With Templates
 -------------------------------
 
 
-Defining Multiple Workflows in a File
--------------------------------------
-
-
-Including Other Workflows
--------------------------
+Cleaning Up
+-----------
 
 
 Running with Another Backend
 ----------------------------
+
+
+.. _Anaconda: https://www.continuum.io/downloads
