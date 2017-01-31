@@ -7,8 +7,42 @@ In this tutorial we will explore various concepts in *gwf*. We will define
 workflows and see how *gwf* can help us keep track of the progress of workflow
 execution, the output of targets and dependencies between targets. Have fun!
 
-A Minimal Example
------------------
+We'll assume that you have the Anaconda_ distribution installed and that you are
+familiar with how to install and manage packages and environments through the
+*conda* package manager.
+
+First, let's install *gwf* in its own conda environment. Create a new environment
+for your project, we'll call it *myproject*.
+
+.. code-block:: console
+
+    $ conda create -n myproject python=3.4
+    $ source activate myproject
+    $ conda install -c dansondergaard gwf
+
+You should now be able to run the following command.
+
+.. code-block:: console
+
+    $ gwf -h
+
+This should show you the commands and options available through *gwf*. If you just
+run:
+
+.. code-block:: console
+
+    $ gwf
+
+you'll get an error that looks something like this:
+
+.. code-block:: console
+
+    ERROR |  The file "/Users/das/Desktop/test-gwf/workflow.py" does not exist.
+
+We get this error since we didn't define a workflow file yet.
+
+A Minimal Workflow
+------------------
 
 To get started we must define a *workflow file* containing a workflow to which
 we can add targets. Unless *gwf* is told otherwise it assumes that the workflow
@@ -45,7 +79,7 @@ fix that too::
     echo hello world > greeting.txt
     """
 
-There ya' go! We have now declared a workflow with one target and that target
+There you go! We have now declared a workflow with one target and that target
 creates the file ``greeting.txt`` with the line ``hello world`` in it. Now let's
 try to run our workflow...
 
@@ -76,50 +110,235 @@ workflows utilizing all cores of your computer and thus it can be very useful
 for small workflows that don't require a lot of resources.
 
 First, open another terminal window and navigate to the ``myproject`` directory.
-Then run the command ``gwf workers``. This will start a pool of workers that
+Then run the command ``gwf -b local workers``. This will start a pool of workers that
 *gwf* can now submit targets to.
 
-Switch back to the other terminal and then run the command ``gwf run``. If
-everything is fine, you should see output like this::
+Switch back to the other terminal and then run:
 
-    ### EXAMPLE OUTPUT ###
+.. code-block:: console
 
-We can see that *gwf* scheduled and then submitted ``MyTarget``.
-Within a few seconds you should see ``greeting.txt`` in the project directory.
+    $ gwf -b local run
 
-What happens if we type ``gwf run`` again? Let's try!::
+*gwf* schedules and then submits ``MyTarget`` to the pool of workers you started in
+the other terminal window (the ``-b local`` flag tells *gwf* to use the
+:class:`~gwf.backends.local.LocalBackend`). This command doesn't output anything
+since *gwf* tries to only output something when explicitly told so, or if something
+is wrong.
 
-    ### EXAMPLE OUTPUT FROM SECOND RUN ###
+Within a few seconds you should see ``greeting.txt`` in the project directory. Try
+to open it in your favorite text editor!
 
-This time the target is not submitted to the backend since ``greeting.txt``
-already exists and is up to date. Try to delete ``greeting.txt``, then run
-the workflow again::
+To actually see what happens when you run ``gwf -b local run``, try to delete
+``greeting.txt`` and then run:
 
-    ## EXAMPLE OUTPUT FROM SECOND RUN ###
+.. code-block:: console
 
-The target was submitted again, what a relief!
+    $ gwf -b local -v info run
 
-Observing Running Targets
+The ``-v info`` flag tells *gwf* to output a bit more information when it runs.
+If you want even more information you may use ``-v debug``. The command show now
+output this:
+
+.. code-block:: console
+
+    INFO  |  Scheduling target MyTarget.
+    INFO  |  Submitting target MyTarget.
+
+This says that *gwf* considered the target for execution and then decided to submit
+it to the backend (in this case because the output file, ``greeting.txt``, does not
+already exist). After a few seconds, you should see that ``greeting.txt`` has been
+created again.
+
+Now try the same command again:
+
+.. code-block:: console
+
+    $ gwf -b local -v info run
+    INFO  |  Scheduling target MyTarget.
+
+This time, *gwf* considers the target for submission, but decides not to submit it
+since all of the output files (only one in this case) exist.
+
+Setting a Default Backend
 -------------------------
 
-Status, logs.
+By now you probably got really tired of typing ``-b local`` for every single command.
+To save some keystrokes, let's set the local backend as the default for this project.
 
+.. code-block:: console
+
+    $ gwf config backend local
+
+This creates a configuration file in the project folder and sets the backend to
+``local`` by default. To test it out, let's try to run the same command as before,
+but without the ``-b local`` flag.
+
+.. code-block:: console
+
+    $ gwf -v info run
+    INFO  |  Scheduling target MyTarget.
+
+*gwf* now uses the local backend by default, so everything works as before. If you
+are crazy about seeing what *gwf* does, you can also get rid of the ``-v info``
+flag by setting the default verbosity level.
+
+.. code-block:: console
+
+    $ gwf config verbosity info
+    $ gwf run
+    INFO  |  Scheduling target MyTarget.
+
+As we'd expect, *gwf* outputs the same as before, but this time we didn't have to
+set the ``-v info`` flag!
+
+From now on we'll assume that you've started a pool of workers for the local backend
+and configured this to be the default backend.
 
 Defining Targets With Dependencies
 ----------------------------------
 
+Targets in *gwf* represent isolated units of work. However, we can declare
+dependencies between targets to construct complex workflows. A target B that
+depends on a target A will only run when A has been run successfully (that
+is, if all of the output files of A exist).
+
+In *gwf*, dependencies are declared through file dependencies. This is best
+understood through an example::
+
+    from gwf import Workflow
+
+    gwf = Workflow()
+
+    gwf.target('TargetA', outputs=['x.txt']) << """
+    echo "this is x" > x.txt
+    """
+
+    gwf.target('TargetB', outputs=['y.txt']) << """
+    echo "this is y" > y.txt
+    """
+
+    gwf.target('TargetC', inputs=['x.txt', 'y.txt'], outputs=['z.txt']) << """
+    cat x.txt y.txt > z.txt
+    """
+
+In this workflow, ``TargetA`` and ``TargetB`` each produce a file. ``TargetC``
+declares that it needs two files as inputs. Since the file names match the
+file names produced by `TargetA`` and ``TargetB``, ``TargetC`` depends on these
+two targets.
+
+Let's try to run this workflow:
+
+.. code-block:: console
+
+    $ gwf -v info run
+    INFO  |  Scheduling target TargetC.
+    INFO  |  Scheduling dependency TargetA of TargetC.
+    INFO  |  Submitting target TargetA.
+    INFO  |  Scheduling dependency TargetB of TargetC.
+    INFO  |  Submitting target TargetB.
+    INFO  |  Submitting target TargetC.
+
+Notice that *gwf* first attempts to submit ``TargetC``. However, because of the
+file dependencies it first schedules each dependency and submits those to the
+backend. It then submits ``TargetC`` and makes sure that it will only be run
+when both ``TargetA`` and ``TargetB`` has been run. If we decided that we needed
+to re-run ``TargetC``, but not ``TargetA`` and ``TargetB``, we could just delete
+``z.txt`` and run ``gwf run`` again. *gwf* will automatically figure out that it
+only needs to run ``TargetC`` again and submit it to the backend.
+
+What happens if we do something nonsensical like declaring a cyclic dependency?
+Let's try::
+
+    from gwf import Workflow
+
+    gwf = Workflow()
+
+    gwf.target('TargetA', inputs=['x.txt'], outputs=['x.txt']) << """
+    echo "this is x" > x.txt
+    """
+
+Run this workflow. You should see the following:
+
+.. code-block:: console
+
+    ERROR |  Target TargetA depends on itself.
+
+Observing Target Execution
+--------------------------
+
+As workflows get larger they make take a very long time to run. With *gwf* it's
+easy to see how many targets have been completed, how many failed and how many
+are still running using the ``gwf status`` command. We'll modify the workflow
+from earlier to fake that each target takes some time to run::
+
+    from gwf import Workflow
+
+    gwf = Workflow()
+
+    gwf.target('TargetA', outputs=['x.txt']) << """
+    sleep 20 && echo "this is x" > x.txt
+    """
+
+    gwf.target('TargetB', outputs=['y.txt']) << """
+    sleep 30 && echo "this is y" > y.txt
+    """
+
+    gwf.target('TargetC', inputs=['x.txt', 'y.txt'], outputs=['z.txt']) << """
+    sleep 10 && cat x.txt y.txt > z.txt
+    """
+
+Now run ``gwf status`` (Remember to remove ``x.txt``, ``y.txt`` and ``z.txt``,
+otherwise *gwf* will not submit the targets again). You should see something like this,
+but with pretty colors.
+
+.. code-block:: console
+
+    TargetC [..............................................................] 0/0/0/3/0
+
+By default, a single line is shown for each *endpoint* target. An endpoint is a target
+which no other targets depends on. We can therefore see it as a kind of final target.
+The dots mean that all targets in the workflow should run, but have not been submitted.
+Let's try to run the workflow and see what happens.
+
+.. code-block:: console
+
+    $ gwf run
+    $ gwf status
+    TargetC [RRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS] 0/1/2/0/0
+
+The ``R`` shows that one third of the targets are running (since I'm only running with one worker,
+only one target can run at a time) and the other two thirds have been submitted. Running the
+status command again after some time should show something like this.
+
+.. code-block:: console
+
+    TargetC [CCCCCCCCCCCCCCCCCCCCCRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSS] 1/1/1/0/0
+
+Now the target that was running before has completed, and another target is now running,
+while the final target is still just submitted. After some time, run the status command again.
+All targets should now have completed, so we see this.
+
+.. code-block:: console
+
+    TargetC [CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC] 3/0/0/0/0
+
+As you may have noticed, the numbers to the right show the number of targets that are
+in a specific state in the order: completed, running, submitted, should run, failed.
 
 Reusable Targets With Templates
 -------------------------------
 
+Templates as functions, the most general way to do it.
 
-Defining Multiple Workflows in a File
--------------------------------------
+The :func:`template` function for simple templates.
 
 
-Including Other Workflows
--------------------------
+Cleaning Up
+-----------
 
 
 Running with Another Backend
 ----------------------------
+
+
+.. _Anaconda: https://www.continuum.io/downloads

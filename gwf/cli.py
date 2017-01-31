@@ -6,6 +6,7 @@ import platform
 import sys
 
 from configargparse import ArgParser
+from argparse import RawDescriptionHelpFormatter
 
 from . import LOCAL_CONFIG_FILE, USER_CONFIG_FILE, __version__
 from .core import PreparedWorkflow
@@ -48,6 +49,7 @@ class App:
             add_env_var_help=False,
             auto_env_var_prefix='GWF_',
             default_config_files=config_files,
+            formatter_class=RawDescriptionHelpFormatter,
         )
 
         # Set global options here. Options for sub-commands will be set by the

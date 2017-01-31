@@ -1,5 +1,6 @@
 import abc
 import logging
+from argparse import RawDescriptionHelpFormatter
 
 from pkg_resources import iter_entry_points
 
@@ -9,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class Extension(abc.ABC):
-
     def configure(self, *args, **kwargs):
         """Called to configure the extension."""
 
@@ -59,13 +59,15 @@ class Extension(abc.ABC):
         When the plugin is installed and registered properly, the user will now
         be able to run ``gwf foo`` which will print ``Hello!`` and exit.
         """
-        subparser = subparsers.add_parser(name, description=description)
+        subparser = subparsers.add_parser(
+            name,
+            description=description,
+            formatter_class=RawDescriptionHelpFormatter)
         subparser.set_defaults(func=handler)
         return subparser
 
 
 class ExtensionManager:
-
     def __init__(self, group):
         self.group = group
         self.exts = {}
