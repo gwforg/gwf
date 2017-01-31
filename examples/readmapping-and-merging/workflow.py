@@ -7,43 +7,32 @@ gwf = Workflow()
 
 
 # Templates
-unzip = template(inputs='{refGenome}.fa.gz', outputs='{refGenome}.fa') << '''
-zcat {refGenome}.fa.gz > {refGenome}.fa
+unzip = template(inputs=['{refGenome}.fa.gz'], outputs=['{refGenome}.fa']) << '''
+gzcat {refGenome}.fa.gz > {refGenome}.fa
 '''
 
-bwa_index = template(inputs='{refGenome}.fa',
-                     outputs=['{refGenome}.amb',
-                             '{refGenome}.ann', 
-                             '{refGenome}.pac']) << '''
+bwa_index = template(inputs=['{refGenome}.fa'],
+                     outputs=['{refGenome}.amb', '{refGenome}.ann', '{refGenome}.pac']) \
+    << 'bwa index -p {refGenome} -a bwtsw {refGenome}.fa'
 
-bwa index -p {refGenome} -a bwtsw {refGenome}.fa
-'''
-
-bwa_map = template(inputs=['{R1}', '{R2}',
-                          '{refGenome}.amb', 
-                          '{refGenome}.ann', 
-                          '{refGenome}.pac'],
-                   outputs='{bamfile}',
-                   cores=16) << '''
-
+bwa_map = template(inputs=['{R1}', '{R2}', 
+	                       '{refGenome}.amb', '{refGenome}.ann', 
+	                       '{refGenome}.pac'],
+                   outputs=['{bamfile}'], cores=16) << '''
 bwa mem -t 16 {refGenome} {R1} {R2} | \
-    samtools view -Shb - > /scratch/$GWF_JOBID/unsorted.bam
-
-samtools sort -o /scratch/$GWF_JOBID/unsorted.bam /scratch/$GWF_JOBID/sort | \
+    samtools sort | \
     samtools rmdup -s - {bamfile}
-
 '''
 
 def merge(individual):
 	inputfiles = ['{}_{}.sorted.rmdup.bam'.format(individual, i) for i in range(1,3)]
-	outputfile = '{}.bam'.format(individual)
+	outputfile = ['{}.bam'.format(individual)]
+	options = {'inputs': inputfiles, 'outputs': outputfile}
+
 	shell_spec = '''
-
 	samtools merge - {inputbams} | samtools rmdup -s - {name}.bam
-
 	'''.format(inputbams = ' '.join(inputfiles), name=individual)
-	options = {'input': inputfiles, 'output': outputfile}
-
+	
 	return (options, shell_spec)
 
 
@@ -63,3 +52,5 @@ for i in range(1,3):
 		 		bamfile='Masala_{}.sorted.rmdup.bam'.format(i))
 
 gwf.target('Merge', walltime="01:00:00") << merge(individual='Masala')
+
+
