@@ -17,9 +17,9 @@ class StatusCommand(Plugin):
     for these targets.
 
     A progress bar represents the target and its dependencies, and
-    shows how many of the dependencies either should run (red, .),
-    are submitted (yellow, -), are running (blue, +) or are
-    completed (green, #).
+    shows how many of the dependencies either should run (magenta, .),
+    are submitted (yellow, S), are running (blue, R), are
+    completed (green, C), or have failed (red, F).
     """
 
     def configure(self, *args, **kwargs):
