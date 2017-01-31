@@ -322,6 +322,9 @@ All targets should now have completed, so we see this.
 
     TargetC [CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC] 3/0/0/0/0
 
+As you may have noticed, the numbers to the right show the number of targets that are
+in a specific state in the order: completed, running, submitted, should run, failed.
+
 Reusable Targets With Templates
 -------------------------------
 
