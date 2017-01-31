@@ -27,32 +27,33 @@ class StatusCommand(Plugin):
         self.ts = os.get_terminal_size()
 
     def _split_target_list(self, targets):
-        should_run, submitted, running, completed = [], [], [], []
+        should_run, submitted, running, completed, failed = [], [], [], [], []
         for target in targets:
             if self.workflow.should_run(target):
-                should_run.append(target)
-                if self.backend.submitted(target):
-                    submitted.append(target)
+                if self.backend.failed(target):
+                    failed.append(target)
                 elif self.backend.running(target):
                     running.append(target)
-                elif self.backend.completed(target) or self.backend.failed(target):
-                    completed.append(target)
+                elif self.backend.submitted(target):
+                    submitted.append(target)
+                else:
+                    should_run.append(target)
             else:
                 completed.append(target)
-
-        return should_run, submitted, running, completed
+        return should_run, submitted, running, completed, failed
 
     def print_progress(self, targets):  # pragma: no cover
         table = statusbar.StatusTable()
         for target in targets:
             dependencies = dfs(target, self.workflow.dependencies)
-            should_run, submitted, running, completed = self._split_target_list(
+            should_run, submitted, running, completed, failed = self._split_target_list(
                 dependencies)
             status_bar = table.add_status_line(target.name)
-            status_bar.add_progress(len(completed), '#', color='green')
-            status_bar.add_progress(len(running), '+', color='blue')
-            status_bar.add_progress(len(submitted), '-', color='yellow')
-            status_bar.add_progress(len(should_run), '.', color='red')
+            status_bar.add_progress(len(completed), 'C', color='green')
+            status_bar.add_progress(len(running), 'R', color='blue')
+            status_bar.add_progress(len(submitted), 'S', color='yellow')
+            status_bar.add_progress(len(should_run), '.', color='magenta')
+            status_bar.add_progress(len(failed), 'F', color='red')
         print('\n'.join(table.format_table()))
 
     def setup_argument_parser(self, parser, subparsers):

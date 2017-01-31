@@ -184,7 +184,7 @@ class LocalBackend(FileLogsMixin, Backend):
         job_id = self._job_db.get(target.name)
         if job_id is None:
             return False
-        return self.client.status()[job_id] == State.running
+        return self.client.status()[job_id] == status
 
     def running(self, target):
         return self._has_status(target, State.started)
