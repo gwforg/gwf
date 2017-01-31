@@ -191,19 +191,143 @@ flag by setting the default verbosity level.
 As we'd expect, *gwf* outputs the same as before, but this time we didn't have to
 set the ``-v info`` flag!
 
+From now on we'll assume that you've started a pool of workers for the local backend
+and configured this to be the default backend.
+
 Defining Targets With Dependencies
 ----------------------------------
 
+Targets in *gwf* represent isolated units of work. However, we can declare
+dependencies between targets to construct complex workflows. A target B that
+depends on a target A will only run when A has been run successfully (that
+is, if all of the output files of A exist).
 
+In *gwf*, dependencies are declared through file dependencies. This is best
+understood through an example::
 
-Observing Targets Execution
----------------------------
+    from gwf import Workflow
 
-Status, logs.
+    gwf = Workflow()
 
+    gwf.target('TargetA', outputs=['x.txt']) << """
+    echo "this is x" > x.txt
+    """
+
+    gwf.target('TargetB', outputs=['y.txt']) << """
+    echo "this is y" > y.txt
+    """
+
+    gwf.target('TargetC', inputs=['x.txt', 'y.txt'], outputs=['z.txt']) << """
+    cat x.txt y.txt > z.txt
+    """
+
+In this workflow, ``TargetA`` and ``TargetB`` each produce a file. ``TargetC``
+declares that it needs two files as inputs. Since the file names match the
+file names produced by `TargetA`` and ``TargetB``, ``TargetC`` depends on these
+two targets.
+
+Let's try to run this workflow:
+
+.. code-block:: console
+
+    $ gwf -v info run
+    INFO  |  Scheduling target TargetC.
+    INFO  |  Scheduling dependency TargetA of TargetC.
+    INFO  |  Submitting target TargetA.
+    INFO  |  Scheduling dependency TargetB of TargetC.
+    INFO  |  Submitting target TargetB.
+    INFO  |  Submitting target TargetC.
+
+Notice that *gwf* first attempts to submit ``TargetC``. However, because of the
+file dependencies it first schedules each dependency and submits those to the
+backend. It then submits ``TargetC`` and makes sure that it will only be run
+when both ``TargetA`` and ``TargetB`` has been run. If we decided that we needed
+to re-run ``TargetC``, but not ``TargetA`` and ``TargetB``, we could just delete
+``z.txt`` and run ``gwf run`` again. *gwf* will automatically figure out that it
+only needs to run ``TargetC`` again and submit it to the backend.
+
+What happens if we do something nonsensical like declaring a cyclic dependency?
+Let's try::
+
+    from gwf import Workflow
+
+    gwf = Workflow()
+
+    gwf.target('TargetA', inputs=['x.txt'], outputs=['x.txt']) << """
+    echo "this is x" > x.txt
+    """
+
+Run this workflow. You should see the following:
+
+.. code-block:: console
+
+    ERROR |  Target TargetA depends on itself.
+
+Observing Target Execution
+--------------------------
+
+As workflows get larger they make take a very long time to run. With *gwf* it's
+easy to see how many targets have been completed, how many failed and how many
+are still running using the ``gwf status`` command. We'll modify the workflow
+from earlier to fake that each target takes some time to run::
+
+    from gwf import Workflow
+
+    gwf = Workflow()
+
+    gwf.target('TargetA', outputs=['x.txt']) << """
+    sleep 20 && echo "this is x" > x.txt
+    """
+
+    gwf.target('TargetB', outputs=['y.txt']) << """
+    sleep 30 && echo "this is y" > y.txt
+    """
+
+    gwf.target('TargetC', inputs=['x.txt', 'y.txt'], outputs=['z.txt']) << """
+    sleep 10 && cat x.txt y.txt > z.txt
+    """
+
+Now run ``gwf status`` (Remember to remove ``x.txt``, ``y.txt`` and ``z.txt``,
+otherwise *gwf* will not submit the targets again). You should see something like this,
+but with pretty colors.
+
+.. code-block:: console
+
+    TargetC [..............................................................] 0/0/0/3/0
+
+By default, a single line is shown for each *endpoint* target. An endpoint is a target
+which no other targets depends on. We can therefore see it as a kind of final target.
+The dots mean that all targets in the workflow should run, but have not been submitted.
+Let's try to run the workflow and see what happens.
+
+.. code-block:: console
+
+    $ gwf run
+    $ gwf status
+    TargetC [RRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS] 0/1/2/0/0
+
+The ``R`` shows that one third of the targets are running (since I'm only running with one worker,
+only one target can run at a time) and the other two thirds have been submitted. Running the
+status command again after some time should show something like this.
+
+.. code-block:: console
+
+    TargetC [CCCCCCCCCCCCCCCCCCCCCRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSS] 1/1/1/0/0
+
+Now the target that was running before has completed, and another target is now running,
+while the final target is still just submitted. After some time, run the status command again.
+All targets should now have completed, so we see this.
+
+.. code-block:: console
+
+    TargetC [CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC] 3/0/0/0/0
 
 Reusable Targets With Templates
 -------------------------------
+
+Templates as functions, the most general way to do it.
+
+The :func:`template` function for simple templates.
 
 
 Cleaning Up
