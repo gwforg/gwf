@@ -120,6 +120,14 @@ class LocalBackend(FileLogsMixin, Backend):
         gwf -b local run
 
     To stop the pool of workers press :kbd:`Control-c`.
+
+    **Backend options:**
+
+    None available.
+
+    **Target options:**
+
+    None available.
     """
 
     supported_options = []
