@@ -194,7 +194,7 @@ set the ``-v info`` flag!
 From now on we'll assume that you've started a pool of workers for the local backend
 and configured this to be the default backend.
 
-Defining Targets With Dependencies
+Defining Targets with Dependencies
 ----------------------------------
 
 Targets in *gwf* represent isolated units of work. However, we can declare
@@ -325,7 +325,7 @@ All targets should now have completed, so we see this.
 As you may have noticed, the numbers to the right show the number of targets that are
 in a specific state in the order: completed, running, submitted, should run, failed.
 
-Reusable Targets With Templates
+Reusable Targets with Templates
 -------------------------------
 
 Templates as functions, the most general way to do it.
