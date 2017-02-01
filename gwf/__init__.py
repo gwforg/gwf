@@ -1,10 +1,12 @@
+import os.path
+
 from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
 
 from gwf.core import PreparedWorkflow, Target, Workflow  # noqa: E402
 
-USER_CONFIG_FILE = '~/.gwf.conf'
+USER_CONFIG_FILE = os.path.expanduser('~/.gwf.conf')
 LOCAL_CONFIG_FILE = '.gwf.conf'
 
 
