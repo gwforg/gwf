@@ -74,7 +74,7 @@ gwf.target('UnzipGenome') << unzip(
 gwf.target('IndexGenome') << bwa_index(
     ref_genome='ponAbe2')
 
-gwf.target('MapReads', walltime="00:59:00") << bwa_map(
+gwf.target('MapReads') << bwa_map(
     ref_genome='ponAbe2',
     r1='Masala_R1.fastq.gz',
     r2='Masala_R2.fastq.gz',
