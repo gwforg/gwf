@@ -328,7 +328,59 @@ in a specific state in the order: completed, running, submitted, should run, fai
 Reusable Targets with Templates
 -------------------------------
 
-Templates as functions, the most general way to do it.
+Often you will want to reuse a target definition for a lot of different files. For example,
+you may have two files with reads that you need to map to a reference genome. The
+mapping is the same the two files, so it would be annoying to repeat it in the workflow
+specification.
+
+Instead, *gwf* allows us to define a template which
+can be used to generate one or more targets easily. In general, a template is just a function
+which returns a tuple containing two things:
+
+1. a dictionary with options for the target that is to be generated, for example how many
+   cores the template needs and which files it depends on,
+2. a string which contains the specification of the target that is to be generated.
+
+Templates are great because they allow you to reuse functionality and encapsulate target
+creation logic. Let's walk through the example above.
+
+.. note::
+    Code and data files for this example is available
+    `here <https://github.com/mailund/gwf/blob/master/examples/readmapping/>`_.
+
+Our reference genome is stored in ``ponAbe2.fa.gz``, so we'll need to unzip it first.
+Let's write a template that unpacks files::
+
+    from gwf import Workflow
+
+    gwf = Workflow()
+
+
+    def unzip(inputfile, outputfile):
+        """A template for unzipping files with `gzcat`."""
+        options = {
+            'inputs': [inputfile],
+            'outputs': [outputfile],
+            'cores': 1,
+            'memory': '2g',
+        }
+
+        spec = '''
+        gzcat {inputfile} > {outputfile}
+        '''.format(inputfile, outputfile)
+
+        return options, spec
+
+This is just a normal Python function that returns a tuple. The function takes two
+arguments, the name of the input file and the name of the output file. In the function
+we define a dictionary that defines the options of the targets created with this
+template. We also define a spec describing the action of the template.
+
+We can now create a concrete target using this template::
+
+    gwf.target('UnzipGenome') << unzip('ponAbe2.fa.gz', 'ponAbe2.fa')
+
+T
 
 The :func:`template` function for simple templates.
 
