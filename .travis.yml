@@ -8,11 +8,14 @@ env:
 install:
 - pip install --upgrade pip
 - pip install coveralls==1.*
+- pip install codacy-coverage
 - pip install -r requirements.txt
 - pip install .
 script: make lint && make test
 after_success:
-  coveralls
+- coveralls
+- coverage xml
+- CODACY_PROJECT_TOKEN=47f9ce19327d4adabaab1f40047f504a python-codacy-coverage -r coverage.xml
 deploy:
   - provider: pypi
     username: dansondergaard
