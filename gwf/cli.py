@@ -27,7 +27,7 @@ class App:
         'debug': logging.DEBUG,
     }
 
-    BASIC_FORMAT = '%(levelname)-6s|  %(message)s'
+    BASIC_FORMAT = '%(levelname)-8s|  %(message)s'
     ADVANCED_FORMAT = '%(levelname)s:%(name)s:%(lineno)d| %(message)s'
 
     LOGGING_FORMATS = {

@@ -194,7 +194,7 @@ set the ``-v info`` flag!
 From now on we'll assume that you've started a pool of workers for the local backend
 and configured this to be the default backend.
 
-Defining Targets With Dependencies
+Defining Targets with Dependencies
 ----------------------------------
 
 Targets in *gwf* represent isolated units of work. However, we can declare
@@ -325,13 +325,90 @@ All targets should now have completed, so we see this.
 As you may have noticed, the numbers to the right show the number of targets that are
 in a specific state in the order: completed, running, submitted, should run, failed.
 
-Reusable Targets With Templates
+Reusable Targets with Templates
 -------------------------------
 
-Templates as functions, the most general way to do it.
+Often you will want to reuse a target definition for a lot of different files. For example,
+you may have two files with reads that you need to map to a reference genome. The
+mapping is the same the two files, so it would be annoying to repeat it in the workflow
+specification.
+
+Instead, *gwf* allows us to define a template which
+can be used to generate one or more targets easily. In general, a template is just a function
+which returns a tuple containing two things:
+
+1. a dictionary with options for the target that is to be generated, for example how many
+   cores the template needs and which files it depends on,
+2. a string which contains the specification of the target that is to be generated.
+
+Templates are great because they allow you to reuse functionality and encapsulate target
+creation logic. Let's walk through the example above.
+
+.. note::
+    Code and data files for this example is available
+    `here <https://github.com/mailund/gwf/blob/master/examples/readmapping/>`_.
+
+    To get started, follow these steps:
+
+    #. Change your working directory to the readmapping directory.
+    #. Run ``conda env create`` to create a new environment called `readmapping`. This will
+       install all required packages, including `gwf` itself, `samtools` and `bwa`.
+    #. Activate the environment with ``source activate readmapping``.
+    #. Open another terminal and navigate to the same directory.
+    #. Activate the environment in this terminal too, using the same command as above.
+    #. Start a pool of workers with ``gwf workers -n 1``.
+    #. Jump back to the first terminal. Configure *gwf* to use the local backend for this
+       project using ``gwf config backend local``.
+    #. You should now be able to run ``gwf status`` and all of the other *gwf* commands
+       used in this tutorial.
+
+Our reference genome is stored in ``ponAbe2.fa.gz``, so we'll need to unzip it first.
+Let's write a template that unpacks files.
+
+.. literalinclude:: ../examples/readmapping/workflow.py
+   :pyobject: unzip
+
+This is just a normal Python function that returns a tuple. The function takes two
+arguments, the name of the input file and the name of the output file. In the function
+we define a dictionary that defines the options of the targets created with this
+template. We also define a string describing the action of the template.
+
+We can now create a concrete target using this template::
+
+    gwf.target('UnzipGenome') << unzip(
+        inputfile='ponAbe2.fa.gz', outputfile='ponAbe2.fa')
+
+You could run the workflow now. The ``UnzipGenome`` target would be scheduled and submitted,
+and after a few seconds you should have a ``ponAbe2.fa`` file in the project directory.
+
+Let's now define another template for indexing a genome.
+
+.. literalinclude:: ../examples/readmapping/workflow.py
+   :pyobject: bwa_index
+
+This template looks more complicated, but really it's the same thing as before. We define
+a dictionary with options and a string with the command that will be executed.
+
+Let's use this template to create a target for indexing the reference genome::
+
+    gwf.target('IndexGenome') << bwa_index(
+        ref_genome='ponAbe2')
+
+Finally, we'll create a template for actually mapping the reads to the reference.
+
+.. literalinclude:: ../examples/readmapping/workflow.py
+   :pyobject: bwa_map
+
+This is much the same as the previous template. Here's how we're going to use it::
+
+    gwf.target('MapReads') << bwa_map(
+        ref_genome='ponAbe2',
+        r1='Masala_R1.fastq.gz',
+        r2='Masala_R2.fastq.gz',
+        bamfile='Masala.bam')
+
 
 The :func:`template` function for simple templates.
-
 
 Cleaning Up
 -----------

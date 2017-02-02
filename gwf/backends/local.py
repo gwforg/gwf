@@ -120,6 +120,14 @@ class LocalBackend(FileLogsMixin, Backend):
         gwf -b local run
 
     To stop the pool of workers press :kbd:`Control-c`.
+
+    **Backend options:**
+
+    None available.
+
+    **Target options:**
+
+    None available.
     """
 
     supported_options = []
@@ -209,7 +217,7 @@ class LocalBackend(FileLogsMixin, Backend):
 
 class Server(FileLogsMixin):
 
-    def __init__(self, hostname='', port=25000, num_workers=None):
+    def __init__(self, hostname='', port=0, num_workers=None):
         self.hostname = hostname
         self.port = port
         self.num_workers = num_workers
@@ -338,14 +346,13 @@ class Server(FileLogsMixin):
         except EOFError:
             logger.debug('Client connection closed.')
 
-    def wait_for_clients(self, address, task_queue, status_dict):
-        serv = Listener(address)
+    def wait_for_clients(self, serv, task_queue, status_dict):
         while True:
             try:
                 client = serv.accept()
                 self.handle_client(client, task_queue, status_dict)
-            except Exception:
-                traceback.print_exc()
+            except Exception as e:
+                logging.error(e)
 
     def start(self):
         """Starts a server that controls local workers.
@@ -354,6 +361,15 @@ class Server(FileLogsMixin):
         targets sent to the server. The server will run indefinitely unless shut
         down by the user.
         """
+        try:
+            serv = Listener((self.hostname, self.port))
+        except OSError as e:
+            if e.errno == 48:
+                raise ServerError(
+                    ('Could not start workers listening on port {}. '
+                     'The port may already be in use.').format(self.port)
+                )
+
         try:
             with Manager() as manager:
                 status_dict = manager.dict()
@@ -368,15 +384,14 @@ class Server(FileLogsMixin):
                               deps_dict, deps_lock),
                 )
 
-                logging.info(
-                    'Started %s workers on port %s.',
-                    self.num_workers, self.port
+                logging.critical(
+                    'Started %s workers, listening on port %s.',
+                    self.num_workers, serv.address[1]
                 )
-                self.wait_for_clients(
-                    (self.hostname, self.port),
-                    task_queue, status_dict
-                )
+
+                self.wait_for_clients(serv, task_queue, status_dict)
         except KeyboardInterrupt:
+            logging.info('Shutting down...')
             workers.close()
             workers.join()
 
