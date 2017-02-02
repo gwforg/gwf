@@ -17,7 +17,7 @@ class WorkersPlugin(Plugin):
         subparser.add_argument(
             '-p',
             '--port',
-            default=12345,
+            default=0,
             type=int,
             help='Port where worker manager accepts clients.',
         )
