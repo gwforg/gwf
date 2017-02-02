@@ -410,7 +410,9 @@ This is much the same as the previous template. Here's how we're going to use it
         bamfile='Masala.bam')
 
 
-The :func:`template` function for simple templates.
+As you can see, templates are just normal Python functions and thus they can be inspected
+and manipulated in much the same way. Also, templates can be put into modules and imported
+into your workflow files to facilitate reuse. It's all up to you!
 
 Cleaning Up
 -----------
