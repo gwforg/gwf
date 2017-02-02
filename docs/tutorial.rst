@@ -46,9 +46,7 @@ A Minimal Workflow
 
 To get started we must define a *workflow file* containing a workflow to which
 we can add targets. Unless *gwf* is told otherwise it assumes that the workflow
-file is called ``workflow.py`` and that the workflow is called `gwf` (see
-`Defining Multiple Workflows in a File`_ for an example where a workflow is not
-necessarily called `gwf`)::
+file is called ``workflow.py`` and that the workflow is called `gwf`::
 
     from gwf import Workflow
 
@@ -110,9 +108,13 @@ workflows utilizing all cores of your computer and thus it can be very useful
 for small workflows that don't require a lot of resources.
 
 First, open another terminal window and navigate to the ``myproject`` directory.
-Then run the command ``gwf -b local workers``. This will start a pool of workers that
-*gwf* can now submit targets to.
+Then run the command:
 
+.. code-block:: console
+
+    $ gwf -b local workers
+
+This will start a pool of workers that *gwf* can now submit targets to.
 Switch back to the other terminal and then run:
 
 .. code-block:: console
@@ -345,9 +347,9 @@ Templates are great because they allow you to reuse functionality and encapsulat
 creation logic. Let's walk through the example above.
 
 .. note::
+
     Code and data files for this example is available
     `here <https://github.com/mailund/gwf/blob/master/examples/readmapping/>`_.
-
     To get started, follow these steps:
 
     #. Change your working directory to the readmapping directory.
