@@ -5,7 +5,7 @@ import os
 import os.path
 import subprocess
 import sys
-import traceback
+#import traceback
 import uuid
 from multiprocessing import Manager
 from multiprocessing.connection import Client as Client_
