@@ -10,13 +10,13 @@ class WorkersPlugin(Plugin):
         subparser = self.setup_subparser(
             subparsers,
             'workers',
-            'Start worker.s',
+            'Start workers.',
             self.on_start_workers,
         )
 
         subparser.add_argument(
             '-p',
-            '--port',
+            '--workers-port',
             default=0,
             type=int,
             help='Port where worker manager accepts clients.',
@@ -31,7 +31,7 @@ class WorkersPlugin(Plugin):
         )
 
     def on_start_workers(self):
-        port = self.config['port']
+        port = self.config['workers_port']
         num_workers = self.config['num_workers']
         server = Server(port=port, num_workers=num_workers)
         server.start()
