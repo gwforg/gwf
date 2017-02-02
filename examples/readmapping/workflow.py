@@ -31,6 +31,8 @@ def bwa_index(ref_genome):
             '{}.amb'.format(ref_genome),
             '{}.ann'.format(ref_genome),
             '{}.pac'.format(ref_genome),
+            '{}.bwt'.format(ref_genome),
+            '{}.sa'.format(ref_genome),
         ],
         'cores': 16,
         'memory': '1g',
