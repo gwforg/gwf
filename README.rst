@@ -38,3 +38,7 @@ Coming from an older (pre-1.0) version of *gwf*? Learn how to upgrade_ your work
 .. |anacondadownloads| image:: https://anaconda.org/dansondergaard/gwf/badges/downloads.svg
     :target: https://anaconda.org/dansondergaard/gwf
     :alt: Downloads with Conda
+
+.. image:: https://api.codacy.com/project/badge/Grade/9741ae9069a74ca2903ef6f219ad82cc
+   :alt: Codacy Badge
+   :target: https://www.codacy.com/app/mailund/gwf?utm_source=github.com&utm_medium=referral&utm_content=mailund/gwf&utm_campaign=badger
