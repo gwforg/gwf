@@ -266,29 +266,8 @@ class Server(FileLogsMixin):
         )
 
         status_dict[task_id] = State.started
-
-        target_env = os.environ.copy()
-        target_env['GWF_TARGET_NAME'] = request.target.name
         try:
-            process = subprocess.Popen(
-                ['bash'],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True,
-                cwd=request.target.working_dir,
-                env=target_env,
-            )
-
-            stdout, stderr = process.communicate(request.target.spec)
-
-            with self.open_stdout(request.target, mode='w') as stdout_fp:
-                stdout_fp.write(stdout)
-            with self.open_stderr(request.target, mode='w') as stderr_fp:
-                stderr_fp.write(stderr)
-
-            if process.returncode != 0:
-                raise Exception(stderr)
+            self.execute_target(request.target)
         except:
             status_dict[task_id] = State.failed
 
@@ -311,6 +290,29 @@ class Server(FileLogsMixin):
                     )
                     for dep_task_id, dep_request in deps_dict[task_id]:
                         task_queue.put((dep_task_id, dep_request))
+
+    def execute_target(self, target):
+        env = os.environ.copy()
+        env['GWF_TARGET_NAME'] = target.name
+
+        process = subprocess.Popen(
+            ['bash'],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            cwd=target.working_dir,
+            env=env,
+        )
+
+        stdout, stderr = process.communicate(target.spec)
+        with self.open_stdout(target, mode='w') as stdout_fp:
+            stdout_fp.write(stdout)
+        with self.open_stderr(target, mode='w') as stderr_fp:
+            stderr_fp.write(stderr)
+
+        if process.returncode != 0:
+            raise Exception(stderr)
 
     @catch_keyboard_interrupt
     def worker(self, task_queue, status_dict, deps_dict, deps_lock):
