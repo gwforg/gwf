@@ -9,4 +9,5 @@ gwf.egg*
 _build/
 .eggs/
 .gwf
+.gwf.conf
 __pycache__/
