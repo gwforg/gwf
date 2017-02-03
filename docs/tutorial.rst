@@ -327,9 +327,6 @@ All targets should now have completed, so we see this.
 As you may have noticed, the numbers to the right show the number of targets that are
 in a specific state in the order: completed, running, submitted, should run, failed.
 
-.. todo::
-    Something about `gwf logs`.
-
 .. _function_templates:
 
 Reusable Targets with Templates
