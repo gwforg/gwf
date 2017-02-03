@@ -1,5 +1,8 @@
 [run]
 branch = True
+omit =
+    versioneer.py
+    gwf/_version.py
 
 [report]
 # Regexes for lines to exclude from consideration
