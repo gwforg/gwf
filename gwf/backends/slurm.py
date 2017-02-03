@@ -219,13 +219,6 @@ class SlurmBackend(FileLogsMixin, Backend):
         self._live_job_states = _get_live_job_states()
         logger.debug('found %d jobs', len(self._live_job_states))
 
-        with timer('filtering jobs took %.2f ms', logger=logger):
-            self._job_db = {
-                target_name: job_id
-                for target_name, job_id in self._job_db.items()
-                if job_id in self._live_job_states
-            }
-
     def close(self):
         if hasattr(self, '_job_db'):
             _dump_atomic(
@@ -234,7 +227,8 @@ class SlurmBackend(FileLogsMixin, Backend):
             )
 
     def submitted(self, target):
-        return target.name in self._job_db
+        return (target.name in self._job_db and
+                self._job_db[target.name] in self._live_job_states)
 
     def running(self, target):
         target_job_id = self._job_db.get(target.name, None)
