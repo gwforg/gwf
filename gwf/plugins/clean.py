@@ -49,17 +49,18 @@ class CleanCommand(Plugin):
         workflow = self.get_prepared_workflow()
         backend = self.get_active_backend()
 
-        targets = set()
+        targets = []
         if not self.config['targets']:
-            targets.update(workflow.targets.values())
+            targets.extend(workflow.targets.values())
         else:
             for name in self.config['targets']:
                 if name not in workflow.targets:
                     raise TargetDoesNotExistError(name)
-                targets.add(workflow.targets[name])
+                targets.append(workflow.targets[name])
 
         if self.config['not_endpoints']:
-            targets -= workflow.endpoints()
+            for endpoint in workflow.endpoints():
+                targets.remove(endpoint)
 
         for target in targets:
             if not self.config['only_failed'] or backend.failed(target):
