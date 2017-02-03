@@ -31,6 +31,7 @@ def catch_keyboard_interrupt(func):
                 multiprocessing.current_process().pid
             )
             sys.exit(0)
+
     return wrapper
 
 
@@ -46,13 +47,11 @@ class State:
 
 
 class Request:
-
     def handle(self, task_queue, status_queue):
         """Handle this request."""
 
 
 class SubmitRequest(Request):
-
     def __init__(self, target, deps):
         self.target = target
         self.deps = deps
@@ -66,7 +65,6 @@ class SubmitRequest(Request):
 
 
 class StatusRequest(Request):
-
     def handle(self, task_queue, status_dict):
         return dict(status_dict)
 
@@ -157,7 +155,7 @@ class LocalBackend(FileLogsMixin, Backend):
             self._job_db = {}
 
         try:
-            self.client = Client(('localhost', self.config['workers_port']))
+            self.client = Client(('', self.config['workers_port']))
         except ConnectionRefusedError as e:
             raise GWFError(
                 'Local backend could not connect to workers. '
@@ -171,14 +169,14 @@ class LocalBackend(FileLogsMixin, Backend):
             k: v
             for k, v in self._job_db.items()
             if v in status and status[v] != State.completed
-        }
+            }
 
     def submit(self, target, dependencies):
         deps = [
             self._job_db[dep.name]
             for dep in dependencies
             if dep.name in self._job_db
-        ]
+            ]
         job_id = self.client.submit(target, deps=deps)
         self._job_db[target.name] = job_id
 
@@ -327,7 +325,6 @@ class Worker(FileLogsMixin):
 
 
 class Server:
-
     def __init__(self, hostname='', port=0, num_workers=None):
         self.hostname = hostname
         self.port = port
