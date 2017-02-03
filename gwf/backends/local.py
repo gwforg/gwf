@@ -169,14 +169,14 @@ class LocalBackend(FileLogsMixin, Backend):
             k: v
             for k, v in self._job_db.items()
             if v in status and status[v] != State.completed
-            }
+        }
 
     def submit(self, target, dependencies):
         deps = [
             self._job_db[dep.name]
             for dep in dependencies
             if dep.name in self._job_db
-            ]
+        ]
         job_id = self.client.submit(target, deps=deps)
         self._job_db[target.name] = job_id
 
@@ -238,7 +238,6 @@ class Worker(FileLogsMixin):
 
             self.handle_task(task_id, request)
 
-
     def handle_task(self, task_id, request):
         logger.debug('Task %s started target %r.', task_id, request.target)
         self.status[task_id] = State.started
@@ -253,7 +252,6 @@ class Worker(FileLogsMixin):
             logger.debug('Task %s completed target %r.', task_id, request.target)
         finally:
             self.requeue_dependents(task_id)
-
 
     def check_dependencies(self, task_id, request):
         """Check dependencies before running a task.
