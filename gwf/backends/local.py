@@ -61,6 +61,7 @@ class SubmitRequest(Request):
         task_id = _gen_task_id()
         status_dict[task_id] = State.pending
         task_queue.put((task_id, self))
+        logger.debug('Task %s was queued with id %s.', self.target.name, task_id)
         return task_id
 
 
@@ -221,7 +222,10 @@ class Server(FileLogsMixin):
         self.port = port
         self.num_workers = num_workers
 
-    def handle_task(self, task_id, request, task_queue, status_dict, deps_dict, deps_lock):
+    def check_dependencies(self, task_id, request, status_dict, deps_dict, deps_lock):
+        """Check dependencies before running a task.
+
+        :return: `True` if the task can run, `False` if not."""
         with deps_lock:
             any_dep_failed = any(
                 status_dict[dep_id] == State.failed
@@ -235,7 +239,7 @@ class Server(FileLogsMixin):
                     task_id,
                     exc_info=True
                 )
-                return
+                return False
 
             has_non_satisfied_dep = False
             for dep_id in request.deps:
@@ -258,7 +262,12 @@ class Server(FileLogsMixin):
                     has_non_satisfied_dep = True
 
             if has_non_satisfied_dep:
-                return
+                return False
+        return True
+
+    def handle_task(self, task_id, request, task_queue, status_dict, deps_dict, deps_lock):
+        if not self.check_dependencies(task_id, request, status_dict, deps_dict, deps_lock):
+            return
 
         logger.debug(
             'Task %s started target %r.',
@@ -283,13 +292,17 @@ class Server(FileLogsMixin):
                 task_id, request.target
             )
         finally:
-            with deps_lock:
-                if task_id in deps_dict:
-                    logger.debug(
-                        'Task %s has waiting dependents. Requeueing.', task_id
-                    )
-                    for dep_task_id, dep_request in deps_dict[task_id]:
-                        task_queue.put((dep_task_id, dep_request))
+            self.requeue_dependents(deps_dict, deps_lock, task_id, task_queue)
+
+    def requeue_dependents(self, deps_dict, deps_lock, task_id, task_queue):
+        """Requeue targets that depend on a specific task."""
+        with deps_lock:
+            if task_id in deps_dict:
+                logger.debug(
+                    'Task %s has waiting dependents. Requeueing.', task_id
+                )
+                for dep_task_id, dep_request in deps_dict[task_id]:
+                    task_queue.put((dep_task_id, dep_request))
 
     def execute_target(self, target):
         env = os.environ.copy()
