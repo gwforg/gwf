@@ -42,6 +42,7 @@ class App:
 
         self.active_backend = None
         self.workflow = None
+        self.config = {}
 
         self.parser = ArgParser(
             description=self.description,
@@ -91,8 +92,7 @@ class App:
         )
 
         # Prepare for subcommands
-        self.subparsers = \
-            self.parser.add_subparsers(title="commands")
+        self.subparsers = self.parser.add_subparsers(title="commands")
 
         # Load plugins and register their arguments and subcommands.
         self.plugins_manager.load_extensions()
@@ -105,14 +105,15 @@ class App:
             self.parser, self.subparsers
         )
 
-    def _configure_logging(self):
+    def _configure_logging(self, verbosity):
         logging.basicConfig(
-            level=self.VERBOSITY_LEVELS[self.config['verbosity']],
-            format=self.LOGGING_FORMATS[self.config['verbosity']],
+            level=self.VERBOSITY_LEVELS[verbosity],
+            format=self.LOGGING_FORMATS[verbosity],
         )
 
     def run(self, argv):
         self.config = vars(self.parser.parse_args(argv))
+        self._configure_logging(self.config['verbosity'])
 
         # Add path of workflow file to python path to make it possible to load
         # modules placed in the directory directly.
@@ -133,8 +134,6 @@ class App:
         # If a subcommand is being called, the handler will be the function to
         # call when all loading is done.
         handler = self.config.pop('func', None)
-
-        self._configure_logging()
 
         logger.debug('Platform: %s.', platform.platform())
         logger.debug('GWF version: %s.', __version__)
