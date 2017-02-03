@@ -52,8 +52,6 @@ Getting Started
    :maxdepth: 2
 
    tutorial
-   configuration
-   best_practices
    backends
    plugins
 
