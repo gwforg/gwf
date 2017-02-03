@@ -37,6 +37,7 @@ class CleanCommandTest(GWFTestCase):
             'target1': self.mock_target1,
             'target2': self.mock_target2,
         }
+        self.mock_workflow.endpoints.return_value = set([self.mock_target1, self.mock_target2])
         self.mock_workflow.working_dir = '/some/dir'
 
         self.mock_delete_file = self.create_patch(
@@ -59,7 +60,7 @@ class CleanCommandTest(GWFTestCase):
         ])
 
     def test_on_clean_cleans_all_targets_if_no_targets_are_given(self):
-        mock_config = {'targets': [], 'only_failed': False}
+        mock_config = {'targets': [], 'only_failed': False, 'not_endpoints': False}
 
         self.clean_command.configure(
             get_prepared_workflow=self.mock_get_prepared_workflow,
@@ -75,7 +76,7 @@ class CleanCommandTest(GWFTestCase):
                       self.mock_delete_file.call_args_list)
 
     def test_on_clean_cleans_with_targets_given_in_config(self):
-        mock_config = {'targets': ['target1'], 'only_failed': False}
+        mock_config = {'targets': ['target1'], 'only_failed': False, 'not_endpoints': False}
 
         self.clean_command.configure(
             get_prepared_workflow=self.mock_get_prepared_workflow,
@@ -103,7 +104,7 @@ class CleanCommandTest(GWFTestCase):
             self.assertEqual(ex.name, 'target3')
 
     def test_on_clean_with_only_failed_flag_only_cleans_failed_targets(self):
-        mock_config = {'targets': ['target1', 'target2'], 'only_failed': True}
+        mock_config = {'targets': ['target1', 'target2'], 'only_failed': True, 'not_endpoints': False}
         self.mock_backend.failed.side_effect = [False, True]
 
         self.clean_command.configure(
@@ -127,3 +128,13 @@ class CleanCommandTest(GWFTestCase):
     def test_delete_file_deletes_existing_file(self, mock_os_remove):
         _delete_file('/some/dir/foo.txt')
         mock_os_remove.assert_called_once_with('/some/dir/foo.txt')
+
+    def test_on_clean_with_not_endpoints_flag_doest_not_clean_up_endpoint_files(self):
+        mock_config = {'targets': ['target1', 'target2'], 'not_endpoints': True, 'only_failed': False}
+        self.clean_command.configure(
+            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_active_backend=self.mock_get_active_backend,
+            config=mock_config,
+        )
+        self.clean_command.on_clean()
+        self.mock_delete_file.assert_not_called()
