@@ -358,7 +358,7 @@ creation logic. Let's walk through the example above.
     #. Activate the environment with ``source activate readmapping``.
     #. Open another terminal and navigate to the same directory.
     #. Activate the environment in this terminal too, using the same command as above.
-    #. Start a pool of workers with ``gwf workers -n 1``.
+    #. Start a pool with two workers with ``gwf workers -n 2``.
     #. Jump back to the first terminal. Configure *gwf* to use the local backend for this
        project using ``gwf config backend local``.
     #. You should now be able to run ``gwf status`` and all of the other *gwf* commands
