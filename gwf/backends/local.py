@@ -222,6 +222,39 @@ class Worker(FileLogsMixin):
 
         self.run()
 
+    @catch_keyboard_interrupt
+    def run(self):
+        while True:
+            task_id, request = self.queue.get()
+
+            # If the task isn't pending, it may have been resubmitted by multiple
+            # tasks in different workers. We shouldn't run it twice, so we'll skip
+            # it.
+            if self.status[task_id] != State.pending:
+                continue
+
+            if not self.check_dependencies(task_id, request):
+                continue
+
+            self.handle_task(task_id, request)
+
+
+    def handle_task(self, task_id, request):
+        logger.debug('Task %s started target %r.', task_id, request.target)
+        self.status[task_id] = State.started
+
+        try:
+            self.execute_target(request.target)
+        except:
+            self.status[task_id] = State.failed
+            logger.error('Task %s failed.', task_id, exc_info=True)
+        else:
+            self.status[task_id] = State.completed
+            logger.debug('Task %s completed target %r.', task_id, request.target)
+        finally:
+            self.requeue_dependents(task_id)
+
+
     def check_dependencies(self, task_id, request):
         """Check dependencies before running a task.
 
@@ -260,21 +293,6 @@ class Worker(FileLogsMixin):
             return False
         return True
 
-    def handle_task(self, task_id, request):
-        logger.debug('Task %s started target %r.', task_id, request.target)
-        self.status[task_id] = State.started
-
-        try:
-            self.execute_target(request.target)
-        except:
-            self.status[task_id] = State.failed
-            logger.error('Task %s failed.', task_id, exc_info=True)
-        else:
-            self.status[task_id] = State.completed
-            logger.debug('Task %s completed target %r.', task_id, request.target)
-        finally:
-            self.requeue_dependents(task_id)
-
     def requeue_dependents(self, task_id):
         """Requeue targets that depend on a specific task."""
         if task_id not in self.deps:
@@ -307,24 +325,9 @@ class Worker(FileLogsMixin):
         if process.returncode != 0:
             raise Exception(stderr)
 
-    @catch_keyboard_interrupt
-    def run(self):
-        while True:
-            task_id, request = self.queue.get()
-
-            # If the task isn't pending, it may have been resubmitted by multiple
-            # tasks in different workers. We shouldn't run it twice, so we'll skip
-            # it.
-            if self.status[task_id] != State.pending:
-                continue
-
-            if not self.check_dependencies(task_id, request):
-                continue
-
-            self.handle_task(task_id, request)
-
 
 class Server:
+
     def __init__(self, hostname='', port=0, num_workers=None):
         self.hostname = hostname
         self.port = port
