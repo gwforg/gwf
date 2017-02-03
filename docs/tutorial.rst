@@ -327,6 +327,11 @@ All targets should now have completed, so we see this.
 As you may have noticed, the numbers to the right show the number of targets that are
 in a specific state in the order: completed, running, submitted, should run, failed.
 
+.. todo::
+    Something about `gwf logs`.
+
+.. _function_templates:
+
 Reusable Targets with Templates
 -------------------------------
 
@@ -414,12 +419,82 @@ As you can see, templates are just normal Python functions and thus they can be 
 and manipulated in much the same way. Also, templates can be put into modules and imported
 into your workflow files to facilitate reuse. It's all up to you!
 
+Viewing Logs
+------------
+
+We may be curious about what the ``MapReads`` target wrote to the console when the target
+ran, to see if there were any warnings. If a target failed, it's also valuable to see
+it's output to diagnose the problem. Luckily, *gwf* makes this very easy.
+
+.. code-block:: console
+
+    $ gwf logs MapReads
+
+When you run this command you'll see nothing. This is because the ``gwf logs`` command by
+default only shows things written to stdout by the target, and not stderr, and apparently
+nothing was written to stdout in this target. Let's try to take a look at stderr instead
+by applying the ``--stderr`` flag.
+
+.. code-block:: console
+
+    $ gwf logs --stderr MapReads
+    [M::bwa_idx_load_from_disk] read 0 ALT contigs
+    [M::process] read 15000 sequences (1500000 bp)...
+    [M::mem_pestat] # candidate unique pairs for (FF, FR, RF, RR): (1, 65, 1, 0)
+    [M::mem_pestat] skip orientation FF as there are not enough pairs
+    [M::mem_pestat] analyzing insert size distribution for orientation FR...
+    [M::mem_pestat] (25, 50, 75) percentile: (313, 369, 429)
+    [M::mem_pestat] low and high boundaries for computing mean and std.dev: (81, 661)
+    [M::mem_pestat] mean and std.dev: (372.88, 86.21)
+    [M::mem_pestat] low and high boundaries for proper pairs: (1, 777)
+    [M::mem_pestat] skip orientation RF as there are not enough pairs
+    [M::mem_pestat] skip orientation RR as there are not enough pairs
+    [M::mem_process_seqs] Processed 15000 reads in 1.945 CPU sec, 0.678 real sec
+    [main] Version: 0.7.15-r1140
+    [main] CMD: bwa mem -t 16 ponAbe2 Masala_R1.fastq.gz Masala_R2.fastq.gz
+    [main] Real time: 0.877 sec; CPU: 2.036 sec
+
+We can do this for any target in our workflow. The logs shown are always the most recent
+ones since *gwf* does not archive logs from old runs of targets.
+
 Cleaning Up
 -----------
 
+Now that we have run our workflow we may wish to remove intermediate files to save disk
+space. In *gwf* we can use the ``gwf clean`` command for this. If we wanted to remove all
+files produced by all targets in the workflow, we could just run:
 
-Running with Another Backend
+.. code-block:: console
+
+    $ gwf clean
+
+However, this would also remove the file with the mapped genome, which we probably want
+to save. This file was produced by an endpoint target (a target which no other
+target depends on), so we can tell *gwf* to only remove files that were not produced
+by an endpoint:
+
+.. code-block:: console
+
+    $ gwf clean --not-endpoints
+    INFO    |  Cleaning up: IndexGenome.
+    INFO    |  Cleaning up: UnzipGenome.
+
+
+A Note About Reproducibility
 ----------------------------
+
+Reproducibility is an important part of research and since *gwf* workflows describe every
+step of your computation, how the steps are connected, and the files produced in each step,
+it's a valuable tool in making your workflows reproducible. In combination with the
+``conda`` package manager and the concept of environments, you can build completely
+reproducible workflows in a declarative, flexible fashion.
+
+Consider the read mapping example used above. Since we included a specification of the
+complete environment through a ``environment.yml`` file, which even included samtools,
+bwa and *gwf* itself, we were able to easily create a working environment with exactly
+the right software versions used for our workflow. The whole workflow could also easily
+be copied to a cluster and run through e.g. the Slurm backend, since we can exactly
+reproduce the environment used locally.
 
 
 .. _Anaconda: https://www.continuum.io/downloads
