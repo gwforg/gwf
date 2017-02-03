@@ -11,7 +11,12 @@ LOCAL_CONFIG_FILE = '.gwf.conf'
 
 
 class template(object):
-    """A template with string substitution."""
+    """A template with string substitution.
+
+    .. deprecated:: 1.0
+
+        Use function templates as described in :ref:`function_templates`.
+    """
 
     def __init__(self, **options):
         self.spec = None
