@@ -215,94 +215,76 @@ class LocalBackend(FileLogsMixin, Backend):
             )
 
 
-class Server(FileLogsMixin):
+class Worker(FileLogsMixin):
 
-    def __init__(self, hostname='', port=0, num_workers=None):
-        self.hostname = hostname
-        self.port = port
-        self.num_workers = num_workers
+    def __init__(self, status, queue, deps):
+        self.status = status
+        self.queue = queue
+        self.deps = deps
 
-    def check_dependencies(self, task_id, request, status_dict, deps_dict, deps_lock):
+        self.run()
+
+    def check_dependencies(self, task_id, request):
         """Check dependencies before running a task.
 
         :return: `True` if the task can run, `False` if not."""
-        with deps_lock:
-            any_dep_failed = any(
-                status_dict[dep_id] == State.failed
-                for dep_id in request.deps
-            )
-
-            if any_dep_failed:
-                status_dict[task_id] = State.failed
-                logger.error(
-                    'Task %s failed since a dependency failed.',
-                    task_id,
-                    exc_info=True
-                )
-                return False
-
-            has_non_satisfied_dep = False
-            for dep_id in request.deps:
-                if status_dict[dep_id] != State.completed:
-                    logger.debug(
-                        'Task %s set to wait for %s.',
-                        task_id,
-                        dep_id,
-                    )
-
-                    if dep_id not in deps_dict:
-                        deps_dict[dep_id] = []
-
-                    # Do this weird thing to sync the dictionary. Using
-                    # deps_dict[dep_id].append(...) doesn't work.
-                    tmp = deps_dict[dep_id]
-                    tmp.append((task_id, request))
-                    deps_dict[dep_id] = tmp
-
-                    has_non_satisfied_dep = True
-
-            if has_non_satisfied_dep:
-                return False
-        return True
-
-    def handle_task(self, task_id, request, task_queue, status_dict, deps_dict, deps_lock):
-        if not self.check_dependencies(task_id, request, status_dict, deps_dict, deps_lock):
-            return
-
-        logger.debug(
-            'Task %s started target %r.',
-            task_id, request.target
+        any_dep_failed = any(
+            self.status[dep_id] == State.failed
+            for dep_id in request.deps
         )
 
-        status_dict[task_id] = State.started
-        try:
-            self.execute_target(request.target)
-        except:
-            status_dict[task_id] = State.failed
-
+        if any_dep_failed:
+            self.status[task_id] = State.failed
             logger.error(
-                'Task %s failed.',
+                'Task %s failed since a dependency failed.',
                 task_id,
                 exc_info=True
             )
-        else:
-            status_dict[task_id] = State.completed
-            logger.debug(
-                'Task %s completed target %r.',
-                task_id, request.target
-            )
-        finally:
-            self.requeue_dependents(deps_dict, deps_lock, task_id, task_queue)
+            return False
 
-    def requeue_dependents(self, deps_dict, deps_lock, task_id, task_queue):
+        has_non_satisfied_dep = False
+        for dep_id in request.deps:
+            if self.status[dep_id] != State.completed:
+                logger.debug('Task %s set to wait for %s.', task_id, dep_id)
+
+                if dep_id not in self.deps:
+                    self.deps[dep_id] = []
+
+                # Do this weird thing to sync the dictionary. Using
+                # deps_dict[dep_id].append(...) doesn't work.
+                tmp = self.deps[dep_id]
+                tmp.append((task_id, request))
+                self.deps[dep_id] = tmp
+
+                has_non_satisfied_dep = True
+
+        if has_non_satisfied_dep:
+            return False
+        return True
+
+    def handle_task(self, task_id, request):
+        logger.debug('Task %s started target %r.', task_id, request.target)
+        self.status[task_id] = State.started
+
+        try:
+            self.execute_target(request.target)
+        except:
+            self.status[task_id] = State.failed
+            logger.error('Task %s failed.', task_id, exc_info=True)
+        else:
+            self.status[task_id] = State.completed
+            logger.debug('Task %s completed target %r.', task_id, request.target)
+        finally:
+            self.requeue_dependents(task_id)
+
+    def requeue_dependents(self, task_id):
         """Requeue targets that depend on a specific task."""
-        with deps_lock:
-            if task_id in deps_dict:
-                logger.debug(
-                    'Task %s has waiting dependents. Requeueing.', task_id
-                )
-                for dep_task_id, dep_request in deps_dict[task_id]:
-                    task_queue.put((dep_task_id, dep_request))
+        if task_id not in self.deps:
+            return
+
+        logger.debug('Task %s has waiting dependents. Requeueing.', task_id)
+        for dep_task_id, dep_request in self.deps[task_id]:
+            self.queue.put((dep_task_id, dep_request))
 
     def execute_target(self, target):
         env = os.environ.copy()
@@ -328,43 +310,57 @@ class Server(FileLogsMixin):
             raise Exception(stderr)
 
     @catch_keyboard_interrupt
-    def worker(self, task_queue, status_dict, deps_dict, deps_lock):
+    def run(self):
         while True:
-            task_id, request = task_queue.get()
+            task_id, request = self.queue.get()
 
             # If the task isn't pending, it may have been resubmitted by multiple
             # tasks in different workers. We shouldn't run it twice, so we'll skip
             # it.
-            if status_dict[task_id] != State.pending:
+            if self.status[task_id] != State.pending:
                 continue
 
-            self.handle_task(task_id, request, task_queue,
-                             status_dict, deps_dict, deps_lock)
+            if not self.check_dependencies(task_id, request):
+                continue
 
-    def handle_request(self, request, task_queue, status_dict):
+            self.handle_task(task_id, request)
+
+
+class Server:
+
+    def __init__(self, hostname='', port=0, num_workers=None):
+        self.hostname = hostname
+        self.port = port
+        self.num_workers = num_workers
+
+        self.manager = Manager()
+        self.status = self.manager.dict()
+        self.queue = self.manager.Queue()
+        self.deps = self.manager.dict()
+
+    def handle_request(self, request):
         try:
             logger.debug('Received request %r.', request)
-            return request.handle(task_queue, status_dict)
+            return request.handle(self.queue, self.status)
         except:
             logger.error('Invalid request %r.', request, exc_info=True)
 
-    def handle_client(self, conn, task_queue, status_dict):
+    def handle_client(self, conn):
         logger.debug('Accepted client connection.')
         try:
             while True:
                 request = conn.recv()
-                response = self.handle_request(
-                    request, task_queue, status_dict)
+                response = self.handle_request(request)
                 if response is not None:
                     conn.send(response)
         except EOFError:
             logger.debug('Client connection closed.')
 
-    def wait_for_clients(self, serv, task_queue, status_dict):
+    def wait_for_clients(self, serv):
         while True:
             try:
                 client = serv.accept()
-                self.handle_client(client, task_queue, status_dict)
+                self.handle_client(client)
             except Exception as e:
                 logging.error(e)
 
@@ -385,25 +381,18 @@ class Server(FileLogsMixin):
                 )
 
         try:
-            with Manager() as manager:
-                status_dict = manager.dict()
-                deps_dict = manager.dict()
-                task_queue = manager.Queue()
-                deps_lock = manager.Lock()
+            workers = Pool(
+                processes=self.num_workers,
+                initializer=Worker,
+                initargs=(self.status, self.queue, self.deps),
+            )
 
-                workers = Pool(
-                    processes=self.num_workers,
-                    initializer=self.worker,
-                    initargs=(task_queue, status_dict,
-                              deps_dict, deps_lock),
-                )
+            logging.critical(
+                'Started %s workers, listening on port %s.',
+                self.num_workers, serv.address[1]
+            )
 
-                logging.critical(
-                    'Started %s workers, listening on port %s.',
-                    self.num_workers, serv.address[1]
-                )
-
-                self.wait_for_clients(serv, task_queue, status_dict)
+            self.wait_for_clients(serv)
         except KeyboardInterrupt:
             logging.info('Shutting down...')
             workers.close()
