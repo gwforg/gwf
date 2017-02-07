@@ -1,4 +1,4 @@
 exclude_paths:
-  - examples/
+  - examples/**
   - gwf/_version.py
   - versioneer.py
