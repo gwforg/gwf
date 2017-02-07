@@ -194,17 +194,12 @@ class TestWorkflow(unittest.TestCase):
         workflow.glob('*.fa')
         glob_mock.assert_called_once_with('/some/path/*.fa')
 
-    @patch('gwf.core._glob')
-    def test_glob_with_absolute_path_does_not_search_relative_to_working_dir(self, glob_mock):
-        workflow = Workflow(working_dir='/some/path')
-        workflow.glob('/other/path/*.fa')
-        glob_mock.assert_called_once_with('/other/path/*.fa')
-
     @patch('gwf.core._glob', return_value=['/other/path/A.fa', '/other/path/B.fa'])
     def test_glob_with_absolute_path_does_not_search_relative_to_working_dir(self, glob_mock):
         workflow = Workflow(working_dir='/some/path')
         res = workflow.glob('/other/path/*.fa')
         self.assertEqual(res, ['/other/path/A.fa', '/other/path/B.fa'])
+        glob_mock.assert_called_once_with('/other/path/*.fa')
 
     @patch('gwf.core._iglob')
     def test_iglob_with_relative_path_searches_relative_to_working_dir(self, iglob_mock):
@@ -212,17 +207,12 @@ class TestWorkflow(unittest.TestCase):
         workflow.iglob('*.fa')
         iglob_mock.assert_called_once_with('/some/path/*.fa')
 
-    @patch('gwf.core._iglob')
-    def test_iglob_with_absolute_path_does_not_search_relative_to_working_dir(self, iglob_mock):
-        workflow = Workflow(working_dir='/some/path')
-        workflow.iglob('/other/path/*.fa')
-        iglob_mock.assert_called_once_with('/other/path/*.fa')
-
     @patch('gwf.core._iglob', return_value=['/other/path/A.fa', '/other/path/B.fa'])
     def test_iglob_with_absolute_path_does_not_search_relative_to_working_dir(self, iglob_mock):
         workflow = Workflow(working_dir='/some/path')
         res = list(workflow.iglob('/other/path/*.fa'))
         self.assertEqual(res, ['/other/path/A.fa', '/other/path/B.fa'])
+        iglob_mock.assert_called_once_with('/other/path/*.fa')
 
     @patch('gwf.core.subprocess.check_output')
     def test_shell_calls_subprocess_with_same_working_dir_as_workflow_in_a_shell(self, mock_check_output):

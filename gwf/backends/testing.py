@@ -29,5 +29,5 @@ class TestingBackend(Backend):  # pragma: no cover
     def completed(self, target):
         return False
 
-    def logs(self, target, stderr=False, rewind=0):
+    def logs(self, target, stderr=False):
         raise NoLogFoundError
