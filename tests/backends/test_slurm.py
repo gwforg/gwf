@@ -106,11 +106,11 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.mock_get_live_job_states.return_value = {'1000': 'R', '2000': 'H'}
         self.mock_call_sbatch.return_value = ('3000', '')
 
-        target1 = self.workflow.target(
+        self.workflow.target(
             'TestTarget1',
             outputs=['test_output1.txt'],
         )
-        target2 = self.workflow.target(
+        self.workflow.target(
             'TestTarget2',
             outputs=['test_output2.txt']
         )
@@ -585,7 +585,7 @@ class TestCallSbatch(GWFTestCase):
 
         script = 'this is the script'
 
-        stdout, stderr = _call_sbatch(script, [])
+        _call_sbatch(script, [])
 
         self.mock_popen.assert_called_once_with(
             ['/bin/sbatch', '--parsable'],
@@ -595,9 +595,7 @@ class TestCallSbatch(GWFTestCase):
             universal_newlines=True,
         )
 
-        self.mock_popen.return_value.communicate.assert_called_once_with(
-            script
-        )
+        self.mock_popen.return_value.communicate.assert_called_once_with(script)
 
     def test_cmd_uses_executable_found_and_runs_correctly_with_dependencies(self):
         self.mock_find_exe.return_value = '/bin/sbatch'
@@ -608,7 +606,7 @@ class TestCallSbatch(GWFTestCase):
 
         script = 'this is the script'
 
-        stdout, stderr = _call_sbatch(script, ['1', '2'])
+        _call_sbatch(script, ['1', '2'])
 
         self.mock_popen.assert_called_once_with(
             ['/bin/sbatch', '--parsable', '--dependency=afterok:1,2'],

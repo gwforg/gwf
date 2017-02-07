@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from gwf.exceptions import GWFError
 from gwf.utils import (_split_import_path, cache, get_file_timestamp,
@@ -43,9 +43,7 @@ class TestImportObject(unittest.TestCase):
 
     def test_split_invalid_import_path_raises_value_error(self):
         with self.assertRaises(ValueError):
-            filename, basedir, obj = _split_import_path(
-                '/some/dir/workflow.py::other_obj', 'workflow_obj'
-            )
+            _split_import_path('/some/dir/workflow.py::other_obj', 'workflow_obj')
 
     @patch('gwf.utils.os.path.exists', return_value=True)
     @patch('gwf.utils.os.getcwd', return_value='/some/dir')

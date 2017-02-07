@@ -509,7 +509,7 @@ class TestPreparedWorkflow(unittest.TestCase):
             )
 
     def test_endpoints_only_includes_target_with_no_dependents(self):
-        target1 = self.workflow.target('TestTarget1', outputs=['test.txt'])
+        self.workflow.target('TestTarget1', outputs=['test.txt'])
         target2 = self.workflow.target('TestTarget2', inputs=['test.txt'])
         target3 = self.workflow.target('TestTarget3', inputs=['test.txt'])
         prepared_workflow = PreparedWorkflow(
@@ -779,7 +779,7 @@ class TestScheduling(unittest.TestCase):
     def test_scheduling_a_submitted_dependency_does_not_submit_the_dependency(self):
         workflow = Workflow(working_dir='/some/dir')
 
-        target1 = workflow.target(
+        workflow.target(
             'TestTarget1',
             outputs=['test_output1.txt']
         )
@@ -808,11 +808,11 @@ class TestScheduling(unittest.TestCase):
     def test_scheduling_non_submitted_targets_that_should_not_run_does_not_submit_any_targets(self):
         workflow = Workflow(working_dir='/some/dir')
 
-        target1 = workflow.target(
+        workflow.target(
             'TestTarget1',
             outputs=['test_output1.txt']
         )
-        target2 = workflow.target(
+        workflow.target(
             'TestTarget2',
             outputs=['test_output2.txt']
         )

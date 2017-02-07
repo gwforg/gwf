@@ -24,6 +24,6 @@ conda build --python $TRAVIS_PYTHON_VERSION gwf/
 mkdir /tmp/builds
 conda convert --platform all /tmp/miniconda/conda-bld/linux-64/gwf-*-*_0.tar.bz2 -o /tmp/builds
 
-for f in `ls /tmp/builds/*/*.tar.bz2`; do
+for f in $(ls /tmp/builds/*/*.tar.bz2); do
     anaconda -t $ANACONDA_TOKEN upload $f
 done

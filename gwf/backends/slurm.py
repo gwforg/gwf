@@ -102,7 +102,7 @@ def _call_scancel(job_id):
         stdin=subprocess.PIPE,
         universal_newlines=True,
     )
-    stdout, stderr = proc.communicate()
+    _, stderr = proc.communicate()
     if proc.returncode != 0:
         raise BackendError(stderr)
 
@@ -144,7 +144,7 @@ def _get_live_job_states():
 
     # The only reason this is a method instead of a function outside the
     # class is that the we need access to self.squeue. Maybe this should
-    stdout, stderr = _call_squeue()
+    stdout, _ = _call_squeue()
 
     reader = csv.reader(
         stdout.splitlines(),
@@ -251,7 +251,7 @@ class SlurmBackend(FileLogsMixin, Backend):
 
         script = self._compile_script(target)
 
-        stdout, stderr = _call_sbatch(script, dependency_ids)
+        stdout, _ = _call_sbatch(script, dependency_ids)
         new_job_id = stdout.strip()
 
         self._job_db[target.name] = new_job_id

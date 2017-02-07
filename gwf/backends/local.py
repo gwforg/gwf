@@ -156,7 +156,7 @@ class LocalBackend(FileLogsMixin, Backend):
 
         try:
             self.client = Client(('', self.config['workers_port']))
-        except ConnectionRefusedError as e:
+        except ConnectionRefusedError:
             raise GWFError(
                 'Local backend could not connect to workers. '
                 'Workers can be started by running "gwf workers". '

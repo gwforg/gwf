@@ -28,7 +28,7 @@ class template(object):
 
     def __call__(self, **substitutions):
         def substitute(s):
-            if type(s) == str:
+            if isinstance(s, str):
                 return s.format(**substitutions)
             elif hasattr(s, '__iter__'):
                 return [substitute(x) for x in s]

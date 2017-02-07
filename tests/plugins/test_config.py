@@ -95,6 +95,6 @@ class ConfigCommandTest(GWFTestCase):
             'user': False
         }
 
-        with patch('builtins.open', mock_open(read_data='foo = bar\n')) as mock_open_:
+        with patch('builtins.open', mock_open(read_data='foo = bar\n')):
             with self.assertRaises(GWFError):
                 self.config_command.on_run()

@@ -60,7 +60,7 @@ def _split_import_path(path, default_obj):
         raise ValueError('Invalid path: "{}".'.format(path))
 
     basedir, filename = os.path.split(path)
-    filename, ext = os.path.splitext(filename)
+    filename, _ = os.path.splitext(filename)
     return filename, basedir, obj
 
 

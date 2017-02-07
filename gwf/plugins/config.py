@@ -10,6 +10,14 @@ from ..exceptions import GWFError
 logger = logging.getLogger(__name__)
 
 
+def _parse(parser, path, mode='r'):
+    try:
+        with open(path) as fileobj:
+            return parser.parse(fileobj.readlines())
+    except IOError:
+        return OrderedDict()
+
+
 class ConfigCommand(Plugin):
 
     help_text = (
@@ -48,13 +56,6 @@ class ConfigCommand(Plugin):
             default='',
         )
 
-    def _parse(self, parser, path, mode='r'):
-        try:
-            with open(path) as fileobj:
-                return parser.parse(fileobj.readlines())
-        except IOError as e:
-            return OrderedDict()
-
     def on_run(self):
         option_name = self.config['option_name']
         option_value = self.config['option_value']
@@ -63,7 +64,7 @@ class ConfigCommand(Plugin):
         config_path = USER_CONFIG_FILE if user else LOCAL_CONFIG_FILE
 
         parser = DefaultConfigFileParser()
-        settings = self._parse(parser, config_path)
+        settings = _parse(parser, config_path)
 
         if option_value:
             settings[option_name] = option_value
