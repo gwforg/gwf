@@ -17,9 +17,9 @@ Coming from an older (pre-1.0) version of *gwf*? Learn how to upgrade_ your work
 .. _upgrade: http://gwf.readthedocs.io/en/latest/upgrading_from_pre_1.0.html
 
 
-.. |cistatus| image:: https://img.shields.io/travis/rust-lang/rust.svg
+.. |cistatus| image:: https://img.shields.io/travis/mailund/gwf.svg
     :target: https://travis-ci.org/mailund/gwf
-    :alt: TravisCI
+    :alt: Build status
 .. |docs| image:: https://readthedocs.org/projects/gwf/badge/?version=latest&style=flat
     :target: http://gwf.readthedocs.io
     :alt: Documentation

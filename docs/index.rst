@@ -74,10 +74,10 @@ API Reference
    api
 
 
-.. |cistatus| image:: https://img.shields.io/travis/rust-lang/rust.svg
+.. |cistatus| image:: https://travis-ci.org/mailund/gwf.svg?branch=master
     :target: https://travis-ci.org/mailund/gwf
-    :alt: TravisCI
-.. |docs| image:: https://readthedocs.org/projects/gwf/badge/?version=latest&style=flat
+    :alt: Build status
+.. |docs| image:: https://readthedocs.org/projects/gwf/badge/?version=latest
     :target: http://gwf.readthedocs.io
     :alt: Documentation
 .. |downloads| image:: https://img.shields.io/pypi/dm/gwf.svg
