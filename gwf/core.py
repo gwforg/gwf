@@ -63,7 +63,6 @@ def normalized_paths_property(name):
 
 class TargetOption(object):
     """Abstract class working as a tag for target options."""
-    pass
 
     def update_target(self, target):
         """The method used to update a target with options."""
