@@ -8,11 +8,13 @@ from collections import defaultdict
 from glob import glob as _glob
 from glob import iglob as _iglob
 
+import collections
+
 from .events import post_schedule, pre_schedule
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
-                         InvalidNameError, TargetExistsError)
+                         InvalidNameError, TargetExistsError, InvalidTypeError)
 from .utils import (cache, dfs, get_file_timestamp, import_object,
                     is_valid_name, iter_inputs, iter_outputs, merge, timer)
 
@@ -27,6 +29,10 @@ def _norm_path(working_dir, path):
 
 def _norm_paths(working_dir, paths):
     return [_norm_path(working_dir, path) for path in paths]
+
+
+def _is_valid_list(obj):
+    return isinstance(obj, collections.Sequence) and not isinstance(obj, str)
 
 
 def normalized_paths_property(name):
@@ -87,6 +93,13 @@ class Target(object):
 
         self.options = options
         self.workflow = workflow
+
+        if not _is_valid_list(inputs):
+            raise InvalidTypeError(
+                'The argument `inputs` to target `{}` must be a list or tuple, not a string.'.format(name))
+        if not _is_valid_list(outputs):
+            raise InvalidTypeError(
+                'The argument `outputs` to target `{}` must be a list or tuple, not a string.'.format(name))
 
         self.inputs = inputs
         self.outputs = outputs

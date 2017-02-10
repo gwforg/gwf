@@ -6,6 +6,10 @@ class InvalidNameError(GWFError):
     """Invalid name."""
 
 
+class InvalidTypeError(GWFError):
+    """Raised when an argument to a target has the wrong type."""
+
+
 class TargetExistsError(GWFError):
     """Target already exists in the workflow."""
 

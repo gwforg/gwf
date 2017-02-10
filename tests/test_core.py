@@ -10,7 +10,7 @@ from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
                             FileRequiredButNotProvidedError,
                             IncludeWorkflowError, InvalidNameError,
-                            TargetExistsError)
+                            TargetExistsError, InvalidTypeError)
 
 from . import create_test_target
 
@@ -302,6 +302,14 @@ class TestTarget(unittest.TestCase):
         target = create_test_target() << 'this is a spec'
         self.assertIsNotNone(target.spec)
         self.assertEqual(target.spec, 'this is a spec')
+
+    def test_raises_valueerror_if_inputs_is_not_valid(self):
+        with self.assertRaises(InvalidTypeError):
+            target = create_test_target(inputs='hello.txt')
+
+    def test_raises_valueerror_if_outputs_is_not_valid(self):
+        with self.assertRaises(InvalidTypeError):
+            target = create_test_target(outputs='hello.txt')
 
     def test_str_on_target(self):
         target = Target(
@@ -652,6 +660,20 @@ class TestShouldRun(unittest.TestCase):
             self.assertFalse(self.prepared_workflow.should_run(self.target2))
             self.assertFalse(self.prepared_workflow.should_run(self.target3))
             self.assertFalse(self.prepared_workflow.should_run(self.target4))
+
+    @patch('gwf.core.os.path.exists', return_value=True)
+    def test_two_targets_producing_the_same_file_but_declared_with_rel_and_abs_path(self, mock_os_path_exists):
+        workflow = Workflow(working_dir='/some/dir')
+        workflow.target('TestTarget1', outputs=['/some/dir/test_output.txt'])
+        workflow.target('TestTarget2', outputs=['test_output.txt'])
+
+        with self.assertRaises(FileProvidedByMultipleTargetsError):
+            PreparedWorkflow(
+                targets=workflow.targets,
+                working_dir=workflow.working_dir,
+                supported_options={},
+                config={},
+            )
 
 
 class TestScheduling(unittest.TestCase):
