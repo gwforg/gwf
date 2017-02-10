@@ -321,6 +321,28 @@ class TestTarget(unittest.TestCase):
         target = create_test_target(outputs=[pathlib.PurePath('somefile.txt'), 'otherfile.txt'])
         self.assertEqual(target.outputs, ['/some/path/somefile.txt', '/some/path/otherfile.txt'])
 
+    def test_warn_user_that_target_is_a_sink_when_warn_sink_is_true(self):
+        with self.assertLogs(level='WARNING') as logs:
+            create_test_target(warn_sink=True)
+
+            self.assertEqual(len(logs.output), 1)
+            self.assertIn('TestTarget', logs.output[0])
+            self.assertIn('warn_sink=False', logs.output[0])
+
+    def test_do_not_warn_user_that_target_is_a_sink_when_warn_sink_is_false(self):
+        try:
+            # This is weird. When accessing `logs.output` and nothing was logged,
+            # an AssertionError is raised saying nothing was logged. Thus, we need
+            # to catch this error. If no error was raised, something must have
+            # logged and thus we fail the test.
+            with self.assertLogs(level='WARNING') as logs:
+                create_test_target(warn_sink=False)
+                self.assertEqual(logs.output, [])
+        except AssertionError:
+            self.assertTrue(True)
+        else:
+            self.assertTrue(False)
+
     def test_str_on_target(self):
         target = Target(
             'TestTarget',
