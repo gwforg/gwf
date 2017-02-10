@@ -3,6 +3,8 @@ import os.path
 import unittest
 from unittest.mock import Mock, patch
 
+import pathlib
+
 from gwf import PreparedWorkflow, Target, Workflow, template
 from gwf.backends.testing import TestingBackend
 from gwf.core import schedule, schedule_many
@@ -310,6 +312,14 @@ class TestTarget(unittest.TestCase):
     def test_raises_valueerror_if_outputs_is_not_valid(self):
         with self.assertRaises(InvalidTypeError):
             create_test_target(outputs='hello.txt')
+
+    def test_should_stringify_input_paths(self):
+        target = create_test_target(inputs=[pathlib.PurePath('somefile.txt'), 'otherfile.txt'])
+        self.assertEqual(target.inputs, ['/some/path/somefile.txt', '/some/path/otherfile.txt'])
+
+    def test_should_stringify_output_paths(self):
+        target = create_test_target(outputs=[pathlib.PurePath('somefile.txt'), 'otherfile.txt'])
+        self.assertEqual(target.outputs, ['/some/path/somefile.txt', '/some/path/otherfile.txt'])
 
     def test_str_on_target(self):
         target = Target(

@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _norm_path(working_dir, path):
+    path = str(path)
     if os.path.isabs(path):
         return path
     return os.path.abspath(os.path.join(working_dir, path))
