@@ -305,11 +305,11 @@ class TestTarget(unittest.TestCase):
 
     def test_raises_valueerror_if_inputs_is_not_valid(self):
         with self.assertRaises(InvalidTypeError):
-            target = create_test_target(inputs='hello.txt')
+            create_test_target(inputs='hello.txt')
 
     def test_raises_valueerror_if_outputs_is_not_valid(self):
         with self.assertRaises(InvalidTypeError):
-            target = create_test_target(outputs='hello.txt')
+            create_test_target(outputs='hello.txt')
 
     def test_str_on_target(self):
         target = Target(
