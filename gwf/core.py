@@ -14,7 +14,7 @@ from .events import post_schedule, pre_schedule
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
-                         InvalidNameError, TargetExistsError)
+                         InvalidNameError, TargetExistsError, InvalidTypeError)
 from .utils import (cache, dfs, get_file_timestamp, import_object,
                     is_valid_name, iter_inputs, iter_outputs, merge, timer)
 
@@ -105,6 +105,16 @@ class options(TargetOption):
         target.options = self.options
 
 
+class sink(TargetOption):
+    """Specifying that a target is (intentionally) a sink."""
+
+    def __init__(self):
+        pass
+
+    def update_target(self, target):
+        target.warn_sink = False
+
+
 class Target(object):
     """Represents a target.
 
@@ -134,6 +144,7 @@ class Target(object):
 
         self.options = {}
         self.workflow = workflow
+        self.warn_sink = True
 
         self.inputs = []
         self.outputs = []
@@ -464,6 +475,7 @@ class PreparedWorkflow(object):
 
         self._check_for_circular_dependencies()
         self._inherit_target_options()
+        self._check_sinks()
 
         self.file_cache = self.prepare_file_cache()
         logger.debug('Cached %d files.', len(self.file_cache))
@@ -525,6 +537,14 @@ class PreparedWorkflow(object):
                 for option, value in target.options.items()
                 if option in self.supported_options
             }
+
+    def _check_sinks(self):
+        for target in self.targets.values():
+            if target.is_sink and target.warn_sink:
+                logging.warning(
+                    ('Target %s declares no outputs. If this is intentional, '
+                     'set the option sink() for the target.'),
+                     target.name)
 
     @cache
     def should_run(self, target):

@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from gwf import Target, Workflow, inputs, outputs, options
+from gwf import Target, Workflow, inputs, outputs, options, sink
 
 
 class GWFTestCase(unittest.TestCase):
@@ -17,7 +17,8 @@ def create_test_target(name='TestTarget',
                        input_files=None,
                        output_files=None,
                        opt=None,
-                       workflow=None):
+                       workflow=None,
+                       warn_sink=True):
     """A factory for `Target` objects."""
     if input_files is None:
         input_files = []
@@ -27,7 +28,12 @@ def create_test_target(name='TestTarget',
         opt = {}
     if workflow is None:
         workflow = Workflow(working_dir='/some/path')
-    return Target(name, workflow) <<\
+
+    target = Target(name, workflow) <<\
         inputs(*input_files) <<\
         outputs(*output_files) <<\
         options(**opt)
+    if not warn_sink:
+        target <<= sink()
+
+    return target
