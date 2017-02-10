@@ -1,0 +1,13 @@
+#!/bin/bash
+#PBS -l nodes=1:ppn=1
+#PBS -l mem=4g
+#PBS -l walltime=00:00:05
+
+# GWF generated code ...
+cd /Users/mailund/Projects/gwf/examples/readmapping
+export GWF_JOBID=$PBS_JOBID
+
+# Script from workflow
+
+zcat ponAbe2.fa.gz > ponAbe2.fa
+
