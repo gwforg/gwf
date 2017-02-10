@@ -12,7 +12,7 @@ from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
                             FileRequiredButNotProvidedError,
                             IncludeWorkflowError, InvalidNameError,
-                            TargetExistsError, InvalidTypeError)
+                            TargetExistsError)
 
 from . import create_test_target
 
@@ -66,16 +66,16 @@ class TestWorkflow(unittest.TestCase):
 
     def test_adding_a_target_makes_it_available_to_the_workflow(self):
         workflow = Workflow()
-        workflow.target('TestTarget', outputs=[], spec='')
+        workflow.target('TestTarget')
 
         self.assertIn('TestTarget', workflow.targets)
 
     def test_adding_two_targets_with_the_same_names_should_raise_an_exception(self):
         workflow = Workflow()
-        workflow.target('TestTarget', outputs=[], spec='')
+        workflow.target('TestTarget')
 
         with self.assertRaises(TargetExistsError):
-            workflow.target('TestTarget', outputs=[], spec='')
+            workflow.target('TestTarget')
 
     def test_including_workflow_with_no_name_raises_an_exception(self):
         workflow = Workflow()
@@ -85,11 +85,11 @@ class TestWorkflow(unittest.TestCase):
 
     def test_including_workflow_object_should_extend_including_workflow(self):
         workflow = Workflow()
-        workflow.target('TestTarget1', outputs=[])
+        workflow.target('TestTarget1')
 
         other_workflow = Workflow(name='foo')
-        other_workflow.target('TestTarget2', outputs=[])
-        other_workflow.target('TestTarget3', outputs=[])
+        other_workflow.target('TestTarget2')
+        other_workflow.target('TestTarget3')
 
         workflow.include_workflow(other_workflow)
 
@@ -99,10 +99,10 @@ class TestWorkflow(unittest.TestCase):
 
     def test_include_with_namespace_overrides_included_workflow_name(self):
         workflow = Workflow()
-        workflow.target('TestTarget', outputs=[])
+        workflow.target('TestTarget')
 
         other_workflow = Workflow(name='foo')
-        other_workflow.target('TestTarget', outputs=[])
+        other_workflow.target('TestTarget')
 
         workflow.include_workflow(other_workflow, namespace='bar')
         self.assertIn('bar.TestTarget', workflow.targets)
@@ -118,11 +118,11 @@ class TestWorkflow(unittest.TestCase):
     @patch('gwf.core.import_object')
     def test_including_workflow_path_import_object_and_include_workflow_into_current_workflow(self, mock_import_object):
         workflow = Workflow()
-        workflow.target('TestTarget1', outputs=[])
+        workflow.target('TestTarget1')
 
         other_workflow = Workflow()
-        other_workflow.target('TestTarget2', outputs=[])
-        other_workflow.target('TestTarget3', outputs=[])
+        other_workflow.target('TestTarget2')
+        other_workflow.target('TestTarget3')
 
         mock_import_object.return_value = other_workflow
 
@@ -176,7 +176,7 @@ class TestWorkflow(unittest.TestCase):
 
     def test_targets_inherit_workflow_working_dir_with_given_working_dir(self):
         workflow = Workflow(working_dir='/some/path')
-        target = workflow.target('TestTarget', outputs=[])
+        target = workflow.target('TestTarget')
         self.assertEqual(target.working_dir, '/some/path')
 
     @patch('gwf.core.sys._getframe')
@@ -230,11 +230,7 @@ class TestTarget(unittest.TestCase):
 
     def test_target_with_invalid_name_raises_exception(self):
         with self.assertRaises(InvalidNameError):
-            Target(
-                '123abc',
-                options={},
-                workflow=self.workflow
-            )
+            Target('123abc', workflow=self.workflow)
 
     def test_relative_input_paths_are_normalized(self):
         target = create_test_target(
@@ -322,11 +318,7 @@ class TestTarget(unittest.TestCase):
         self.assertEqual(target.outputs, ['/some/path/somefile.txt', '/some/path/otherfile.txt'])
 
     def test_str_on_target(self):
-        target = Target(
-            'TestTarget',
-            options={},
-            workflow=self.workflow
-        )
+        target = Target('TestTarget', workflow=self.workflow)
         self.assertEqual(str(target), 'TestTarget')
 
 
@@ -347,7 +339,7 @@ class TestPreparedWorkflow(unittest.TestCase):
         self.assertDictEqual(prepared_workflow.provides, {})
 
     def test_finds_no_providers_in_workflow_with_no_producers(self):
-        self.workflow.target('TestTarget', outputs=[])
+        self.workflow.target('TestTarget')
 
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
@@ -358,7 +350,7 @@ class TestPreparedWorkflow(unittest.TestCase):
         self.assertDictEqual(prepared_workflow.provides, {})
 
     def test_finds_provider_in_workflow_with_one_producer(self):
-        self.workflow.target('TestTarget', working_dir='') <<\
+        self.workflow.target('TestTarget') <<\
             outputs('/test_output.txt')
 
         prepared_workflow = PreparedWorkflow(
@@ -372,9 +364,9 @@ class TestPreparedWorkflow(unittest.TestCase):
             prepared_workflow.provides['/test_output.txt'].name, 'TestTarget')
 
     def test_raises_exceptions_if_two_targets_produce_the_same_file(self):
-        self.workflow.target('TestTarget1', working_dir='') <<\
+        self.workflow.target('TestTarget1') <<\
             outputs('/test_output.txt')
-        self.workflow.target('TestTarget2', working_dir='') <<\
+        self.workflow.target('TestTarget2') <<\
             outputs('/test_output.txt')
 
         with self.assertRaises(FileProvidedByMultipleTargetsError):
@@ -398,8 +390,7 @@ class TestPreparedWorkflow(unittest.TestCase):
 
     @patch('gwf.core.os.path.exists', return_value=False)
     def test_non_existing_files_not_provided_by_other_target_raises_exception(self, mock_os_path_exists):
-        self.workflow.target(
-            'TestTarget', outputs=[]) << inputs('test_input.txt')
+        self.workflow.target('TestTarget') << inputs('test_input.txt')
         with self.assertRaises(FileRequiredButNotProvidedError):
             PreparedWorkflow(
                 targets=self.workflow.targets,
@@ -410,11 +401,7 @@ class TestPreparedWorkflow(unittest.TestCase):
 
     @patch('gwf.core.os.path.exists', return_value=True)
     def test_existing_files_not_provided_by_other_target_has_no_dependencies(self, mock_exists):
-        target = self.workflow.target(
-            'TestTarget',
-            outputs=[],
-        ) << inputs('test_file.txt')
-
+        target = self.workflow.target('TestTarget') << inputs('test_file.txt')
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,

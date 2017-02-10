@@ -162,22 +162,12 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         backend.configure(
             working_dir=prepared_workflow.working_dir, config=self.config)
 
-        target = Target(
-            name='TestTarget',
-            workflow=self.workflow,
-            options={
-                'cores': 16,
-                'memory': '16g',
-                'walltime': '12:00:00',
-                'queue': 'normal',
-                'account': 'someaccount',
-                'constraint': 'graphics*4',
-                'mail_type': 'BEGIN,END,FAIL',
-                'mail_user': 'test@domain.com',
-                'qos': 'somename',
-            },
-            spec='echo hello world'
-        )
+        target = Target(name='TestTarget', workflow=self.workflow) <<\
+            options(cores=16, memory='16g', walltime='12:00:00',
+                    queue='normal', account='someaccount',
+                    constraint='graphics*4', mail_type='BEGIN,END,FAIL',
+                    mail_user='test@domain.com', qos='somename') <<\
+            'echo hello world'
 
         script = backend._compile_script(target)
 

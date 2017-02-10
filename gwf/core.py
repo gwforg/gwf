@@ -90,6 +90,21 @@ class outputs(TargetOption):
         target.outputs = self.outputs
 
 
+class options(TargetOption):
+    """Specifying a dictionary of options for a target.
+
+    These options are passed along to the backend. This is the most
+    general way of specifying options and the least safe. It is better
+    to use option-specific functions.
+    """
+
+    def __init__(self, **options):
+        self.options = options
+
+    def update_target(self, target):
+        target.options = self.options
+
+
 class Target(object):
     """Represents a target.
 
@@ -110,14 +125,14 @@ class Target(object):
     inputs = normalized_paths_property('inputs')
     outputs = normalized_paths_property('outputs')
 
-    def __init__(self, name, options, workflow, namespace=None, spec=''):
+    def __init__(self, name, workflow, namespace=None, spec=''):
         self.name = name
         if not is_valid_name(self.name):
             raise InvalidNameError(
                 'Target defined with invalid name: "{}".'.format(self.name)
             )
 
-        self.options = options
+        self.options = {}
         self.workflow = workflow
 
         self.inputs = []
@@ -225,7 +240,7 @@ class Workflow(object):
 
         self.targets[qualname] = target
 
-    def target(self, name, **options):
+    def target(self, name):
         """Create a target and add it to the :class:`gwf.Workflow`.
 
         This is syntactic sugar for creating a new :class:`~gwf.Target` and
@@ -247,13 +262,8 @@ class Workflow(object):
 
         :param str name: Name of the target.
 
-        Any further keyword arguments are passed to the backend.
         """
-
-        new_target = Target(
-            name, options, workflow=self
-        )
-
+        new_target = Target(name, workflow=self)
         self._add_target(new_target)
         return new_target
 
