@@ -2,7 +2,7 @@ import io
 import subprocess
 from unittest.mock import ANY, call, mock_open, patch
 
-from gwf import PreparedWorkflow, Target, Workflow
+from gwf import *
 from gwf.backends.slurm import (SlurmBackend, _call_sbatch, _call_scancel,
                                 _call_squeue, _dump_atomic, _find_exe,
                                 _get_live_job_states, _read_json)
@@ -106,19 +106,11 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.mock_get_live_job_states.return_value = {'1000': 'R', '2000': 'H'}
         self.mock_call_sbatch.return_value = ('3000', '')
 
-        self.workflow.target(
-            'TestTarget1',
-            outputs=['test_output1.txt'],
-        )
-        self.workflow.target(
-            'TestTarget2',
-            outputs=['test_output2.txt']
-        )
-        target3 = self.workflow.target(
-            'TestTarget3',
-            inputs=['test_output1.txt', 'test_output2.txt'],
-            outputs=['test_output3.txt']
-        )
+        self.workflow.target('TestTarget1') << outputs('test_output1.txt')
+        self.workflow.target('TestTarget2') << outputs('test_output2.txt')
+        target3 = self.workflow.target('TestTarget3') <<\
+            inputs('test_output1.txt', 'test_output2.txt') <<\
+            outputs('test_output3.txt')
 
         backend = SlurmBackend()
         prepared_workflow = PreparedWorkflow(
@@ -172,8 +164,6 @@ class TestSlurmBackendSubmit(SlurmTestCase):
 
         target = Target(
             name='TestTarget',
-            inputs=[],
-            outputs=[],
             workflow=self.workflow,
             options={
                 'cores': 16,

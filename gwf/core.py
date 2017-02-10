@@ -61,6 +61,35 @@ def normalized_paths_property(name):
     return prop
 
 
+class TargetOption(object):
+    """Abstract class working as a tag for target options."""
+    pass
+
+    def update_target(self, target):
+        """The method used to update a target with options."""
+        pass
+
+
+class inputs(TargetOption):
+    """Specifying the inputs list of a target."""
+
+    def __init__(self, *inputs):
+        self.inputs = inputs
+
+    def update_target(self, target):
+        target.inputs = self.inputs
+
+
+class outputs(TargetOption):
+    """Specifying the outputs list of a target."""
+
+    def __init__(self, *outputs):
+        self.outputs = outputs
+
+    def update_target(self, target):
+        target.outputs = self.outputs
+
+
 class Target(object):
     """Represents a target.
 
@@ -69,10 +98,6 @@ class Target(object):
 
     :ivar str name:
         Name of the target.
-    :ivar list inputs:
-        A list of input paths for this target.
-    :ivar list outputs:
-        A list of output paths for this target.
     :ivar dict options:
         Options such as number of cores, memory requirements etc. Options are
         backend-dependent.
@@ -85,7 +110,7 @@ class Target(object):
     inputs = normalized_paths_property('inputs')
     outputs = normalized_paths_property('outputs')
 
-    def __init__(self, name, inputs, outputs, options, workflow, namespace=None, spec=''):
+    def __init__(self, name, options, workflow, namespace=None, spec=''):
         self.name = name
         if not is_valid_name(self.name):
             raise InvalidNameError(
@@ -95,15 +120,8 @@ class Target(object):
         self.options = options
         self.workflow = workflow
 
-        if not _is_valid_list(inputs):
-            raise InvalidTypeError(
-                'The argument `inputs` to target `{}` must be a list or tuple, not a string.'.format(name))
-        if not _is_valid_list(outputs):
-            raise InvalidTypeError(
-                'The argument `outputs` to target `{}` must be a list or tuple, not a string.'.format(name))
-
-        self.inputs = inputs
-        self.outputs = outputs
+        self.inputs = []
+        self.outputs = []
 
         self.spec = spec
 
@@ -141,6 +159,8 @@ class Target(object):
             self.outputs = options.pop('outputs', list)
             self.options = options
             self.spec = spec
+        elif isinstance(spec, TargetOption):
+            spec.update_target(self)
         else:
             self.spec = spec
         return self
@@ -205,7 +225,7 @@ class Workflow(object):
 
         self.targets[qualname] = target
 
-    def target(self, name, inputs=None, outputs=None, **options):
+    def target(self, name, **options):
         """Create a target and add it to the :class:`gwf.Workflow`.
 
         This is syntactic sugar for creating a new :class:`~gwf.Target` and
@@ -214,7 +234,10 @@ class Workflow(object):
         this allows assigning a spec to a target directly after defining it::
 
             workflow = Workflow()
-            workflow.target('NewTarget', inputs=['test.txt', 'out.txt']) <<< '''
+            workflow.target('NewTarget') <<\
+                inputs('test.txt') <<\
+                outputs('out.txt') <<\
+            '''
             cat test.txt > out.txt
             echo hello world >> out.txt
             '''
@@ -223,19 +246,12 @@ class Workflow(object):
         and assign a spec to the target.
 
         :param str name: Name of the target.
-        :param iterable inputs: List of files that this target depends on.
-        :param iterable outputs: List of files that this target produces.
 
         Any further keyword arguments are passed to the backend.
         """
 
-        if inputs is None:
-            inputs = []
-        if outputs is None:
-            outputs = []
-
         new_target = Target(
-            name, inputs, outputs, options, workflow=self
+            name, options, workflow=self
         )
 
         self._add_target(new_target)

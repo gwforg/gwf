@@ -5,6 +5,7 @@ __version__ = get_versions()['version']
 del get_versions
 
 from gwf.core import PreparedWorkflow, Target, Workflow  # noqa: E402
+from gwf.core import inputs, outputs  # noqa: E402
 
 USER_CONFIG_FILE = os.path.expanduser('~/.gwf.conf')
 LOCAL_CONFIG_FILE = '.gwf.conf'
@@ -43,4 +44,5 @@ class template(object):
             self.__class__.__name__, self.options, self.spec)
 
 
-__all__ = ('Target', 'Workflow', 'PreparedWorkflow', 'template',)
+__all__ = ('Target', 'Workflow', 'PreparedWorkflow', 'template',
+           'inputs', 'outputs')
