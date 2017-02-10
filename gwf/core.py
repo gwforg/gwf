@@ -14,7 +14,7 @@ from .events import post_schedule, pre_schedule
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
-                         InvalidNameError, TargetExistsError, InvalidTypeError)
+                         InvalidNameError, TargetExistsError)
 from .utils import (cache, dfs, get_file_timestamp, import_object,
                     is_valid_name, iter_inputs, iter_outputs, merge, timer)
 
