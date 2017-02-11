@@ -267,7 +267,8 @@ class SlurmBackend(FileLogsMixin, Backend):
             raise BackendError('Cannot cancel non-running target.')
         _call_scancel(job_id)
 
-    def _compile_script(self, target):
+    @staticmethod
+    def _compile_script(target):
         option_str = "#SBATCH {0}{1}"
 
         out = []

@@ -119,13 +119,15 @@ class CleanCommandTest(GWFTestCase):
         self.assertNotIn(call('/some/dir/foo.txt'),
                          self.mock_delete_file.call_args_list)
 
+    @staticmethod
     @patch('gwf.plugins.clean.os.remove', side_effect=IOError)
-    def test_delete_file_ignores_non_existing_file(self, mock_os_remove):
+    def test_delete_file_ignores_non_existing_file(mock_os_remove):
         _delete_file('/some/dir/foo.txt')
         mock_os_remove.assert_called_once_with('/some/dir/foo.txt')
 
+    @staticmethod
     @patch('gwf.plugins.clean.os.remove')
-    def test_delete_file_deletes_existing_file(self, mock_os_remove):
+    def test_delete_file_deletes_existing_file(mock_os_remove):
         _delete_file('/some/dir/foo.txt')
         mock_os_remove.assert_called_once_with('/some/dir/foo.txt')
 

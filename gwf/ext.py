@@ -25,7 +25,8 @@ class Extension(abc.ABC):
         with other subcommands/arguments.
         """
 
-    def setup_subparser(self, subparsers, name, description, handler):
+    @staticmethod  # set to static just because it doesn't access self.
+    def setup_subparser(subparsers, name, description, handler):
         """Helper method for setting up subparsers.
 
         :param subparsers:

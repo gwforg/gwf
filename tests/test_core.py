@@ -115,8 +115,9 @@ class TestWorkflow(unittest.TestCase):
         with self.assertRaises(IncludeWorkflowError):
             workflow.include(other_workflow)
 
+    @staticmethod
     @patch('gwf.core.import_object')
-    def test_including_workflow_path_import_object_and_include_workflow_into_current_workflow(self, mock_import_object):
+    def test_including_workflow_path_import_object_and_include_workflow_into_current_workflow(mock_import_object):
         workflow = Workflow()
         workflow.target('TestTarget1', inputs=[], outputs=[])
 
@@ -137,7 +138,8 @@ class TestWorkflow(unittest.TestCase):
                 other_workflow, namespace=None
             )
 
-    def test_including_workflow_instance_dispatches_to_include_workflow(self):
+    @staticmethod
+    def test_including_workflow_instance_dispatches_to_include_workflow():
         workflow = Workflow()
         other_workflow = Workflow()
 
@@ -146,7 +148,8 @@ class TestWorkflow(unittest.TestCase):
             mock_include_workflow.assert_called_once_with(
                 other_workflow, namespace=None)
 
-    def test_including_workflow_path_dispatches_to_include_path(self):
+    @staticmethod
+    def test_including_workflow_path_dispatches_to_include_path():
         workflow = Workflow()
 
         with patch.object(workflow, 'include_path') as mock_include_path:
@@ -154,8 +157,9 @@ class TestWorkflow(unittest.TestCase):
             mock_include_path.assert_called_once_with(
                 '/path/to/other_workflow.py', namespace=None)
 
+    @staticmethod
     @patch('gwf.core.inspect.ismodule', return_value=True)
-    def test_including_workflow_module_gets_workflow_attribute_and_dispatches_to_include_workflow(self, mock_ismodule):
+    def test_including_workflow_module_gets_workflow_attribute_and_dispatches_to_include_workflow(mock_ismodule):
         workflow = Workflow(working_dir='/some/dir')
         other_workflow = Workflow(working_dir='/some/other/dir')
 
@@ -190,8 +194,9 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(inspect_getfile_mock.call_count, 1)
         self.assertEqual(workflow.working_dir, '/some/path')
 
+    @staticmethod
     @patch('gwf.core._glob')
-    def test_glob_with_relative_path_searches_relative_to_working_dir(self, glob_mock):
+    def test_glob_with_relative_path_searches_relative_to_working_dir(glob_mock):
         workflow = Workflow(working_dir='/some/path')
         workflow.glob('*.fa')
         glob_mock.assert_called_once_with('/some/path/*.fa')
@@ -203,8 +208,9 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(res, ['/other/path/A.fa', '/other/path/B.fa'])
         glob_mock.assert_called_once_with('/other/path/*.fa')
 
+    @staticmethod
     @patch('gwf.core._iglob')
-    def test_iglob_with_relative_path_searches_relative_to_working_dir(self, iglob_mock):
+    def test_iglob_with_relative_path_searches_relative_to_working_dir(iglob_mock):
         workflow = Workflow(working_dir='/some/path')
         workflow.iglob('*.fa')
         iglob_mock.assert_called_once_with('/some/path/*.fa')
@@ -216,8 +222,9 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(res, ['/other/path/A.fa', '/other/path/B.fa'])
         iglob_mock.assert_called_once_with('/other/path/*.fa')
 
+    @staticmethod
     @patch('gwf.core.subprocess.check_output')
-    def test_shell_calls_subprocess_with_same_working_dir_as_workflow_in_a_shell(self, mock_check_output):
+    def test_shell_calls_subprocess_with_same_working_dir_as_workflow_in_a_shell(mock_check_output):
         workflow = Workflow(working_dir='/some/path')
         workflow.shell('echo hello')
         mock_check_output.assert_called_once_with('echo hello', cwd='/some/path', shell=True)
