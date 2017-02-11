@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pathlib
 
-from gwf import PreparedWorkflow, Target, Workflow, template, inputs, outputs
+from gwf import PreparedWorkflow, Target, Workflow, template, inputs, outputs, sink
 from gwf.backends.testing import TestingBackend
 from gwf.core import schedule, schedule_many
 from gwf.exceptions import (CircularDependencyError,
@@ -56,26 +56,26 @@ class TestWorkflow(unittest.TestCase):
 
     def test_target_with_no_input_has_empty_inputs_attribute(self):
         workflow = Workflow()
-        target = workflow.target('TestTarget')
+        target = workflow.target('TestTarget') << sink()
         self.assertListEqual(target.inputs, [])
 
     def test_target_with_no_output_has_empty_outputs_attribute(self):
         workflow = Workflow()
-        target = workflow.target('TestTarget')
+        target = workflow.target('TestTarget') << sink()
         self.assertListEqual(target.outputs, [])
 
     def test_adding_a_target_makes_it_available_to_the_workflow(self):
         workflow = Workflow()
-        workflow.target('TestTarget')
+        workflow.target('TestTarget') << sink()
 
         self.assertIn('TestTarget', workflow.targets)
 
     def test_adding_two_targets_with_the_same_names_should_raise_an_exception(self):
         workflow = Workflow()
-        workflow.target('TestTarget')
+        workflow.target('TestTarget') << sink()
 
         with self.assertRaises(TargetExistsError):
-            workflow.target('TestTarget')
+            workflow.target('TestTarget') << sink()
 
     def test_including_workflow_with_no_name_raises_an_exception(self):
         workflow = Workflow()
@@ -85,11 +85,11 @@ class TestWorkflow(unittest.TestCase):
 
     def test_including_workflow_object_should_extend_including_workflow(self):
         workflow = Workflow()
-        workflow.target('TestTarget1')
+        workflow.target('TestTarget1') << sink()
 
         other_workflow = Workflow(name='foo')
-        other_workflow.target('TestTarget2')
-        other_workflow.target('TestTarget3')
+        other_workflow.target('TestTarget2') << sink()
+        other_workflow.target('TestTarget3') << sink()
 
         workflow.include_workflow(other_workflow)
 
@@ -99,10 +99,10 @@ class TestWorkflow(unittest.TestCase):
 
     def test_include_with_namespace_overrides_included_workflow_name(self):
         workflow = Workflow()
-        workflow.target('TestTarget')
+        workflow.target('TestTarget') << sink()
 
         other_workflow = Workflow(name='foo')
-        other_workflow.target('TestTarget')
+        other_workflow.target('TestTarget') << sink()
 
         workflow.include_workflow(other_workflow, namespace='bar')
         self.assertIn('bar.TestTarget', workflow.targets)
@@ -118,11 +118,11 @@ class TestWorkflow(unittest.TestCase):
     @patch('gwf.core.import_object')
     def test_including_workflow_path_import_object_and_include_workflow_into_current_workflow(self, mock_import_object):
         workflow = Workflow()
-        workflow.target('TestTarget1')
+        workflow.target('TestTarget1') << sink()
 
         other_workflow = Workflow()
-        other_workflow.target('TestTarget2')
-        other_workflow.target('TestTarget3')
+        other_workflow.target('TestTarget2') << sink()
+        other_workflow.target('TestTarget3') << sink()
 
         mock_import_object.return_value = other_workflow
 
@@ -176,7 +176,7 @@ class TestWorkflow(unittest.TestCase):
 
     def test_targets_inherit_workflow_working_dir_with_given_working_dir(self):
         workflow = Workflow(working_dir='/some/path')
-        target = workflow.target('TestTarget')
+        target = workflow.target('TestTarget') << sink()
         self.assertEqual(target.working_dir, '/some/path')
 
     @patch('gwf.core.sys._getframe')
@@ -230,7 +230,7 @@ class TestTarget(unittest.TestCase):
 
     def test_target_with_invalid_name_raises_exception(self):
         with self.assertRaises(InvalidNameError):
-            Target('123abc', workflow=self.workflow)
+            Target('123abc', workflow=self.workflow) << sink()
 
     def test_relative_input_paths_are_normalized(self):
         target = create_test_target(
@@ -367,7 +367,7 @@ class TestPreparedWorkflow(unittest.TestCase):
         self.assertDictEqual(prepared_workflow.provides, {})
 
     def test_finds_no_providers_in_workflow_with_no_producers(self):
-        self.workflow.target('TestTarget')
+        self.workflow.target('TestTarget') << sink()
 
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
@@ -406,7 +406,7 @@ class TestPreparedWorkflow(unittest.TestCase):
             )
 
     def test_finds_no_dependencies_for_target_with_no_inputs(self):
-        target = self.workflow.target('TestTarget')
+        target = self.workflow.target('TestTarget') << sink()
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
@@ -429,7 +429,7 @@ class TestPreparedWorkflow(unittest.TestCase):
 
     @patch('gwf.core.os.path.exists', return_value=True)
     def test_existing_files_not_provided_by_other_target_has_no_dependencies(self, mock_exists):
-        target = self.workflow.target('TestTarget') << inputs('test_file.txt')
+        target = self.workflow.target('TestTarget') << inputs('test_file.txt') << sink()
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
@@ -443,7 +443,7 @@ class TestPreparedWorkflow(unittest.TestCase):
         target1 = self.workflow.target('TestTarget1') <<\
             outputs('test_file.txt')
         target2 = self.workflow.target('TestTarget2') <<\
-            inputs('test_file.txt')
+            inputs('test_file.txt') << sink()
 
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
@@ -462,7 +462,8 @@ class TestPreparedWorkflow(unittest.TestCase):
         target2 = self.workflow.target('TestTarget2') <<\
             outputs('test_file2.txt')
         target3 = self.workflow.target('TestTarget3') <<\
-            inputs('test_file1.txt', 'test_file2.txt')
+            inputs('test_file1.txt', 'test_file2.txt') <<\
+            sink()
 
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
@@ -483,7 +484,7 @@ class TestPreparedWorkflow(unittest.TestCase):
             inputs('test_file1.txt') <<\
             outputs('test_file2.txt')
         target3 = self.workflow.target('TestTarget3') <<\
-            inputs('test_file2.txt')
+            inputs('test_file2.txt') << sink()
 
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
@@ -540,8 +541,8 @@ class TestPreparedWorkflow(unittest.TestCase):
 
     def test_endpoints_only_includes_target_with_no_dependents(self):
         self.workflow.target('TestTarget1') << outputs('test.txt')
-        target2 = self.workflow.target('TestTarget2') << inputs('test.txt')
-        target3 = self.workflow.target('TestTarget3') << inputs('test.txt')
+        target2 = self.workflow.target('TestTarget2') << inputs('test.txt') << sink()
+        target3 = self.workflow.target('TestTarget3') << inputs('test.txt') << sink()
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
@@ -612,7 +613,7 @@ class TestShouldRun(unittest.TestCase):
 
     def test_target_should_run_if_it_is_a_sink(self):
         workflow = Workflow(working_dir='/some/dir')
-        target = workflow.target('TestTarget')
+        target = workflow.target('TestTarget') << sink()
 
         prepared_workflow = PreparedWorkflow(
             targets=workflow.targets,
@@ -699,7 +700,7 @@ class TestScheduling(unittest.TestCase):
 
     def test_scheduling_workflow_with_one_target_that_is_already_submitted_returns_empty_schedule(self):
         workflow = Workflow(working_dir='/some/dir')
-        target = workflow.target('TestTarget')
+        target = workflow.target('TestTarget') << sink()
 
         backend = TestingBackend()
         prepared_workflow = PreparedWorkflow(
@@ -715,7 +716,7 @@ class TestScheduling(unittest.TestCase):
 
     def test_scheduling_workflow_with_one_target_that_is_not_submitted_returns_schedule_with_target(self):
         workflow = Workflow(working_dir='/some/dir')
-        target = workflow.target('TestTarget')
+        target = workflow.target('TestTarget') << sink()
 
         backend = TestingBackend()
         prepared_workflow = PreparedWorkflow(
@@ -733,7 +734,9 @@ class TestScheduling(unittest.TestCase):
     def test_scheduling_workflow_with_target_with_deps_that_are_not_submitted(self):
         workflow = Workflow(working_dir='/some/dir')
         target1 = workflow.target('TestTarget1') << outputs('test_output.txt')
-        target2 = workflow.target('TestTarget2') << inputs('test_output.txt')
+        target2 = workflow.target('TestTarget2') <<\
+            inputs('test_output.txt') <<\
+            sink()
 
         backend = TestingBackend()
         prepared_workflow = PreparedWorkflow(
