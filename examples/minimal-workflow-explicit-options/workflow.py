@@ -1,5 +1,5 @@
 from gwf import Workflow
-from explicit import *
+from explicit import target, inputs, outputs
 
 gwf = Workflow()
 
