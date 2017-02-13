@@ -11,3 +11,7 @@ _build/
 .gwf
 .gwf.conf
 __pycache__/
+examples/minimal-workflow-explicit-options/all.txt
+examples/minimal-workflow-explicit-options/greeting.txt
+examples/minimal-workflow-explicit-options/universe.txt
+examples/minimal-workflow-explicit-options/world.txt
