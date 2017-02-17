@@ -85,7 +85,7 @@ class Target(object):
     inputs = normalized_paths_property('inputs')
     outputs = normalized_paths_property('outputs')
 
-    def __init__(self, name, inputs, outputs, options, workflow, namespace=None, spec='', warn_sink=True):
+    def __init__(self, name, inputs, outputs, options, workflow, namespace=None, spec=''):
         self.name = name
         if not is_valid_name(self.name):
             raise InvalidNameError(
@@ -101,11 +101,6 @@ class Target(object):
         if not _is_valid_list(outputs):
             raise InvalidTypeError(
                 'The argument `outputs` to target `{}` must be a list or tuple, not a string.'.format(name))
-
-        if warn_sink and not outputs:
-            logging.warning(
-                ('Target %s declares no outputs. If this is intentional, '
-                 'set warn_sink=False on the target to avoid this warning.'), self.name)
 
         self.inputs = inputs
         self.outputs = outputs

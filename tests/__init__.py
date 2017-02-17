@@ -13,7 +13,7 @@ class GWFTestCase(unittest.TestCase):
         return thing
 
 
-def create_test_target(name='TestTarget', inputs=None, outputs=None, options=None, workflow=None, warn_sink=False):
+def create_test_target(name='TestTarget', inputs=None, outputs=None, options=None, workflow=None):
     """A factory for `Target` objects."""
     if inputs is None:
         inputs = []
@@ -23,4 +23,4 @@ def create_test_target(name='TestTarget', inputs=None, outputs=None, options=Non
         options = {}
     if workflow is None:
         workflow = Workflow(working_dir='/some/path')
-    return Target(name, inputs, outputs, options, workflow, warn_sink=warn_sink)
+    return Target(name, inputs, outputs, options, workflow)
