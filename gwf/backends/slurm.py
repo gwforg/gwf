@@ -113,7 +113,7 @@ def _call_sbatch(script, dependencies):
     cmd = [sbatch_path, "--parsable"]
     if dependencies:
         cmd.append(
-            "--dependency=afterok:{}".format(",".join(dependencies))
+            "--dependency=afterok:{}".format(":".join(dependencies))
         )
 
     proc = subprocess.Popen(

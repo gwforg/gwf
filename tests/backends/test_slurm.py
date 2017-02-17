@@ -609,7 +609,7 @@ class TestCallSbatch(GWFTestCase):
         _call_sbatch(script, ['1', '2'])
 
         self.mock_popen.assert_called_once_with(
-            ['/bin/sbatch', '--parsable', '--dependency=afterok:1,2'],
+            ['/bin/sbatch', '--parsable', '--dependency=afterok:1:2'],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             stdin=subprocess.PIPE,
