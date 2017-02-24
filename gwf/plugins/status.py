@@ -78,4 +78,5 @@ class StatusCommand(Plugin):
 
         # disabled coverage test on these since we don't actually test
         # the printing code...
-        self.print_progress(targets)
+        sorted_targets = sorted(targets, key=lambda t: t.name)
+        self.print_progress(sorted_targets)
