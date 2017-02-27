@@ -38,6 +38,10 @@ class Backend(Extension):
         """Return whether the target is running."""
 
     @abc.abstractmethod
+    def failed(self, target):
+        """Return whether the target has failed."""
+
+    @abc.abstractmethod
     def completed(self, target):
         """Return whether the target has completed."""
 

@@ -37,7 +37,7 @@ class CleanCommandTest(GWFTestCase):
             'target1': self.mock_target1,
             'target2': self.mock_target2,
         }
-        self.mock_workflow.endpoints.return_value = {self.mock_target1, self.mock_target2}
+        self.mock_workflow.endpoints.return_value = set([self.mock_target1, self.mock_target2])
         self.mock_workflow.working_dir = '/some/dir'
 
         self.mock_delete_file = self.create_patch(
@@ -56,6 +56,7 @@ class CleanCommandTest(GWFTestCase):
         mock_subparser = self.mock_setup_subparser.return_value
         mock_subparser.add_argument.assert_has_calls([
             call('targets', metavar=ANY, nargs='*', help=ANY),
+            call('-f', '--only-failed', action=ANY, help=ANY)
         ])
 
     def test_on_clean_cleans_all_targets_if_no_targets_are_given(self):
@@ -101,6 +102,22 @@ class CleanCommandTest(GWFTestCase):
         with self.assertRaises(TargetDoesNotExistError) as ex:
             self.clean_command.on_clean()
             self.assertEqual(ex.name, 'target3')
+
+    def test_on_clean_with_only_failed_flag_only_cleans_failed_targets(self):
+        mock_config = {'targets': ['target1', 'target2'], 'only_failed': True, 'not_endpoints': False}
+        self.mock_backend.failed.side_effect = [False, True]
+
+        self.clean_command.configure(
+            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_active_backend=self.mock_get_active_backend,
+            config=mock_config
+        )
+        self.clean_command.on_clean()
+
+        self.assertIn(call('/some/dir/bar.txt'),
+                      self.mock_delete_file.call_args_list)
+        self.assertNotIn(call('/some/dir/foo.txt'),
+                         self.mock_delete_file.call_args_list)
 
     @patch('gwf.plugins.clean.os.remove', side_effect=IOError)
     def test_delete_file_ignores_non_existing_file(self, mock_os_remove):

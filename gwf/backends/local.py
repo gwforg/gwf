@@ -195,6 +195,9 @@ class LocalBackend(FileLogsMixin, Backend):
     def running(self, target):
         return self._has_status(target, State.started)
 
+    def failed(self, target):
+        return self._has_status(target, State.failed)
+
     def completed(self, target):
         return self._has_status(target, State.completed)
 

@@ -32,6 +32,13 @@ class CleanCommand(Plugin):
         )
 
         subparser.add_argument(
+            '-f',
+            '--only-failed',
+            action='store_true',
+            help='Only delete output files from failed targets.',
+        )
+
+        subparser.add_argument(
             '-e',
             '--not-endpoints',
             action='store_true',
@@ -56,12 +63,13 @@ class CleanCommand(Plugin):
                 targets.remove(endpoint)
 
         for target in targets:
-            logger.info('Cleaning up: %s.', target.name)
-            for path in target.outputs:
-                logging.debug(
-                    'Deleting output file "%s" from target "%s".',
-                    path,
-                    target.name
-                )
+            if not self.config['only_failed'] or backend.failed(target):
+                logger.info('Cleaning up: %s.', target.name)
+                for path in target.outputs:
+                    logging.debug(
+                        'Deleting output file "%s" from target "%s".',
+                        path,
+                        target.name
+                    )
 
-                _delete_file(path)
+                    _delete_file(path)
