@@ -108,7 +108,7 @@ def _call_scancel(job_id):
 def _call_sbatch(script, dependencies):
     args = ['--parsable']
     if dependencies:
-        args.append('--dependency=afterok:{}'.format(','.join(dependencies)))
+        args.append('--dependency=afterok:{}'.format(':'.join(dependencies)))
     return _call_generic('sbatch', *args, input=script)
 
 
