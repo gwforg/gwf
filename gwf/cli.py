@@ -17,6 +17,19 @@ from .utils import cache, import_object, merge
 logger = logging.getLogger(__name__)
 
 
+def ensure_gwf_dir(workflow_dir):
+    # Make sure that a .gwf directory exists in the workflow directory.
+    try:
+        os.mkdir(os.path.join(workflow_dir, '.gwf'))
+    except IOError as e:
+        if e.errno != errno.EEXIST:
+            raise GWFError(
+                'Could not create directory in workflow directory "{}".'.format(
+                    workflow_dir
+                )
+            ) from e
+
+
 class App:
 
     description = "A flexible, pragmatic workflow tool."
@@ -120,16 +133,7 @@ class App:
         workflow_dir = os.path.dirname(os.path.abspath(self.config['file']))
         sys.path.insert(1, workflow_dir)
 
-        # Make sure that a .gwf directory exists in the workflow directory.
-        try:
-            os.mkdir(os.path.join(workflow_dir, '.gwf'))
-        except IOError as e:
-            if e.errno != errno.EEXIST:
-                raise GWFError(
-                    'Could not create directory in workflow directory "{}".'.format(
-                        workflow_dir
-                    )
-                ) from e
+        ensure_gwf_dir(workflow_dir)
 
         # If a subcommand is being called, the handler will be the function to
         # call when all loading is done.

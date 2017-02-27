@@ -41,7 +41,7 @@ class TestTemplate(unittest.TestCase):
 
     def test_target_created_from_template(self):
         workflow = Workflow(working_dir='/some/path')
-        target = workflow.target('TestTarget') << self.test_template(idx=0)
+        target = workflow.target('TestTarget', inputs=[], outputs=[]) << self.test_template(idx=0)
 
         self.assertEqual(target.inputs, ['/some/path/input0.txt'])
         self.assertEqual(target.outputs, ['/some/path/output0.txt'])
@@ -56,12 +56,12 @@ class TestWorkflow(unittest.TestCase):
 
     def test_target_with_no_input_has_empty_inputs_attribute(self):
         workflow = Workflow()
-        target = workflow.target('TestTarget')
+        target = workflow.target('TestTarget', inputs=[], outputs=[])
         self.assertListEqual(target.inputs, [])
 
     def test_target_with_no_output_has_empty_outputs_attribute(self):
         workflow = Workflow()
-        target = workflow.target('TestTarget')
+        target = workflow.target('TestTarget', inputs=[], outputs=[])
         self.assertListEqual(target.outputs, [])
 
     def test_adding_a_target_makes_it_available_to_the_workflow(self):
@@ -524,9 +524,9 @@ class TestPreparedWorkflow(unittest.TestCase):
             )
 
     def test_endpoints_only_includes_target_with_no_dependents(self):
-        self.workflow.target('TestTarget1', outputs=['test.txt'])
-        target2 = self.workflow.target('TestTarget2', inputs=['test.txt'])
-        target3 = self.workflow.target('TestTarget3', inputs=['test.txt'])
+        self.workflow.target('TestTarget1', inputs=[], outputs=['test.txt'])
+        target2 = self.workflow.target('TestTarget2', inputs=['test.txt'], outputs=[])
+        target3 = self.workflow.target('TestTarget3', inputs=['test.txt'], outputs=[])
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
@@ -542,6 +542,7 @@ class TestShouldRun(unittest.TestCase):
         workflow = Workflow(working_dir='/some/dir')
         self.target1 = workflow.target(
             'TestTarget1',
+            inputs=[],
             outputs=['test_output1.txt']
         )
         self.target2 = workflow.target(
@@ -607,7 +608,8 @@ class TestShouldRun(unittest.TestCase):
         workflow = Workflow(working_dir='/some/dir')
         target = workflow.target(
             'TestTarget',
-            outputs=[]
+            inputs=[],
+            outputs=[],
         )
 
         prepared_workflow = PreparedWorkflow(
@@ -631,6 +633,7 @@ class TestShouldRun(unittest.TestCase):
         workflow = Workflow(working_dir='/some/dir')
         target = workflow.target(
             'TestTarget1',
+            inputs=[],
             outputs=['test_output1.txt', 'test_output2.txt']
         )
 
@@ -681,8 +684,8 @@ class TestShouldRun(unittest.TestCase):
     @patch('gwf.core.os.path.exists', return_value=True)
     def test_two_targets_producing_the_same_file_but_declared_with_rel_and_abs_path(self, mock_os_path_exists):
         workflow = Workflow(working_dir='/some/dir')
-        workflow.target('TestTarget1', outputs=['/some/dir/test_output.txt'])
-        workflow.target('TestTarget2', outputs=['test_output.txt'])
+        workflow.target('TestTarget1', inputs=[], outputs=['/some/dir/test_output.txt'])
+        workflow.target('TestTarget2', inputs=[], outputs=['test_output.txt'])
 
         with self.assertRaises(FileProvidedByMultipleTargetsError):
             PreparedWorkflow(
@@ -697,7 +700,7 @@ class TestScheduling(unittest.TestCase):
 
     def test_scheduling_workflow_with_one_target_that_is_already_submitted_returns_empty_schedule(self):
         workflow = Workflow(working_dir='/some/dir')
-        target = workflow.target('TestTarget')
+        target = workflow.target('TestTarget', inputs=[], outputs=[])
 
         backend = TestingBackend()
         prepared_workflow = PreparedWorkflow(
@@ -713,7 +716,7 @@ class TestScheduling(unittest.TestCase):
 
     def test_scheduling_workflow_with_one_target_that_is_not_submitted_returns_schedule_with_target(self):
         workflow = Workflow(working_dir='/some/dir')
-        target = workflow.target('TestTarget')
+        target = workflow.target('TestTarget', inputs=[], outputs=[])
 
         backend = TestingBackend()
         prepared_workflow = PreparedWorkflow(
@@ -730,8 +733,8 @@ class TestScheduling(unittest.TestCase):
 
     def test_scheduling_workflow_with_target_with_deps_that_are_not_submitted(self):
         workflow = Workflow(working_dir='/some/dir')
-        target1 = workflow.target('TestTarget1', outputs=['test_output.txt'])
-        target2 = workflow.target('TestTarget2', inputs=['test_output.txt'])
+        target1 = workflow.target('TestTarget1', inputs=[], outputs=['test_output.txt'])
+        target2 = workflow.target('TestTarget2', inputs=['test_output.txt'], outputs=[])
 
         backend = TestingBackend()
         prepared_workflow = PreparedWorkflow(
@@ -748,13 +751,10 @@ class TestScheduling(unittest.TestCase):
 
     def test_scheduling_workflow_with_deep_deps_that_are_not_submitted(self):
         workflow = Workflow(working_dir='/some/dir')
-        target1 = workflow.target('TestTarget1', outputs=['test_output1.txt'])
-        target2 = workflow.target('TestTarget2', inputs=[
-                                  'test_output1.txt'], outputs=['test_output2.txt'])
-        target3 = workflow.target('TestTarget3', inputs=[
-                                  'test_output2.txt'], outputs=['test_output3.txt'])
-        target4 = workflow.target('TestTarget4', inputs=[
-                                  'test_output3.txt'], outputs=['final_output.txt'])
+        target1 = workflow.target('TestTarget1', inputs=[], outputs=['test_output1.txt'])
+        target2 = workflow.target('TestTarget2', inputs=['test_output1.txt'], outputs=['test_output2.txt'])
+        target3 = workflow.target('TestTarget3', inputs=['test_output2.txt'], outputs=['test_output3.txt'])
+        target4 = workflow.target('TestTarget4', inputs=['test_output3.txt'], outputs=['final_output.txt'])
 
         backend = TestingBackend()
         prepared_workflow = PreparedWorkflow(
@@ -772,11 +772,9 @@ class TestScheduling(unittest.TestCase):
 
     def test_scheduling_workflow_with_branch_and_join_structure(self):
         workflow = Workflow(working_dir='/some/dir')
-        target1 = workflow.target('TestTarget1', outputs=['test_output1.txt'])
-        target2 = workflow.target('TestTarget2', inputs=[
-                                  'test_output1.txt'], outputs=['test_output2.txt'])
-        target3 = workflow.target('TestTarget3', inputs=[
-                                  'test_output1.txt'], outputs=['test_output3.txt'])
+        target1 = workflow.target('TestTarget1', inputs=[], outputs=['test_output1.txt'])
+        target2 = workflow.target('TestTarget2', inputs=['test_output1.txt'], outputs=['test_output2.txt'])
+        target3 = workflow.target('TestTarget3', inputs=['test_output1.txt'], outputs=['test_output3.txt'])
         target4 = workflow.target(
             'TestTarget4',
             inputs=['test_output2.txt', 'test_output3.txt'],
@@ -810,10 +808,12 @@ class TestScheduling(unittest.TestCase):
 
         workflow.target(
             'TestTarget1',
+            inputs=[],
             outputs=['test_output1.txt']
         )
         target2 = workflow.target(
             'TestTarget2',
+            inputs=[],
             outputs=['test_output2.txt']
         )
         target3 = workflow.target(
@@ -839,10 +839,12 @@ class TestScheduling(unittest.TestCase):
 
         workflow.target(
             'TestTarget1',
+            inputs=[],
             outputs=['test_output1.txt']
         )
         workflow.target(
             'TestTarget2',
+            inputs=[],
             outputs=['test_output2.txt']
         )
         target3 = workflow.target(
@@ -869,10 +871,12 @@ class TestScheduling(unittest.TestCase):
 
         target1 = workflow.target(
             'TestTarget1',
+            inputs=[],
             outputs=['test_output1.txt']
         )
         target2 = workflow.target(
             'TestTarget2',
+            inputs=[],
             outputs=['test_output2.txt']
         )
         target3 = workflow.target(
