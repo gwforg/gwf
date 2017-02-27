@@ -43,7 +43,7 @@ class StatusCommand(Plugin):
         return should_run, submitted, running, completed, failed
 
     def print_progress(self, targets):  # pragma: no cover
-        table = statusbar.StatusTable()
+        table = statusbar.StatusTable(fill_char=' ')
         for target in targets:
             dependencies = dfs(target, self.workflow.dependencies)
             should_run, submitted, running, completed, failed = self._split_target_list(

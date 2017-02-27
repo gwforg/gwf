@@ -41,7 +41,7 @@ setup(
     test_suite='tests',
     install_requires=[
         'configargparse>=0.11',
-        'statusbar>=0.1.2',
+        'statusbar>=0.1.4',
     ],
 
     # metadata for upload to PyPI
