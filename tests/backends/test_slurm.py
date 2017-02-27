@@ -108,10 +108,12 @@ class TestSlurmBackendSubmit(SlurmTestCase):
 
         self.workflow.target(
             'TestTarget1',
+            inputs=[],
             outputs=['test_output1.txt'],
         )
         self.workflow.target(
             'TestTarget2',
+            inputs=[],
             outputs=['test_output2.txt']
         )
         target3 = self.workflow.target(
@@ -141,7 +143,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.mock_get_live_job_states.return_value = {}
         self.mock_call_sbatch.return_value = ('1000', '')
 
-        target = self.workflow.target('TestTarget')
+        target = self.workflow.target('TestTarget', inputs=[], outputs=[])
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
@@ -219,7 +221,7 @@ class TestSlurmBackendCancel(SlurmTestCase):
         ]
         self.mock_get_live_job_states.return_value = {'1000': 'R'}
 
-        target = self.workflow.target('TestTarget')
+        target = self.workflow.target('TestTarget', inputs=[], outputs=[])
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
@@ -241,7 +243,7 @@ class TestSlurmBackendCancel(SlurmTestCase):
         ]
         self.mock_get_live_job_states.return_value = {}
 
-        target = self.workflow.target('TestTarget')
+        target = self.workflow.target('TestTarget', inputs=[], outputs=[])
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
@@ -266,8 +268,8 @@ class TestSlurmBackendSubmitted(SlurmTestCase):
         ]
         self.mock_get_live_job_states.return_value = {'1000': 'H'}
 
-        target1 = self.workflow.target('TestTarget1')
-        target2 = self.workflow.target('TestTarget2')
+        target1 = self.workflow.target('TestTarget1', inputs=[], outputs=[])
+        target2 = self.workflow.target('TestTarget2', inputs=[], outputs=[])
 
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
@@ -291,9 +293,9 @@ class TestSlurmBackendRunning(SlurmTestCase):
         ]
         self.mock_get_live_job_states.return_value = {'1000': 'R', '2000': 'H'}
 
-        target1 = self.workflow.target('TestTarget1')
-        target2 = self.workflow.target('TestTarget2')
-        target3 = self.workflow.target('TestTarget3')
+        target1 = self.workflow.target('TestTarget1', inputs=[], outputs=[])
+        target2 = self.workflow.target('TestTarget2', inputs=[], outputs=[])
+        target3 = self.workflow.target('TestTarget3', inputs=[], outputs=[])
 
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
@@ -312,7 +314,7 @@ class TestSlurmBackendRunning(SlurmTestCase):
 class TestSlurmBackendLogs(SlurmTestCase):
 
     def test_logs_raises_exception_target_has_no_log(self):
-        target = self.workflow.target('TestTarget')
+        target = self.workflow.target('TestTarget', inputs=[], outputs=[])
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
@@ -333,7 +335,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
             '1000': 'R'
         }
 
-        target = self.workflow.target('TestTarget')
+        target = self.workflow.target('TestTarget', inputs=[], outputs=[])
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
@@ -358,7 +360,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
             '1000': 'R'
         }
 
-        target = self.workflow.target('TestTarget')
+        target = self.workflow.target('TestTarget', inputs=[], outputs=[])
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
