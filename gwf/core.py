@@ -204,7 +204,7 @@ class Workflow(object):
 
         self.targets[qualname] = target
 
-    def target(self, name, inputs=None, outputs=None, **options):
+    def target(self, name, inputs, outputs, **options):
         """Create a target and add it to the :class:`gwf.Workflow`.
 
         This is syntactic sugar for creating a new :class:`~gwf.Target` and
@@ -227,12 +227,6 @@ class Workflow(object):
 
         Any further keyword arguments are passed to the backend.
         """
-
-        if inputs is None:
-            inputs = []
-        if outputs is None:
-            outputs = []
-
         new_target = Target(
             name, inputs, outputs, options, workflow=self
         )
