@@ -76,57 +76,40 @@ def _read_json(path):
         return {}
 
 
-def _call_squeue():
-    squeue_path = _find_exe('squeue')
-    cmd = [squeue_path, '--noheader', '--format=%i;%t;%E']
-
+def _call_generic(executable_name, *args, input=None):
+    executable_path = _find_exe(executable_name)
     proc = subprocess.Popen(
-        cmd,
+        [executable_path] + list(args),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         stdin=subprocess.PIPE,
         universal_newlines=True,
     )
-    stdout, stderr = proc.communicate()
+    stdout, stderr = proc.communicate(input)
     if proc.returncode != 0:
         raise BackendError(stderr)
     return stdout, stderr
+
+
+def _call_sacct(job_id):
+    return _call_generic(
+        'sacct', '--noheader', '--long', '--parsable2', '--allocations', '--jobs', job_id
+    )
+
+
+def _call_squeue():
+    return _call_generic('squeue', '--noheader', '--format=%i;%t;%E')
 
 
 def _call_scancel(job_id):
-    scancel_path = _find_exe('scancel')
-    proc = subprocess.Popen(
-        [scancel_path, "-j", job_id],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        stdin=subprocess.PIPE,
-        universal_newlines=True,
-    )
-    _, stderr = proc.communicate()
-    if proc.returncode != 0:
-        raise BackendError(stderr)
+    return _call_generic('scancel_', '-j', job_id)
 
 
 def _call_sbatch(script, dependencies):
-    sbatch_path = _find_exe('sbatch')
-
-    cmd = [sbatch_path, "--parsable"]
+    args = ['--parsable']
     if dependencies:
-        cmd.append(
-            "--dependency=afterok:{}".format(",".join(dependencies))
-        )
-
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        stdin=subprocess.PIPE,
-        universal_newlines=True,
-    )
-    stdout, stderr = proc.communicate(script)
-    if proc.returncode != 0:
-        raise BackendError(stderr)
-    return stdout, stderr
+        args.append('--dependency=afterok:{}'.format(','.join(dependencies)))
+    return _call_generic('sbatch', *args, input=script)
 
 
 @timer('Fetching slurm job states with squeue took %0.2fms', logger=logger)
