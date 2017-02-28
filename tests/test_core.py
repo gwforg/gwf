@@ -14,11 +14,8 @@ from gwf.exceptions import (CircularDependencyError,
                             IncludeWorkflowError, InvalidNameError,
                             TargetExistsError, InvalidTypeError)
 
-from . import create_test_target
-
 
 class TestTemplate(unittest.TestCase):
-
     def setUp(self):
         self.test_template = template(
             inputs=['input{idx}.txt'],
@@ -30,10 +27,9 @@ class TestTemplate(unittest.TestCase):
         """
 
     def test_template_substitutes_args_when_called(self):
-
         options, spec = self.test_template(idx=0)
         self.assertDictEqual(options, {
-            'inputs': ['input0.txt'],
+            'inputs':  ['input0.txt'],
             'outputs': ['output0.txt']
         })
 
@@ -49,7 +45,6 @@ class TestTemplate(unittest.TestCase):
 
 
 class TestWorkflow(unittest.TestCase):
-
     def test_workflow_with_invalid_name_raises_error(self):
         with self.assertRaises(InvalidNameError):
             Workflow(name='123abc')
@@ -187,7 +182,6 @@ class TestWorkflow(unittest.TestCase):
     @patch('gwf.core.inspect.getfile', return_value='/some/path/file.py')
     def test_workflow_computes_working_dir_when_not_initialized_with_working_dir(
             self, inspect_getfile_mock, sys_getframe_mock):
-
         workflow = Workflow()
 
         self.assertEqual(sys_getframe_mock.call_count, 1)
@@ -231,10 +225,6 @@ class TestWorkflow(unittest.TestCase):
 
 
 class TestTarget(unittest.TestCase):
-
-    def setUp(self):
-        self.workflow = Workflow(working_dir='/some/path')
-
     def test_target_with_invalid_name_raises_exception(self):
         with self.assertRaises(InvalidNameError):
             Target(
@@ -242,13 +232,16 @@ class TestTarget(unittest.TestCase):
                 inputs=[],
                 outputs=[],
                 options={},
-                workflow=self.workflow
+                working_dir='/some/path'
             )
 
     def test_relative_input_paths_are_normalized(self):
-        target = create_test_target(
+        target = Target(
+            name='TestTarget',
             inputs=['test_input1.txt', 'test_input2.txt'],
-            workflow=self.workflow
+            outputs=[],
+            options={},
+            working_dir='/some/path',
         )
 
         self.assertTrue(os.path.isabs(target.inputs[0]))
@@ -258,9 +251,12 @@ class TestTarget(unittest.TestCase):
         self.assertTrue(target.inputs[1].startswith('/some/path'))
 
     def test_relative_output_paths_are_normalized(self):
-        target = create_test_target(
+        target = Target(
+            name='TestTarget',
+            inputs=[],
             outputs=['test_output1.txt', 'test_output2.txt'],
-            workflow=self.workflow
+            options={},
+            working_dir='/some/path'
         )
 
         self.assertTrue(os.path.isabs(target.outputs[0]))
@@ -270,62 +266,88 @@ class TestTarget(unittest.TestCase):
         self.assertTrue(target.outputs[1].startswith('/some/path'))
 
     def test_absolute_input_paths_are_not_normalized(self):
-        target = create_test_target(
+        target = Target(
+            name='TestTarget',
             inputs=['test_input1.txt', '/other/path/test_input2.txt'],
-            workflow=self.workflow
+            outputs=[],
+            options={},
+            working_dir='/some/path'
         )
 
         self.assertTrue(target.inputs[0].startswith('/some/path'))
         self.assertTrue(target.inputs[1].startswith('/other/path'))
 
     def test_absolute_output_paths_are_not_normalized(self):
-        target = create_test_target(
+        target = Target(
+            name='TestTarget',
             inputs=['test_output1.txt', '/other/path/test_output2.txt'],
-            workflow=self.workflow
+            outputs=[],
+            options={},
+            working_dir='/some/path'
         )
 
         self.assertTrue(target.inputs[0].startswith('/some/path'))
         self.assertTrue(target.inputs[1].startswith('/other/path'))
 
     def test_target_without_outputs_is_a_sink(self):
-        target = create_test_target()
+        target = Target(name='TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/path')
         self.assertTrue(target.is_sink)
 
     def test_target_with_outputs_is_not_a_sink(self):
-        target = create_test_target(
-            outputs=['test_output1.txt', 'test_output2.txt']
+        target = Target(
+            name='TestTarget',
+            inputs=[],
+            outputs=['test_output1.txt', 'test_output2.txt'],
+            options={},
+            working_dir='/some/path',
         )
         self.assertFalse(target.is_sink)
 
     def test_target_without_inputs_is_a_source(self):
-        target = create_test_target()
+        target = Target(name='TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/path')
         self.assertTrue(target.is_source)
 
     def test_target_with_inputs_is_not_a_source(self):
-        target = create_test_target(
-            inputs=['test_input1.txt', 'test_input2.txt']
+        target = Target(
+            name='TestTarget',
+            inputs=['test_input1.txt', 'test_input2.txt'],
+            outputs=[],
+            options={},
+            working_dir='/some/path'
         )
         self.assertFalse(target.is_source)
 
     def test_assigning_spec_to_target_sets_spec_attribute(self):
-        target = create_test_target() << 'this is a spec'
+        target = Target(name='TestTarget', inputs=[], outputs=[], options={},
+                        working_dir='/some/path') << 'this is a spec'
         self.assertIsNotNone(target.spec)
         self.assertEqual(target.spec, 'this is a spec')
 
     def test_raises_valueerror_if_inputs_is_not_valid(self):
         with self.assertRaises(InvalidTypeError):
-            create_test_target(inputs='hello.txt')
+            Target(name='TestTarget', inputs='hello.txt', outputs=[], options={}, working_dir='/some/path')
 
     def test_raises_valueerror_if_outputs_is_not_valid(self):
         with self.assertRaises(InvalidTypeError):
-            create_test_target(outputs='hello.txt')
+            Target(name='TestTarget', inputs=[], outputs='hello.txt', options={}, working_dir='/some/path')
 
     def test_should_stringify_input_paths(self):
-        target = create_test_target(inputs=[pathlib.PurePath('somefile.txt'), 'otherfile.txt'])
+        target = Target(
+            name='TestTarget',
+            inputs=[pathlib.PurePath('somefile.txt'), 'otherfile.txt'],
+            outputs=[],
+            options={},
+            working_dir='/some/path'
+        )
         self.assertEqual(target.inputs, ['/some/path/somefile.txt', '/some/path/otherfile.txt'])
 
     def test_should_stringify_output_paths(self):
-        target = create_test_target(outputs=[pathlib.PurePath('somefile.txt'), 'otherfile.txt'])
+        target = Target(
+            name='TestTarget',
+            inputs=[],
+            outputs=[pathlib.PurePath('somefile.txt'), 'otherfile.txt'],
+            options={},
+            working_dir='/some/path')
         self.assertEqual(target.outputs, ['/some/path/somefile.txt', '/some/path/otherfile.txt'])
 
     def test_str_on_target(self):
@@ -334,7 +356,7 @@ class TestTarget(unittest.TestCase):
             inputs=[],
             outputs=[],
             options={},
-            workflow=self.workflow
+            working_dir='/some/path'
         )
         self.assertEqual(str(target), 'TestTarget')
 
