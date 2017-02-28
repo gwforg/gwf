@@ -13,21 +13,12 @@ class Backend(Extension):
     @property
     def supported_options(self):
         """Return the options supported on targets."""
+        return set()
 
     @property
     def option_defaults(self):  # pragma: no cover
         """Return defaults for required target options."""
         return {}
-
-    def configure(self, working_dir, config):
-        """Configure the backend.
-
-        This method *must* be called before any other method on the backend
-        is used. Unless the backend is initialized directly, *gwf* is
-        responsible for calling :func:`configure` to configure the backend.
-        """
-        self.working_dir = working_dir
-        self.config = config
 
     @abc.abstractmethod
     def submitted(self, target):

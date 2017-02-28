@@ -8,7 +8,7 @@ from distutils.spawn import find_executable
 
 from . import Backend, FileLogsMixin
 from ..exceptions import BackendError
-from ..utils import cache, timer
+from ..utils import cache, timer, ensure_dir
 
 logger = logging.getLogger(__name__)
 
@@ -184,21 +184,13 @@ class SlurmBackend(FileLogsMixin, Backend):
 
     _JOB_DB_PATH = '.gwf/slurm-backend-jobdb.json'
 
-    def configure(self, working_dir, config):
-        super().configure(working_dir, config)
-
+    def __init__(self, working_dir):
+        self.working_dir = working_dir
         # Make sure that directory for log files exists.
         self._log_dir = os.path.join(self.working_dir, '.gwf/logs')
-        if not os.path.exists(self._log_dir):
-            logger.debug(
-                'Log directory "%s" does not exist. Creating.',
-                self._log_dir
-            )
-            os.makedirs(self._log_dir)
+        ensure_dir(self._log_dir)
 
-        # TODO: maybe use some sort of actual db instead of a file?
-        self._job_db = _read_json(os.path.join(working_dir, self._JOB_DB_PATH))
-
+        self._job_db = _read_json(os.path.join(self.working_dir, self._JOB_DB_PATH))
         self._live_job_states = _get_live_job_states()
         logger.debug('found %d jobs', len(self._live_job_states))
 
@@ -250,8 +242,7 @@ class SlurmBackend(FileLogsMixin, Backend):
             raise BackendError('Cannot cancel non-running target.')
         _call_scancel(job_id)
 
-    @staticmethod
-    def _compile_script(target):
+    def _compile_script(self, target):
         option_str = "#SBATCH {0}{1}"
 
         out = []

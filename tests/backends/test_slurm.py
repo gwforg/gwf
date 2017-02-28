@@ -21,8 +21,6 @@ class SlurmTestCase(GWFTestCase):
             supported_options=SlurmBackend.supported_options,
             config={},
         )
-        self.backend = SlurmBackend()
-        self.config = {}
 
         self.mock_get_live_job_states = self.create_patch(
             'gwf.backends.slurm._get_live_job_states'
@@ -30,8 +28,8 @@ class SlurmTestCase(GWFTestCase):
         self.mock_exists = self.create_patch(
             'gwf.backends.slurm.os.path.exists'
         )
-        self.mock_makedirs = self.create_patch(
-            'gwf.backends.slurm.os.makedirs'
+        self.mock_ensure_dir = self.create_patch(
+            'gwf.backends.slurm.ensure_dir'
         )
         self.mock_read_json = self.create_patch(
             'gwf.backends.slurm._read_json'
@@ -48,29 +46,6 @@ class SlurmTestCase(GWFTestCase):
         self.mock_dump_atomic = self.create_patch(
             'gwf.backends.slurm._dump_atomic'
         )
-
-
-class TestSlurmBackendConfigure(SlurmTestCase):
-
-    def test_does_not_create_log_dir_if_it_already_exists(self):
-        self.mock_exists.return_value = True
-        self.backend.configure(working_dir='/some/dir',
-                               config=self.config)
-        self.mock_makedirs.assert_not_called()
-
-    def test_creates_log_dir_if_it_does_not_already_exist(self):
-        self.mock_exists.return_value = False
-        self.backend.configure(working_dir='/some/dir',
-                               config=self.config)
-        self.mock_makedirs.assert_called_once_with('/some/dir/.gwf/logs')
-
-    def test_jobdb_is_loaded_from_job_db_file_when_it_exists(self):
-        self.mock_read_json.return_value = {"TestTarget": '1000'}
-        self.mock_get_live_job_states.return_value = {'1000': 'R'}
-        self.backend.configure(working_dir='/some/dir',
-                               config=self.config)
-        self.mock_read_json.assert_any_call('/some/dir/.gwf/slurm-backend-jobdb.json')
-        self.assertDictEqual(self.backend._job_db, {'TestTarget': '1000'})
 
 
 class TestSlurmBackendGetLiveJobStates(SlurmTestCase):
@@ -122,7 +97,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
             outputs=['test_output3.txt']
         )
 
-        backend = SlurmBackend()
+        backend = SlurmBackend(working_dir='/some/dir')
         prepared_workflow = PreparedWorkflow(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
@@ -130,8 +105,6 @@ class TestSlurmBackendSubmit(SlurmTestCase):
             config={},
         )
 
-        backend.configure(
-            working_dir=prepared_workflow.working_dir, config=self.config)
         backend.submit(target3, prepared_workflow.dependencies[target3])
 
         self.mock_call_sbatch.assert_any_call(ANY, ['1000', '2000'])
@@ -151,9 +124,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
             config={},
         )
 
-        backend = SlurmBackend()
-        backend.configure(
-            working_dir=prepared_workflow.working_dir, config=self.config)
+        backend = SlurmBackend(working_dir=prepared_workflow.working_dir)
         backend.submit(target, prepared_workflow.dependencies[target])
 
         self.mock_call_sbatch.assert_any_call(ANY, [])
@@ -161,22 +132,13 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.assertEqual(backend._live_job_states['1000'], 'H')
 
     def test_job_script_is_properly_compiled_with_all_supported_options(self):
-        prepared_workflow = PreparedWorkflow(
-            targets=self.workflow.targets,
-            working_dir=self.workflow.working_dir,
-            supported_options=SlurmBackend.supported_options,
-            config={},
-        )
-
-        backend = SlurmBackend()
-        backend.configure(
-            working_dir=prepared_workflow.working_dir, config=self.config)
+        backend = SlurmBackend(working_dir='/some/dor')
 
         target = Target(
             name='TestTarget',
             inputs=[],
             outputs=[],
-            workflow=self.workflow,
+            working_dir='/some/dir',
             options={
                 'cores': 16,
                 'memory': '16g',
@@ -229,9 +191,7 @@ class TestSlurmBackendCancel(SlurmTestCase):
             config={},
         )
 
-        backend = SlurmBackend()
-        backend.configure(
-            working_dir=prepared_workflow.working_dir, config=self.config)
+        backend = SlurmBackend(working_dir=prepared_workflow.working_dir)
         backend.cancel(target)
 
         self.mock_call_scancel.assert_any_call('1000')
@@ -251,10 +211,7 @@ class TestSlurmBackendCancel(SlurmTestCase):
             config={},
         )
 
-        backend = SlurmBackend()
-        backend.configure(
-            working_dir=prepared_workflow.working_dir, config=self.config)
-
+        backend = SlurmBackend(prepared_workflow.working_dir)
         with self.assertRaises(BackendError):
             backend.cancel(target)
 
@@ -268,20 +225,13 @@ class TestSlurmBackendSubmitted(SlurmTestCase):
         ]
         self.mock_get_live_job_states.return_value = {'1000': 'H'}
 
-        target1 = self.workflow.target('TestTarget1', inputs=[], outputs=[])
-        target2 = self.workflow.target('TestTarget2', inputs=[], outputs=[])
+        target1 = Target('TestTarget1', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+        target2 = Target('TestTarget2', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
-        prepared_workflow = PreparedWorkflow(
-            targets=self.workflow.targets,
-            working_dir=self.workflow.working_dir,
-            supported_options=SlurmBackend.supported_options,
-            config={},
-        )
-        self.backend.configure(
-            working_dir=prepared_workflow.working_dir, config=self.config)
+        backend = SlurmBackend(working_dir='/some/dir')
 
-        self.assertTrue(self.backend.submitted(target1))
-        self.assertFalse(self.backend.submitted(target2))
+        self.assertTrue(backend.submitted(target1))
+        self.assertFalse(backend.submitted(target2))
 
 
 class TestSlurmBackendRunning(SlurmTestCase):
@@ -293,22 +243,15 @@ class TestSlurmBackendRunning(SlurmTestCase):
         ]
         self.mock_get_live_job_states.return_value = {'1000': 'R', '2000': 'H'}
 
-        target1 = self.workflow.target('TestTarget1', inputs=[], outputs=[])
-        target2 = self.workflow.target('TestTarget2', inputs=[], outputs=[])
-        target3 = self.workflow.target('TestTarget3', inputs=[], outputs=[])
+        target1 = Target('TestTarget1', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+        target2 = Target('TestTarget2', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+        target3 = Target('TestTarget3', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
-        prepared_workflow = PreparedWorkflow(
-            targets=self.workflow.targets,
-            working_dir=self.workflow.working_dir,
-            supported_options=SlurmBackend.supported_options,
-            config={},
-        )
-        self.backend.configure(
-            working_dir=prepared_workflow.working_dir, config=self.config)
+        backend = SlurmBackend(working_dir='/some/dir')
 
-        self.assertTrue(self.backend.running(target1))
-        self.assertFalse(self.backend.running(target2))
-        self.assertFalse(self.backend.running(target3))
+        self.assertTrue(backend.running(target1))
+        self.assertFalse(backend.running(target2))
+        self.assertFalse(backend.running(target3))
 
 
 class TestSlurmBackendLogs(SlurmTestCase):
@@ -321,11 +264,9 @@ class TestSlurmBackendLogs(SlurmTestCase):
             supported_options=SlurmBackend.supported_options,
             config={},
         )
-        self.backend.configure(
-            working_dir=prepared_workflow.working_dir, config=self.config)
-
+        backend = SlurmBackend(working_dir=prepared_workflow.working_dir)
         with self.assertRaises(NoLogFoundError):
-            self.backend.logs(target)
+            backend.logs(target)
 
     def test_logs_returns_log_if_target_has_been_run_once(self):
         self.mock_read_json.side_effect = [
@@ -342,12 +283,11 @@ class TestSlurmBackendLogs(SlurmTestCase):
             supported_options=SlurmBackend.supported_options,
             config={},
         )
-        self.backend.configure(
-            working_dir=prepared_workflow.working_dir, config=self.config)
+        backend = SlurmBackend(working_dir=prepared_workflow.working_dir)
 
         m = mock_open(read_data='this is the log file')
         with patch('builtins.open', m):
-            stdout = self.backend.logs(target)
+            stdout = backend.logs(target)
             self.assertEqual(stdout.read(), 'this is the log file')
             m.assert_called_once_with(
                 '/some/dir/.gwf/logs/TestTarget.stdout', 'r')
@@ -360,23 +300,16 @@ class TestSlurmBackendLogs(SlurmTestCase):
             '1000': 'R'
         }
 
-        target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        prepared_workflow = PreparedWorkflow(
-            targets=self.workflow.targets,
-            working_dir=self.workflow.working_dir,
-            supported_options=SlurmBackend.supported_options,
-            config={},
-        )
-        self.backend.configure(
-            working_dir=prepared_workflow.working_dir, config=self.config)
+        target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
         m = mock_open()
         m.side_effect = [
             io.StringIO('this is stderr')
         ]
 
+        backend = SlurmBackend(working_dir=self.workflow.working_dir)
         with patch('builtins.open', m):
-            stderr = self.backend.logs(target, stderr=True)
+            stderr = backend.logs(target, stderr=True)
             self.assertEqual(stderr.read(), 'this is stderr')
             m.assert_has_calls([
                 call('/some/dir/.gwf/logs/TestTarget.stderr', 'r')
@@ -386,19 +319,12 @@ class TestSlurmBackendLogs(SlurmTestCase):
 class TestSlurmBackendClose(SlurmTestCase):
 
     def test_close_dumps_job_db_if_configure_has_been_called(self):
-        self.backend.configure(
-            working_dir='/some/dir',
-            config=self.config
-        )
-        self.backend.close()
+        backend = SlurmBackend(working_dir=self.workflow.working_dir)
+        backend.close()
         self.mock_dump_atomic.assert_any_call(
             ANY,
             '/some/dir/.gwf/slurm-backend-jobdb.json'
         )
-
-    def test_close_does_not_dump_job_db_if_configure_has_not_been_called(self):
-        self.backend.close()
-        self.mock_dump_atomic.assert_not_called()
 
 
 class TestFindExe(GWFTestCase):

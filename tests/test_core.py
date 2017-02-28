@@ -362,7 +362,6 @@ class TestTarget(unittest.TestCase):
 
 
 class TestPreparedWorkflow(unittest.TestCase):
-
     def setUp(self):
         self.workflow = Workflow(working_dir='/some/dir')
         self.supported_options = {}
@@ -559,7 +558,6 @@ class TestPreparedWorkflow(unittest.TestCase):
 
 
 class TestShouldRun(unittest.TestCase):
-
     def setUp(self):
         workflow = Workflow(working_dir='/some/dir')
         self.target1 = workflow.target(
@@ -719,19 +717,18 @@ class TestShouldRun(unittest.TestCase):
 
 
 class TestScheduling(unittest.TestCase):
-
     def test_scheduling_workflow_with_one_target_that_is_already_submitted_returns_empty_schedule(self):
         workflow = Workflow(working_dir='/some/dir')
         target = workflow.target('TestTarget', inputs=[], outputs=[])
 
-        backend = TestingBackend()
+
         prepared_workflow = PreparedWorkflow(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
-            supported_options=backend.supported_options,
+            supported_options=TestingBackend.supported_options,
             config={},
         )
-        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        backend = TestingBackend(working_dir=prepared_workflow.working_dir)
         with patch.object(backend, 'submitted', return_value=True):
             sched = schedule(prepared_workflow, backend, target)
             self.assertListEqual(sched, [])
@@ -740,14 +737,14 @@ class TestScheduling(unittest.TestCase):
         workflow = Workflow(working_dir='/some/dir')
         target = workflow.target('TestTarget', inputs=[], outputs=[])
 
-        backend = TestingBackend()
+
         prepared_workflow = PreparedWorkflow(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
-            supported_options=backend.supported_options,
+            supported_options=TestingBackend.supported_options,
             config={},
         )
-        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        backend = TestingBackend(working_dir=prepared_workflow.working_dir)
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
                 sched = schedule(prepared_workflow, backend, target)
@@ -758,14 +755,14 @@ class TestScheduling(unittest.TestCase):
         target1 = workflow.target('TestTarget1', inputs=[], outputs=['test_output.txt'])
         target2 = workflow.target('TestTarget2', inputs=['test_output.txt'], outputs=[])
 
-        backend = TestingBackend()
+
         prepared_workflow = PreparedWorkflow(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
-            supported_options=backend.supported_options,
+            supported_options=TestingBackend.supported_options,
             config={},
         )
-        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        backend = TestingBackend(working_dir=prepared_workflow.working_dir)
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
                 sched = schedule(prepared_workflow, backend, target2)
@@ -778,14 +775,14 @@ class TestScheduling(unittest.TestCase):
         target3 = workflow.target('TestTarget3', inputs=['test_output2.txt'], outputs=['test_output3.txt'])
         target4 = workflow.target('TestTarget4', inputs=['test_output3.txt'], outputs=['final_output.txt'])
 
-        backend = TestingBackend()
+
         prepared_workflow = PreparedWorkflow(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
-            supported_options=backend.supported_options,
+            supported_options=TestingBackend.supported_options,
             config={},
         )
-        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        backend = TestingBackend(working_dir=prepared_workflow.working_dir)
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
                 sched = schedule(prepared_workflow, backend, target4)
@@ -803,14 +800,14 @@ class TestScheduling(unittest.TestCase):
             outputs=['final_output.txt']
         )
 
-        backend = TestingBackend()
         prepared_workflow = PreparedWorkflow(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
-            supported_options=backend.supported_options,
+            supported_options=TestingBackend.supported_options,
             config={},
         )
-        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        backend = TestingBackend(working_dir=prepared_workflow.working_dir)
+
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
                 sched = schedule(prepared_workflow, backend, target4)
@@ -818,8 +815,7 @@ class TestScheduling(unittest.TestCase):
                     sched, [target1, target2, target3, target4])
 
     def test_option_defaults_contains_specified_option_defaults(self):
-        backend = TestingBackend()
-        backend.configure(working_dir='/some/dir', config={})
+        backend = TestingBackend(working_dir='/some/dir')
         self.assertDictEqual(
             backend.option_defaults,
             {'cores': 2, 'memory': '18gb'}
@@ -844,14 +840,13 @@ class TestScheduling(unittest.TestCase):
             outputs=['test_output3.txt']
         )
 
-        backend = TestingBackend()
         prepared_workflow = PreparedWorkflow(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
-            supported_options=backend.supported_options,
+            supported_options=TestingBackend.supported_options,
             config={},
         )
-        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        backend = TestingBackend(working_dir=prepared_workflow.working_dir)
         with patch.object(backend, 'submitted', side_effect=[False, True, False, False]):
             sched = schedule(prepared_workflow, backend, target3)
             self.assertEqual(sched, [target2, target3])
@@ -875,14 +870,14 @@ class TestScheduling(unittest.TestCase):
             outputs=['test_output3.txt']
         )
 
-        backend = TestingBackend()
         prepared_workflow = PreparedWorkflow(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
-            supported_options=backend.supported_options,
+            supported_options=TestingBackend.supported_options,
             config={},
         )
-        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        backend = TestingBackend(working_dir = prepared_workflow.working_dir)
+
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', side_effect=[False, False, False, False]):
                 sched = schedule(prepared_workflow, backend, target3)
@@ -912,14 +907,14 @@ class TestScheduling(unittest.TestCase):
             outputs=['test_output4.txt']
         )
 
-        backend = TestingBackend()
         prepared_workflow = PreparedWorkflow(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
-            supported_options=backend.supported_options,
+            supported_options=TestingBackend.supported_options,
             config={},
         )
-        backend.configure(working_dir=prepared_workflow.working_dir, config={})
+        backend = TestingBackend(working_dir=prepared_workflow.working_dir)
+
         with patch.object(backend, 'submitted', return_value=False):
             with patch.object(prepared_workflow, 'should_run', return_value=True):
                 sched = schedule_many(
