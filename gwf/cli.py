@@ -1,7 +1,5 @@
-import errno
-import logging
-import os
 import os.path
+import logging
 import platform
 import sys
 
@@ -15,19 +13,6 @@ from .ext import ExtensionManager
 from .utils import cache, import_object, merge
 
 logger = logging.getLogger(__name__)
-
-
-def ensure_gwf_dir(workflow_dir):
-    # Make sure that a .gwf directory exists in the workflow directory.
-    try:
-        os.mkdir(os.path.join(workflow_dir, '.gwf'))
-    except IOError as e:
-        if e.errno != errno.EEXIST:
-            raise GWFError(
-                'Could not create directory in workflow directory "{}".'.format(
-                    workflow_dir
-                )
-            ) from e
 
 
 class App:
@@ -128,13 +113,6 @@ class App:
         self.config = vars(self.parser.parse_args(argv))
         self._configure_logging(self.config['verbosity'])
 
-        # Add path of workflow file to python path to make it possible to load
-        # modules placed in the directory directly.
-        workflow_dir = os.path.dirname(os.path.abspath(self.config['file']))
-        sys.path.insert(1, workflow_dir)
-
-        ensure_gwf_dir(workflow_dir)
-
         # If a subcommand is being called, the handler will be the function to
         # call when all loading is done.
         handler = self.config.pop('func', None)
@@ -159,6 +137,13 @@ class App:
 
         logger.debug('Loading workflow from: %s.', self.config['file'])
         workflow = import_object(self.config['file'])
+
+        # Add path of workflow file to python path to make it possible to load
+        # modules placed in the directory directly.
+        sys.path.insert(1, workflow.working_dir)
+
+        # Ensure that a .gwf directory exists in the workflow directory.
+        ensure_dir(os.path.join(workflow.working_dir, '.gwf'))
 
         # Update configuration with defaults from backend and workflow.
         self.config = merge(

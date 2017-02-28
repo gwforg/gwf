@@ -64,8 +64,8 @@ class TestApp(GWFTestCase):
             'gwf.cli.import_object'
         )
 
-        self.mock_os_mkdir = self.create_patch(
-            'gwf.cli.os.mkdir'
+        self.mock_ensure_dir = self.create_patch(
+            'gwf.cli.ensure_dir'
         )
 
         self.app = App(
@@ -79,10 +79,10 @@ class TestApp(GWFTestCase):
 
     def test_run_makes_gwf_directory_if_it_does_not_exist(self):
         self.app.run(['-f', '/some/dir/workflow.py', '-b', 'testing'])
-        self.mock_os_mkdir.assert_called_once_with('/some/dir/.gwf')
+        self.mock_ensure_dir.assert_called_once_with('/some/dir/.gwf')
 
     def test_run_raises_exception_if_workflow_dir_could_not_be_created_and_it_does_not_exist_already(self):
-        self.mock_os_mkdir.side_effect = IOError(Mock(errno=-1))
+        self.mock_ensure_dir.side_effect = IOError(Mock(errno=-1))
         with self.assertRaisesRegex(GWFError, 'Could not create directory.*'):
             self.app.run(['-f', '/some/dir/workflow.py', '-b', 'testing'])
 
