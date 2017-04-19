@@ -7,7 +7,7 @@ from configargparse import ArgParser
 from argparse import RawDescriptionHelpFormatter
 
 from . import LOCAL_CONFIG_FILE, USER_CONFIG_FILE, __version__
-from .core import PreparedWorkflow
+from .core import Graph
 from .exceptions import GWFError
 from .ext import ExtensionManager
 from .utils import cache, import_object, merge, ensure_dir
@@ -155,7 +155,7 @@ class App:
 
         @cache
         def get_prepared_workflow():
-            return PreparedWorkflow(
+            return Graph(
                 targets=workflow.targets,
                 working_dir=workflow_dir,
                 supported_options=self.active_backend.supported_options,

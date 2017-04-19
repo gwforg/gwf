@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pathlib
 
-from gwf import PreparedWorkflow, Target, Workflow, template
+from gwf import Graph, Target, Workflow, template
 from gwf.backends.testing import TestingBackend
 from gwf.core import schedule, schedule_many
 from gwf.exceptions import (CircularDependencyError,
@@ -368,7 +368,7 @@ class TestPreparedWorkflow(unittest.TestCase):
         self.config = {}
 
     def test_finds_no_providers_in_empty_workflow(self):
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
@@ -379,7 +379,7 @@ class TestPreparedWorkflow(unittest.TestCase):
     def test_finds_no_providers_in_workflow_with_no_producers(self):
         self.workflow.target('TestTarget', inputs=[], outputs=[])
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
@@ -391,7 +391,7 @@ class TestPreparedWorkflow(unittest.TestCase):
         self.workflow.target(
             'TestTarget', inputs=[], outputs=['/test_output.txt'], working_dir='')
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
@@ -408,7 +408,7 @@ class TestPreparedWorkflow(unittest.TestCase):
             'TestTarget2', inputs=[], outputs=['/test_output.txt'], working_dir='')
 
         with self.assertRaises(FileProvidedByMultipleTargetsError):
-            PreparedWorkflow(
+            Graph(
                 targets=self.workflow.targets,
                 working_dir=self.workflow.working_dir,
                 supported_options=self.supported_options,
@@ -417,7 +417,7 @@ class TestPreparedWorkflow(unittest.TestCase):
 
     def test_finds_no_dependencies_for_target_with_no_inputs(self):
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
@@ -431,7 +431,7 @@ class TestPreparedWorkflow(unittest.TestCase):
         self.workflow.target(
             'TestTarget', inputs=['test_input.txt'], outputs=[])
         with self.assertRaises(FileRequiredButNotProvidedError):
-            PreparedWorkflow(
+            Graph(
                 targets=self.workflow.targets,
                 working_dir=self.workflow.working_dir,
                 supported_options=self.supported_options,
@@ -446,7 +446,7 @@ class TestPreparedWorkflow(unittest.TestCase):
             outputs=[],
         )
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
@@ -461,7 +461,7 @@ class TestPreparedWorkflow(unittest.TestCase):
         target2 = self.workflow.target(
             'TestTarget2', inputs=['test_file.txt'], outputs=[])
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
@@ -480,7 +480,7 @@ class TestPreparedWorkflow(unittest.TestCase):
         target3 = self.workflow.target(
             'TestTarget3', inputs=['test_file1.txt', 'test_file2.txt'], outputs=[])
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
@@ -500,7 +500,7 @@ class TestPreparedWorkflow(unittest.TestCase):
         target3 = self.workflow.target(
             'TestTarget3', inputs=['test_file2.txt'], outputs=[])
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
@@ -520,7 +520,7 @@ class TestPreparedWorkflow(unittest.TestCase):
             'TestTarget2', inputs=['test_file1.txt'], outputs=['test_file2.txt'])
 
         with self.assertRaises(CircularDependencyError):
-            PreparedWorkflow(
+            Graph(
                 targets=self.workflow.targets,
                 working_dir=self.workflow.working_dir,
                 supported_options=self.supported_options,
@@ -537,7 +537,7 @@ class TestPreparedWorkflow(unittest.TestCase):
             'TestTarget3', inputs=['test_file2.txt'], outputs=['test_file3.txt'])
 
         with self.assertRaises(CircularDependencyError):
-            PreparedWorkflow(
+            Graph(
                 targets=self.workflow.targets,
                 working_dir=self.workflow.working_dir,
                 supported_options=self.supported_options,
@@ -548,7 +548,7 @@ class TestPreparedWorkflow(unittest.TestCase):
         self.workflow.target('TestTarget1', inputs=[], outputs=['test.txt'])
         target2 = self.workflow.target('TestTarget2', inputs=['test.txt'], outputs=[])
         target3 = self.workflow.target('TestTarget3', inputs=['test.txt'], outputs=[])
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
@@ -581,7 +581,7 @@ class TestShouldRun(unittest.TestCase):
             outputs=['final_output.txt']
         )
 
-        self.prepared_workflow = PreparedWorkflow(
+        self.prepared_workflow = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options={},
@@ -632,7 +632,7 @@ class TestShouldRun(unittest.TestCase):
             outputs=[],
         )
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options={},
@@ -657,7 +657,7 @@ class TestShouldRun(unittest.TestCase):
             outputs=['test_output1.txt', 'test_output2.txt']
         )
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options={},
@@ -708,7 +708,7 @@ class TestShouldRun(unittest.TestCase):
         workflow.target('TestTarget2', inputs=[], outputs=['test_output.txt'])
 
         with self.assertRaises(FileProvidedByMultipleTargetsError):
-            PreparedWorkflow(
+            Graph(
                 targets=workflow.targets,
                 working_dir=workflow.working_dir,
                 supported_options={},
@@ -722,7 +722,7 @@ class TestScheduling(unittest.TestCase):
         target = workflow.target('TestTarget', inputs=[], outputs=[])
 
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
@@ -738,7 +738,7 @@ class TestScheduling(unittest.TestCase):
         target = workflow.target('TestTarget', inputs=[], outputs=[])
 
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
@@ -756,7 +756,7 @@ class TestScheduling(unittest.TestCase):
         target2 = workflow.target('TestTarget2', inputs=['test_output.txt'], outputs=[])
 
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
@@ -776,7 +776,7 @@ class TestScheduling(unittest.TestCase):
         target4 = workflow.target('TestTarget4', inputs=['test_output3.txt'], outputs=['final_output.txt'])
 
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
@@ -800,7 +800,7 @@ class TestScheduling(unittest.TestCase):
             outputs=['final_output.txt']
         )
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
@@ -840,7 +840,7 @@ class TestScheduling(unittest.TestCase):
             outputs=['test_output3.txt']
         )
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
@@ -870,7 +870,7 @@ class TestScheduling(unittest.TestCase):
             outputs=['test_output3.txt']
         )
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
@@ -907,7 +907,7 @@ class TestScheduling(unittest.TestCase):
             outputs=['test_output4.txt']
         )
 
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,

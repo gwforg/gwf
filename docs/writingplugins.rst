@@ -124,7 +124,7 @@ Accessing the Workflow
 Now we just need to get a list of all targets in the workflow and print their
 names. Plugins are by default configured with three attributes: :attr:`backend`,
 :attr:`config`, and :attr:`workflow`. The :attr:`workflow` attribute contains a
-:class:`~gwf.PreparedWorkflow` which has a :attr:`targets` attribute. We can use
+:class:`~gwf.Graph` which has a :attr:`targets` attribute. We can use
 this to look up all targets in the workflow::
 
     # myplugin/myplugin.py

@@ -2,7 +2,7 @@ import io
 import subprocess
 from unittest.mock import ANY, call, mock_open, patch
 
-from gwf import PreparedWorkflow, Target, Workflow
+from gwf import Graph, Target, Workflow
 from gwf.backends.slurm import (SlurmBackend, _call_sbatch, _call_scancel,
                                 _call_squeue, _dump_atomic, _find_exe,
                                 _get_live_job_states, _read_json)
@@ -15,7 +15,7 @@ class SlurmTestCase(GWFTestCase):
 
     def setUp(self):
         self.workflow = Workflow(working_dir='/some/dir')
-        self.prepared_workflow = PreparedWorkflow(
+        self.prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
@@ -98,7 +98,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         )
 
         backend = SlurmBackend(working_dir='/some/dir')
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend,
@@ -117,7 +117,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.mock_call_sbatch.return_value = ('1000', '')
 
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
@@ -184,7 +184,7 @@ class TestSlurmBackendCancel(SlurmTestCase):
         self.mock_get_live_job_states.return_value = {'1000': 'R'}
 
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
@@ -204,7 +204,7 @@ class TestSlurmBackendCancel(SlurmTestCase):
         self.mock_get_live_job_states.return_value = {}
 
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
@@ -258,7 +258,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
 
     def test_logs_raises_exception_target_has_no_log(self):
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
@@ -277,7 +277,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
         }
 
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        prepared_workflow = PreparedWorkflow(
+        prepared_workflow = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,

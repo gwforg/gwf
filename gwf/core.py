@@ -372,12 +372,12 @@ class Workflow(object):
         )
 
 
-class PreparedWorkflow(object):
+class Graph(object):
 
     """Represents a finalized workflow graph.
 
-    If :class:`gwf.PreparedWorkflow` is initialized with the *workflow*
-    parameter, the :class:`gwf.PreparedWorkflow` calls :meth:`prepare` with the
+    If :class:`gwf.Graph` is initialized with the *workflow*
+    parameter, the :class:`gwf.Graph` calls :meth:`prepare` with the
     workflow.
 
     :ivar targets: initial value: dict()
@@ -387,11 +387,10 @@ class PreparedWorkflow(object):
     :ivar dependents: initial value: None
     """
 
-    def __init__(self, targets, working_dir, supported_options, config):
+    def __init__(self, targets, working_dir, supported_options):
         self.targets = targets
         self.working_dir = working_dir
         self.supported_options = supported_options
-        self.config = config
 
         self.provides = None
         self.dependencies = None
@@ -425,7 +424,6 @@ class PreparedWorkflow(object):
         self.dependents = self.prepare_dependents()
 
         self._check_for_circular_dependencies()
-        self._inherit_target_options()
 
         self.file_cache = self.prepare_file_cache()
         logger.debug('Cached %d files.', len(self.file_cache))
@@ -474,19 +472,6 @@ class PreparedWorkflow(object):
             for dep in self.dependencies[target]:
                 if target in dfs(dep, self.dependencies):
                     raise CircularDependencyError(target)
-
-    def _inherit_target_options(self):
-        for target_name, target in self.targets.items():
-            self.targets[target_name].options = merge(self.config, {
-                option: value
-                for option, value in target.options.items()
-            })
-
-            self.targets[target_name].options = {
-                option: value
-                for option, value in target.options.items()
-                if option in self.supported_options
-            }
 
     @cache
     def should_run(self, target):
