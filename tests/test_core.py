@@ -372,7 +372,6 @@ class TestPreparedWorkflow(unittest.TestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
-            config=self.config,
         )
         self.assertDictEqual(prepared_workflow.provides, {})
 
@@ -383,7 +382,6 @@ class TestPreparedWorkflow(unittest.TestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
-            config=self.config,
         )
         self.assertDictEqual(prepared_workflow.provides, {})
 
@@ -395,7 +393,6 @@ class TestPreparedWorkflow(unittest.TestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
-            config=self.config,
         )
         self.assertIn('/test_output.txt', prepared_workflow.provides)
         self.assertEqual(
@@ -412,7 +409,6 @@ class TestPreparedWorkflow(unittest.TestCase):
                 targets=self.workflow.targets,
                 working_dir=self.workflow.working_dir,
                 supported_options=self.supported_options,
-                config=self.config,
             )
 
     def test_finds_no_dependencies_for_target_with_no_inputs(self):
@@ -421,7 +417,6 @@ class TestPreparedWorkflow(unittest.TestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
-            config=self.config,
         )
 
         self.assertEqual(prepared_workflow.dependencies[target], [])
@@ -435,7 +430,6 @@ class TestPreparedWorkflow(unittest.TestCase):
                 targets=self.workflow.targets,
                 working_dir=self.workflow.working_dir,
                 supported_options=self.supported_options,
-                config=self.config,
             )
 
     @patch('gwf.core.os.path.exists', return_value=True)
@@ -450,7 +444,6 @@ class TestPreparedWorkflow(unittest.TestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
-            config=self.config,
         )
         self.assertListEqual(prepared_workflow.dependencies[target], [])
 
@@ -465,7 +458,6 @@ class TestPreparedWorkflow(unittest.TestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
-            config=self.config,
         )
 
         self.assertIn(target2, prepared_workflow.dependencies)
@@ -484,7 +476,6 @@ class TestPreparedWorkflow(unittest.TestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
-            config=self.config,
         )
 
         self.assertIn(target3, prepared_workflow.dependencies)
@@ -504,7 +495,6 @@ class TestPreparedWorkflow(unittest.TestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
-            config=self.config,
         )
 
         self.assertIn(target2, prepared_workflow.dependencies)
@@ -524,7 +514,6 @@ class TestPreparedWorkflow(unittest.TestCase):
                 targets=self.workflow.targets,
                 working_dir=self.workflow.working_dir,
                 supported_options=self.supported_options,
-                config=self.config,
             )
 
     @patch('gwf.core.os.path.exists', return_value=False)
@@ -541,7 +530,6 @@ class TestPreparedWorkflow(unittest.TestCase):
                 targets=self.workflow.targets,
                 working_dir=self.workflow.working_dir,
                 supported_options=self.supported_options,
-                config=self.config,
             )
 
     def test_endpoints_only_includes_target_with_no_dependents(self):
@@ -552,7 +540,6 @@ class TestPreparedWorkflow(unittest.TestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
-            config=self.config,
         )
         self.assertSetEqual(prepared_workflow.endpoints(), {target2, target3})
 
@@ -585,7 +572,6 @@ class TestShouldRun(unittest.TestCase):
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options={},
-            config={},
         )
 
     def test_target_should_run_if_one_of_its_dependencies_does_not_exist(self):
@@ -636,7 +622,6 @@ class TestShouldRun(unittest.TestCase):
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options={},
-            config={},
         )
 
         with self.assertLogs(level='DEBUG') as logs:
@@ -661,7 +646,6 @@ class TestShouldRun(unittest.TestCase):
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options={},
-            config={},
         )
 
         mock_file_cache = {
@@ -712,7 +696,6 @@ class TestShouldRun(unittest.TestCase):
                 targets=workflow.targets,
                 working_dir=workflow.working_dir,
                 supported_options={},
-                config={},
             )
 
 
@@ -726,7 +709,6 @@ class TestScheduling(unittest.TestCase):
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
-            config={},
         )
         backend = TestingBackend(working_dir=prepared_workflow.working_dir)
         with patch.object(backend, 'submitted', return_value=True):
@@ -742,7 +724,6 @@ class TestScheduling(unittest.TestCase):
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
-            config={},
         )
         backend = TestingBackend(working_dir=prepared_workflow.working_dir)
         with patch.object(backend, 'submitted', return_value=False):
@@ -760,7 +741,6 @@ class TestScheduling(unittest.TestCase):
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
-            config={},
         )
         backend = TestingBackend(working_dir=prepared_workflow.working_dir)
         with patch.object(backend, 'submitted', return_value=False):
@@ -780,7 +760,6 @@ class TestScheduling(unittest.TestCase):
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
-            config={},
         )
         backend = TestingBackend(working_dir=prepared_workflow.working_dir)
         with patch.object(backend, 'submitted', return_value=False):
@@ -804,7 +783,6 @@ class TestScheduling(unittest.TestCase):
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
-            config={},
         )
         backend = TestingBackend(working_dir=prepared_workflow.working_dir)
 
@@ -844,7 +822,6 @@ class TestScheduling(unittest.TestCase):
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
-            config={},
         )
         backend = TestingBackend(working_dir=prepared_workflow.working_dir)
         with patch.object(backend, 'submitted', side_effect=[False, True, False, False]):
@@ -874,7 +851,6 @@ class TestScheduling(unittest.TestCase):
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
-            config={},
         )
         backend = TestingBackend(working_dir = prepared_workflow.working_dir)
 
@@ -911,7 +887,6 @@ class TestScheduling(unittest.TestCase):
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
-            config={},
         )
         backend = TestingBackend(working_dir=prepared_workflow.working_dir)
 

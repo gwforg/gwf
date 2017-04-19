@@ -19,7 +19,6 @@ class SlurmTestCase(GWFTestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
-            config={},
         )
 
         self.mock_get_live_job_states = self.create_patch(
@@ -102,7 +101,6 @@ class TestSlurmBackendSubmit(SlurmTestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend,
-            config={},
         )
 
         backend.submit(target3, prepared_workflow.dependencies[target3])
@@ -121,7 +119,6 @@ class TestSlurmBackendSubmit(SlurmTestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
-            config={},
         )
 
         backend = SlurmBackend(working_dir=prepared_workflow.working_dir)
@@ -188,7 +185,6 @@ class TestSlurmBackendCancel(SlurmTestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
-            config={},
         )
 
         backend = SlurmBackend(working_dir=prepared_workflow.working_dir)
@@ -208,7 +204,6 @@ class TestSlurmBackendCancel(SlurmTestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
-            config={},
         )
 
         backend = SlurmBackend(prepared_workflow.working_dir)
@@ -262,7 +257,6 @@ class TestSlurmBackendLogs(SlurmTestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
-            config={},
         )
         backend = SlurmBackend(working_dir=prepared_workflow.working_dir)
         with self.assertRaises(NoLogFoundError):
@@ -281,7 +275,6 @@ class TestSlurmBackendLogs(SlurmTestCase):
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
-            config={},
         )
         backend = SlurmBackend(working_dir=prepared_workflow.working_dir)
 
