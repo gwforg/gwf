@@ -540,14 +540,16 @@ class Graph(object):
 
         return False
 
+    def dfs(self, target):
+        """Return a depth-first search path starting at `target`."""
+        return dfs(target, self.dependencies)
+
     def endpoints(self):
         """Return a set of all targets that are not depended on by other targets."""
         return set(self.targets.values()) - set(self.dependents.keys())
 
     def __repr__(self):
-        return '{}(working_dir={!r}, targets={!r})'.format(
-            self.__class__.__name__, self.working_dir, self.targets
-        )
+        return '{}(working_dir={!r})'.format(self.__class__.__name__, self.working_dir)
 
 
 def schedule(graph, backend, target):
@@ -562,7 +564,7 @@ def schedule(graph, backend, target):
         return []
 
     scheduled = []
-    for dependency in dfs(target, graph.dependencies):
+    for dependency in graph.dfs(target):
         if dependency.name != target.name:
             logger.info(
                 'Scheduling dependency %s of %s.',
