@@ -176,7 +176,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
             name='TestTarget',
             inputs=[],
             outputs=[],
-            workflow=self.workflow,
+            working_dir=self.workflow.working_dir,
             options={
                 'cores': 16,
                 'memory': '16g',

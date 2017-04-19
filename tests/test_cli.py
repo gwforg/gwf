@@ -77,15 +77,6 @@ class TestApp(GWFTestCase):
         self.app.parser.print_help = Mock()
         self.app.parser.print_usage = Mock()
 
-    def test_run_makes_gwf_directory_if_it_does_not_exist(self):
-        self.app.run(['-f', '/some/dir/workflow.py', '-b', 'testing'])
-        self.mock_ensure_dir.assert_called_once_with('/some/dir/.gwf')
-
-    def test_run_raises_exception_if_workflow_dir_could_not_be_created_and_it_does_not_exist_already(self):
-        self.mock_ensure_dir.side_effect = IOError(Mock(errno=-1))
-        with self.assertRaisesRegex(GWFError, 'Could not create directory.*'):
-            self.app.run(['-f', '/some/dir/workflow.py', '-b', 'testing'])
-
     def test_run_with_no_subcommand_prints_help(self):
         self.app.run(['-f', '/some/dir/workflow.py', '-b', 'backend1'])
         self.app.parser.print_help.assert_called_once_with()
