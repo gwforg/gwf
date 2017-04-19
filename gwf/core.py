@@ -85,7 +85,7 @@ class Target(object):
     inputs = normalized_paths_property('inputs')
     outputs = normalized_paths_property('outputs')
 
-    def __init__(self, name, inputs, outputs, options, workflow, namespace=None, spec=''):
+    def __init__(self, name, inputs, outputs, options, working_dir, namespace=None, spec=''):
         self.name = name
         if not is_valid_name(self.name):
             raise InvalidNameError(
@@ -93,7 +93,7 @@ class Target(object):
             )
 
         self.options = options
-        self.workflow = workflow
+        self.working_dir = working_dir
 
         if not _is_valid_list(inputs):
             raise InvalidTypeError(
@@ -110,13 +110,7 @@ class Target(object):
     def qualname(self, namespace):
         if namespace is not None:
             return '{}.{}'.format(namespace, self.name)
-        if self.workflow.name is not None:
-            return '{}.{}'.format(self.workflow.name, self.name)
         return self.name
-
-    @property
-    def working_dir(self):
-        return self.workflow.working_dir
 
     @property
     def is_source(self):
@@ -202,7 +196,6 @@ class Workflow(object):
         qualname = target.qualname(namespace)
         if qualname in self.targets:
             raise TargetExistsError(target)
-
         self.targets[qualname] = target
 
     def target(self, name, inputs, outputs, **options):
@@ -229,7 +222,8 @@ class Workflow(object):
         Any further keyword arguments are passed to the backend.
         """
         new_target = Target(
-            name, inputs, outputs, options, workflow=self
+            name, inputs, outputs, options,
+            working_dir=self.working_dir, namespace=self.name
         )
 
         self._add_target(new_target)
@@ -262,7 +256,7 @@ class Workflow(object):
             )
 
         for target in other_workflow.targets.values():
-            self._add_target(target, namespace)
+            self._add_target(target, namespace_prefix)
 
     def include(self, other_workflow, namespace=None):
         """Include targets from another :class:`gwf.Workflow` into this workflow.

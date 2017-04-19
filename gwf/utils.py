@@ -139,3 +139,8 @@ def safe_mkdir(path):
         os.makedirs(path)
     except OSError:
         pass
+
+
+def ensure_dir(path):
+    """Create directory unless it already exists."""
+    os.makedirs(path, exist_ok=True)
