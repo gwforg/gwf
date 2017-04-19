@@ -88,9 +88,7 @@ class Target(object):
     def __init__(self, name, inputs, outputs, options, working_dir, spec=''):
         self.name = name
         if not is_valid_name(self.name):
-            raise InvalidNameError(
-                'Target defined with invalid name: "{}".'.format(self.name)
-            )
+            raise InvalidNameError('Target defined with invalid name: "{}".'.format(self.name))
 
         self.options = options
         self.working_dir = working_dir
