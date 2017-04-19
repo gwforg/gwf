@@ -51,7 +51,7 @@ class TestApp(GWFTestCase):
             'plugin1': self.testing_plugin1,
         }
 
-        self.testing_backend1 = TestingBackend()
+        self.testing_backend1 = TestingBackend(working_dir='/some/dir')
         self.testing_backend1.close = Mock()
 
         self.mock_backends_manager = ExtensionManager('gwf.backends')
@@ -76,24 +76,6 @@ class TestApp(GWFTestCase):
 
         self.app.parser.print_help = Mock()
         self.app.parser.print_usage = Mock()
-
-    def test_run_with_no_subcommand_prints_help(self):
-        self.app.run(['-f', '/some/dir/workflow.py', '-b', 'backend1'])
-        self.app.parser.print_help.assert_called_once_with()
-
-    def test_run_with_subcommand_calls_subcommand_handler(self):
-        self.app.run(['-b', 'backend1', 'foo'])
-        self.testing_plugin1.handle_subcommand1.assert_called_once_with()
-
-        self.app.run(['-b', 'backend1', 'boo'])
-        self.testing_plugin1.handle_subcommand2.assert_called_once_with()
-
-    def test_exit_closes_plugins_and_active_backend(self):
-        self.app.run(['-b', 'backend1', 'foo'])
-        self.app.exit()
-
-        self.app.plugins_manager.close_extensions.assert_called_once_with()
-        self.app.active_backend.close.assert_called_once_with()
 
 
 class TestMain(GWFTestCase):
