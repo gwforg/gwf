@@ -174,6 +174,16 @@ class TestWorkflow(unittest.TestCase):
         target = workflow.target('TestTarget', inputs=[], outputs=[])
         self.assertEqual(target.working_dir, '/some/path')
 
+    def test_targets_inherit_workflow_defaults(self):
+        workflow = Workflow(defaults={'cores': 8, 'memory': '8g'})
+        target = workflow.target('TestTarget', inputs=[], outputs=[])
+        self.assertEqual(target.options, {'cores': 8, 'memory': '8g'})
+
+    def test_target_options_override_defaults(self):
+        workflow = Workflow(defaults={'cores': 8, 'memory': '8g'})
+        target = workflow.target('TestTarget', inputs=[], outputs=[], cores=16)
+        self.assertEqual(target.options, {'cores': 16, 'memory': '8g'})
+
     @patch('gwf.core.sys._getframe')
     @patch('gwf.core.inspect.getfile', return_value='/some/path/file.py')
     def test_workflow_computes_working_dir_when_not_initialized_with_working_dir(

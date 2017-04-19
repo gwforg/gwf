@@ -85,7 +85,7 @@ class Target(object):
     inputs = normalized_paths_property('inputs')
     outputs = normalized_paths_property('outputs')
 
-    def __init__(self, name, inputs, outputs, options, working_dir, namespace=None, spec=''):
+    def __init__(self, name, inputs, outputs, options, working_dir, spec=''):
         self.name = name
         if not is_valid_name(self.name):
             raise InvalidNameError(
@@ -221,9 +221,12 @@ class Workflow(object):
 
         Any further keyword arguments are passed to the backend.
         """
+        merged_options = self.defaults.copy()
+        merged_options.update(options)
+
         new_target = Target(
-            name, inputs, outputs, options,
-            working_dir=self.working_dir, namespace=self.name
+            name, inputs, outputs, merged_options,
+            working_dir=self.working_dir,
         )
 
         self._add_target(new_target)
