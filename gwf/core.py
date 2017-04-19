@@ -468,10 +468,20 @@ class Graph(object):
 
     @timer('Checked for circular dependencies in %.3fms.', logger=logger)
     def _check_for_circular_dependencies(self):
-        for target in self.targets.values():
-            for dep in self.dependencies[target]:
-                if target in dfs(dep, self.dependencies):
-                    raise CircularDependencyError(target)
+        fresh,started,done = 0,1,2
+        nodes = self.targets.values()
+        state = dict((n,fresh) for n in nodes)
+        def visitor(t):
+            state[t] = started
+            for dep in self.dependencies[t]:
+                if state[dep] == started:
+                    raise CircularDependencyError(t)
+                elif state[dep] == fresh:
+                    visitor(dep)
+            state[t] = done
+        for t in nodes:
+            if state[t] == fresh:
+                visitor(t)
 
     @cache
     def should_run(self, target):
