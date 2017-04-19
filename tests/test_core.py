@@ -368,35 +368,35 @@ class TestPreparedWorkflow(unittest.TestCase):
         self.config = {}
 
     def test_finds_no_providers_in_empty_workflow(self):
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
         )
-        self.assertDictEqual(prepared_workflow.provides, {})
+        self.assertDictEqual(graph.provides, {})
 
     def test_finds_no_providers_in_workflow_with_no_producers(self):
         self.workflow.target('TestTarget', inputs=[], outputs=[])
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
         )
-        self.assertDictEqual(prepared_workflow.provides, {})
+        self.assertDictEqual(graph.provides, {})
 
     def test_finds_provider_in_workflow_with_one_producer(self):
         self.workflow.target(
             'TestTarget', inputs=[], outputs=['/test_output.txt'], working_dir='')
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
         )
-        self.assertIn('/test_output.txt', prepared_workflow.provides)
+        self.assertIn('/test_output.txt', graph.provides)
         self.assertEqual(
-            prepared_workflow.provides['/test_output.txt'].name, 'TestTarget')
+            graph.provides['/test_output.txt'].name, 'TestTarget')
 
     def test_raises_exceptions_if_two_targets_produce_the_same_file(self):
         self.workflow.target(
@@ -413,13 +413,13 @@ class TestPreparedWorkflow(unittest.TestCase):
 
     def test_finds_no_dependencies_for_target_with_no_inputs(self):
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
         )
 
-        self.assertEqual(prepared_workflow.dependencies[target], [])
+        self.assertEqual(graph.dependencies[target], [])
 
     @patch('gwf.core.os.path.exists', return_value=False)
     def test_non_existing_files_not_provided_by_other_target_raises_exception(self, mock_os_path_exists):
@@ -440,12 +440,12 @@ class TestPreparedWorkflow(unittest.TestCase):
             outputs=[],
         )
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
         )
-        self.assertListEqual(prepared_workflow.dependencies[target], [])
+        self.assertListEqual(graph.dependencies[target], [])
 
     @patch('gwf.core.os.path.exists', return_value=False)
     def test_finds_non_existing_file_provided_by_other_target(self, mock_os_path_exists):
@@ -454,14 +454,14 @@ class TestPreparedWorkflow(unittest.TestCase):
         target2 = self.workflow.target(
             'TestTarget2', inputs=['test_file.txt'], outputs=[])
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
         )
 
-        self.assertIn(target2, prepared_workflow.dependencies)
-        self.assertIn(target1, prepared_workflow.dependencies[target2])
+        self.assertIn(target2, graph.dependencies)
+        self.assertIn(target1, graph.dependencies[target2])
 
     @patch('gwf.core.os.path.exists', return_value=False)
     def test_finds_non_existing_files_provided_by_two_other_targets(self, mock_os_path_exists):
@@ -472,15 +472,15 @@ class TestPreparedWorkflow(unittest.TestCase):
         target3 = self.workflow.target(
             'TestTarget3', inputs=['test_file1.txt', 'test_file2.txt'], outputs=[])
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
         )
 
-        self.assertIn(target3, prepared_workflow.dependencies)
-        self.assertIn(target1, prepared_workflow.dependencies[target3])
-        self.assertIn(target2, prepared_workflow.dependencies[target3])
+        self.assertIn(target3, graph.dependencies)
+        self.assertIn(target1, graph.dependencies[target3])
+        self.assertIn(target2, graph.dependencies[target3])
 
     @patch('gwf.core.os.path.exists', return_value=False)
     def test_finds_non_existing_files_provided_by_other_targets_in_chain(self, mock_os_path_exists):
@@ -491,16 +491,16 @@ class TestPreparedWorkflow(unittest.TestCase):
         target3 = self.workflow.target(
             'TestTarget3', inputs=['test_file2.txt'], outputs=[])
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
         )
 
-        self.assertIn(target2, prepared_workflow.dependencies)
-        self.assertIn(target3, prepared_workflow.dependencies)
-        self.assertIn(target1, prepared_workflow.dependencies[target2])
-        self.assertIn(target2, prepared_workflow.dependencies[target3])
+        self.assertIn(target2, graph.dependencies)
+        self.assertIn(target3, graph.dependencies)
+        self.assertIn(target1, graph.dependencies[target2])
+        self.assertIn(target2, graph.dependencies[target3])
 
     @patch('gwf.core.os.path.exists', return_value=False)
     def test_immediate_circular_dependencies_in_workflow_raises_exception(self, mock_os_path_exists):
@@ -536,12 +536,12 @@ class TestPreparedWorkflow(unittest.TestCase):
         self.workflow.target('TestTarget1', inputs=[], outputs=['test.txt'])
         target2 = self.workflow.target('TestTarget2', inputs=['test.txt'], outputs=[])
         target3 = self.workflow.target('TestTarget3', inputs=['test.txt'], outputs=[])
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=self.supported_options,
         )
-        self.assertSetEqual(prepared_workflow.endpoints(), {target2, target3})
+        self.assertSetEqual(graph.endpoints(), {target2, target3})
 
 
 class TestShouldRun(unittest.TestCase):
@@ -568,7 +568,7 @@ class TestShouldRun(unittest.TestCase):
             outputs=['final_output.txt']
         )
 
-        self.prepared_workflow = Graph(
+        self.graph = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options={},
@@ -576,7 +576,7 @@ class TestShouldRun(unittest.TestCase):
 
     def test_target_should_run_if_one_of_its_dependencies_does_not_exist(self):
         with self.assertLogs(level='DEBUG') as logs:
-            self.assertTrue(self.prepared_workflow.should_run(self.target1))
+            self.assertTrue(self.graph.should_run(self.target1))
 
         self.assertEqual(
             logs.output,
@@ -587,7 +587,7 @@ class TestShouldRun(unittest.TestCase):
 
     def test_target_should_run_if_one_of_its_dependencies_should_run(self):
         with self.assertLogs(level='DEBUG') as logs:
-            self.assertTrue(self.prepared_workflow.should_run(self.target2))
+            self.assertTrue(self.graph.should_run(self.target2))
 
         self.assertEqual(
             logs.output,
@@ -599,7 +599,7 @@ class TestShouldRun(unittest.TestCase):
 
     def test_target_should_run_if_any_of_its_deep_dependencies_should_run(self):
         with self.assertLogs(level='DEBUG') as logs:
-            self.assertTrue(self.prepared_workflow.should_run(self.target4))
+            self.assertTrue(self.graph.should_run(self.target4))
 
         self.assertEqual(
             logs.output,
@@ -618,14 +618,14 @@ class TestShouldRun(unittest.TestCase):
             outputs=[],
         )
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options={},
         )
 
         with self.assertLogs(level='DEBUG') as logs:
-            self.assertTrue(prepared_workflow.should_run(target))
+            self.assertTrue(graph.should_run(target))
 
             self.assertEqual(
                 logs.output,
@@ -642,7 +642,7 @@ class TestShouldRun(unittest.TestCase):
             outputs=['test_output1.txt', 'test_output2.txt']
         )
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options={},
@@ -652,9 +652,9 @@ class TestShouldRun(unittest.TestCase):
             '/some/dir/test_output1.txt': 1,
             '/some/dir/test_output2.txt': 2
         }
-        with patch.dict(prepared_workflow.file_cache, mock_file_cache):
+        with patch.dict(graph.file_cache, mock_file_cache):
             self.assertFalse(
-                prepared_workflow.should_run(target)
+                graph.should_run(target)
             )
 
     def test_should_run_if_any_input_file_is_newer_than_any_output_file(self):
@@ -665,11 +665,11 @@ class TestShouldRun(unittest.TestCase):
             '/some/dir/final_output.txt': 2,
         }
 
-        with patch.dict(self.prepared_workflow.file_cache, mock_file_cache):
-            self.assertFalse(self.prepared_workflow.should_run(self.target1))
-            self.assertFalse(self.prepared_workflow.should_run(self.target2))
-            self.assertFalse(self.prepared_workflow.should_run(self.target3))
-            self.assertTrue(self.prepared_workflow.should_run(self.target4))
+        with patch.dict(self.graph.file_cache, mock_file_cache):
+            self.assertFalse(self.graph.should_run(self.target1))
+            self.assertFalse(self.graph.should_run(self.target2))
+            self.assertFalse(self.graph.should_run(self.target3))
+            self.assertTrue(self.graph.should_run(self.target4))
 
     def test_should_run_not_run_if_all_outputs_are_newer_then_the_inputs(self):
         mock_file_cache = {
@@ -679,11 +679,11 @@ class TestShouldRun(unittest.TestCase):
             '/some/dir/final_output.txt': 4,
         }
 
-        with patch.dict(self.prepared_workflow.file_cache, mock_file_cache):
-            self.assertFalse(self.prepared_workflow.should_run(self.target1))
-            self.assertFalse(self.prepared_workflow.should_run(self.target2))
-            self.assertFalse(self.prepared_workflow.should_run(self.target3))
-            self.assertFalse(self.prepared_workflow.should_run(self.target4))
+        with patch.dict(self.graph.file_cache, mock_file_cache):
+            self.assertFalse(self.graph.should_run(self.target1))
+            self.assertFalse(self.graph.should_run(self.target2))
+            self.assertFalse(self.graph.should_run(self.target3))
+            self.assertFalse(self.graph.should_run(self.target4))
 
     @patch('gwf.core.os.path.exists', return_value=True)
     def test_two_targets_producing_the_same_file_but_declared_with_rel_and_abs_path(self, mock_os_path_exists):
@@ -705,14 +705,14 @@ class TestScheduling(unittest.TestCase):
         target = workflow.target('TestTarget', inputs=[], outputs=[])
 
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
         )
-        backend = TestingBackend(working_dir=prepared_workflow.working_dir)
+        backend = TestingBackend(working_dir=graph.working_dir)
         with patch.object(backend, 'submitted', return_value=True):
-            sched = schedule(prepared_workflow, backend, target)
+            sched = schedule(graph, backend, target)
             self.assertListEqual(sched, [])
 
     def test_scheduling_workflow_with_one_target_that_is_not_submitted_returns_schedule_with_target(self):
@@ -720,15 +720,15 @@ class TestScheduling(unittest.TestCase):
         target = workflow.target('TestTarget', inputs=[], outputs=[])
 
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
         )
-        backend = TestingBackend(working_dir=prepared_workflow.working_dir)
+        backend = TestingBackend(working_dir=graph.working_dir)
         with patch.object(backend, 'submitted', return_value=False):
-            with patch.object(prepared_workflow, 'should_run', return_value=True):
-                sched = schedule(prepared_workflow, backend, target)
+            with patch.object(graph, 'should_run', return_value=True):
+                sched = schedule(graph, backend, target)
                 self.assertListEqual(sched, [target])
 
     def test_scheduling_workflow_with_target_with_deps_that_are_not_submitted(self):
@@ -737,15 +737,15 @@ class TestScheduling(unittest.TestCase):
         target2 = workflow.target('TestTarget2', inputs=['test_output.txt'], outputs=[])
 
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
         )
-        backend = TestingBackend(working_dir=prepared_workflow.working_dir)
+        backend = TestingBackend(working_dir=graph.working_dir)
         with patch.object(backend, 'submitted', return_value=False):
-            with patch.object(prepared_workflow, 'should_run', return_value=True):
-                sched = schedule(prepared_workflow, backend, target2)
+            with patch.object(graph, 'should_run', return_value=True):
+                sched = schedule(graph, backend, target2)
                 self.assertListEqual(sched, [target1, target2])
 
     def test_scheduling_workflow_with_deep_deps_that_are_not_submitted(self):
@@ -756,15 +756,15 @@ class TestScheduling(unittest.TestCase):
         target4 = workflow.target('TestTarget4', inputs=['test_output3.txt'], outputs=['final_output.txt'])
 
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
         )
-        backend = TestingBackend(working_dir=prepared_workflow.working_dir)
+        backend = TestingBackend(working_dir=graph.working_dir)
         with patch.object(backend, 'submitted', return_value=False):
-            with patch.object(prepared_workflow, 'should_run', return_value=True):
-                sched = schedule(prepared_workflow, backend, target4)
+            with patch.object(graph, 'should_run', return_value=True):
+                sched = schedule(graph, backend, target4)
                 self.assertListEqual(
                     sched, [target1, target2, target3, target4])
 
@@ -779,16 +779,16 @@ class TestScheduling(unittest.TestCase):
             outputs=['final_output.txt']
         )
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
         )
-        backend = TestingBackend(working_dir=prepared_workflow.working_dir)
+        backend = TestingBackend(working_dir=graph.working_dir)
 
         with patch.object(backend, 'submitted', return_value=False):
-            with patch.object(prepared_workflow, 'should_run', return_value=True):
-                sched = schedule(prepared_workflow, backend, target4)
+            with patch.object(graph, 'should_run', return_value=True):
+                sched = schedule(graph, backend, target4)
                 self.assertListEqual(
                     sched, [target1, target2, target3, target4])
 
@@ -818,14 +818,14 @@ class TestScheduling(unittest.TestCase):
             outputs=['test_output3.txt']
         )
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
         )
-        backend = TestingBackend(working_dir=prepared_workflow.working_dir)
+        backend = TestingBackend(working_dir=graph.working_dir)
         with patch.object(backend, 'submitted', side_effect=[False, True, False, False]):
-            sched = schedule(prepared_workflow, backend, target3)
+            sched = schedule(graph, backend, target3)
             self.assertEqual(sched, [target2, target3])
 
     def test_scheduling_non_submitted_targets_that_should_not_run_does_not_submit_any_targets(self):
@@ -847,16 +847,16 @@ class TestScheduling(unittest.TestCase):
             outputs=['test_output3.txt']
         )
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
         )
-        backend = TestingBackend(working_dir = prepared_workflow.working_dir)
+        backend = TestingBackend(working_dir = graph.working_dir)
 
         with patch.object(backend, 'submitted', return_value=False):
-            with patch.object(prepared_workflow, 'should_run', side_effect=[False, False, False, False]):
-                sched = schedule(prepared_workflow, backend, target3)
+            with patch.object(graph, 'should_run', side_effect=[False, False, False, False]):
+                sched = schedule(graph, backend, target3)
                 self.assertEqual(sched, [])
 
     def test_scheduling_many_targets_calls_schedule_for_each_target(self):
@@ -883,16 +883,16 @@ class TestScheduling(unittest.TestCase):
             outputs=['test_output4.txt']
         )
 
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=workflow.targets,
             working_dir=workflow.working_dir,
             supported_options=TestingBackend.supported_options,
         )
-        backend = TestingBackend(working_dir=prepared_workflow.working_dir)
+        backend = TestingBackend(working_dir=graph.working_dir)
 
         with patch.object(backend, 'submitted', return_value=False):
-            with patch.object(prepared_workflow, 'should_run', return_value=True):
+            with patch.object(graph, 'should_run', return_value=True):
                 sched = schedule_many(
-                    prepared_workflow, backend, [target3, target4])
+                    graph, backend, [target3, target4])
                 self.assertEqual(
                     sched, [[target1, target3], [target2, target4]])

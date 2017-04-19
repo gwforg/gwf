@@ -23,7 +23,7 @@ class CleanCommandTest(GWFTestCase):
             name='workflow',
             spec_set=['targets', 'endpoints', 'working_dir']
         )
-        self.mock_get_prepared_workflow = Mock(return_value=self.mock_workflow)
+        self.mock_get_graph = Mock(return_value=self.mock_workflow)
 
         self.mock_target1 = Mock(spec_set=['name', 'outputs'])
         self.mock_target1.name = 'target1'
@@ -63,7 +63,7 @@ class CleanCommandTest(GWFTestCase):
         mock_config = {'targets': [], 'only_failed': False, 'not_endpoints': False}
 
         self.clean_command.configure(
-            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_graph=self.mock_get_graph,
             get_active_backend=self.mock_get_active_backend,
             config=mock_config
         )
@@ -79,7 +79,7 @@ class CleanCommandTest(GWFTestCase):
         mock_config = {'targets': ['target1'], 'only_failed': False, 'not_endpoints': False}
 
         self.clean_command.configure(
-            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_graph=self.mock_get_graph,
             get_active_backend=self.mock_get_active_backend,
             config=mock_config
         )
@@ -94,7 +94,7 @@ class CleanCommandTest(GWFTestCase):
         mock_config = {'targets': ['target1', 'target3'], 'only_failed': False}
 
         self.clean_command.configure(
-            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_graph=self.mock_get_graph,
             get_active_backend=self.mock_get_active_backend,
             config=mock_config
         )
@@ -108,7 +108,7 @@ class CleanCommandTest(GWFTestCase):
         self.mock_backend.failed.side_effect = [False, True]
 
         self.clean_command.configure(
-            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_graph=self.mock_get_graph,
             get_active_backend=self.mock_get_active_backend,
             config=mock_config
         )
@@ -134,7 +134,7 @@ class CleanCommandTest(GWFTestCase):
     def test_on_clean_with_not_endpoints_flag_doest_not_clean_up_endpoint_files(self):
         mock_config = {'targets': ['target1', 'target2'], 'not_endpoints': True, 'only_failed': False}
         self.clean_command.configure(
-            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_graph=self.mock_get_graph,
             get_active_backend=self.mock_get_active_backend,
             config=mock_config,
         )

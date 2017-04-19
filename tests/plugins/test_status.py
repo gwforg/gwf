@@ -25,7 +25,7 @@ class StatusCommandTest(GWFTestCase):
             spec_set=['targets', 'endpoints', 'dependencies'],
             dependencies=[]
         )
-        self.mock_get_prepared_workflow = Mock(return_value=self.mock_workflow)
+        self.mock_get_graph = Mock(return_value=self.mock_workflow)
 
         self.mock_get_terminal_size = self.create_patch('gwf.plugins.status.os.get_terminal_size')
         self.mock_get_terminal_size.return_value = 80
@@ -53,7 +53,7 @@ class StatusCommandTest(GWFTestCase):
 
         self.status_command.configure(
             get_active_backend=self.mock_get_active_backend,
-            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_graph=self.mock_get_graph,
             config=mock_config,
         )
 
@@ -73,7 +73,7 @@ class StatusCommandTest(GWFTestCase):
 
         self.status_command.configure(
             get_active_backend=self.mock_get_active_backend,
-            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_graph=self.mock_get_graph,
             config=mock_config,
         )
 
@@ -92,7 +92,7 @@ class StatusCommandTest(GWFTestCase):
 
         self.status_command.configure(
             get_active_backend=self.mock_get_active_backend,
-            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_graph=self.mock_get_graph,
             config=mock_config,
         )
 

@@ -27,7 +27,7 @@ class RunCommandTest(GWFTestCase):
             name='workflow',
             spec_set=['targets', 'endpoints']
         )
-        self.mock_get_prepared_workflow = Mock(return_value=self.mock_workflow)
+        self.mock_get_graph = Mock(return_value=self.mock_workflow)
 
     def test_sets_up_run_subcommand(self):
         self.run_command.setup_argument_parser(
@@ -51,7 +51,7 @@ class RunCommandTest(GWFTestCase):
         mock_config = {'targets': []}
 
         self.run_command.configure(
-            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_graph=self.mock_get_graph,
             get_active_backend=self.mock_get_active_backend,
             config=mock_config
         )
@@ -74,7 +74,7 @@ class RunCommandTest(GWFTestCase):
         mock_config = {'targets': ['target1', 'target2']}
 
         self.run_command.configure(
-            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_graph=self.mock_get_graph,
             get_active_backend=self.mock_get_active_backend,
             config=mock_config
         )
@@ -95,7 +95,7 @@ class RunCommandTest(GWFTestCase):
         mock_config = {'targets': ['target1', 'target2']}
 
         self.run_command.configure(
-            get_prepared_workflow=self.mock_get_prepared_workflow,
+            get_graph=self.mock_get_graph,
             get_active_backend=self.mock_get_active_backend,
             config=mock_config
         )

@@ -154,24 +154,23 @@ class App:
         logger.debug('Merged configuration: %r.', self.config)
 
         @cache
-        def get_prepared_workflow():
+        def get_graph():
             return Graph(
                 targets=workflow.targets,
-                working_dir=workflow_dir,
+                working_dir=workflow.working_dir,
                 supported_options=self.active_backend.supported_options,
-                config=self.config,
             )
 
         @cache
         def get_active_backend():
             self.active_backend.configure(
-                working_dir=workflow_dir,
+                working_dir=workflow.working_dir,
                 config=self.config,
             )
             return self.active_backend
 
         self.plugins_manager.configure_extensions(
-            get_prepared_workflow=get_prepared_workflow,
+            get_graph=get_graph,
             get_active_backend=get_active_backend,
             config=self.config,
         )

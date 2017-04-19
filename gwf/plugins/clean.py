@@ -46,7 +46,7 @@ class CleanCommand(Plugin):
         )
 
     def on_clean(self):
-        workflow = self.get_prepared_workflow()
+        workflow = self.get_graph()
         backend = self.get_active_backend()
 
         targets = []

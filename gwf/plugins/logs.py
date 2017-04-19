@@ -35,7 +35,7 @@ class LogsCommand(Plugin):
         )
 
     def on_run(self):
-        workflow = self.get_prepared_workflow()
+        workflow = self.get_graph()
         backend = self.get_active_backend()
 
         target_name = self.config['target']

@@ -547,7 +547,7 @@ class Graph(object):
         )
 
 
-def schedule(prepared_workflow, backend, target):
+def schedule(graph, backend, target):
     """Schedule and submit a :class:`gwf.Target` and its dependencies.
 
     This method is provided by :class:`Backend` and should not be overriden.
@@ -559,7 +559,7 @@ def schedule(prepared_workflow, backend, target):
         return []
 
     scheduled = []
-    for dependency in dfs(target, prepared_workflow.dependencies):
+    for dependency in dfs(target, graph.dependencies):
         if dependency.name != target.name:
             logger.info(
                 'Scheduling dependency %s of %s.',
@@ -574,7 +574,7 @@ def schedule(prepared_workflow, backend, target):
             )
             continue
 
-        if not prepared_workflow.should_run(dependency):
+        if not graph.should_run(dependency):
             logger.debug(
                 'Target %s should not run.',
                 dependency.name
@@ -583,13 +583,13 @@ def schedule(prepared_workflow, backend, target):
 
         logger.info('Submitting target %s.', dependency.name)
 
-        backend.submit(dependency, prepared_workflow.dependencies[dependency])
+        backend.submit(dependency, graph.dependencies[dependency])
         scheduled.append(dependency)
 
     return scheduled
 
 
-def schedule_many(prepared_workflow, backend, targets):
+def schedule_many(graph, backend, targets):
     """Schedule a list of :class:`gwf.Target` and their dependencies.
 
     Will schedule the targets in `targets` with :func:`schedule`
@@ -604,7 +604,7 @@ def schedule_many(prepared_workflow, backend, targets):
 
     schedules = []
     for target in targets:
-        schedules.append(schedule(prepared_workflow, backend, target))
+        schedules.append(schedule(graph, backend, target))
 
     post_schedule.trigger(targets=targets, schedules=schedules)
     return schedules

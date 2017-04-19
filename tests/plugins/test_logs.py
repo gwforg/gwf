@@ -33,11 +33,11 @@ class LogsCommandTest(GWFTestCase):
             'TestTarget': sentinel.TestTarget,
         }
 
-        self.mock_get_prepared_workflow = Mock(return_value=self.mock_workflow)
+        self.mock_get_graph = Mock(return_value=self.mock_workflow)
 
         self.logs_command = LogsCommand()
         self.logs_command.get_active_backend = self.mock_get_active_backend
-        self.logs_command.get_prepared_workflow = self.mock_get_prepared_workflow
+        self.logs_command.get_graph = self.mock_get_graph
 
     def test_sets_up_logs_subcommand(self):
         self.logs_command.setup_argument_parser(

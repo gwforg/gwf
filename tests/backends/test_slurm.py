@@ -15,7 +15,7 @@ class SlurmTestCase(GWFTestCase):
 
     def setUp(self):
         self.workflow = Workflow(working_dir='/some/dir')
-        self.prepared_workflow = Graph(
+        self.graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
@@ -97,13 +97,13 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         )
 
         backend = SlurmBackend(working_dir='/some/dir')
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend,
         )
 
-        backend.submit(target3, prepared_workflow.dependencies[target3])
+        backend.submit(target3, graph.dependencies[target3])
 
         self.mock_call_sbatch.assert_any_call(ANY, ['1000', '2000'])
         self.assertEqual(backend._job_db['TestTarget3'], '3000')
@@ -115,14 +115,14 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.mock_call_sbatch.return_value = ('1000', '')
 
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
         )
 
-        backend = SlurmBackend(working_dir=prepared_workflow.working_dir)
-        backend.submit(target, prepared_workflow.dependencies[target])
+        backend = SlurmBackend(working_dir=graph.working_dir)
+        backend.submit(target, graph.dependencies[target])
 
         self.mock_call_sbatch.assert_any_call(ANY, [])
         self.assertEqual(backend._job_db['TestTarget'], '1000')
@@ -181,13 +181,13 @@ class TestSlurmBackendCancel(SlurmTestCase):
         self.mock_get_live_job_states.return_value = {'1000': 'R'}
 
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
         )
 
-        backend = SlurmBackend(working_dir=prepared_workflow.working_dir)
+        backend = SlurmBackend(working_dir=graph.working_dir)
         backend.cancel(target)
 
         self.mock_call_scancel.assert_any_call('1000')
@@ -200,13 +200,13 @@ class TestSlurmBackendCancel(SlurmTestCase):
         self.mock_get_live_job_states.return_value = {}
 
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
         )
 
-        backend = SlurmBackend(prepared_workflow.working_dir)
+        backend = SlurmBackend(graph.working_dir)
         with self.assertRaises(BackendError):
             backend.cancel(target)
 
@@ -253,12 +253,12 @@ class TestSlurmBackendLogs(SlurmTestCase):
 
     def test_logs_raises_exception_target_has_no_log(self):
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
         )
-        backend = SlurmBackend(working_dir=prepared_workflow.working_dir)
+        backend = SlurmBackend(working_dir=graph.working_dir)
         with self.assertRaises(NoLogFoundError):
             backend.logs(target)
 
@@ -271,12 +271,12 @@ class TestSlurmBackendLogs(SlurmTestCase):
         }
 
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        prepared_workflow = Graph(
+        graph = Graph(
             targets=self.workflow.targets,
             working_dir=self.workflow.working_dir,
             supported_options=SlurmBackend.supported_options,
         )
-        backend = SlurmBackend(working_dir=prepared_workflow.working_dir)
+        backend = SlurmBackend(working_dir=graph.working_dir)
 
         m = mock_open(read_data='this is the log file')
         with patch('builtins.open', m):
