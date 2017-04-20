@@ -100,7 +100,6 @@ class TestMain(GWFTestCase):
         self.mock_app.assert_called_once_with(
             plugins_manager=sentinel.plugin_manager,
             backends_manager=sentinel.backend_manager,
-            config_files=ANY,
         )
 
         self.mock_app.return_value.run.assert_called_once_with(ANY)

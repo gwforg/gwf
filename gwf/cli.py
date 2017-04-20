@@ -3,10 +3,10 @@ import logging
 import platform
 import sys
 
-from configargparse import ArgParser
+from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 
-from . import LOCAL_CONFIG_FILE, USER_CONFIG_FILE, __version__
+from . import __version__
 from .core import Graph
 from .exceptions import GWFError
 from .ext import ExtensionManager
@@ -34,7 +34,7 @@ class App:
         'debug': ADVANCED_FORMAT
     }
 
-    def __init__(self, plugins_manager, backends_manager, config_files):
+    def __init__(self, plugins_manager, backends_manager):
         self.plugins_manager = plugins_manager
         self.backends_manager = backends_manager
 
@@ -42,14 +42,7 @@ class App:
         self.workflow = None
         self.config = {}
 
-        self.parser = ArgParser(
-            description=self.description,
-            add_config_file_help=False,
-            add_env_var_help=False,
-            auto_env_var_prefix='GWF_',
-            default_config_files=config_files,
-            formatter_class=RawDescriptionHelpFormatter,
-        )
+        self.parser = ArgumentParser(description=self.description, formatter_class=RawDescriptionHelpFormatter)
 
         # Set global options here. Options for sub-commands will be set by the
         # sub-commands we dispatch to.
@@ -189,15 +182,12 @@ class App:
 
 
 def main():
-    config_files = [USER_CONFIG_FILE, LOCAL_CONFIG_FILE]
-
     plugins_manager = ExtensionManager(group='gwf.plugins')
     backends_manager = ExtensionManager(group='gwf.backends')
 
     app = App(
         plugins_manager=plugins_manager,
         backends_manager=backends_manager,
-        config_files=config_files,
     )
 
     try:
