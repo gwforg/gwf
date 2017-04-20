@@ -15,7 +15,7 @@ from .exceptions import (CircularDependencyError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
                          InvalidNameError, TargetExistsError, InvalidTypeError)
 from .utils import (cache, dfs, get_file_timestamp, import_object,
-                    is_valid_name, iter_inputs, iter_outputs, merge, timer)
+                    is_valid_name, iter_inputs, iter_outputs, timer)
 
 logger = logging.getLogger(__name__)
 
