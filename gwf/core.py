@@ -10,7 +10,6 @@ from glob import iglob as _iglob
 
 import collections
 
-from .events import post_schedule, pre_schedule
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
@@ -603,11 +602,7 @@ def schedule_many(graph, backend, targets):
     :param list targets: A list of targets to be scheduled.
     :return: A list of schedules, one for each target in `targets`.
     """
-    pre_schedule.trigger(targets=targets)
-
     schedules = []
     for target in targets:
         schedules.append(schedule(graph, backend, target))
-
-    post_schedule.trigger(targets=targets, schedules=schedules)
     return schedules
