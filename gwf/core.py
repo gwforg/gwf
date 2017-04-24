@@ -128,9 +128,16 @@ class Target(object):
     def __lshift__(self, spec):
         if isinstance(spec, tuple):
             options, spec = spec
-            self.inputs = options.pop('inputs', list)
-            self.outputs = options.pop('outputs', list)
-            self.options = options
+            self.inputs = options.get('inputs', list)
+            self.outputs = options.get('outputs', list)
+
+            # Override template options with target options.
+            self.working_dir = options.get('working_dir', self.working_dir)
+
+            target_options = self.options.copy()
+            self.options = options.copy()
+            self.options.update(target_options)
+
             self.spec = spec
         else:
             self.spec = spec
