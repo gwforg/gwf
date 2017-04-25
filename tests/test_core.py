@@ -110,8 +110,8 @@ class TestWorkflow(unittest.TestCase):
         with self.assertRaises(IncludeWorkflowError):
             workflow.include(other_workflow)
 
-    @patch('gwf.core.import_object')
-    def test_including_workflow_path_import_object_and_include_workflow_into_current_workflow(self, mock_import_object):
+    @patch('gwf.core.load_workflow')
+    def test_including_workflow_path_import_object_and_include_workflow_into_current_workflow(self, mock_load_workflow):
         workflow = Workflow()
         workflow.target('TestTarget1', inputs=[], outputs=[])
 
@@ -119,18 +119,11 @@ class TestWorkflow(unittest.TestCase):
         other_workflow.target('TestTarget2', inputs=[], outputs=[])
         other_workflow.target('TestTarget3', inputs=[], outputs=[])
 
-        mock_import_object.return_value = other_workflow
-
+        mock_load_workflow.return_value = other_workflow
         with patch.object(workflow, 'include_workflow') as mock_include_workflow:
             workflow.include_path('/path/to/other_workflow.py')
-
-            mock_import_object.assert_called_once_with(
-                '/path/to/other_workflow.py'
-            )
-
-            mock_include_workflow.assert_called_once_with(
-                other_workflow, namespace=None
-            )
+            mock_load_workflow.assert_called_once_with('/path/to/other_workflow.py')
+            mock_include_workflow.assert_called_once_with(other_workflow, namespace=None)
 
     def test_including_workflow_instance_dispatches_to_include_workflow(self):
         workflow = Workflow()

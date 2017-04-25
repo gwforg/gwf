@@ -5,8 +5,7 @@ import click
 
 from gwf import Graph
 from . import __version__
-from .exceptions import GWFError
-from .utils import load_workflow, ensure_dir
+from .utils import WorkflowPath, load_workflow, ensure_dir
 
 logger = logging.getLogger(__name__)
 
@@ -27,29 +26,6 @@ LOGGING_FORMATS = {
 }
 
 
-class WorkflowPath:
-    def __init__(self, basedir, filename, obj='gwf'):
-        self.basedir = basedir
-        self.filename = filename
-        self.obj = obj
-
-    @classmethod
-    def from_path(cls, path):
-        comps = path.rsplit(':')
-        if len(comps) == 2:
-            path, obj = comps
-        elif len(comps) == 1:
-            path, obj = comps[0], None
-        else:
-            raise ValueError('Invalid path: "{}".'.format(path))
-
-        basedir, filename = os.path.split(path)
-        filename, _ = os.path.splitext(filename)
-        if obj is None:
-            return cls(basedir, filename)
-        return cls(basedir, filename, obj)
-
-
 class WorkflowPathParamType(click.ParamType):
     name = 'workflow'
 
@@ -63,7 +39,7 @@ workflow_path = WorkflowPathParamType()
 
 
 @click.group(context_settings={'obj': {}})
-@click.option('-f', '--file', type=workflow_path, default=WorkflowPath.from_path('workflow.py:gwf'), help='Workflow/obj to load')
+@click.option('-f', '--file', default=WorkflowPath.from_path('workflow.py:gwf'), type=workflow_path, help='Workflow/obj to load')
 @click.option('-b', '--backend', default='local', help='Backend used to run workflow')
 @click.option('-v', '--verbose', type=click.Choice(['debug', 'info', 'warning', 'error']), default='info')
 @click.version_option(version=__version__)
@@ -82,23 +58,26 @@ def main(ctx, backend, file, verbose):
 
 
 @main.command()
+@click.argument('targets', nargs=-1)
 @click.pass_context
-def run(ctx):
+def run(ctx, targets):
     """Run the specified workflow."""
     graph = Graph(targets=ctx.obj['workflow'].targets)
     print(graph)
 
 
 @main.command()
+@click.argument('targets', nargs=-1)
 @click.pass_context
-def status():
+def status(ctx, targets):
     """Show status of a workflow."""
     click.echo('Hi!')
 
 
 @main.command()
+@click.argument('targets', nargs=-1)
 @click.pass_context
-def clean():
+def clean(ctx, targets):
     """Clean output files of targets."""
     click.echo('Hello')
 

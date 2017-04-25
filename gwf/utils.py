@@ -103,3 +103,17 @@ def is_valid_name(candidate):
 def ensure_dir(path):
     """Create directory unless it already exists."""
     os.makedirs(path, exist_ok=True)
+
+
+def parse_path(path, default_obj='gwf'):
+    comps = path.rsplit(':')
+    if len(comps) == 2:
+        path, obj = comps
+    elif len(comps) == 1:
+        path, obj = comps[0], default_obj
+    else:
+        raise ValueError('Invalid path: "{}".'.format(path))
+
+    basedir, filename = os.path.split(path)
+    filename, _ = os.path.splitext(filename)
+    return basedir, filename, obj
