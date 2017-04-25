@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from gwf.exceptions import GWFError
 from gwf.utils import (_split_import_path, cache, get_file_timestamp,
-                       import_object)
+                       load_workflow)
 
 
 class TestCache(unittest.TestCase):
@@ -53,7 +53,7 @@ class TestImportObject(unittest.TestCase):
     def test_import_with_non_absolute_path_normalizes_path_and_loads_module(
             self, mock_split_import_path, mock_load_module, mock_find_module, mock_getcwd, mock_exists):
 
-        import_object('this/workflow.py')
+        load_workflow('this/workflow.py')
 
         mock_split_import_path.assert_called_once_with(
             '/some/dir/this/workflow.py', 'gwf'
@@ -63,7 +63,7 @@ class TestImportObject(unittest.TestCase):
 
     def test_trying_to_load_workflow_from_nonexisting_path_raises_exception(self):
         with self.assertRaisesRegex(GWFError, '.*this/workflow\.py.*'):
-            import_object('this/workflow.py')
+            load_workflow('this/workflow.py')
 
 
 class TestGetFileTimestamp(unittest.TestCase):

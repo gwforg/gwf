@@ -50,31 +50,11 @@ def iter_outputs(targets):
             yield target, path
 
 
-def _split_import_path(path, default_obj):
-    comps = path.rsplit(':')
-    if len(comps) == 2:
-        path, obj = comps
-    elif len(comps) == 1:
-        path, obj = comps[0], default_obj
-    else:
-        raise ValueError('Invalid path: "{}".'.format(path))
-
-    basedir, filename = os.path.split(path)
-    filename, _ = os.path.splitext(filename)
-    return filename, basedir, obj
-
-
-def import_object(path, default_obj='gwf'):
-    if not os.path.isabs(path):
-        path = os.path.abspath(os.path.join(os.getcwd(), path))
-
-    filename, basedir, objname = _split_import_path(path, default_obj)
+def load_workflow(basedir, filename, objname):
     fullpath = os.path.join(basedir, filename + '.py')
 
     if not os.path.exists(fullpath):
-        raise GWFError(
-            'The file "{}" does not exist.'.format(fullpath)
-        )
+        raise GWFError('The file "{}" does not exist.'.format(fullpath))
 
     mod_loc = imp.find_module(filename, [basedir])
     mod = imp.load_module(filename, *mod_loc)
@@ -82,13 +62,7 @@ def import_object(path, default_obj='gwf'):
     try:
         return getattr(mod, objname)
     except AttributeError as e:
-        logger.debug(e)
-        raise GWFError(
-            'Module "{}" does not declare the attribute "{}".'.format(
-                filename,
-                objname
-            )
-        )
+        raise GWFError('Module "{}" does not declare attribute "{}".'.format(filename, objname))
 
 
 def get_file_timestamp(filename):
@@ -124,21 +98,6 @@ def dfs(root, dependencies):
 
 def is_valid_name(candidate):
     return re.match(r'^[a-zA-Z_][a-zA-Z0-9._]*$', candidate) is not None
-
-
-def merge(*args):
-    first, *rest = args
-    res = first.copy()
-    for dct in rest:
-        res.update(dct)
-    return res
-
-
-def safe_mkdir(path):
-    try:
-        os.makedirs(path)
-    except OSError:
-        pass
 
 
 def ensure_dir(path):

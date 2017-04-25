@@ -14,7 +14,7 @@ from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
                          InvalidNameError, TargetExistsError, InvalidTypeError)
-from .utils import (cache, dfs, get_file_timestamp, import_object,
+from .utils import (cache, dfs, get_file_timestamp, load_workflow,
                     is_valid_name, iter_inputs, iter_outputs, timer)
 
 logger = logging.getLogger(__name__)
@@ -241,7 +241,7 @@ class Workflow(object):
 
         See :func:`~gwf.Workflow.include`.
         """
-        other_workflow = import_object(path)
+        other_workflow = load_workflow(path)
         self.include_workflow(other_workflow, namespace=namespace)
         return other_workflow
 
@@ -374,8 +374,8 @@ class Workflow(object):
         return subprocess.check_output(*args, shell=True, cwd=self.working_dir)
 
     def __repr__(self):
-        return '{}(name={!r}, working_dir={!r}, targets={!r})'.format(
-            self.__class__.__name__, self.name, self.working_dir, self.targets
+        return '{}(name={!r}, working_dir={!r})'.format(
+            self.__class__.__name__, self.name, self.working_dir
         )
 
 

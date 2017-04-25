@@ -1,198 +1,104 @@
 import os.path
 import logging
-import platform
-import sys
 
-from argparse import ArgumentParser
-from argparse import RawDescriptionHelpFormatter
+import click
 
+from gwf import Graph
 from . import __version__
-from .core import Graph
 from .exceptions import GWFError
-from .ext import ExtensionManager
-from .utils import cache, import_object, merge, ensure_dir
+from .utils import load_workflow, ensure_dir
 
 logger = logging.getLogger(__name__)
 
+VERBOSITY_LEVELS = {
+    'warning': logging.WARNING,
+    'info': logging.INFO,
+    'debug': logging.DEBUG,
+}
 
-class App:
+BASIC_FORMAT = '%(message)s'
+ADVANCED_FORMAT = '%(levelname)s:%(name)s:%(message)s'
 
-    description = "A flexible, pragmatic workflow tool."
+LOGGING_FORMATS = {
+    'warning': BASIC_FORMAT,
+    'info': BASIC_FORMAT,
+    'debug': ADVANCED_FORMAT,
+    'error': ADVANCED_FORMAT,
+}
 
-    VERBOSITY_LEVELS = {
-        'warning': logging.WARNING,
-        'info': logging.INFO,
-        'debug': logging.DEBUG,
-    }
 
-    BASIC_FORMAT = '%(levelname)-8s|  %(message)s'
-    ADVANCED_FORMAT = '%(levelname)s:%(name)s:%(lineno)d| %(message)s'
+class WorkflowPath:
+    def __init__(self, basedir, filename, obj='gwf'):
+        self.basedir = basedir
+        self.filename = filename
+        self.obj = obj
 
-    LOGGING_FORMATS = {
-        'warning': BASIC_FORMAT,
-        'info': BASIC_FORMAT,
-        'debug': ADVANCED_FORMAT
-    }
-
-    def __init__(self, plugins_manager, backends_manager):
-        self.plugins_manager = plugins_manager
-        self.backends_manager = backends_manager
-
-        self.active_backend = None
-        self.workflow = None
-        self.config = {}
-
-        self.parser = ArgumentParser(description=self.description, formatter_class=RawDescriptionHelpFormatter)
-
-        # Set global options here. Options for sub-commands will be set by the
-        # sub-commands we dispatch to.
-        self.parser.add_argument(
-            "-f",
-            "--file",
-            help="workflow file/object (default: workflow.py:gwf).",
-            default="workflow.py:gwf"
-        )
-
-        self.parser.add_argument(
-            '-b',
-            '--backend',
-            help='backend used to run the workflow.',
-            choices=self.backends_manager.exts.keys(),
-            default='slurm',
-        )
-
-        self.parser.add_argument(
-            '-c',
-            '--config',
-            is_config_file=True,
-            help='path to a specific configuration file.'
-        )
-
-        self.parser.add_argument(
-            '-v',
-            '--verbosity',
-            help='set verbosity level.',
-            default='warning',
-            choices=self.VERBOSITY_LEVELS.keys()
-        )
-
-        self.parser.add_argument(
-            '--version',
-            action='version',
-            version=__version__
-        )
-
-        # Prepare for subcommands
-        self.subparsers = self.parser.add_subparsers(title="commands")
-
-        # Load plugins and register their arguments and subcommands.
-        self.plugins_manager.load_extensions()
-        self.backends_manager.load_extensions()
-
-        self.plugins_manager.setup_argument_parsers(
-            self.parser, self.subparsers
-        )
-        self.backends_manager.setup_argument_parsers(
-            self.parser, self.subparsers
-        )
-
-    def _configure_logging(self, verbosity):
-        logging.basicConfig(
-            level=self.VERBOSITY_LEVELS[verbosity],
-            format=self.LOGGING_FORMATS[verbosity],
-        )
-
-    def run(self, argv):
-        self.config = vars(self.parser.parse_args(argv))
-        self._configure_logging(self.config['verbosity'])
-
-        # If a subcommand is being called, the handler will be the function to
-        # call when all loading is done.
-        handler = self.config.pop('func', None)
-
-        logger.debug('Platform: %s.', platform.platform())
-        logger.debug('GWF version: %s.', __version__)
-        logger.debug('Python version: %s.', platform.python_version())
-        logger.debug('Node: %s.', platform.node())
-        logger.debug('Python path: %s.', sys.path)
-        logger.debug(
-            'Loaded plugins: %s.',
-            ', '.join(self.plugins_manager.exts.keys())
-        )
-        logger.debug(
-            'Loaded backends: %s.',
-            ', '.join(self.backends_manager.exts.keys())
-        )
-
-        backend_name = self.config['backend']
-        logger.debug('Setting active backend: %s.', backend_name)
-        self.active_backend = self.backends_manager.exts[backend_name]
-
-        logger.debug('Loading workflow from: %s.', self.config['file'])
-        workflow = import_object(self.config['file'])
-
-        # Add path of workflow file to python path to make it possible to load
-        # modules placed in the directory directly.
-        sys.path.insert(1, workflow.working_dir)
-
-        # Ensure that a .gwf directory exists in the workflow directory.
-        ensure_dir(os.path.join(workflow.working_dir, '.gwf'))
-
-        # Update configuration with defaults from backend and workflow.
-        self.config = merge(
-            self.active_backend.option_defaults,
-            self.config,
-            workflow.defaults,
-        )
-        logger.debug('Merged configuration: %r.', self.config)
-
-        @cache
-        def get_graph():
-            return Graph(
-                targets=workflow.targets,
-                working_dir=workflow.working_dir,
-                supported_options=self.active_backend.supported_options,
-            )
-
-        @cache
-        def get_active_backend():
-            self.active_backend.configure(
-                working_dir=workflow.working_dir,
-                config=self.config,
-            )
-            return self.active_backend
-
-        self.plugins_manager.configure_extensions(
-            get_graph=get_graph,
-            get_active_backend=get_active_backend,
-            config=self.config,
-        )
-
-        # Dispatch to subcommand.
-        if handler is not None:
-            handler()
+    @classmethod
+    def from_path(cls, path):
+        comps = path.rsplit(':')
+        if len(comps) == 2:
+            path, obj = comps
+        elif len(comps) == 1:
+            path, obj = comps[0], None
         else:
-            self.parser.print_help()
+            raise ValueError('Invalid path: "{}".'.format(path))
 
-    def exit(self):
-        logger.debug('Exiting...')
-        self.plugins_manager.close_extensions()
-        if self.active_backend:
-            self.active_backend.close()
+        basedir, filename = os.path.split(path)
+        filename, _ = os.path.splitext(filename)
+        if obj is None:
+            return cls(basedir, filename)
+        return cls(basedir, filename, obj)
 
 
-def main():
-    plugins_manager = ExtensionManager(group='gwf.plugins')
-    backends_manager = ExtensionManager(group='gwf.backends')
+class WorkflowPathParamType(click.ParamType):
+    name = 'workflow'
 
-    app = App(
-        plugins_manager=plugins_manager,
-        backends_manager=backends_manager,
-    )
+    def convert(self, value, param, ctx):
+        try:
+            return WorkflowPath.from_path(value)
+        except ValueError:
+            self.fail('%s is not a valid integer' % value, param, ctx)
 
-    try:
-        app.run(sys.argv[1:])
-    except GWFError as e:
-        logger.error(str(e))
-    finally:
-        app.exit()
+workflow_path = WorkflowPathParamType()
+
+
+@click.group(context_settings={'obj': {}})
+@click.option('-f', '--file', type=workflow_path, default=WorkflowPath.from_path('workflow.py:gwf'), help='Workflow/obj to load')
+@click.option('-b', '--backend', default='local', help='Backend used to run workflow')
+@click.option('-v', '--verbose', type=click.Choice(['debug', 'info', 'warning', 'error']), default='info')
+@click.version_option(version=__version__)
+@click.pass_context
+def main(ctx, backend, file, verbose):
+    """A flexible, pragmatic workflow tool."""
+    logging.basicConfig(level=VERBOSITY_LEVELS[verbose], format=LOGGING_FORMATS[verbose])
+
+    workflow = load_workflow(file.basedir, file.filename, file.obj)
+
+    ensure_dir(os.path.join(workflow.working_dir, '.gwf'))
+    ensure_dir(os.path.join(workflow.working_dir, '.gwf', 'logs'))
+
+    ctx.obj['workflow'] = workflow
+    ctx.obj['backend'] = backend
+
+
+@main.command()
+@click.pass_context
+def run(ctx):
+    """Run the specified workflow."""
+    graph = Graph(targets=ctx.obj['workflow'].targets)
+    print(graph)
+
+
+@main.command()
+@click.pass_context
+def status():
+    """Show status of a workflow."""
+    click.echo('Hi!')
+
+
+@main.command()
+@click.pass_context
+def clean():
+    """Clean output files of targets."""
+    click.echo('Hello')
+
