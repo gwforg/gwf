@@ -40,6 +40,8 @@ setup(
 
     test_suite='tests',
     install_requires=[
+        'click>=6.6',
+        'click-plugins>=0.2.2',
         'statusbar>=0.1.4',
     ],
 
