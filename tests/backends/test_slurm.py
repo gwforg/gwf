@@ -4,34 +4,22 @@ from unittest.mock import ANY, call, mock_open, patch
 
 from gwf import Graph, Target, Workflow
 from gwf.backends.slurm import (SlurmBackend, _call_sbatch, _call_scancel,
-                                _call_squeue, _dump_atomic, _find_exe,
-                                _get_live_job_states, _read_json)
+                                _call_squeue, _find_exe, _get_queue)
 from gwf.exceptions import BackendError, NoLogFoundError
-
-from .. import GWFTestCase
+from tests import GWFTestCase
 
 
 class SlurmTestCase(GWFTestCase):
 
     def setUp(self):
         self.workflow = Workflow(working_dir='/some/dir')
-        self.graph = Graph(
-            targets=self.workflow.targets,
-            working_dir=self.workflow.working_dir,
-            supported_options=SlurmBackend.supported_options,
-        )
+        self.graph = Graph(targets=self.workflow.targets)
 
-        self.mock_get_live_job_states = self.create_patch(
-            'gwf.backends.slurm._get_live_job_states'
+        self.mock_get_queue = self.create_patch(
+            'gwf.backends.slurm._get_queue'
         )
         self.mock_exists = self.create_patch(
             'gwf.backends.slurm.os.path.exists'
-        )
-        self.mock_ensure_dir = self.create_patch(
-            'gwf.backends.slurm.ensure_dir'
-        )
-        self.mock_read_json = self.create_patch(
-            'gwf.backends.slurm._read_json'
         )
         self.mock_call_squeue = self.create_patch(
             'gwf.backends.slurm._call_squeue'
@@ -42,8 +30,8 @@ class SlurmTestCase(GWFTestCase):
         self.mock_call_scancel = self.create_patch(
             'gwf.backends.slurm._call_scancel'
         )
-        self.mock_dump_atomic = self.create_patch(
-            'gwf.backends.slurm._dump_atomic'
+        self.mock_persistabledict = self.create_patch(
+            'gwf.backends.slurm.PersistableDict'
         )
 
 
@@ -62,7 +50,7 @@ class TestSlurmBackendGetLiveJobStates(SlurmTestCase):
             fake_squeue_stdout, fake_squeue_stderr
         )
 
-        result = _get_live_job_states()
+        result = _get_queue()
 
         self.assertDictEqual(result, {
             '36971043': 'H',
@@ -74,10 +62,10 @@ class TestSlurmBackendGetLiveJobStates(SlurmTestCase):
 class TestSlurmBackendSubmit(SlurmTestCase):
 
     def test_submitting_target_correctly_sets_dependency_flag_for_sbatch(self):
-        self.mock_read_json.side_effect = [
+        self.mock_persistabledict.side_effect = [
             {'TestTarget1': '1000', 'TestTarget2': '2000'}, {}
         ]
-        self.mock_get_live_job_states.return_value = {'1000': 'R', '2000': 'H'}
+        self.mock_get_queue.return_value = {'1000': 'R', '2000': 'H'}
         self.mock_call_sbatch.return_value = ('3000', '')
 
         self.workflow.target(
@@ -97,36 +85,27 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         )
 
         backend = SlurmBackend(working_dir='/some/dir')
-        graph = Graph(
-            targets=self.workflow.targets,
-            working_dir=self.workflow.working_dir,
-            supported_options=SlurmBackend,
-        )
-
+        graph = Graph(targets=self.workflow.targets,)
         backend.submit(target3, graph.dependencies[target3])
 
         self.mock_call_sbatch.assert_any_call(ANY, ['1000', '2000'])
-        self.assertEqual(backend._job_db['TestTarget3'], '3000')
-        self.assertEqual(backend._live_job_states['3000'], 'H')
+        self.assertEqual(backend._tracked['TestTarget3'], '3000')
+        self.assertEqual(backend._queue['3000'], 'H')
 
     def test_no_dependency_flag_is_set_if_target_has_no_dependencies(self):
-        self.mock_read_json.side_effect = [{}]
-        self.mock_get_live_job_states.return_value = {}
+        self.mock_persistabledict.side_effect = [{}]
+        self.mock_get_queue.return_value = {}
         self.mock_call_sbatch.return_value = ('1000', '')
 
-        target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        graph = Graph(
-            targets=self.workflow.targets,
-            working_dir=self.workflow.working_dir,
-            supported_options=SlurmBackend.supported_options,
-        )
+        target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+        graph = Graph(targets={'TestTarget': target})
 
-        backend = SlurmBackend(working_dir=graph.working_dir)
+        backend = SlurmBackend(working_dir='/some/dir')
         backend.submit(target, graph.dependencies[target])
 
         self.mock_call_sbatch.assert_any_call(ANY, [])
-        self.assertEqual(backend._job_db['TestTarget'], '1000')
-        self.assertEqual(backend._live_job_states['1000'], 'H')
+        self.assertEqual(backend._tracked['TestTarget'], '1000')
+        self.assertEqual(backend._queue['1000'], 'H')
 
     def test_job_script_is_properly_compiled_with_all_supported_options(self):
         backend = SlurmBackend(working_dir='/some/dor')
@@ -174,39 +153,29 @@ class TestSlurmBackendSubmit(SlurmTestCase):
 class TestSlurmBackendCancel(SlurmTestCase):
 
     def test_cancelling_a_target_calls_scancel_with_correct_job_id(self):
-        self.mock_read_json.side_effect = [
+        self.mock_persistabledict.side_effect = [
             {'TestTarget': '1000'},
             {'TestTarget': ['1000']}
         ]
-        self.mock_get_live_job_states.return_value = {'1000': 'R'}
+        self.mock_get_queue.return_value = {'1000': 'R'}
 
-        target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        graph = Graph(
-            targets=self.workflow.targets,
-            working_dir=self.workflow.working_dir,
-            supported_options=SlurmBackend.supported_options,
-        )
-
-        backend = SlurmBackend(working_dir=graph.working_dir)
+        target = self.workflow.target('TestTarget', inputs=[], outputs=[], working_dir='/some/dir')
+        graph = Graph(targets=self.workflow.targets)
+        backend = SlurmBackend(working_dir='/some/dir')
         backend.cancel(target)
 
         self.mock_call_scancel.assert_any_call('1000')
 
     def test_cancelling_non_running_target_raises_exception(self):
-        self.mock_read_json.side_effect = [
+        self.mock_persistabledict.side_effect = [
             {'TestTarget': '1000'},
             {'TestTarget': ['1000']}
         ]
-        self.mock_get_live_job_states.return_value = {}
+        self.mock_get_queue.return_value = {}
 
-        target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        graph = Graph(
-            targets=self.workflow.targets,
-            working_dir=self.workflow.working_dir,
-            supported_options=SlurmBackend.supported_options,
-        )
-
-        backend = SlurmBackend(graph.working_dir)
+        target = self.workflow.target('TestTarget', inputs=[], outputs=[], working_dir='/some/dir')
+        graph = Graph(targets=self.workflow.targets)
+        backend = SlurmBackend(working_dir='/some/dir')
         with self.assertRaises(BackendError):
             backend.cancel(target)
 
@@ -214,11 +183,11 @@ class TestSlurmBackendCancel(SlurmTestCase):
 class TestSlurmBackendSubmitted(SlurmTestCase):
 
     def test_submitted_should_only_return_true_if_target_is_in_job_db(self):
-        self.mock_read_json.side_effect = [
+        self.mock_persistabledict.side_effect = [
             {'TestTarget1': '1000'},
             {'TestTarget1': ['1000']}
         ]
-        self.mock_get_live_job_states.return_value = {'1000': 'H'}
+        self.mock_get_queue.return_value = {'1000': 'H'}
 
         target1 = Target('TestTarget1', inputs=[], outputs=[], options={}, working_dir='/some/dir')
         target2 = Target('TestTarget2', inputs=[], outputs=[], options={}, working_dir='/some/dir')
@@ -232,11 +201,11 @@ class TestSlurmBackendSubmitted(SlurmTestCase):
 class TestSlurmBackendRunning(SlurmTestCase):
 
     def test_running_should_return_true_if_target_is_in_job_db_and_is_running(self):
-        self.mock_read_json.side_effect = [
+        self.mock_persistabledict.side_effect = [
             {'TestTarget1': '1000', 'TestTarget2': '2000'},
             {'TestTarget1': ['1000']}
         ]
-        self.mock_get_live_job_states.return_value = {'1000': 'R', '2000': 'H'}
+        self.mock_get_queue.return_value = {'1000': 'R', '2000': 'H'}
 
         target1 = Target('TestTarget1', inputs=[], outputs=[], options={}, working_dir='/some/dir')
         target2 = Target('TestTarget2', inputs=[], outputs=[], options={}, working_dir='/some/dir')
@@ -252,31 +221,23 @@ class TestSlurmBackendRunning(SlurmTestCase):
 class TestSlurmBackendLogs(SlurmTestCase):
 
     def test_logs_raises_exception_target_has_no_log(self):
-        target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        graph = Graph(
-            targets=self.workflow.targets,
-            working_dir=self.workflow.working_dir,
-            supported_options=SlurmBackend.supported_options,
-        )
-        backend = SlurmBackend(working_dir=graph.working_dir)
+        target = self.workflow.target('TestTarget', inputs=[], outputs=[], working_dir='/some/dir')
+        graph = Graph(targets=self.workflow.targets)
+        backend = SlurmBackend(working_dir='/some/dir')
         with self.assertRaises(NoLogFoundError):
             backend.logs(target)
 
     def test_logs_returns_log_if_target_has_been_run_once(self):
-        self.mock_read_json.side_effect = [
+        self.mock_persistabledict.side_effect = [
             {'TestTarget': '1000'},
         ]
-        self.mock_get_live_job_states.return_value = {
+        self.mock_get_queue.return_value = {
             '1000': 'R'
         }
 
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        graph = Graph(
-            targets=self.workflow.targets,
-            working_dir=self.workflow.working_dir,
-            supported_options=SlurmBackend.supported_options,
-        )
-        backend = SlurmBackend(working_dir=graph.working_dir)
+        graph = Graph(targets=self.workflow.targets)
+        backend = SlurmBackend(working_dir='/some/dir')
 
         m = mock_open(read_data='this is the log file')
         with patch('builtins.open', m):
@@ -286,10 +247,10 @@ class TestSlurmBackendLogs(SlurmTestCase):
                 '/some/dir/.gwf/logs/TestTarget.stdout', 'r')
 
     def test_logs_returns_stderr_if_stderr_is_true(self):
-        self.mock_read_json.side_effect = [
+        self.mock_persistabledict.side_effect = [
             {'TestTarget': '1000'},
         ]
-        self.mock_get_live_job_states.return_value = {
+        self.mock_get_queue.return_value = {
             '1000': 'R'
         }
 
@@ -311,13 +272,10 @@ class TestSlurmBackendLogs(SlurmTestCase):
 
 class TestSlurmBackendClose(SlurmTestCase):
 
-    def test_close_dumps_job_db_if_configure_has_been_called(self):
+    def test_persist_tracked_on_close(self):
         backend = SlurmBackend(working_dir=self.workflow.working_dir)
         backend.close()
-        self.mock_dump_atomic.assert_any_call(
-            ANY,
-            '/some/dir/.gwf/slurm-backend-jobdb.json'
-        )
+        self.mock_persistabledict.return_value.persist.assert_called_once_with()
 
 
 class TestFindExe(GWFTestCase):
@@ -362,50 +320,6 @@ class TestDumpAtomic(GWFTestCase):
         self.mock_os_rename = self.create_patch(
             'gwf.backends.slurm.os.rename'
         )
-
-    def test_dumps_file_atomically(self):
-        mock_fileobj = self.mock_open.return_value.__enter__.return_value
-        mock_fileobj.fileno.return_value = 3
-
-        _dump_atomic({'hello': 'world'}, '/some/dir/db.json')
-
-        self.mock_open.assert_called_once_with(
-            '/some/dir/db.json.new', 'w'
-        )
-        self.mock_json_dump.assert_called_once_with(
-            {'hello': 'world'}, mock_fileobj
-        )
-        mock_fileobj.flush.assert_called_once_with()
-        self.mock_os_fsync.assert_called_with(3)
-        mock_fileobj.close.assert_called_once_with()
-        self.mock_os_rename.assert_called_once_with('/some/dir/db.json.new',
-                                                    '/some/dir/db.json')
-
-
-class TestReadJson(GWFTestCase):
-
-    def setUp(self):
-        self.mock_open = self.create_patch(
-            'builtins.open'
-        )
-        self.mock_json_load = self.create_patch(
-            'gwf.backends.slurm.json.load'
-        )
-
-    def test_return_results_of_json_load_if_file_exists(self):
-        mock_fileobj = self.mock_open.return_value.__enter__.return_value
-        self.mock_json_load.return_value = {'hello': 'world'}
-
-        result = _read_json('test.json')
-
-        self.mock_json_load.assert_called_once_with(mock_fileobj)
-        self.assertDictEqual(result, {'hello': 'world'})
-
-    def test_return_empty_dict_if_file_does_not_exist(self):
-        self.mock_open.side_effect = OSError
-
-        result = _read_json('test.json')
-        self.assertDictEqual(result, {})
 
 
 class TestCallSqueue(GWFTestCase):

@@ -6,9 +6,10 @@ import os.path
 import subprocess
 from distutils.spawn import find_executable
 
-from . import Backend, FileLogsMixin
+from .base import PersistableDict
+from . import Backend
 from ..exceptions import BackendError
-from ..utils import cache, timer, ensure_dir
+from ..utils import cache, timer
 
 logger = logging.getLogger(__name__)
 
@@ -53,29 +54,6 @@ def _find_exe(name):
     return exe
 
 
-def _dump_atomic(obj, path):
-    with open(path + '.new', 'w') as fileobj:
-        json.dump(obj, fileobj)
-        fileobj.flush()
-        os.fsync(fileobj.fileno())
-        fileobj.close()
-    os.rename(path + '.new', path)
-
-
-def _read_json(path):
-    try:
-        with open(path) as fileobj:
-            return json.load(fileobj)
-    except (OSError, ValueError):
-        # Catch ValueError for compatibility with Python 3.4.2. I haven't been
-        # able to figure out what is different between 3.4.2 and 3.5 that
-        # causes this. Essentially, 3.4.2 raises a ValueError saying that it
-        # cannot parse the empty string instead of raising an OSError
-        # (FileNotFoundError does not exist in 3.4.2) saying that the file does
-        # not exist.
-        return {}
-
-
 def _call_generic(executable_name, *args, input=None):
     executable_path = _find_exe(executable_name)
     proc = subprocess.Popen(
@@ -92,9 +70,7 @@ def _call_generic(executable_name, *args, input=None):
 
 
 def _call_sacct(job_id):
-    return _call_generic(
-        'sacct', '--noheader', '--long', '--parsable2', '--allocations', '--jobs', job_id
-    )
+    return _call_generic('sacct', '--noheader', '--long', '--parsable2', '--allocations', '--jobs', job_id)
 
 
 def _call_squeue():
@@ -113,7 +89,7 @@ def _call_sbatch(script, dependencies):
 
 
 @timer('Fetching slurm job states with squeue took %0.2fms', logger=logger)
-def _get_live_job_states():
+def _get_queue():
     """Ask Slurm for the state of all live jobs.
 
     There are two reasons why we ask for all the jobs:
@@ -145,7 +121,7 @@ def _get_live_job_states():
     return result
 
 
-class SlurmBackend(FileLogsMixin, Backend):
+class SlurmBackend(Backend):
     """Backend for the Slurm workload manager.
 
     To use this backend you must activate the `slurm` backend.
@@ -185,39 +161,29 @@ class SlurmBackend(FileLogsMixin, Backend):
     _JOB_DB_PATH = '.gwf/slurm-backend-jobdb.json'
 
     def __init__(self, working_dir):
-        self.working_dir = working_dir
-        self._job_db = _read_json(os.path.join(self.working_dir, self._JOB_DB_PATH))
-        self._live_job_states = _get_live_job_states()
-        logger.debug('found %d jobs', len(self._live_job_states))
+        super().__init__(working_dir)
+        self._tracked = PersistableDict(os.path.join(self.working_dir, self._JOB_DB_PATH))
+        self._queue = _get_queue()
 
     def close(self):
-        if hasattr(self, '_job_db'):
-            _dump_atomic(
-                self._job_db,
-                os.path.join(self.working_dir, self._JOB_DB_PATH)
-            )
+        self._tracked.persist()
 
     def submitted(self, target):
-        return (target.name in self._job_db and
-                self._job_db[target.name] in self._live_job_states)
+        return target.name in self._tracked and self._tracked[target.name] in self._queue
 
     def running(self, target):
-        target_job_id = self._job_db.get(target.name, None)
-        return self._live_job_states.get(target_job_id, '?') == 'R'
-
-    def failed(self, target):
-        target_job_id = self._job_db.get(target.name, None)
-        return self._live_job_states.get(target_job_id, '?') == 'F'
+        target_job_id = self._tracked.get(target.name, None)
+        return self._queue.get(target_job_id, '?') == 'R'
 
     def completed(self, target):
-        target_job_id = self._job_db.get(target.name, None)
-        return self._live_job_states.get(target_job_id, '?') == 'C'
+        target_job_id = self._tracked.get(target.name, None)
+        return self._queue.get(target_job_id, '?') == 'C'
 
     def submit(self, target, dependencies):
         dependency_ids = [
-            self._job_db[dep.name]
+            self._tracked[dep.name]
             for dep in dependencies
-            if dep.name in self._job_db
+            if dep.name in self._tracked
         ]
 
         script = self._compile_script(target)
@@ -225,16 +191,15 @@ class SlurmBackend(FileLogsMixin, Backend):
         stdout, _ = _call_sbatch(script, dependency_ids)
         new_job_id = stdout.strip()
 
-        self._job_db[target.name] = new_job_id
+        self._tracked[target.name] = new_job_id
 
-        # New jobs are assumed to be on-hold until the next time gwf is
-        # invoked
-        self._live_job_states[new_job_id] = 'H'
+        # New jobs are assumed to be on-hold until the next time gwf is invoked.
+        self._queue[new_job_id] = 'H'
 
     def cancel(self, target):
         """Cancel a target."""
-        job_id = self._job_db.get(target.name, '?')
-        if job_id not in self._live_job_states:
+        job_id = self._tracked.get(target.name, '?')
+        if job_id not in self._queue:
             raise BackendError('Cannot cancel non-running target.')
         _call_scancel(job_id)
 
@@ -259,10 +224,8 @@ class SlurmBackend(FileLogsMixin, Backend):
                 )
             )
 
-        out.append(option_str.format(
-            '--output=', FileLogsMixin.stdout_path(target)))
-        out.append(option_str.format(
-            '--error=', FileLogsMixin.stderr_path(target)))
+        out.append(option_str.format('--output=', self._log_path(target, 'stdout')))
+        out.append(option_str.format('--error=', self._log_path(target, 'stderr')))
 
         out.append('')
         out.append('cd {}'.format(target.working_dir))

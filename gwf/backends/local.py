@@ -11,7 +11,7 @@ from multiprocessing.connection import Client as Client_
 from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
-from . import Backend, FileLogsMixin
+from . import Backend
 from ..exceptions import BackendError, GWFError
 
 logger = logging.getLogger(__name__)
