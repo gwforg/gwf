@@ -1,8 +1,10 @@
 import logging
 import os
 
-from . import Plugin
+from ..cli import pass_backend, pass_graph
 from ..exceptions import TargetDoesNotExistError
+
+import click
 
 logger = logging.getLogger(__name__)
 
@@ -14,62 +16,29 @@ def _delete_file(path):
         pass
 
 
-class CleanCommand(Plugin):
+@click.command()
+@click.argument('targets', nargs=-1)
+@click.option('--not-endpoints', is_flag=True, default=False)
+@pass_backend
+@pass_graph
+@click.pass_context
+def clean(ctx, graph, backend, targets, not_endpoints):
+    """Clean output files of targets."""
+    if not targets:
+        targets.extend(graph.targets.values())
+    else:
+        for name in targets:
+            if name not in graph.targets:
+                raise TargetDoesNotExistError(name)
+            targets.append(graph.targets[name])
 
-    def setup_argument_parser(self, parser, subparsers):
-        subparser = self.setup_subparser(
-            subparsers,
-            'clean',
-            'Clean up output files from one or more targets.',
-            self.on_clean
-        )
+    if not_endpoints:
+        for endpoint in graph.endpoints():
+            targets.remove(endpoint)
 
-        subparser.add_argument(
-            "targets",
-            metavar="TARGET",
-            nargs="*",
-            help="Targets to clean up (default: all targets)"
-        )
+    for target in targets:
+        logger.info('Deleting %s', target.name)
+        for path in target.outputs:
+            logging.debug('Deleting output file "%s" from target "%s".', path, target.name)
+            _delete_file(path)
 
-        subparser.add_argument(
-            '-f',
-            '--only-failed',
-            action='store_true',
-            help='Only delete output files from failed targets.',
-        )
-
-        subparser.add_argument(
-            '-e',
-            '--not-endpoints',
-            action='store_true',
-            help='Only delete output files from targets that are not endpoints.'
-        )
-
-    def on_clean(self):
-        workflow = self.get_graph()
-        backend = self.get_active_backend()
-
-        targets = []
-        if not self.config['targets']:
-            targets.extend(workflow.targets.values())
-        else:
-            for name in self.config['targets']:
-                if name not in workflow.targets:
-                    raise TargetDoesNotExistError(name)
-                targets.append(workflow.targets[name])
-
-        if self.config['not_endpoints']:
-            for endpoint in workflow.endpoints():
-                targets.remove(endpoint)
-
-        for target in targets:
-            if not self.config['only_failed'] or backend.failed(target):
-                logger.info('Cleaning up: %s.', target.name)
-                for path in target.outputs:
-                    logging.debug(
-                        'Deleting output file "%s" from target "%s".',
-                        path,
-                        target.name
-                    )
-
-                    _delete_file(path)

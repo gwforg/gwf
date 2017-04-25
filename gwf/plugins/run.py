@@ -1,35 +1,23 @@
-from . import Plugin
 from ..core import schedule_many
+from ..cli import pass_backend, pass_graph
 from ..exceptions import TargetDoesNotExistError
 
+import click
 
-class RunCommand(Plugin):
 
-    def setup_argument_parser(self, parser, subparsers):
-        subparser = self.setup_subparser(
-            subparsers,
-            'run',
-            'Command for running a workflow.',
-            self.on_run
-        )
-
-        subparser.add_argument(
-            "targets",
-            metavar="TARGET",
-            nargs="*",
-            help="Targets to run (default: all terminal targets)"
-        )
-
-    def on_run(self):
-        workflow = self.get_graph()
-        backend = self.get_active_backend()
-
-        targets = []
-        if not self.config['targets']:
-            targets = workflow.endpoints()
-        else:
-            for name in self.config['targets']:
-                if name not in workflow.targets:
-                    raise TargetDoesNotExistError(name)
-                targets.append(workflow.targets[name])
-        schedule_many(workflow, backend, targets)
+@click.command()
+@click.argument('targets', nargs=-1)
+@pass_backend
+@pass_graph
+@click.pass_obj
+def run(ctx, graph, backend, targets):
+    """Run the specified workflow."""
+    targets = []
+    if not targets:
+        targets = graph.endpoints()
+    else:
+        for name in targets:
+            if name not in graph.targets:
+                raise TargetDoesNotExistError(name)
+            targets.append(graph.targets[name])
+    schedule_many(graph, backend, targets)

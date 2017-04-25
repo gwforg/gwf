@@ -29,18 +29,17 @@ setup(
             'testing = gwf.backends.testing:TestingBackend',
         ],
         'gwf.plugins': [
-            'run = gwf.plugins.run:RunCommand',
-            'config = gwf.plugins.config:ConfigCommand',
-            'status = gwf.plugins.status:StatusCommand',
-            'logs = gwf.plugins.logs:LogsCommand',
-            'clean = gwf.plugins.clean:CleanCommand',
-            'workers = gwf.plugins.workers:WorkersPlugin'
+            'run = gwf.plugins.run:run',
+            'config = gwf.plugins.config:config',
+            'status = gwf.plugins.status:status',
+            'logs = gwf.plugins.logs:logs',
+            'clean = gwf.plugins.clean:clean',
+            'workers = gwf.plugins.workers:workers'
         ]
     },
 
     test_suite='tests',
     install_requires=[
-        'configargparse>=0.11',
         'statusbar>=0.1.4',
     ],
 

@@ -1,13 +1,18 @@
 import os.path
 import logging
+from functools import update_wrapper
+from pkg_resources import iter_entry_points
 
 import click
+from click_plugins import with_plugins
 
 from gwf import Graph
 from . import __version__
-from .utils import WorkflowPath, load_workflow, ensure_dir
+from .utils import parse_path, load_workflow, ensure_dir
+
 
 logger = logging.getLogger(__name__)
+
 
 VERBOSITY_LEVELS = {
     'warning': logging.WARNING,
@@ -25,59 +30,58 @@ LOGGING_FORMATS = {
     'error': ADVANCED_FORMAT,
 }
 
-
-class WorkflowPathParamType(click.ParamType):
-    name = 'workflow'
-
-    def convert(self, value, param, ctx):
-        try:
-            return WorkflowPath.from_path(value)
-        except ValueError:
-            self.fail('%s is not a valid integer' % value, param, ctx)
-
-workflow_path = WorkflowPathParamType()
+BACKENDS = {ep.name: ep.load() for ep in iter_entry_points('gwf.backends')}
 
 
+def pass_backend(f):
+    @click.pass_context
+    def new_func(ctx, *args, **kwargs):
+        backend_cls = BACKENDS[ctx.obj['_backend']]
+        backend = backend_cls(working_dir=ctx.obj['_workflow'].working_dir)
+        return ctx.invoke(f, *args, backend=backend, **kwargs)
+    return update_wrapper(new_func, f)
+
+
+def pass_graph(f):
+    @click.pass_context
+    def new_func(ctx, *args, **kwargs):
+        graph = Graph(targets=ctx.obj['_workflow'].targets)
+        return ctx.invoke(f, *args, graph=graph, **kwargs)
+    return update_wrapper(new_func, f)
+
+
+@with_plugins(iter_entry_points('gwf.plugins'))
 @click.group(context_settings={'obj': {}})
-@click.option('-f', '--file', default=WorkflowPath.from_path('workflow.py:gwf'), type=workflow_path, help='Workflow/obj to load')
-@click.option('-b', '--backend', default='local', help='Backend used to run workflow')
-@click.option('-v', '--verbose', type=click.Choice(['debug', 'info', 'warning', 'error']), default='info')
 @click.version_option(version=__version__)
+@click.option(
+    '-f',
+    '--file',
+    default='workflow.py:gwf',
+    help='Workflow/obj to load'
+)
+@click.option(
+    '-b',
+    '--backend',
+    default='local',
+    type=click.Choice(BACKENDS.keys()),
+    help='Backend used to run workflow'
+)
+@click.option(
+    '-v',
+    '--verbose',
+    type=click.Choice(['debug', 'info', 'warning', 'error']),
+    default='info'
+)
 @click.pass_context
 def main(ctx, backend, file, verbose):
     """A flexible, pragmatic workflow tool."""
     logging.basicConfig(level=VERBOSITY_LEVELS[verbose], format=LOGGING_FORMATS[verbose])
 
-    workflow = load_workflow(file.basedir, file.filename, file.obj)
+    basedir, filename, obj = parse_path(file)
+    workflow = load_workflow(basedir, filename, obj)
 
     ensure_dir(os.path.join(workflow.working_dir, '.gwf'))
     ensure_dir(os.path.join(workflow.working_dir, '.gwf', 'logs'))
 
-    ctx.obj['workflow'] = workflow
-    ctx.obj['backend'] = backend
-
-
-@main.command()
-@click.argument('targets', nargs=-1)
-@click.pass_context
-def run(ctx, targets):
-    """Run the specified workflow."""
-    graph = Graph(targets=ctx.obj['workflow'].targets)
-    print(graph)
-
-
-@main.command()
-@click.argument('targets', nargs=-1)
-@click.pass_context
-def status(ctx, targets):
-    """Show status of a workflow."""
-    click.echo('Hi!')
-
-
-@main.command()
-@click.argument('targets', nargs=-1)
-@click.pass_context
-def clean(ctx, targets):
-    """Clean output files of targets."""
-    click.echo('Hello')
-
+    ctx.obj['_workflow'] = workflow
+    ctx.obj['_backend'] = backend
