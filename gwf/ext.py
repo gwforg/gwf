@@ -1,31 +1,12 @@
-import abc
 import logging
 from argparse import RawDescriptionHelpFormatter
-
-from pkg_resources import iter_entry_points
-
-from .exceptions import GWFError
 
 logger = logging.getLogger(__name__)
 
 
-class Extension(abc.ABC):
-    def configure(self, *args, **kwargs):
-        """Called to configure the extension."""
+class Extension:
 
-    def close(self):
-        """Called when the extension is closed."""
-
-    def setup_argument_parser(self, parser, subparsers):
-        """Modify the main argument parser and subparsers.
-
-        This method is called with an instance of
-        :class:`argparse.ArgumentParser` and the extension may add any
-        subcommands and arguments to the parser as long as they don't conflict
-        with other subcommands/arguments.
-        """
-
-    @staticmethod  # set to static just because it doesn't access self.
+    @staticmethod
     def setup_subparser(subparsers, name, description, handler):
         """Helper method for setting up subparsers.
 
@@ -66,32 +47,3 @@ class Extension(abc.ABC):
             formatter_class=RawDescriptionHelpFormatter)
         subparser.set_defaults(func=handler)
         return subparser
-
-
-class ExtensionManager:
-    def __init__(self, group):
-        self.group = group
-        self.exts = {}
-
-    def load_extensions(self):
-        for entry_point in iter_entry_points(group=self.group, name=None):
-            ext_cls = entry_point.load()
-            if entry_point.name in self.exts:
-                raise GWFError(
-                    'Extension with name "{}" already loaded.'.format(
-                        entry_point.name
-                    )
-                )
-            self.exts[entry_point.name] = ext_cls()
-
-    def configure_extensions(self, *args, **kwargs):
-        for ext in self.exts.values():
-            ext.configure(*args, **kwargs)
-
-    def close_extensions(self):
-        for ext in self.exts.values():
-            ext.close()
-
-    def setup_argument_parsers(self, parser, subparsers):
-        for ext in self.exts.values():
-            ext.setup_argument_parser(parser, subparsers)
