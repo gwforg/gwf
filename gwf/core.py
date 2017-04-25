@@ -388,16 +388,13 @@ class Graph(object):
     workflow.
 
     :ivar targets: initial value: dict()
-    :ivar working_dir: initial value: None
     :ivar provides: initial value: None
     :ivar dependencies: initial value: None
     :ivar dependents: initial value: None
     """
 
-    def __init__(self, targets, working_dir, supported_options):
+    def __init__(self, targets):
         self.targets = targets
-        self.working_dir = working_dir
-        self.supported_options = supported_options
 
         self.provides = None
         self.dependencies = None
@@ -568,9 +565,6 @@ class Graph(object):
     def endpoints(self):
         """Return a set of all targets that are not depended on by other targets."""
         return set(self.targets.values()) - set(self.dependents.keys())
-
-    def __repr__(self):
-        return '{}(working_dir={!r})'.format(self.__class__.__name__, self.working_dir)
 
 
 def schedule(graph, backend, target):
