@@ -1,10 +1,8 @@
-import unittest
+from unittest import TestCase
 from unittest.mock import patch
 
-from gwf import Target, Workflow
 
-
-class GWFTestCase(unittest.TestCase):
+class GWFTestCase(TestCase):
 
     def create_patch(self, name):
         patcher = patch(name)
