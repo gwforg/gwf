@@ -1,5 +1,2 @@
-from ..ext import Extension
-
-
-class Plugin(Extension):
+class Plugin:
     """Abstract base class for plugins."""
