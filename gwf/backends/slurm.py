@@ -186,10 +186,6 @@ class SlurmBackend(FileLogsMixin, Backend):
 
     def __init__(self, working_dir):
         self.working_dir = working_dir
-        # Make sure that directory for log files exists.
-        self._log_dir = os.path.join(self.working_dir, '.gwf/logs')
-        ensure_dir(self._log_dir)
-
         self._job_db = _read_json(os.path.join(self.working_dir, self._JOB_DB_PATH))
         self._live_job_states = _get_live_job_states()
         logger.debug('found %d jobs', len(self._live_job_states))
