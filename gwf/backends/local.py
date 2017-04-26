@@ -27,10 +27,7 @@ def catch_keyboard_interrupt(func):
         try:
             return func(*args, **kwargs)
         except KeyboardInterrupt:
-            logger.debug(
-                'Shutting down worker %s...',
-                multiprocessing.current_process().pid
-            )
+            logger.debug('Shutting down worker %s...', multiprocessing.current_process().pid)
             sys.exit(0)
 
     return wrapper
