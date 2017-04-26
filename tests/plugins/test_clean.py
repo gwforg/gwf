@@ -1,5 +1,4 @@
 import os.path
-from unittest.mock import patch
 
 from tests import CliTestCase, touch_file
 from gwf.cli import main
