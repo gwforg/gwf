@@ -13,7 +13,7 @@ import collections
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
-                         InvalidNameError, TargetExistsError, InvalidTypeError)
+                         InvalidNameError, TargetExistsError, InvalidTypeError, TargetDoesNotExistError)
 from .utils import (cache, dfs, get_file_timestamp, load_workflow,
                     is_valid_name, iter_inputs, iter_outputs, timer)
 
@@ -565,6 +565,14 @@ class Graph(object):
     def endpoints(self):
         """Return a set of all targets that are not depended on by other targets."""
         return set(self.targets.values()) - set(self.dependents.keys())
+
+    def get_targets_by_name(self, names):
+        matched_targets = []
+        for name in names:
+            if name not in self.targets:
+                raise TargetDoesNotExistError(name)
+            matched_targets.append(self.targets[name])
+        return matched_targets
 
 
 def schedule(graph, backend, target, dry_run=False):

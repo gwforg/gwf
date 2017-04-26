@@ -2,7 +2,6 @@ import logging
 import os
 
 from ..cli import pass_backend, pass_graph
-from ..exceptions import TargetDoesNotExistError
 
 import click
 
@@ -23,20 +22,16 @@ def _delete_file(path):
 @pass_graph
 def clean(graph, backend, targets, not_endpoints):
     """Clean output files of targets."""
-    targets = list(targets)
-    if not targets:
-        targets.extend(graph.targets.values())
-    else:
-        for name in targets:
-            if name not in graph.targets:
-                raise TargetDoesNotExistError(name)
-            targets.append(graph.targets[name])
+    matched_targets = graph.get_targets_by_name(targets) or graph.targets.values()
 
     if not_endpoints:
-        for endpoint in graph.endpoints():
-            targets.remove(endpoint)
+        matched_targets = [
+            target
+            for target in matched_targets
+            if target not in graph.endpoints()
+        ]
 
-    for target in targets:
+    for target in matched_targets:
         logger.info('Deleting %s', target.name)
         for path in target.outputs:
             logging.info('Deleting output file "%s" from target "%s".', click.format_filename(path), target.name)

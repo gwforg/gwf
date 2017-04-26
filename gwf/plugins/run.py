@@ -1,6 +1,5 @@
 from ..core import schedule_many
 from ..cli import pass_backend, pass_graph
-from ..exceptions import TargetDoesNotExistError
 
 import click
 
@@ -12,12 +11,5 @@ import click
 @pass_graph
 def run(graph, backend, targets, dry_run):
     """Run the specified workflow."""
-    targets = []
-    if not targets:
-        targets = graph.endpoints()
-    else:
-        for name in targets:
-            if name not in graph.targets:
-                raise TargetDoesNotExistError(name)
-            targets.append(graph.targets[name])
-    schedule_many(graph, backend, targets, dry_run=dry_run)
+    matched_targets = graph.get_targets_by_name(targets) or graph.endpoints()
+    schedule_many(graph, backend, matched_targets, dry_run=dry_run)

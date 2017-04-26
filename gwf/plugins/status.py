@@ -52,14 +52,6 @@ def status(backend, graph, targets):
     are submitted (yellow, S), are running (blue, R), are
     completed (green, C), or have failed (red, F).
     """
-    matched_targets = []
-    if not targets:
-        matched_targets = graph.endpoints()
-    else:
-        for name in targets:
-            if name not in graph.targets:
-                raise TargetDoesNotExistError(name)
-            matched_targets.append(graph.targets[name])
-
+    matched_targets = graph.get_targets_by_name(targets) or graph.endpoints()
     sorted_targets = sorted(matched_targets, key=lambda t: t.name)
     print_progress(backend, graph, sorted_targets)
