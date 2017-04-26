@@ -89,7 +89,7 @@ def _call_sbatch(script, dependencies):
 
 
 @timer('Fetched job queue in %0.2fms', logger=logger)
-def _get_state():
+def _get_status():
     """Ask Slurm for the state of all live jobs.
 
     There are two reasons why we ask for all the jobs:
@@ -163,7 +163,7 @@ class SlurmBackend(Backend):
     def __init__(self, working_dir):
         super().__init__(working_dir)
         self._tracked = PersistableDict(os.path.join(self.working_dir, self._JOB_DB_PATH))
-        self._status = _get_state()
+        self._status = _get_status()
 
     def close(self):
         self._tracked.persist()

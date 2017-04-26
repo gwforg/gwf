@@ -4,7 +4,7 @@ from unittest.mock import ANY, call, mock_open, patch
 
 from gwf import Graph, Target, Workflow
 from gwf.backends.slurm import (SlurmBackend, _call_sbatch, _call_scancel,
-                                _call_squeue, _find_exe, _get_state)
+                                _call_squeue, _find_exe, _get_status)
 from gwf.exceptions import BackendError, NoLogFoundError
 from tests import GWFTestCase
 
@@ -15,8 +15,8 @@ class SlurmTestCase(GWFTestCase):
         self.workflow = Workflow(working_dir='/some/dir')
         self.graph = Graph(targets=self.workflow.targets)
 
-        self.mock_get_queue = self.create_patch(
-            'gwf.backends.slurm._get_queue'
+        self.mock_get_status = self.create_patch(
+            'gwf.backends.slurm._get_status'
         )
         self.mock_exists = self.create_patch(
             'gwf.backends.slurm.os.path.exists'
@@ -50,7 +50,7 @@ class TestSlurmBackendGetLiveJobStates(SlurmTestCase):
             fake_squeue_stdout, fake_squeue_stderr
         )
 
-        result = _get_state()
+        result = _get_status()
 
         self.assertDictEqual(result, {
             '36971043': 'H',
@@ -65,7 +65,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.mock_persistabledict.side_effect = [
             {'TestTarget1': '1000', 'TestTarget2': '2000'}, {}
         ]
-        self.mock_get_queue.return_value = {'1000': 'R', '2000': 'H'}
+        self.mock_get_status.return_value = {'1000': 'R', '2000': 'H'}
         self.mock_call_sbatch.return_value = ('3000', '')
 
         self.workflow.target(
@@ -94,7 +94,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
 
     def test_no_dependency_flag_is_set_if_target_has_no_dependencies(self):
         self.mock_persistabledict.side_effect = [{}]
-        self.mock_get_queue.return_value = {}
+        self.mock_get_status.return_value = {}
         self.mock_call_sbatch.return_value = ('1000', '')
 
         target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
@@ -157,7 +157,7 @@ class TestSlurmBackendCancel(SlurmTestCase):
             {'TestTarget': '1000'},
             {'TestTarget': ['1000']}
         ]
-        self.mock_get_queue.return_value = {'1000': 'R'}
+        self.mock_get_status.return_value = {'1000': 'R'}
 
         target = self.workflow.target('TestTarget', inputs=[], outputs=[], working_dir='/some/dir')
         graph = Graph(targets=self.workflow.targets)
@@ -171,7 +171,7 @@ class TestSlurmBackendCancel(SlurmTestCase):
             {'TestTarget': '1000'},
             {'TestTarget': ['1000']}
         ]
-        self.mock_get_queue.return_value = {}
+        self.mock_get_status.return_value = {}
 
         target = self.workflow.target('TestTarget', inputs=[], outputs=[], working_dir='/some/dir')
         graph = Graph(targets=self.workflow.targets)
@@ -187,7 +187,7 @@ class TestSlurmBackendSubmitted(SlurmTestCase):
             {'TestTarget1': '1000'},
             {'TestTarget1': ['1000']}
         ]
-        self.mock_get_queue.return_value = {'1000': 'H'}
+        self.mock_get_status.return_value = {'1000': 'H'}
 
         target1 = Target('TestTarget1', inputs=[], outputs=[], options={}, working_dir='/some/dir')
         target2 = Target('TestTarget2', inputs=[], outputs=[], options={}, working_dir='/some/dir')
@@ -205,7 +205,7 @@ class TestSlurmBackendRunning(SlurmTestCase):
             {'TestTarget1': '1000', 'TestTarget2': '2000'},
             {'TestTarget1': ['1000']}
         ]
-        self.mock_get_queue.return_value = {'1000': 'R', '2000': 'H'}
+        self.mock_get_status.return_value = {'1000': 'R', '2000': 'H'}
 
         target1 = Target('TestTarget1', inputs=[], outputs=[], options={}, working_dir='/some/dir')
         target2 = Target('TestTarget2', inputs=[], outputs=[], options={}, working_dir='/some/dir')
@@ -231,7 +231,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
         self.mock_persistabledict.side_effect = [
             {'TestTarget': '1000'},
         ]
-        self.mock_get_queue.return_value = {
+        self.mock_get_status.return_value = {
             '1000': 'R'
         }
 
@@ -250,7 +250,7 @@ class TestSlurmBackendLogs(SlurmTestCase):
         self.mock_persistabledict.side_effect = [
             {'TestTarget': '1000'},
         ]
-        self.mock_get_queue.return_value = {
+        self.mock_get_status.return_value = {
             '1000': 'R'
         }
 
