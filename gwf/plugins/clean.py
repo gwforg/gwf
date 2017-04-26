@@ -21,8 +21,7 @@ def _delete_file(path):
 @click.option('--not-endpoints', is_flag=True, default=False)
 @pass_backend
 @pass_graph
-@click.pass_context
-def clean(ctx, graph, backend, targets, not_endpoints):
+def clean(graph, backend, targets, not_endpoints):
     """Clean output files of targets."""
     targets = list(targets)
     if not targets:
