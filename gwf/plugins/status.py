@@ -1,14 +1,45 @@
-import os
-import textwrap
-
 import statusbar
 
-from . import Plugin
+from ..cli import pass_graph, pass_backend
 from ..exceptions import TargetDoesNotExistError
 from ..utils import dfs
 
+import click
 
-class StatusCommand(Plugin):
+
+def _split_target_list(backend, graph, targets):
+    should_run, submitted, running, completed = [], [], [], []
+    for target in targets:
+        if graph.should_run(target):
+            if backend.running(target):
+                running.append(target)
+            elif backend.submitted(target):
+                submitted.append(target)
+            else:
+                should_run.append(target)
+        else:
+            completed.append(target)
+    return should_run, submitted, running, completed
+
+
+def print_progress(backend, graph, targets):
+    table = statusbar.StatusTable(fill_char=' ')
+    for target in targets:
+        dependencies = dfs(target, graph.dependencies)
+        should_run, submitted, running, completed = _split_target_list(backend, graph, dependencies)
+        status_bar = table.add_status_line(target.name)
+        status_bar.add_progress(len(completed), 'C', color='green')
+        status_bar.add_progress(len(running), 'R', color='blue')
+        status_bar.add_progress(len(submitted), 'S', color='yellow')
+        status_bar.add_progress(len(should_run), '.', color='magenta')
+    print('\n'.join(table.format_table()))
+
+
+@click.command()
+@click.argument('targets', nargs=-1)
+@pass_graph
+@pass_backend
+def status(backend, graph, targets):
     """
     Show the status of targets.
 
@@ -21,65 +52,14 @@ class StatusCommand(Plugin):
     are submitted (yellow, S), are running (blue, R), are
     completed (green, C), or have failed (red, F).
     """
+    matched_targets = []
+    if not targets:
+        matched_targets = graph.endpoints()
+    else:
+        for name in targets:
+            if name not in graph.targets:
+                raise TargetDoesNotExistError(name)
+            matched_targets.append(graph.targets[name])
 
-    def configure(self, *args, **kwargs):
-        super().configure(*args, **kwargs)
-        self.ts = os.get_terminal_size()
-
-    def _split_target_list(self, targets):
-        should_run, submitted, running, completed, failed = [], [], [], [], []
-        for target in targets:
-            if self.workflow.should_run(target):
-                if self.backend.failed(target):
-                    failed.append(target)
-                elif self.backend.running(target):
-                    running.append(target)
-                elif self.backend.submitted(target):
-                    submitted.append(target)
-                else:
-                    should_run.append(target)
-            else:
-                completed.append(target)
-        return should_run, submitted, running, completed, failed
-
-    def print_progress(self, targets):  # pragma: no cover
-        table = statusbar.StatusTable(fill_char=' ')
-        for target in targets:
-            dependencies = dfs(target, self.workflow.dependencies)
-            should_run, submitted, running, completed, failed = self._split_target_list(
-                dependencies)
-            status_bar = table.add_status_line(target.name)
-            status_bar.add_progress(len(completed), 'C', color='green')
-            status_bar.add_progress(len(running), 'R', color='blue')
-            status_bar.add_progress(len(submitted), 'S', color='yellow')
-            status_bar.add_progress(len(should_run), '.', color='magenta')
-            status_bar.add_progress(len(failed), 'F', color='red')
-        print('\n'.join(table.format_table()))
-
-    def setup_argument_parser(self, parser, subparsers):
-        subparser = self.setup_subparser(
-            subparsers,
-            'status',
-            textwrap.dedent(StatusCommand.__doc__),
-            self.on_run)
-
-        subparser.add_argument('targets', metavar='TARGET', nargs='*',
-                               help='Targets to show the status of (default: all terminal targets)')
-
-    def on_run(self):
-        self.workflow = self.get_graph()
-        self.backend = self.get_active_backend()
-
-        targets = []
-        if not self.config['targets']:
-            targets = self.workflow.endpoints()
-        else:
-            for name in self.config['targets']:
-                if name not in self.workflow.targets:
-                    raise TargetDoesNotExistError(name)
-                targets.append(self.workflow.targets[name])
-
-        # disabled coverage test on these since we don't actually test
-        # the printing code...
-        sorted_targets = sorted(targets, key=lambda t: t.name)
-        self.print_progress(sorted_targets)
+    sorted_targets = sorted(matched_targets, key=lambda t: t.name)
+    print_progress(backend, graph, sorted_targets)
