@@ -11,6 +11,7 @@ from multiprocessing.connection import Client as Client_
 from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
+from .base import PersistableDict
 from . import Backend
 from ..exceptions import BackendError, GWFError
 
@@ -52,9 +53,11 @@ class Request:
 
 
 class SubmitRequest(Request):
-    def __init__(self, target, deps):
+    def __init__(self, target, deps, stdout_path, stderr_path):
         self.target = target
         self.deps = deps
+        self.stdout_path = stdout_path
+        self.stderr_path = stderr_path
 
     def handle(self, task_queue, status_dict):
         task_id = _gen_task_id()
@@ -75,10 +78,10 @@ class Client:
     def __init__(self, *args, **kwargs):
         self.client = Client_(*args, **kwargs)
 
-    def submit(self, target, deps=None):
+    def submit(self, target, stdout_path, stderr_path, deps=None):
         if deps is None:
             deps = []
-        request = SubmitRequest(target=target, deps=deps)
+        request = SubmitRequest(target=target, deps=deps, stdout_path=stdout_path, stderr_path=stderr_path)
         self.client.send(request)
         return self.client.recv()
 
@@ -91,7 +94,7 @@ class Client:
         self.client.close()
 
 
-class LocalBackend(FileLogsMixin, Backend):
+class LocalBackend(Backend):
     """Backend that runs targets on a local cluster.
 
     To use this backend you must activate the `local` backend and start a
@@ -131,31 +134,13 @@ class LocalBackend(FileLogsMixin, Backend):
     supported_options = []
     option_defaults = {}
 
-    def setup_argument_parser(self, parser, subparsers):
-        parser.add_argument(
-            '--workers-port',
-            default=12345,
-            type=int,
-            help='Port where worker manager accepts clients.',
-        )
+    def __init__(self, working_dir):
+        super().__init__(working_dir)
 
-    def configure(self, *args, **kwargs):
-        super().configure(*args, **kwargs)
-        logger.debug('Configure called on backend!')
-
-        self._db_path = os.path.join(
-            self.working_dir,
-            '.gwf/local-backend-jobdb.json'
-        )
+        self._job_db = PersistableDict(os.path.join(working_dir, '.gwf/local-backend-jobdb.json'))
 
         try:
-            with open(self._db_path) as fileobj:
-                self._job_db = json.load(fileobj)
-        except Exception:
-            self._job_db = {}
-
-        try:
-            self.client = Client(('', self.config['workers_port']))
+            self.client = Client(('', 12345))
         except ConnectionRefusedError:
             raise GWFError(
                 'Local backend could not connect to workers. '
@@ -164,24 +149,23 @@ class LocalBackend(FileLogsMixin, Backend):
                 'http://gwf.readthedocs.io/en/latest/backends.html#local'
             )
 
-        status = self.client.status()
-        self._job_db = {
-            k: v
-            for k, v in self._job_db.items()
-            if v in status and status[v] != State.completed
-        }
+        task_status = self.client.status()
+        for target_name, task_id in self._job_db.items():
+            if task_id not in task_status or task_status[task_id] == State.completed:
+                del self._job_db[target_name]
 
     def submit(self, target, dependencies):
-        deps = [
-            self._job_db[dep.name]
-            for dep in dependencies
-            if dep.name in self._job_db
-        ]
-        job_id = self.client.submit(target, deps=deps)
-        self._job_db[target.name] = job_id
+        deps = [self._job_db[dep.name] for dep in dependencies if dep.name in self._job_db]
+        task_id = self.client.submit(
+            target,
+            deps=deps,
+            stdout_path=self._log_path(target, 'stdout'),
+            stderr_path=self._log_path(target, 'stderr')
+        )
+        self._job_db[target.name] = task_id
 
     def cancel(self, target):
-        pass
+        raise NotImplementedError()
 
     def submitted(self, target):
         return target.name in self._job_db
@@ -195,30 +179,19 @@ class LocalBackend(FileLogsMixin, Backend):
     def running(self, target):
         return self._has_status(target, State.started)
 
-    def failed(self, target):
-        return self._has_status(target, State.failed)
-
     def completed(self, target):
         return self._has_status(target, State.completed)
 
     def close(self):
-        try:
-            if hasattr(self, '_db_path'):
-                with open(self._db_path, 'w') as fileobj:
-                    json.dump(self._job_db, fileobj)
-        except:
-            logger.error(
-                'Closing backend caused an exception to be raised.',
-                exc_info=True,
-            )
+        self._job_db.persist()
 
 
-class Worker(FileLogsMixin):
+class Worker:
 
-    def __init__(self, status, queue, deps):
+    def __init__(self, status, queue, waiting):
         self.status = status
         self.queue = queue
-        self.deps = deps
+        self.waiting = waiting
 
         self.run()
 
@@ -243,7 +216,7 @@ class Worker(FileLogsMixin):
         self.status[task_id] = State.started
 
         try:
-            self.execute_target(request.target)
+            self.execute_target(request.target, stdout_path=request.stdout_path, stderr_path=request.stderr_path)
         except:
             self.status[task_id] = State.failed
             logger.error('Task %s failed.', task_id, exc_info=True)
@@ -276,14 +249,14 @@ class Worker(FileLogsMixin):
             if self.status[dep_id] != State.completed:
                 logger.debug('Task %s set to wait for %s.', task_id, dep_id)
 
-                if dep_id not in self.deps:
-                    self.deps[dep_id] = []
+                if dep_id not in self.waiting:
+                    self.waiting[dep_id] = []
 
                 # Do this weird thing to sync the dictionary. Using
                 # deps_dict[dep_id].append(...) doesn't work.
-                tmp = self.deps[dep_id]
+                tmp = self.waiting[dep_id]
                 tmp.append((task_id, request))
-                self.deps[dep_id] = tmp
+                self.waiting[dep_id] = tmp
 
                 has_non_satisfied_dep = True
 
@@ -292,36 +265,32 @@ class Worker(FileLogsMixin):
         return True
 
     def requeue_dependents(self, task_id):
-        """Requeue targets that depend on a specific task."""
-        if task_id not in self.deps:
+        """Requeue targets that waiting on a specific task."""
+        if task_id not in self.waiting:
             return
 
         logger.debug('Task %s has waiting dependents. Requeueing.', task_id)
-        for dep_task_id, dep_request in self.deps[task_id]:
+        for dep_task_id, dep_request in self.waiting[task_id]:
             self.queue.put((dep_task_id, dep_request))
 
-    def execute_target(self, target):
+    def execute_target(self, target, stdout_path, stderr_path):
         env = os.environ.copy()
         env['GWF_TARGET_NAME'] = target.name
 
-        process = subprocess.Popen(
-            ['bash'],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-            cwd=target.working_dir,
-            env=env,
-        )
+        with open(stdout_path, mode='w') as stdout_fp, open(stderr_path, mode='w') as stderr_fp:
+            process = subprocess.Popen(
+                ['bash'],
+                stdin=subprocess.PIPE,
+                stdout=stdout_fp,
+                stderr=stderr_fp,
+                universal_newlines=True,
+                cwd=target.working_dir,
+                env=env,
+            )
 
-        stdout, stderr = process.communicate(target.spec)
-        with self.open_stdout(target, mode='w') as stdout_fp:
-            stdout_fp.write(stdout)
-        with self.open_stderr(target, mode='w') as stderr_fp:
-            stderr_fp.write(stderr)
-
-        if process.returncode != 0:
-            raise Exception(stderr)
+            process.communicate(target.spec)
+            if process.returncode != 0:
+                raise Exception('Target {} exited with a non-zero return code.'.format(target.name))
 
 
 class Server:
@@ -334,7 +303,7 @@ class Server:
         self.manager = Manager()
         self.status = self.manager.dict()
         self.queue = self.manager.Queue()
-        self.deps = self.manager.dict()
+        self.waiting = self.manager.dict()
 
     def handle_request(self, request):
         try:
@@ -371,26 +340,20 @@ class Server:
         """
         try:
             serv = Listener((self.hostname, self.port))
+            workers = Pool(
+                processes=self.num_workers,
+                initializer=Worker,
+                initargs=(self.status, self.queue, self.waiting),
+            )
+
+            logging.critical('Started %s workers, listening on port %s.', self.num_workers, serv.address[1])
+            self.wait_for_clients(serv)
         except OSError as e:
             if e.errno == 48:
                 raise ServerError(
                     ('Could not start workers listening on port {}. '
                      'The port may already be in use.').format(self.port)
                 )
-
-        try:
-            workers = Pool(
-                processes=self.num_workers,
-                initializer=Worker,
-                initargs=(self.status, self.queue, self.deps),
-            )
-
-            logging.critical(
-                'Started %s workers, listening on port %s.',
-                self.num_workers, serv.address[1]
-            )
-
-            self.wait_for_clients(serv)
         except KeyboardInterrupt:
             logging.info('Shutting down...')
             workers.close()
@@ -398,3 +361,8 @@ class Server:
 
 
 __all__ = ('Client', 'Server', 'LocalBackend',)
+
+
+if __name__ == '__main__':
+    server = Server(port=12345, num_workers=2)
+    server.start()
