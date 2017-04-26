@@ -12,10 +12,6 @@ A plugin is a Python package and thus you should be (at least slightly)
 familiar with the principles of packaging in Python. If you're not, don't worry.
 This guide will teach you the basics.
 
-Plugins for *gwf* must inherit from :class:`gwf.plugins.Plugin` and
-implement the required methods and specify the :attr:`name` attribute. Thus,
-a minimal (and completely useless) plugin looks like this::
-
     # myplugin/myplugin.py
     from gwf.plugins import Plugin
 
@@ -90,10 +86,6 @@ Adding a Subcommand
 So now our plugin is loaded by *gwf*, but it doesn't do anything. Let's set up
 a subcommand that the user can run to get a list of all targets in the
 current workflow. Plugins have a special hook to set up the argument parsing:
-
-.. automethod::
-  gwf.plugins.Plugin.setup_argument_parser
-  :noindex:
 
 We can override this method to add our subcommand as follows::
 
