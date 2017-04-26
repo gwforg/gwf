@@ -567,7 +567,7 @@ class Graph(object):
         return set(self.targets.values()) - set(self.dependents.keys())
 
 
-def schedule(graph, backend, target):
+def schedule(graph, backend, target, dry_run=False):
     """Schedule and submit a :class:`gwf.Target` and its dependencies.
 
     This method is provided by :class:`Backend` and should not be overriden.
@@ -601,15 +601,17 @@ def schedule(graph, backend, target):
             )
             continue
 
-        logger.info('Submitting target %s.', dependency.name)
-
-        backend.submit(dependency, graph.dependencies[dependency])
+        if dry_run:
+            logger.info('Would submit target %s.', dependency.name)
+        else:
+            logger.info('Submitting target %s.', dependency.name)
+            backend.submit(dependency, graph.dependencies[dependency])
         scheduled.append(dependency)
 
     return scheduled
 
 
-def schedule_many(graph, backend, targets):
+def schedule_many(graph, backend, targets, **kwargs):
     """Schedule a list of :class:`gwf.Target` and their dependencies.
 
     Will schedule the targets in `targets` with :func:`schedule`
@@ -622,5 +624,5 @@ def schedule_many(graph, backend, targets):
     """
     schedules = []
     for target in targets:
-        schedules.append(schedule(graph, backend, target))
+        schedules.append(schedule(graph, backend, target, **kwargs))
     return schedules
