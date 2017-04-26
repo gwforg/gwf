@@ -1,3 +1,4 @@
+import atexit
 import os.path
 import logging
 from functools import update_wrapper
@@ -38,6 +39,7 @@ def pass_backend(f):
     def new_func(ctx, *args, **kwargs):
         backend_cls = BACKENDS[ctx.obj['_backend']]
         backend = backend_cls(working_dir=ctx.obj['_workflow'].working_dir)
+        atexit.register(backend.close)
         return ctx.invoke(f, *args, backend=backend, **kwargs)
     return update_wrapper(new_func, f)
 
