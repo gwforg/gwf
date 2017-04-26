@@ -1,8 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from gwf.exceptions import GWFError
-from gwf.utils import parse_path, cache, get_file_timestamp, load_workflow
+from gwf.utils import parse_path, cache, get_file_timestamp
 
 
 class TestCache(unittest.TestCase):
