@@ -40,6 +40,6 @@ def clean(ctx, graph, backend, targets, not_endpoints):
     for target in targets:
         logger.info('Deleting %s', target.name)
         for path in target.outputs:
-            logging.debug('Deleting output file "%s" from target "%s".', path, target.name)
+            logging.info('Deleting output file "%s" from target "%s".', click.format_filename(path), target.name)
             _delete_file(path)
 
