@@ -1,6 +1,8 @@
 from unittest import TestCase
 from unittest.mock import patch
 
+from click.testing import CliRunner
+
 
 class GWFTestCase(TestCase):
 
@@ -9,3 +11,9 @@ class GWFTestCase(TestCase):
         thing = patcher.start()
         self.addCleanup(patcher.stop)
         return thing
+
+
+class CliTestCase(TestCase):
+
+    def setUp(self):
+        self.runner = CliRunner()
