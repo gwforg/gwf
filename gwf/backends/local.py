@@ -1,4 +1,3 @@
-import json
 import logging
 import multiprocessing
 import os
@@ -358,8 +357,3 @@ class Server:
 
 
 __all__ = ('Client', 'Server', 'LocalBackend',)
-
-
-if __name__ == '__main__':
-    server = Server(port=12345, num_workers=2)
-    server.start()

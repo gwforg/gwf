@@ -36,4 +36,3 @@ def clean(graph, backend, targets, not_endpoints):
         for path in target.outputs:
             logging.info('Deleting output file "%s" from target "%s".', click.format_filename(path), target.name)
             _delete_file(path)
-

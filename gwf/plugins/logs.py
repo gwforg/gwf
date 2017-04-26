@@ -11,7 +11,7 @@ from ..exceptions import TargetDoesNotExistError
 @pass_backend
 def logs(backend, graph, target, stdout):
     """Display logs for the latest run of a target.
-    
+
     By default only standard output is shown. Supply the --stderr flag to show standard error instead.
     """
     if target not in graph.targets:

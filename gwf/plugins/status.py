@@ -1,7 +1,6 @@
 import statusbar
 
 from ..cli import pass_graph, pass_backend
-from ..exceptions import TargetDoesNotExistError
 from ..utils import dfs
 
 import click
