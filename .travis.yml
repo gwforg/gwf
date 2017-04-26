@@ -11,7 +11,7 @@ install:
 - pip install codacy-coverage
 - pip install -r requirements.txt
 - pip install .
-script: make lint && make test
+script: make test
 after_success:
 - coveralls
 - coverage xml
