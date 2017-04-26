@@ -9,8 +9,7 @@ import click
 @click.argument('targets', nargs=-1)
 @pass_backend
 @pass_graph
-@click.pass_obj
-def run(ctx, graph, backend, targets):
+def run(graph, backend, targets):
     """Run the specified workflow."""
     targets = []
     if not targets:
