@@ -4,7 +4,7 @@ from unittest.mock import ANY, call, mock_open, patch
 
 from gwf import Graph, Target, Workflow
 from gwf.backends.slurm import (SlurmBackend, _call_sbatch, _call_scancel,
-                                _call_squeue, _find_exe, _get_queue)
+                                _call_squeue, _find_exe, _get_state)
 from gwf.exceptions import BackendError, NoLogFoundError
 from tests import GWFTestCase
 
@@ -50,7 +50,7 @@ class TestSlurmBackendGetLiveJobStates(SlurmTestCase):
             fake_squeue_stdout, fake_squeue_stderr
         )
 
-        result = _get_queue()
+        result = _get_state()
 
         self.assertDictEqual(result, {
             '36971043': 'H',
@@ -90,7 +90,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
 
         self.mock_call_sbatch.assert_any_call(ANY, ['1000', '2000'])
         self.assertEqual(backend._tracked['TestTarget3'], '3000')
-        self.assertEqual(backend._queue['3000'], 'H')
+        self.assertEqual(backend._status['3000'], 'H')
 
     def test_no_dependency_flag_is_set_if_target_has_no_dependencies(self):
         self.mock_persistabledict.side_effect = [{}]
@@ -105,7 +105,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
 
         self.mock_call_sbatch.assert_any_call(ANY, [])
         self.assertEqual(backend._tracked['TestTarget'], '1000')
-        self.assertEqual(backend._queue['1000'], 'H')
+        self.assertEqual(backend._status['1000'], 'H')
 
     def test_job_script_is_properly_compiled_with_all_supported_options(self):
         backend = SlurmBackend(working_dir='/some/dor')
