@@ -61,7 +61,7 @@ def load_workflow(basedir, filename, objname):
 
     try:
         return getattr(mod, objname)
-    except AttributeError as e:
+    except AttributeError:
         raise GWFError('Module "{}" does not declare attribute "{}".'.format(filename, objname))
 
 

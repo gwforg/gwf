@@ -160,7 +160,6 @@ class TestSlurmBackendCancel(SlurmTestCase):
         self.mock_get_status.return_value = {'1000': 'R'}
 
         target = self.workflow.target('TestTarget', inputs=[], outputs=[], working_dir='/some/dir')
-        graph = Graph(targets=self.workflow.targets)
         backend = SlurmBackend(working_dir='/some/dir')
         backend.cancel(target)
 

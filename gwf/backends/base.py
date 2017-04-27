@@ -69,7 +69,7 @@ class Backend:
             if stderr:
                 return open(self._log_path(target, 'stderr'), 'r')
             return open(self._log_path(target, 'stdout'), 'r')
-        except OSError as e:
+        except OSError:
             raise NoLogFoundError()
 
     def _log_dir(self, target):
