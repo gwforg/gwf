@@ -146,7 +146,7 @@ class LocalBackend(Backend):
             )
 
         task_status = self.client.status()
-        for target_name, task_id in self._job_db.items():
+        for target_name, task_id in list(self._job_db.items()):
             if task_id not in task_status or task_status[task_id] == State.completed:
                 del self._job_db[target_name]
 
