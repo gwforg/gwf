@@ -36,9 +36,10 @@ def print_progress(backend, graph, targets):
 
 @click.command()
 @click.argument('targets', nargs=-1)
+@click.option('--all/--endpoints', help='Whether to show all targets or only endpoints if no targets are specified.')
 @pass_graph
 @pass_backend
-def status(backend, graph, targets):
+def status(backend, graph, targets, all):
     """
     Show the status of targets.
 
@@ -51,6 +52,7 @@ def status(backend, graph, targets):
     are submitted (yellow, S), are running (blue, R), are
     completed (green, C), or have failed (red, F).
     """
-    matched_targets = graph.get_targets_by_name(targets) or graph.endpoints()
+    default_targets = graph.targets.values if all else graph.endpoints
+    matched_targets = graph.get_targets_by_name(targets) or default_targets()
     sorted_targets = sorted(matched_targets, key=lambda t: t.name)
     print_progress(backend, graph, sorted_targets)
