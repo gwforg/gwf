@@ -12,8 +12,8 @@ def touch_file(path, contents=None):
 
 class GWFTestCase(TestCase):
 
-    def create_patch(self, name):
-        patcher = patch(name)
+    def create_patch(self, name, **kwargs):
+        patcher = patch(name, **kwargs)
         thing = patcher.start()
         self.addCleanup(patcher.stop)
         return thing
