@@ -1,4 +1,7 @@
-class GWFError(Exception):
+import click
+
+
+class GWFError(click.ClickException):
     """Base exception for all gwf exceptions."""
 
 
