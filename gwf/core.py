@@ -15,7 +15,7 @@ from .exceptions import (CircularDependencyError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
                          InvalidNameError, TargetExistsError, InvalidTypeError, TargetDoesNotExistError)
 from .utils import (cache, dfs, get_file_timestamp, load_workflow,
-                    is_valid_name, iter_inputs, iter_outputs, timer)
+                    is_valid_name, iter_inputs, iter_outputs, timer, parse_path)
 
 logger = logging.getLogger(__name__)
 
@@ -241,7 +241,8 @@ class Workflow(object):
 
         See :func:`~gwf.Workflow.include`.
         """
-        other_workflow = load_workflow(path)
+        basedir, filename, obj = parse_path(path)
+        other_workflow = load_workflow(basedir, filename, obj)
         self.include_workflow(other_workflow, namespace=namespace)
         return other_workflow
 

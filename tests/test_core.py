@@ -110,20 +110,24 @@ class TestWorkflow(unittest.TestCase):
         with self.assertRaises(IncludeWorkflowError):
             workflow.include(other_workflow)
 
-    @patch('gwf.core.load_workflow')
-    def test_including_workflow_path_import_object_and_include_workflow_into_current_workflow(self, mock_load_workflow):
+    @patch('gwf.core.load_workflow', autospec=True)
+    def test_including_workflow_from_path(self, mock_load_workflow):
         workflow = Workflow()
-        workflow.target('TestTarget1', inputs=[], outputs=[])
+        target1 = workflow.target('TestTarget1', inputs=[], outputs=[])
 
         other_workflow = Workflow()
-        other_workflow.target('TestTarget2', inputs=[], outputs=[])
-        other_workflow.target('TestTarget3', inputs=[], outputs=[])
+        target2 = other_workflow.target('TestTarget2', inputs=[], outputs=[])
+        target3 = other_workflow.target('TestTarget3', inputs=[], outputs=[])
 
         mock_load_workflow.return_value = other_workflow
-        with patch.object(workflow, 'include_workflow') as mock_include_workflow:
-            workflow.include_path('/path/to/other_workflow.py')
-            mock_load_workflow.assert_called_once_with('/path/to/other_workflow.py')
-            mock_include_workflow.assert_called_once_with(other_workflow, namespace=None)
+
+        workflow.include_path('/path/to/other_workflow.py', namespace='other')
+        self.assertEqual(workflow.targets, {
+            'TestTarget1': target1,
+            'other.TestTarget2': target2,
+            'other.TestTarget3': target3,
+        })
+
 
     def test_including_workflow_instance_dispatches_to_include_workflow(self):
         workflow = Workflow()
@@ -142,7 +146,7 @@ class TestWorkflow(unittest.TestCase):
             mock_include_path.assert_called_once_with(
                 '/path/to/other_workflow.py', namespace=None)
 
-    @patch('gwf.core.inspect.ismodule', return_value=True)
+    @patch('gwf.core.inspect.ismodule', return_value=True, autospec=True)
     def test_including_workflow_module_gets_workflow_attribute_and_dispatches_to_include_workflow(self, mock_ismodule):
         workflow = Workflow(working_dir='/some/dir')
         other_workflow = Workflow(working_dir='/some/other/dir')
@@ -177,8 +181,8 @@ class TestWorkflow(unittest.TestCase):
         target = workflow.target('TestTarget', inputs=[], outputs=[], cores=16)
         self.assertEqual(target.options, {'cores': 16, 'memory': '8g'})
 
-    @patch('gwf.core.sys._getframe')
-    @patch('gwf.core.inspect.getfile', return_value='/some/path/file.py')
+    @patch('gwf.core.sys._getframe', autospec=True)
+    @patch('gwf.core.inspect.getfile', return_value='/some/path/file.py', autospec=True)
     def test_workflow_computes_working_dir_when_not_initialized_with_working_dir(
             self, inspect_getfile_mock, sys_getframe_mock):
         workflow = Workflow()
@@ -187,33 +191,33 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(inspect_getfile_mock.call_count, 1)
         self.assertEqual(workflow.working_dir, '/some/path')
 
-    @patch('gwf.core._glob')
+    @patch('gwf.core._glob', autospec=True)
     def test_glob_with_relative_path_searches_relative_to_working_dir(self, glob_mock):
         workflow = Workflow(working_dir='/some/path')
         workflow.glob('*.fa')
         glob_mock.assert_called_once_with('/some/path/*.fa')
 
-    @patch('gwf.core._glob', return_value=['/other/path/A.fa', '/other/path/B.fa'])
+    @patch('gwf.core._glob', return_value=['/other/path/A.fa', '/other/path/B.fa'], autospec=True)
     def test_glob_with_absolute_path_does_not_search_relative_to_working_dir(self, glob_mock):
         workflow = Workflow(working_dir='/some/path')
         res = workflow.glob('/other/path/*.fa')
         self.assertEqual(res, ['/other/path/A.fa', '/other/path/B.fa'])
         glob_mock.assert_called_once_with('/other/path/*.fa')
 
-    @patch('gwf.core._iglob')
+    @patch('gwf.core._iglob', autospec=True)
     def test_iglob_with_relative_path_searches_relative_to_working_dir(self, iglob_mock):
         workflow = Workflow(working_dir='/some/path')
         workflow.iglob('*.fa')
         iglob_mock.assert_called_once_with('/some/path/*.fa')
 
-    @patch('gwf.core._iglob', return_value=['/other/path/A.fa', '/other/path/B.fa'])
+    @patch('gwf.core._iglob', return_value=['/other/path/A.fa', '/other/path/B.fa'], autospec=True)
     def test_iglob_with_absolute_path_does_not_search_relative_to_working_dir(self, iglob_mock):
         workflow = Workflow(working_dir='/some/path')
         res = list(workflow.iglob('/other/path/*.fa'))
         self.assertEqual(res, ['/other/path/A.fa', '/other/path/B.fa'])
         iglob_mock.assert_called_once_with('/other/path/*.fa')
 
-    @patch('gwf.core.subprocess.check_output')
+    @patch('gwf.core.subprocess.check_output', autospec=True)
     def test_shell_calls_subprocess_with_same_working_dir_as_workflow_in_a_shell(self, mock_check_output):
         workflow = Workflow(working_dir='/some/path')
         workflow.shell('echo hello')
@@ -406,14 +410,14 @@ class TestGraph(unittest.TestCase):
         graph = Graph(targets=self.workflow.targets)
         self.assertEqual(graph.dependencies[target], [])
 
-    @patch('gwf.core.os.path.exists', return_value=False)
+    @patch('gwf.core.os.path.exists', return_value=False, autospec=True)
     def test_non_existing_files_not_provided_by_other_target_raises_exception(self, mock_os_path_exists):
         self.workflow.target(
             'TestTarget', inputs=['test_input.txt'], outputs=[])
         with self.assertRaises(FileRequiredButNotProvidedError):
             Graph(targets=self.workflow.targets,)
 
-    @patch('gwf.core.os.path.exists', return_value=True)
+    @patch('gwf.core.os.path.exists', return_value=True, autospec=True)
     def test_existing_files_not_provided_by_other_target_has_no_dependencies(self, mock_exists):
         target = self.workflow.target(
             'TestTarget',
@@ -424,7 +428,7 @@ class TestGraph(unittest.TestCase):
         graph = Graph(targets=self.workflow.targets)
         self.assertListEqual(graph.dependencies[target], [])
 
-    @patch('gwf.core.os.path.exists', return_value=False)
+    @patch('gwf.core.os.path.exists', return_value=False, auto_spec=True)
     def test_finds_non_existing_file_provided_by_other_target(self, mock_os_path_exists):
         target1 = self.workflow.target(
             'TestTarget1', inputs=[], outputs=['test_file.txt'])
@@ -436,7 +440,7 @@ class TestGraph(unittest.TestCase):
         self.assertIn(target2, graph.dependencies)
         self.assertIn(target1, graph.dependencies[target2])
 
-    @patch('gwf.core.os.path.exists', return_value=False)
+    @patch('gwf.core.os.path.exists', return_value=False, autospec=True)
     def test_finds_non_existing_files_provided_by_two_other_targets(self, mock_os_path_exists):
         target1 = self.workflow.target(
             'TestTarget1', inputs=[], outputs=['test_file1.txt'])
@@ -451,7 +455,7 @@ class TestGraph(unittest.TestCase):
         self.assertIn(target1, graph.dependencies[target3])
         self.assertIn(target2, graph.dependencies[target3])
 
-    @patch('gwf.core.os.path.exists', return_value=False)
+    @patch('gwf.core.os.path.exists', return_value=False, autospec=True)
     def test_finds_non_existing_files_provided_by_other_targets_in_chain(self, mock_os_path_exists):
         target1 = self.workflow.target(
             'TestTarget1', inputs=[], outputs=['test_file1.txt'])
@@ -466,7 +470,7 @@ class TestGraph(unittest.TestCase):
         self.assertIn(target1, graph.dependencies[target2])
         self.assertIn(target2, graph.dependencies[target3])
 
-    @patch('gwf.core.os.path.exists', return_value=False)
+    @patch('gwf.core.os.path.exists', return_value=False, autospec=True)
     def test_immediate_circular_dependencies_in_workflow_raises_exception(self, mock_os_path_exists):
         self.workflow.target(
             'TestTarget1', inputs=['test_file2.txt'], outputs=['test_file1.txt'])
@@ -476,7 +480,7 @@ class TestGraph(unittest.TestCase):
         with self.assertRaises(CircularDependencyError):
             Graph(targets=self.workflow.targets)
 
-    @patch('gwf.core.os.path.exists', return_value=False)
+    @patch('gwf.core.os.path.exists', return_value=False, autospec=True)
     def test_circular_dependencies_in_workflow_raises_exception(self, mock_os_path_exists):
         self.workflow.target(
             'TestTarget1', inputs=['test_file3.txt'], outputs=['test_file1.txt'])
@@ -617,7 +621,7 @@ class TestShouldRun(unittest.TestCase):
             self.assertFalse(self.graph.should_run(self.target3))
             self.assertFalse(self.graph.should_run(self.target4))
 
-    @patch('gwf.core.os.path.exists', return_value=True)
+    @patch('gwf.core.os.path.exists', return_value=True, autospec=True)
     def test_two_targets_producing_the_same_file_but_declared_with_rel_and_abs_path(self, mock_os_path_exists):
         workflow = Workflow(working_dir='/some/dir')
         workflow.target('TestTarget1', inputs=[], outputs=['/some/dir/test_output.txt'])
