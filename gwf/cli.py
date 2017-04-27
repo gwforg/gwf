@@ -15,11 +15,8 @@ from .utils import parse_path, load_workflow, ensure_dir
 logger = logging.getLogger(__name__)
 
 
-VERBOSITY_LEVELS = {
-    'warning': logging.WARNING,
-    'info': logging.INFO,
-    'debug': logging.DEBUG,
-}
+def get_level(level):
+    return getattr(logging, level.upper())
 
 BASIC_FORMAT = '%(message)s'
 ADVANCED_FORMAT = '%(levelname)s:%(name)s:%(message)s'
@@ -61,14 +58,14 @@ def pass_graph(f):
     '-f',
     '--file',
     default='workflow.py:gwf',
-    help='Workflow/obj to load'
+    help='Workflow/obj to load.'
 )
 @click.option(
     '-b',
     '--backend',
     default='local',
     type=click.Choice(BACKENDS.keys()),
-    help='Backend used to run workflow'
+    help='Backend used to run workflow.'
 )
 @click.option(
     '-v',
@@ -79,7 +76,7 @@ def pass_graph(f):
 @click.pass_context
 def main(ctx, backend, file, verbose):
     """A flexible, pragmatic workflow tool."""
-    logging.basicConfig(level=VERBOSITY_LEVELS[verbose], format=LOGGING_FORMATS[verbose])
+    logging.basicConfig(level=get_level(verbose), format=LOGGING_FORMATS[verbose])
 
     basedir, filename, obj = parse_path(file)
     workflow = load_workflow(basedir, filename, obj)
