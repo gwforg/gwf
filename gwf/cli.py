@@ -35,6 +35,7 @@ BACKENDS = {ep.name: ep.load() for ep in iter_entry_points('gwf.backends')}
 
 
 def pass_backend(f):
+    """Pass the initialized backend to the function."""
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
         backend_cls = BACKENDS[ctx.obj['_backend']]
@@ -45,6 +46,7 @@ def pass_backend(f):
 
 
 def pass_graph(f):
+    """Pass the complete workflow graph to the function."""
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
         graph = Graph(targets=ctx.obj['_workflow'].targets)
