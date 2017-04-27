@@ -234,3 +234,27 @@ class SlurmBackend(Backend):
         out.append('')
         out.append(target.spec)
         return '\n'.join(out)
+
+
+class Script:
+
+    def __init__(self):
+        self._header_lines = []
+        self._envvar_lines = []
+        self._option_lines = []
+        self._command = ''
+
+    def add_header(self, text):
+        self._header_lines.append('# {}'.format(text))
+
+    def add_envvar(self, name, value):
+        self._envvar_lines.append('export {}={}'.format(name, value))
+
+    def add_option(self, option, value):
+        pass
+
+    def set_command(self, command):
+        pass
+
+    def render_script(self):
+        return '\n'.join(self.header_lines + self._option_lines + self._envvar_lines + [self._command])

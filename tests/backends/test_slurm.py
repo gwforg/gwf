@@ -16,22 +16,22 @@ class SlurmTestCase(GWFTestCase):
         self.graph = Graph(targets=self.workflow.targets)
 
         self.mock_get_status = self.create_patch(
-            'gwf.backends.slurm._get_status'
+            'gwf.backends.slurm._get_status', autospec=True
         )
         self.mock_exists = self.create_patch(
-            'gwf.backends.slurm.os.path.exists'
+            'gwf.backends.slurm.os.path.exists', autospec=True
         )
         self.mock_call_squeue = self.create_patch(
-            'gwf.backends.slurm._call_squeue'
+            'gwf.backends.slurm._call_squeue', autospec=True
         )
         self.mock_call_sbatch = self.create_patch(
-            'gwf.backends.slurm._call_sbatch'
+            'gwf.backends.slurm._call_sbatch', autospec=True
         )
         self.mock_call_scancel = self.create_patch(
-            'gwf.backends.slurm._call_scancel'
+            'gwf.backends.slurm._call_scancel', autospec=True
         )
         self.mock_persistabledict = self.create_patch(
-            'gwf.backends.slurm.PersistableDict'
+            'gwf.backends.slurm.PersistableDict', autospec=True
         )
 
 
@@ -281,7 +281,7 @@ class TestFindExe(GWFTestCase):
 
     def setUp(self):
         self.mock_find_executable = self.create_patch(
-            'gwf.backends.slurm.find_executable'
+            'gwf.backends.slurm.find_executable', autospec=True
         )
 
     def test_calls_find_executable_with_name_and_return_result_if_not_none(self):
@@ -308,16 +308,16 @@ class TestDumpAtomic(GWFTestCase):
 
     def setUp(self):
         self.mock_open = self.create_patch(
-            'builtins.open'
+            'builtins.open', autospec=True
         )
         self.mock_json_dump = self.create_patch(
-            'gwf.backends.slurm.json.dump'
+            'gwf.backends.slurm.json.dump', autospec=True
         )
         self.mock_os_fsync = self.create_patch(
-            'gwf.backends.slurm.os.fsync'
+            'gwf.backends.slurm.os.fsync', autospec=True
         )
         self.mock_os_rename = self.create_patch(
-            'gwf.backends.slurm.os.rename'
+            'gwf.backends.slurm.os.rename', autospec=True
         )
 
 
@@ -325,10 +325,10 @@ class TestCallSqueue(GWFTestCase):
 
     def setUp(self):
         self.mock_find_exe = self.create_patch(
-            'gwf.backends.slurm._find_exe'
+            'gwf.backends.slurm._find_exe', autospec=True
         )
         self.mock_popen = self.create_patch(
-            'gwf.backends.slurm.subprocess.Popen'
+            'gwf.backends.slurm.subprocess.Popen', autospec=True
         )
 
     def test_cmd_uses_executable_found_and_returns_stdout_and_stderr(self):
@@ -366,10 +366,10 @@ class TestCallScancel(GWFTestCase):
 
     def setUp(self):
         self.mock_find_exe = self.create_patch(
-            'gwf.backends.slurm._find_exe'
+            'gwf.backends.slurm._find_exe', autospec=True
         )
         self.mock_popen = self.create_patch(
-            'gwf.backends.slurm.subprocess.Popen'
+            'gwf.backends.slurm.subprocess.Popen', autospec=True
         )
 
     def test_cmd_uses_executable_found_and_runs_it_correctly(self):
@@ -404,10 +404,10 @@ class TestCallSbatch(GWFTestCase):
 
     def setUp(self):
         self.mock_find_exe = self.create_patch(
-            'gwf.backends.slurm._find_exe'
+            'gwf.backends.slurm._find_exe', autospec=True
         )
         self.mock_popen = self.create_patch(
-            'gwf.backends.slurm.subprocess.Popen'
+            'gwf.backends.slurm.subprocess.Popen', autospec=True
         )
 
     def test_cmd_uses_executable_found_and_runs_correctly_when_no_dependencies(self):
