@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 def get_level(level):
     return getattr(logging, level.upper())
 
+
 BASIC_FORMAT = '%(message)s'
 ADVANCED_FORMAT = '%(levelname)s:%(name)s:%(message)s'
 
