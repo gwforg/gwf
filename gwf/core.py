@@ -68,10 +68,6 @@ class Target(object):
 
     :ivar str name:
         Name of the target.
-    :ivar list inputs:
-        A list of input paths for this target.
-    :ivar list outputs:
-        A list of output paths for this target.
     :ivar dict options:
         Options such as number of cores, memory requirements etc. Options are
         backend-dependent.
@@ -84,25 +80,52 @@ class Target(object):
     inputs = normalized_paths_property('inputs')
     outputs = normalized_paths_property('outputs')
 
-    def __init__(self, name, inputs, outputs, options, working_dir, spec=''):
+    def __init__(self, name, options, working_dir, spec=''):
         self.name = name
         if not is_valid_name(self.name):
             raise InvalidNameError('Target defined with invalid name: "{}".'.format(self.name))
 
-        self.options = options
+        # we need these for __repr__ to work -- it sets the propertis
+        # the actual inputs and outputs won't be set until we validate
+        # the target -- we keep them in the options to make sure
+        # that they are explicitly set.
+        self.inputs = []
+        self.outputs = []
+
+        self.options = options.copy()
         self.working_dir = working_dir
+
+        self.spec = spec
+
+    def validate(self):
+        """Validate that the target is correctly specified."""
+
+        if 'inputs' not in self.options:
+            raise InvalidTypeError(
+                'Target `{}` does not specify its `inputs`.'.format(self.name))
+        if 'outputs' not in self.options:
+            raise InvalidTypeError(
+                'Target `{}` does not specify its `outputs`.'.format(self.name))
+
+        inputs = self.options['inputs']
+        outputs = self.options['outputs']
+
+        # after we get the inputs and outputs options we need to remove
+        # them from the table so they don't get passed to backends.
+        # FIXME: This is not ideal, since it means that you cannot validate
+        # a target twice or you will get an error :(
+        del self.options['inputs']
+        del self.options['outputs']
 
         if not _is_valid_list(inputs):
             raise InvalidTypeError(
-                'The argument `inputs` to target `{}` must be a list or tuple, not a string.'.format(name))
+                'The argument `inputs` to target `{}` must be a list or tuple, not a string.'.format(self.name))
         if not _is_valid_list(outputs):
             raise InvalidTypeError(
-                'The argument `outputs` to target `{}` must be a list or tuple, not a string.'.format(name))
+                'The argument `outputs` to target `{}` must be a list or tuple, not a string.'.format(self.name))
 
         self.inputs = inputs
         self.outputs = outputs
-
-        self.spec = spec
 
     def qualname(self, namespace):
         if namespace is not None:
@@ -202,7 +225,7 @@ class Workflow(object):
             raise TargetExistsError(target)
         self.targets[qualname] = target
 
-    def target(self, name, inputs, outputs, **options):
+    def target(self, name, **options):
         """Create a target and add it to the :class:`gwf.Workflow`.
 
         This is syntactic sugar for creating a new :class:`~gwf.Target` and
@@ -220,8 +243,6 @@ class Workflow(object):
         and assign a spec to the target.
 
         :param str name: Name of the target.
-        :param iterable inputs: List of files that this target depends on.
-        :param iterable outputs: List of files that this target produces.
 
         Any further keyword arguments are passed to the backend.
         """
@@ -229,7 +250,7 @@ class Workflow(object):
         merged_options.update(options)
 
         new_target = Target(
-            name, inputs, outputs, merged_options,
+            name, merged_options,
             working_dir=self.working_dir,
         )
 
@@ -396,6 +417,8 @@ class Graph(object):
 
     def __init__(self, targets):
         self.targets = targets
+        for target in self.targets.values():
+            target.validate()
 
         self.provides = None
         self.dependencies = None

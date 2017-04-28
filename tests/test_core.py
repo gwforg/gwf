@@ -174,11 +174,13 @@ class TestWorkflow(unittest.TestCase):
     def test_targets_inherit_workflow_defaults(self):
         workflow = Workflow(defaults={'cores': 8, 'memory': '8g'})
         target = workflow.target('TestTarget', inputs=[], outputs=[])
+        target.validate()
         self.assertEqual(target.options, {'cores': 8, 'memory': '8g'})
 
     def test_target_options_override_defaults(self):
         workflow = Workflow(defaults={'cores': 8, 'memory': '8g'})
         target = workflow.target('TestTarget', inputs=[], outputs=[], cores=16)
+        target.validate()
         self.assertEqual(target.options, {'cores': 16, 'memory': '8g'})
 
     @patch('gwf.core.sys._getframe', autospec=True)
@@ -229,20 +231,18 @@ class TestTarget(unittest.TestCase):
         with self.assertRaises(InvalidNameError):
             Target(
                 '123abc',
-                inputs=[],
-                outputs=[],
-                options={},
+                {'inputs': [], 'outputs': []},
                 working_dir='/some/path'
             )
 
     def test_relative_input_paths_are_normalized(self):
         target = Target(
             name='TestTarget',
-            inputs=['test_input1.txt', 'test_input2.txt'],
-            outputs=[],
-            options={},
+            options={'inputs': ['test_input1.txt', 'test_input2.txt'],
+                     'outputs': []},
             working_dir='/some/path',
         )
+        target.validate()
 
         self.assertTrue(os.path.isabs(target.inputs[0]))
         self.assertTrue(os.path.isabs(target.inputs[1]))
@@ -253,11 +253,11 @@ class TestTarget(unittest.TestCase):
     def test_relative_output_paths_are_normalized(self):
         target = Target(
             name='TestTarget',
-            inputs=[],
-            outputs=['test_output1.txt', 'test_output2.txt'],
-            options={},
+            options={'inputs': [],
+                     'outputs': ['test_output1.txt', 'test_output2.txt']},
             working_dir='/some/path'
         )
+        target.validate()
 
         self.assertTrue(os.path.isabs(target.outputs[0]))
         self.assertTrue(os.path.isabs(target.outputs[1]))
@@ -268,98 +268,99 @@ class TestTarget(unittest.TestCase):
     def test_absolute_input_paths_are_not_normalized(self):
         target = Target(
             name='TestTarget',
-            inputs=['test_input1.txt', '/other/path/test_input2.txt'],
-            outputs=[],
-            options={},
+            options={'inputs': ['test_input1.txt', '/other/path/test_input2.txt'],
+                     'outputs': []},
             working_dir='/some/path'
         )
-
+        target.validate()
         self.assertTrue(target.inputs[0].startswith('/some/path'))
         self.assertTrue(target.inputs[1].startswith('/other/path'))
 
     def test_absolute_output_paths_are_not_normalized(self):
         target = Target(
             name='TestTarget',
-            inputs=['test_output1.txt', '/other/path/test_output2.txt'],
-            outputs=[],
-            options={},
+            options={'inputs': ['test_output1.txt', '/other/path/test_output2.txt'],
+                     'outputs': []},
             working_dir='/some/path'
         )
-
+        target.validate()
         self.assertTrue(target.inputs[0].startswith('/some/path'))
         self.assertTrue(target.inputs[1].startswith('/other/path'))
 
     def test_target_without_outputs_is_a_sink(self):
-        target = Target(name='TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/path')
+        target = Target(name='TestTarget', options={'inputs': [], 'outputs': []}, working_dir='/some/path')
         self.assertTrue(target.is_sink)
 
     def test_target_with_outputs_is_not_a_sink(self):
         target = Target(
             name='TestTarget',
-            inputs=[],
-            outputs=['test_output1.txt', 'test_output2.txt'],
-            options={},
+            options={'inputs': [],
+                     'outputs': ['test_output1.txt', 'test_output2.txt']},
             working_dir='/some/path',
         )
+        target.validate()
         self.assertFalse(target.is_sink)
 
     def test_target_without_inputs_is_a_source(self):
-        target = Target(name='TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/path')
+        target = Target(name='TestTarget', options={'inputs': [], 'outputs': []}, working_dir='/some/path')
         self.assertTrue(target.is_source)
 
     def test_target_with_inputs_is_not_a_source(self):
         target = Target(
             name='TestTarget',
-            inputs=['test_input1.txt', 'test_input2.txt'],
-            outputs=[],
-            options={},
+            options={'inputs': ['test_input1.txt', 'test_input2.txt'],
+                     'outputs': []},
             working_dir='/some/path'
         )
+        target.validate()
         self.assertFalse(target.is_source)
 
     def test_assigning_spec_to_target_sets_spec_attribute(self):
-        target = Target(name='TestTarget', inputs=[], outputs=[], options={},
+        target = Target(name='TestTarget', options={'inputs': [], 'outputs': []},
                         working_dir='/some/path') << 'this is a spec'
+        target.validate()
         self.assertIsNotNone(target.spec)
         self.assertEqual(target.spec, 'this is a spec')
 
     def test_raises_valueerror_if_inputs_is_not_valid(self):
         with self.assertRaises(InvalidTypeError):
-            Target(name='TestTarget', inputs='hello.txt', outputs=[], options={}, working_dir='/some/path')
+            target = Target(name='TestTarget', options={'inputs': 'hello.txt', 'outputs': []}, working_dir='/some/path')
+            target.validate()
 
     def test_raises_valueerror_if_outputs_is_not_valid(self):
         with self.assertRaises(InvalidTypeError):
-            Target(name='TestTarget', inputs=[], outputs='hello.txt', options={}, working_dir='/some/path')
+            target = Target(name='TestTarget', options={'inputs': [], 'outputs': 'hello.txt'}, working_dir='/some/path')
+            target.validate()
 
     def test_should_stringify_input_paths(self):
         target = Target(
             name='TestTarget',
-            inputs=[pathlib.PurePath('somefile.txt'), 'otherfile.txt'],
-            outputs=[],
-            options={},
+            options={'inputs': [pathlib.PurePath('somefile.txt'), 'otherfile.txt'],
+                     'outputs': []},
             working_dir='/some/path'
         )
+        target.validate()
         self.assertEqual(target.inputs, ['/some/path/somefile.txt', '/some/path/otherfile.txt'])
 
     def test_should_stringify_output_paths(self):
         target = Target(
             name='TestTarget',
-            inputs=[],
-            outputs=[pathlib.PurePath('somefile.txt'), 'otherfile.txt'],
-            options={},
+            options={'inputs': [],
+                     'outputs': [pathlib.PurePath('somefile.txt'), 'otherfile.txt']},
             working_dir='/some/path')
+        target.validate()
         self.assertEqual(target.outputs, ['/some/path/somefile.txt', '/some/path/otherfile.txt'])
 
     def test_assigning_template_to_target(self):
         template = ({'cores': 1, 'memory': '8g'}, 'this is the spec')
-        target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir') << template
+        target = Target('TestTarget', options={'inputs': [], 'outputs': []}, working_dir='/some/dir') << template
         self.assertEqual(target.options['cores'], 1)
         self.assertEqual(target.options['memory'], '8g')
         self.assertEqual(target.spec, 'this is the spec')
 
     def test_assigning_template_to_target_and_overriding_options(self):
         template = ({'cores': 1, 'memory': '8g'}, 'this is the spec')
-        target = Target('TestTarget', inputs=[], outputs=[], options={'cores': 8}, working_dir='/some/dir') << template
+        target = Target('TestTarget', options={'inputs': [], 'outputs': [], 'cores': 8}, working_dir='/some/dir') << template
         self.assertEqual(target.options['cores'], 8)
         self.assertEqual(target.options['memory'], '8g')
         self.assertEqual(target.spec, 'this is the spec')
@@ -367,9 +368,8 @@ class TestTarget(unittest.TestCase):
     def test_str_on_target(self):
         target = Target(
             'TestTarget',
-            inputs=[],
-            outputs=[],
-            options={},
+            options={'inputs': [],
+                     'outputs': []},
             working_dir='/some/path'
         )
         self.assertEqual(str(target), 'TestTarget')
@@ -563,7 +563,7 @@ class TestShouldRun(unittest.TestCase):
         )
 
     def test_target_should_run_if_it_is_a_sink(self):
-        target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+        target = Target('TestTarget', {'inputs': [], 'outputs': []}, working_dir='/some/dir')
         graph = Graph(targets={'TestTarget': target})
         with self.assertLogs(level='DEBUG') as logs:
             self.assertTrue(graph.should_run(target))

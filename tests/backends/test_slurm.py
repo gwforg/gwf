@@ -97,7 +97,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.mock_get_status.return_value = {}
         self.mock_call_sbatch.return_value = ('1000', '')
 
-        target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+        target = Target('TestTarget', options={'inputs': [], 'outputs': []}, working_dir='/some/dir')
         graph = Graph(targets={'TestTarget': target})
 
         backend = SlurmBackend(working_dir='/some/dir')
@@ -112,10 +112,10 @@ class TestSlurmBackendSubmit(SlurmTestCase):
 
         target = Target(
             name='TestTarget',
-            inputs=[],
-            outputs=[],
             working_dir='/some/dir',
             options={
+                'inputs': [],
+                'outputs': [],
                 'cores': 16,
                 'memory': '16g',
                 'walltime': '12:00:00',
@@ -128,6 +128,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
             },
             spec='echo hello world'
         )
+        target.validate()
 
         script = backend._compile_script(target)
 
@@ -188,8 +189,11 @@ class TestSlurmBackendSubmitted(SlurmTestCase):
         ]
         self.mock_get_status.return_value = {'1000': 'H'}
 
-        target1 = Target('TestTarget1', inputs=[], outputs=[], options={}, working_dir='/some/dir')
-        target2 = Target('TestTarget2', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+        options = {'inputs': [], 'outputs': []}
+        target1 = Target('TestTarget1', options, working_dir='/some/dir')
+        target2 = Target('TestTarget2', options, working_dir='/some/dir')
+        target1.validate()
+        target2.validate()
 
         backend = SlurmBackend(working_dir='/some/dir')
 
@@ -206,9 +210,13 @@ class TestSlurmBackendRunning(SlurmTestCase):
         ]
         self.mock_get_status.return_value = {'1000': 'R', '2000': 'H'}
 
-        target1 = Target('TestTarget1', inputs=[], outputs=[], options={}, working_dir='/some/dir')
-        target2 = Target('TestTarget2', inputs=[], outputs=[], options={}, working_dir='/some/dir')
-        target3 = Target('TestTarget3', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+        options = {'inputs': [], 'outputs': []}
+        target1 = Target('TestTarget1', options, working_dir='/some/dir')
+        target2 = Target('TestTarget2', options, working_dir='/some/dir')
+        target3 = Target('TestTarget3', options, working_dir='/some/dir')
+        target1.validate()
+        target2.validate()
+        target3.validate()
 
         backend = SlurmBackend(working_dir='/some/dir')
 
@@ -253,7 +261,8 @@ class TestSlurmBackendLogs(SlurmTestCase):
             '1000': 'R'
         }
 
-        target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+        target = Target('TestTarget', options={'inputs': [], 'outputs': []}, working_dir='/some/dir')
+        target.validate()
 
         m = mock_open()
         m.side_effect = [
