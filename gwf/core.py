@@ -381,12 +381,7 @@ class Workflow(object):
 
 
 class Graph(object):
-
     """Represents a finalized workflow graph.
-
-    If :class:`gwf.Graph` is initialized with the *workflow*
-    parameter, the :class:`gwf.Graph` calls :meth:`prepare` with the
-    workflow.
 
     :ivar targets: initial value: dict()
     :ivar provides: initial value: None
