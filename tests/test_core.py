@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pathlib
 
-from gwf import Graph, Target, Workflow, template
+from gwf import Graph, Target, Workflow
 from gwf.backends.base import Status
 from gwf.backends.testing import TestingBackend
 from gwf.core import schedule, schedule_many
@@ -14,35 +14,6 @@ from gwf.exceptions import (CircularDependencyError,
                             FileRequiredButNotProvidedError,
                             IncludeWorkflowError, InvalidNameError,
                             TargetExistsError, InvalidTypeError)
-
-
-class TestTemplate(unittest.TestCase):
-    def setUp(self):
-        self.test_template = template(
-            inputs=['input{idx}.txt'],
-            outputs=['output{idx}.txt'],
-        )
-
-        self.test_template << """
-        cat input{idx}.txt > output{idx}.txt
-        """
-
-    def test_template_substitutes_args_when_called(self):
-        options, spec = self.test_template(idx=0)
-        self.assertDictEqual(options, {
-            'inputs':  ['input0.txt'],
-            'outputs': ['output0.txt']
-        })
-
-        self.assertIn('cat input0.txt > output0.txt', spec)
-
-    def test_target_created_from_template(self):
-        workflow = Workflow(working_dir='/some/path')
-        target = workflow.target('TestTarget', inputs=[], outputs=[]) << self.test_template(idx=0)
-
-        self.assertEqual(target.inputs, ['/some/path/input0.txt'])
-        self.assertEqual(target.outputs, ['/some/path/output0.txt'])
-        self.assertIn('cat input0.txt > output0.txt', target.spec)
 
 
 class TestWorkflow(unittest.TestCase):
@@ -128,7 +99,6 @@ class TestWorkflow(unittest.TestCase):
             'other.TestTarget2': target2,
             'other.TestTarget3': target3,
         })
-
 
     def test_including_workflow_instance_dispatches_to_include_workflow(self):
         workflow = Workflow()

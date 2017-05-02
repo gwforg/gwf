@@ -21,7 +21,7 @@ Core
 ----
 
 .. automodule:: gwf
-   :members: Target, template, Workflow, PreparedWorkflow, Event
+   :members: Target, Workflow, PreparedWorkflow, Event
 
 
 Plugins
