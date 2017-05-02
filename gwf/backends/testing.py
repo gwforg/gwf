@@ -1,6 +1,6 @@
 import logging
 
-from . import Backend
+from .base import Backend, Status
 from ..exceptions import NoLogFoundError
 
 logger = logging.getLogger(__name__)
@@ -20,17 +20,8 @@ class TestingBackend(Backend):  # pragma: no cover
     def cancel(self, target):
         pass
 
-    def submitted(self, target):
-        return False
-
-    def running(self, target):
-        return False
-
-    def failed(self, target):
-        return False
-
-    def completed(self, target):
-        return False
+    def status(self, target):
+        return Status.UNKNOWN
 
     def logs(self, target, stderr=False):
         raise NoLogFoundError

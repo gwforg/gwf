@@ -36,7 +36,7 @@ class UnknownTargetError(BackendError):
     pass
 
 
-class Backend:
+class Backend(metaclass=abc.ABCMeta):
     """Abstract base class for backends."""
 
     def __init__(self, working_dir):
