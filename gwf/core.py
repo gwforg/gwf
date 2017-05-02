@@ -126,6 +126,11 @@ class Target(object):
         """
         return not self.outputs
 
+    def inherit_options(self, super_options):
+        options = super_options.copy()
+        options.update(self.options)
+        self.options = options
+
     def __lshift__(self, spec):
         if isinstance(spec, tuple):
             options, spec = spec
@@ -134,11 +139,7 @@ class Target(object):
 
             # Override template options with target options.
             self.working_dir = options.get('working_dir', self.working_dir)
-
-            target_options = self.options.copy()
-            self.options = options.copy()
-            self.options.update(target_options)
-
+            self.inherit_options(options)
             self.spec = spec
         else:
             self.spec = spec

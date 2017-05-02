@@ -335,6 +335,11 @@ class TestTarget(unittest.TestCase):
         self.assertEqual(target.options['memory'], '8g')
         self.assertEqual(target.spec, 'this is the spec')
 
+    def test_inherit_options(self):
+        target = Target('TestTarget', inputs=[], outputs=[], options={'cores': 8}, working_dir='/some/dir')
+        target.inherit_options({'cores': 4, 'memory': '4g'})
+        self.assertEqual(target.options, {'cores': 8, 'memory': '4g'})
+
     def test_str_on_target(self):
         target = Target(
             'TestTarget',
