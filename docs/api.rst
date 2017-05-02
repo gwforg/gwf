@@ -21,16 +21,7 @@ Core
 ----
 
 .. automodule:: gwf
-   :members: Target, Workflow, PreparedWorkflow, Event
-
-
-Plugins
--------
-
-.. autoclass:: gwf.plugins.base.Plugin
-  :members:
-  :inherited-members:
-  :undoc-members:
+   :members: Target, Workflow, Graph
 
 
 Backends

@@ -24,22 +24,27 @@ You should now be able to run the following command.
 
 .. code-block:: console
 
-    $ gwf -h
-
-This should show you the commands and options available through *gwf*. If you just
-run:
-
-.. code-block:: console
-
     $ gwf
 
-you'll get an error that looks something like this:
+This should show you the commands and options available through *gwf*.
 
-.. code-block:: console
+.. caution::
+    You may see an error similar to this when you try running *gwf*::
 
-    ERROR |  The file "/Users/das/Desktop/test-gwf/workflow.py" does not exist.
+        UnicodeEncodeError: 'charmap' codec can't encode character '\u2020' in position 477: character maps to <undefined>
 
-We get this error since we didn't define a workflow file yet.
+    This error occurs because your isn't configured to use UTF-8 as the default encoding.
+    To fix the error insert the following lines in your ``.bashrc`` file::
+
+        export LANG=en_US.utf8
+        export LC_ALL=en_US.utf8
+
+    If you're not in the US you may want to set it to something else. For example,
+    if you're en Denmark you may want to use the following configuration::
+
+        export LANG=da_DK.utf8
+        export LC_ALL=da_DK.utf8
+
 
 A Minimal Workflow
 ------------------
@@ -52,7 +57,7 @@ file is called ``workflow.py`` and that the workflow is called `gwf`::
 
     gwf = Workflow()
 
-    gwf.target('MyTarget') << """
+    gwf.target('MyTarget', inputs=[], outputs=[]) << """
     echo hello world
     """
 
@@ -65,7 +70,7 @@ either. However, it does run a single command (``echo hello world``), but the
 output of the command is thrown away. Let's fix that! Change the target
 definition to this::
 
-    gwf.target('MyTarget', outputs=['greeting.txt']) << """
+    gwf.target('MyTarget', inputs=[], outputs=['greeting.txt']) << """
     echo hello world
     """
 
@@ -73,7 +78,7 @@ This tells *gwf* that the target will create a file called ``greeting.txt`` when
 it is run. However, the target does not actually create the file yet. Let's
 fix that too::
 
-    gwf.target('MyTarget', outputs=['greeting.txt']) << """
+    gwf.target('MyTarget', inputs=[], outputs=['greeting.txt']) << """
     echo hello world > greeting.txt
     """
 
@@ -92,7 +97,7 @@ directory and paste the workflow specification into it::
 
     gwf = Workflow()
 
-    gwf.target('MyTarget', outputs=['greeting.txt']) << """
+    gwf.target('MyTarget', inputs=[], outputs=['greeting.txt']) << """
     echo hello world > greeting.txt
     """
 
@@ -119,7 +124,7 @@ Switch back to the other terminal and then run:
 
 .. code-block:: console
 
-    $ gwf -b local run
+    $ gwf run
 
 *gwf* schedules and then submits ``MyTarget`` to the pool of workers you started in
 the other terminal window (the ``-b local`` flag tells *gwf* to use the
@@ -130,21 +135,21 @@ is wrong.
 Within a few seconds you should see ``greeting.txt`` in the project directory. Try
 to open it in your favorite text editor!
 
-To actually see what happens when you run ``gwf -b local run``, try to delete
+To actually see what happens when you run ``gwf run``, try to delete
 ``greeting.txt`` and then run:
 
 .. code-block:: console
 
-    $ gwf -b local -v info run
+    $ gwf -v info run
 
 The ``-v info`` flag tells *gwf* to output a bit more information when it runs.
-If you want even more information you may use ``-v debug``. The command show now
+If you want even more information you may use ``-v debug``. The command should now
 output this:
 
 .. code-block:: console
 
-    INFO  |  Scheduling target MyTarget.
-    INFO  |  Submitting target MyTarget.
+    Scheduling target MyTarget.
+    Submitting target MyTarget.
 
 This says that *gwf* considered the target for execution and then decided to submit
 it to the backend (in this case because the output file, ``greeting.txt``, does not
@@ -156,7 +161,7 @@ Now try the same command again:
 .. code-block:: console
 
     $ gwf -b local -v info run
-    INFO  |  Scheduling target MyTarget.
+    Scheduling target MyTarget.
 
 This time, *gwf* considers the target for submission, but decides not to submit it
 since all of the output files (only one in this case) exist.
@@ -178,7 +183,7 @@ but without the ``-b local`` flag.
 .. code-block:: console
 
     $ gwf -v info run
-    INFO  |  Scheduling target MyTarget.
+    Scheduling target MyTarget.
 
 *gwf* now uses the local backend by default, so everything works as before. If you
 are crazy about seeing what *gwf* does, you can also get rid of the ``-v info``
@@ -188,7 +193,7 @@ flag by setting the default verbosity level.
 
     $ gwf config verbosity info
     $ gwf run
-    INFO  |  Scheduling target MyTarget.
+    Scheduling target MyTarget.
 
 As we'd expect, *gwf* outputs the same as before, but this time we didn't have to
 set the ``-v info`` flag!
@@ -211,11 +216,11 @@ understood through an example::
 
     gwf = Workflow()
 
-    gwf.target('TargetA', outputs=['x.txt']) << """
+    gwf.target('TargetA', inputs=[], outputs=['x.txt']) << """
     echo "this is x" > x.txt
     """
 
-    gwf.target('TargetB', outputs=['y.txt']) << """
+    gwf.target('TargetB', inputs=[], outputs=['y.txt']) << """
     echo "this is y" > y.txt
     """
 
@@ -233,12 +238,12 @@ Let's try to run this workflow:
 .. code-block:: console
 
     $ gwf -v info run
-    INFO  |  Scheduling target TargetC.
-    INFO  |  Scheduling dependency TargetA of TargetC.
-    INFO  |  Submitting target TargetA.
-    INFO  |  Scheduling dependency TargetB of TargetC.
-    INFO  |  Submitting target TargetB.
-    INFO  |  Submitting target TargetC.
+    Scheduling target TargetC.
+    Scheduling dependency TargetA of TargetC.
+    Submitting target TargetA.
+    Scheduling dependency TargetB of TargetC.
+    Submitting target TargetB.
+    Submitting target TargetC.
 
 Notice that *gwf* first attempts to submit ``TargetC``. However, because of the
 file dependencies it first schedules each dependency and submits those to the
@@ -263,7 +268,7 @@ Run this workflow. You should see the following:
 
 .. code-block:: console
 
-    ERROR |  Target TargetA depends on itself.
+    error: Target TargetA depends on itself.
 
 Observing Target Execution
 --------------------------
@@ -277,11 +282,11 @@ from earlier to fake that each target takes some time to run::
 
     gwf = Workflow()
 
-    gwf.target('TargetA', outputs=['x.txt']) << """
+    gwf.target('TargetA', inputs=[], outputs=['x.txt']) << """
     sleep 20 && echo "this is x" > x.txt
     """
 
-    gwf.target('TargetB', outputs=['y.txt']) << """
+    gwf.target('TargetB', inputs=[], outputs=['y.txt']) << """
     sleep 30 && echo "this is y" > y.txt
     """
 
@@ -295,7 +300,7 @@ but with pretty colors.
 
 .. code-block:: console
 
-    TargetC [..............................................................] 0/0/0/3/0
+    TargetC [..............................................................] 0/0/0/3
 
 By default, a single line is shown for each *endpoint* target. An endpoint is a target
 which no other targets depends on. We can therefore see it as a kind of final target.
@@ -306,7 +311,7 @@ Let's try to run the workflow and see what happens.
 
     $ gwf run
     $ gwf status
-    TargetC [RRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS] 0/1/2/0/0
+    TargetC [RRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS] 0/1/2/0
 
 The ``R`` shows that one third of the targets are running (since I'm only running with one worker,
 only one target can run at a time) and the other two thirds have been submitted. Running the
@@ -314,7 +319,7 @@ status command again after some time should show something like this.
 
 .. code-block:: console
 
-    TargetC [CCCCCCCCCCCCCCCCCCCCCRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSS] 1/1/1/0/0
+    TargetC [CCCCCCCCCCCCCCCCCCCCCRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSS] 1/1/1/0
 
 Now the target that was running before has completed, and another target is now running,
 while the final target is still just submitted. After some time, run the status command again.
@@ -322,10 +327,10 @@ All targets should now have completed, so we see this.
 
 .. code-block:: console
 
-    TargetC [CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC] 3/0/0/0/0
+    TargetC [CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC] 3/0/0/0
 
 As you may have noticed, the numbers to the right show the number of targets that are
-in a specific state in the order: completed, running, submitted, should run, failed.
+in a specific state in the order: completed, running, submitted, should run.
 
 .. _function_templates:
 

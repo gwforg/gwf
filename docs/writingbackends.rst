@@ -86,8 +86,7 @@ Reference
 ---------
 
 .. autoclass:: gwf.backends.Backend
-   :members: supported_options, option_defaults, submit, cancel, submitted,
-      running, logs
+   :members: submit, cancel, status, logs
    :member-order: bysource
 
 .. _Slurm Workload Manager: http://slurm.schedmd.com/
