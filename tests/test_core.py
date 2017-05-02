@@ -104,7 +104,7 @@ class TestWorkflow(unittest.TestCase):
         workflow = Workflow()
         other_workflow = Workflow()
 
-        with patch.object(workflow, 'include_workflow') as mock_include_workflow:
+        with patch.object(workflow, 'include_workflow', autospec=True) as mock_include_workflow:
             workflow.include(other_workflow)
             mock_include_workflow.assert_called_once_with(
                 other_workflow, namespace=None)
@@ -112,7 +112,7 @@ class TestWorkflow(unittest.TestCase):
     def test_including_workflow_path_dispatches_to_include_path(self):
         workflow = Workflow()
 
-        with patch.object(workflow, 'include_path') as mock_include_path:
+        with patch.object(workflow, 'include_path', autospec=True) as mock_include_path:
             workflow.include('/path/to/other_workflow.py')
             mock_include_path.assert_called_once_with(
                 '/path/to/other_workflow.py', namespace=None)
@@ -125,7 +125,7 @@ class TestWorkflow(unittest.TestCase):
         mock_module = Mock()
         mock_module.gwf = other_workflow
 
-        with patch.object(workflow, 'include_workflow') as mock_include_workflow:
+        with patch.object(workflow, 'include_workflow', autospec=True) as mock_include_workflow:
             workflow.include(mock_module)
 
             mock_ismodule.assert_called_once_with(mock_module)
@@ -609,7 +609,7 @@ class TestScheduling(unittest.TestCase):
 
         graph = Graph(targets=workflow.targets)
         backend = TestingBackend(working_dir=workflow.working_dir)
-        with patch.object(backend, 'status', return_value=Status.SUBMITTED):
+        with patch.object(backend, 'status', return_value=Status.SUBMITTED, autospec=True):
             sched = schedule(graph, backend, target)
             self.assertListEqual(sched, [])
 
@@ -619,7 +619,7 @@ class TestScheduling(unittest.TestCase):
 
         graph = Graph(targets=workflow.targets)
         backend = TestingBackend(working_dir=workflow.working_dir)
-        with patch.object(backend, 'status', return_value=Status.UNKNOWN):
+        with patch.object(backend, 'status', return_value=Status.UNKNOWN, autospec=True):
             with patch.object(graph, 'should_run', return_value=True):
                 sched = schedule(graph, backend, target)
                 self.assertListEqual(sched, [target])
@@ -631,7 +631,7 @@ class TestScheduling(unittest.TestCase):
 
         graph = Graph(targets=workflow.targets)
         backend = TestingBackend(working_dir=workflow.working_dir)
-        with patch.object(backend, 'status', return_value=Status.UNKNOWN):
+        with patch.object(backend, 'status', return_value=Status.UNKNOWN, autospec=True):
             with patch.object(graph, 'should_run', return_value=True):
                 sched = schedule(graph, backend, target2)
                 self.assertListEqual(sched, [target1, target2])
@@ -646,7 +646,7 @@ class TestScheduling(unittest.TestCase):
         graph = Graph(targets=workflow.targets)
         backend = TestingBackend(working_dir=workflow.working_dir)
         with patch.object(backend, 'status', return_value=Status.UNKNOWN):
-            with patch.object(graph, 'should_run', return_value=True):
+            with patch.object(graph, 'should_run', return_value=True, autospec=True):
                 sched = schedule(graph, backend, target4)
                 self.assertListEqual(
                     sched, [target1, target2, target3, target4])
@@ -662,7 +662,7 @@ class TestScheduling(unittest.TestCase):
         backend = TestingBackend(working_dir=workflow.working_dir)
 
         with patch.object(backend, 'status', return_value=Status.UNKNOWN):
-            with patch.object(graph, 'should_run', return_value=True):
+            with patch.object(graph, 'should_run', return_value=True, autospec=True):
                 sched = schedule(graph, backend, target4)
                 self.assertListEqual(
                     sched, [target1, target2, target3, target4])
@@ -695,7 +695,7 @@ class TestScheduling(unittest.TestCase):
 
         graph = Graph(targets=workflow.targets)
         backend = TestingBackend(working_dir=workflow.working_dir)
-        with patch.object(backend, 'status', side_effect=[Status.UNKNOWN, Status.SUBMITTED, Status.UNKNOWN, Status.UNKNOWN]):
+        with patch.object(backend, 'status', side_effect=[Status.UNKNOWN, Status.SUBMITTED, Status.UNKNOWN, Status.UNKNOWN], autospec=True):
             sched = schedule(graph, backend, target3)
             self.assertEqual(sched, [target2, target3])
 
@@ -722,7 +722,7 @@ class TestScheduling(unittest.TestCase):
         backend = TestingBackend(working_dir=workflow.working_dir)
 
         with patch.object(backend, 'status', return_value=Status.UNKNOWN):
-            with patch.object(graph, 'should_run', side_effect=[False, False, False, False]):
+            with patch.object(graph, 'should_run', side_effect=[False, False, False, False], autospec=True):
                 sched = schedule(graph, backend, target3)
                 self.assertEqual(sched, [])
 
