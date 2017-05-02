@@ -14,7 +14,7 @@ from multiprocessing.pool import Pool
 from .base import PersistableDict, UnknownDependencyError
 from .base import Status
 from . import Backend
-from ..exceptions import BackendError, GWFError
+from ..exceptions import BackendError, GWFError, UnsupportedOperationError
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +170,7 @@ class LocalBackend(Backend):
         self._status[task_id] = LocalStatus.SUBMITTED
 
     def cancel(self, target):
-        raise NotImplementedError()
+        raise UnsupportedOperationError('cancel')
 
     def status(self, target):
         try:

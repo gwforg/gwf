@@ -35,7 +35,8 @@ setup(
             'status = gwf.plugins.status:status',
             'logs = gwf.plugins.logs:logs',
             'clean = gwf.plugins.clean:clean',
-            'workers = gwf.plugins.workers:workers'
+            'workers = gwf.plugins.workers:workers',
+            'cancel = gwf.plugins.cancel:cancel'
         ]
     },
 

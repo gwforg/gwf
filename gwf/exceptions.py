@@ -111,3 +111,7 @@ class NoLogFoundError(BackendError):
     def __init__(self):
         message = 'No log found.'
         super(NoLogFoundError, self).__init__(message)
+
+
+class UnsupportedOperationError(BackendError):
+    """Operation not supported by this backend."""
