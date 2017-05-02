@@ -102,7 +102,7 @@ def print_progress(backend, graph, targets):
     for target in targets:
         dependencies = dfs(target, graph.dependencies)
         should_run, submitted, running, completed = _split_target_list(backend, graph, dependencies)
-        status_bar = table.add_status_line('{} [{}]'.format(target.name, backend.status(target)))
+        status_bar = table.add_status_line(target.name)
         status_bar.add_progress(len(completed), 'C', color='green')
         status_bar.add_progress(len(running), 'R', color='blue')
         status_bar.add_progress(len(submitted), 'S', color='yellow')
