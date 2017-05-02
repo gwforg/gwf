@@ -5,8 +5,7 @@ Upgrading from Pre-1.0
 .. note::
   *gwf* only runs on Python 3.4+. This means that you may have to upgrade your
   Python installation. It is still possible to run workflows using scripts
-  written in Python 2.7 using e.g. environments. See
-  :ref:`best_practices`
+  written in Python 2.7 using e.g. environments.
 
 
 Pre-1.0 versions of *gwf* used a slightly different syntax for defining
