@@ -5,12 +5,14 @@ import os.path
 import subprocess
 import sys
 import uuid
+from enum import Enum
 from multiprocessing import Manager
 from multiprocessing.connection import Client as Client_
 from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
-from .base import PersistableDict
+from .base import PersistableDict, UnknownDependencyError
+from .base import Status
 from . import Backend
 from ..exceptions import BackendError, GWFError
 
@@ -36,11 +38,12 @@ class ServerError(BackendError):
     pass
 
 
-class State:
-    pending = 0
-    started = 1
-    completed = 2
-    failed = 3
+class LocalStatus(Enum):
+    UNKNOWN = 0
+    SUBMITTED = 1
+    RUNNING = 2
+    FAILED = 3
+    COMPLETED = 4
 
 
 class Request:
@@ -57,7 +60,7 @@ class SubmitRequest(Request):
 
     def handle(self, task_queue, status_dict):
         task_id = _gen_task_id()
-        status_dict[task_id] = State.pending
+        status_dict[task_id] = LocalStatus.SUBMITTED
         task_queue.put((task_id, self))
         logger.debug('Task %s was queued with id %s.', self.target.name, task_id)
         return task_id
@@ -133,7 +136,7 @@ class LocalBackend(Backend):
     def __init__(self, working_dir):
         super().__init__(working_dir)
 
-        self._job_db = PersistableDict(os.path.join(working_dir, '.gwf/local-backend-jobdb.json'))
+        self._tracked = PersistableDict(os.path.join(working_dir, '.gwf/local-backend-tracked.json'))
 
         try:
             self.client = Client(('', 12345))
@@ -145,41 +148,45 @@ class LocalBackend(Backend):
                 'http://gwf.readthedocs.io/en/latest/backends.html#local'
             )
 
-        task_status = self.client.status()
-        for target_name, task_id in list(self._job_db.items()):
-            if task_id not in task_status or task_status[task_id] == State.completed:
-                del self._job_db[target_name]
+        self._status = self.client.status()
+        for target_name, target_job_id in list(self._tracked.items()):
+            if target_job_id not in self._status or self._status[target_job_id] == LocalStatus.COMPLETED:
+                del self._tracked[target_name]
 
     def submit(self, target, dependencies):
-        deps = [self._job_db[dep.name] for dep in dependencies if dep.name in self._job_db]
+        try:
+            dependency_ids = [self._tracked[dep.name] for dep in dependencies]
+        except KeyError as exc:
+            key, = exc.args
+            raise UnknownDependencyError(key)
+
         task_id = self.client.submit(
             target,
-            deps=deps,
+            deps=dependency_ids,
             stdout_path=self._log_path(target, 'stdout'),
             stderr_path=self._log_path(target, 'stderr')
         )
-        self._job_db[target.name] = task_id
+        self._tracked[target.name] = task_id
+        self._status[task_id] = LocalStatus.SUBMITTED
 
     def cancel(self, target):
         raise NotImplementedError()
 
-    def submitted(self, target):
-        return target.name in self._job_db
-
-    def _has_status(self, target, status):
-        job_id = self._job_db.get(target.name)
-        if job_id is None:
-            return False
-        return self.client.status()[job_id] == status
-
-    def running(self, target):
-        return self._has_status(target, State.started)
-
-    def completed(self, target):
-        return self._has_status(target, State.completed)
+    def status(self, target):
+        try:
+            target_job_id = self._tracked[target.name]
+            target_status = self._status[target_job_id]
+            if target_status == LocalStatus.RUNNING:
+                return Status.RUNNING
+            elif target_status == LocalStatus.SUBMITTED:
+                return Status.SUBMITTED
+            else:
+                return Status.UNKNOWN
+        except KeyError:
+            return Status.UNKNOWN
 
     def close(self):
-        self._job_db.persist()
+        self._tracked.persist()
 
 
 class Worker:
@@ -199,7 +206,7 @@ class Worker:
             # If the task isn't pending, it may have been resubmitted by multiple
             # tasks in different workers. We shouldn't run it twice, so we'll skip
             # it.
-            if self.status[task_id] != State.pending:
+            if self.status[task_id] != LocalStatus.SUBMITTED:
                 continue
 
             if not self.check_dependencies(task_id, request):
@@ -209,15 +216,15 @@ class Worker:
 
     def handle_task(self, task_id, request):
         logger.debug('Task %s started target %r.', task_id, request.target)
-        self.status[task_id] = State.started
+        self.status[task_id] = LocalStatus.RUNNING
 
         try:
             self.execute_target(request.target, stdout_path=request.stdout_path, stderr_path=request.stderr_path)
         except:
-            self.status[task_id] = State.failed
+            self.status[task_id] = LocalStatus.FAILED
             logger.error('Task %s failed.', task_id, exc_info=True)
         else:
-            self.status[task_id] = State.completed
+            self.status[task_id] = LocalStatus.COMPLETED
             logger.debug('Task %s completed target %r.', task_id, request.target)
         finally:
             self.requeue_dependents(task_id)
@@ -227,12 +234,12 @@ class Worker:
 
         :return: `True` if the task can run, `False` if not."""
         any_dep_failed = any(
-            self.status[dep_id] == State.failed
+            self.status[dep_id] == LocalStatus.FAILED
             for dep_id in request.deps
         )
 
         if any_dep_failed:
-            self.status[task_id] = State.failed
+            self.status[task_id] = LocalStatus.FAILED
             logger.error(
                 'Task %s failed since a dependency failed.',
                 task_id,
@@ -242,7 +249,7 @@ class Worker:
 
         has_non_satisfied_dep = False
         for dep_id in request.deps:
-            if self.status[dep_id] != State.completed:
+            if self.status[dep_id] != LocalStatus.COMPLETED:
                 logger.debug('Task %s set to wait for %s.', task_id, dep_id)
 
                 if dep_id not in self.waiting:
@@ -321,11 +328,8 @@ class Server:
 
     def wait_for_clients(self, serv):
         while True:
-            try:
-                client = serv.accept()
-                self.handle_client(client)
-            except Exception as e:
-                logging.error(e)
+            client = serv.accept()
+            self.handle_client(client)
 
     def start(self):
         """Starts a server that controls local workers.
@@ -342,7 +346,7 @@ class Server:
                 initargs=(self.status, self.queue, self.waiting),
             )
 
-            logging.critical('Started %s workers, listening on port %s.', self.num_workers, serv.address[1])
+            logging.info('Started %s workers, listening on port %s.', self.num_workers, serv.address[1])
             self.wait_for_clients(serv)
         except OSError as e:
             if e.errno == 48:
@@ -352,8 +356,8 @@ class Server:
                 )
         except KeyboardInterrupt:
             logging.info('Shutting down...')
-            workers.close()
             workers.join()
+            workers.close()
 
 
 __all__ = ('Client', 'Server', 'LocalBackend',)

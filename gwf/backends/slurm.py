@@ -5,7 +5,7 @@ import os.path
 import subprocess
 from distutils.spawn import find_executable
 
-from .base import PersistableDict
+from .base import PersistableDict, Status, UnknownDependencyError, UnknownTargetError
 from . import Backend
 from ..exceptions import BackendError
 from ..utils import cache, timer
@@ -13,21 +13,23 @@ from ..utils import cache, timer
 logger = logging.getLogger(__name__)
 
 
-# see squeue man page under JOB STATE CODES
+UNKNOWN_DEPENDENCY_EXC = 'Cannot submit {} with dependency {} since this target has not been submitted yet.'
+
+
 JOB_STATE_CODES = {
-    'BF': 'F',  # BOOT_FAIL
-    'CA': 'F',  # CANCELLED
-    'CD': 'C',  # COMPLETED
-    'CF': 'R',  # CONFIGURING
-    'CG': 'R',  # COMPLETING
-    'F': 'F',   # FAILED
-    'NF': 'F',  # NODE_FAIL
-    'PD': 'Q',  # PENDING
-    'PR': 'F',  # PREEMPTED
-    'R': 'R',   # RUNNING
-    'S': 'R',   # SUSPENDED
-    'TO': 'F',  # TIMEOUT
-    'SE': 'Q',  # SPECIAL_EXIT
+    'BF': Status.UNKNOWN,  # BOOT_FAIL
+    'CA': Status.UNKNOWN,  # CANCELLED
+    'CD': Status.UNKNOWN,  # COMPLETED
+    'CF': Status.RUNNING,  # CONFIGURING
+    'CG': Status.RUNNING,  # COMPLETING
+    'F': Status.UNKNOWN,   # FAILED
+    'NF': Status.UNKNOWN,  # NODE_FAIL
+    'PD': Status.SUBMITTED,  # PENDING
+    'PR': Status.UNKNOWN,  # PREEMPTED
+    'R': Status.RUNNING,   # RUNNING
+    'S': Status.RUNNING,   # SUSPENDED
+    'TO': Status.UNKNOWN,  # TIMEOUT
+    'SE': Status.SUBMITTED,  # SPECIAL_EXIT
 }
 
 
@@ -88,7 +90,7 @@ def _call_sbatch(script, dependencies):
 
 
 @timer('Fetched job queue in %0.2fms', logger=logger)
-def _get_status():
+def init_status_from_queue():
     """Ask Slurm for the state of all live jobs.
 
     There are two reasons why we ask for all the jobs:
@@ -96,28 +98,19 @@ def _get_status():
         1. We don't want to spawn a subprocesses for each job
         2. Asking for multiple specific jobs would involve building a
            potentially very long commandline - which could fail if too long.
-
-    :return: a dict mapping from job id to either 'R', 'H', 'Q' or '?'.
     """
-
-    # The only reason this is a method instead of a function outside the
-    # class is that the we need access to self.squeue. Maybe this should
     stdout, _ = _call_squeue()
 
-    reader = csv.reader(
-        stdout.splitlines(),
-        delimiter=';',
-        quoting=csv.QUOTE_NONE,
-    )
+    reader = csv.reader(stdout.splitlines(), delimiter=';', quoting=csv.QUOTE_NONE)
 
-    result = {}
+    job_states = {}
     for job_id, state, depends in reader:
         simple_state = JOB_STATE_CODES[state]
-        if simple_state == 'Q' and depends:
-            result[job_id] = 'H'
+        if simple_state == Status.SUBMITTED and depends:
+            job_states[job_id] = Status.SUBMITTED
         else:
-            result[job_id] = simple_state
-    return result
+            job_states[job_id] = simple_state
+    return job_states
 
 
 class SlurmBackend(Backend):
@@ -157,50 +150,41 @@ class SlurmBackend(Backend):
         'walltime': '01:00:00',
     }
 
-    _JOB_DB_PATH = '.gwf/slurm-backend-jobdb.json'
-
     def __init__(self, working_dir):
         super().__init__(working_dir)
-        self._tracked = PersistableDict(os.path.join(self.working_dir, self._JOB_DB_PATH))
-        self._status = _get_status()
+        self._tracked = PersistableDict(os.path.join(self.working_dir, '.gwf/slurm-backend-tracked.json'))
+        self._status = init_status_from_queue()
 
-    def close(self):
-        self._tracked.persist()
-
-    def submitted(self, target):
-        return target.name in self._tracked and self._tracked[target.name] in self._status
-
-    def running(self, target):
-        target_job_id = self._tracked.get(target.name, None)
-        return self._status.get(target_job_id, '?') == 'R'
-
-    def completed(self, target):
-        target_job_id = self._tracked.get(target.name, None)
-        return self._status.get(target_job_id, '?') == 'C'
+    def status(self, target):
+        try:
+            return self.get_status(target)
+        except KeyError:
+            return Status.UNKNOWN
 
     def submit(self, target, dependencies):
-        dependency_ids = [
-            self._tracked[dep.name]
-            for dep in dependencies
-            if dep.name in self._tracked
-        ]
+        try:
+            dependency_ids = [self._tracked[dep.name] for dep in dependencies]
+        except KeyError as exc:
+            key, = exc.args
+            raise UnknownDependencyError(key)
 
         script = self._compile_script(target)
-
         stdout, _ = _call_sbatch(script, dependency_ids)
-        new_job_id = stdout.strip()
-
-        self._tracked[target.name] = new_job_id
-
-        # New jobs are assumed to be on-hold until the next time gwf is invoked.
-        self._status[new_job_id] = 'H'
+        job_id = stdout.strip()
+        self.add_job(target, job_id)
 
     def cancel(self, target):
         """Cancel a target."""
-        job_id = self._tracked.get(target.name, '?')
-        if job_id not in self._status:
-            raise BackendError('Cannot cancel non-running target.')
+        try:
+            job_id = self.get_job_id(target)
+        except KeyError:
+            raise UnknownTargetError(target.name)
+
         _call_scancel(job_id)
+        self.forget_target(target)
+
+    def close(self):
+        self._tracked.persist()
 
     def _compile_script(self, target):
         option_str = "#SBATCH {0}{1}"
@@ -235,26 +219,25 @@ class SlurmBackend(Backend):
         out.append(target.spec)
         return '\n'.join(out)
 
+    def add_job(self, target, job_id, initial_status=Status.SUBMITTED):
+        self.set_job_id(target, job_id)
+        self.set_status(target, initial_status)
 
-class Script:
+    def forget_target(self, target):
+        job_id = self.get_job_id(target)
+        del self._status[job_id]
+        del self._tracked[target.name]
 
-    def __init__(self):
-        self._header_lines = []
-        self._envvar_lines = []
-        self._option_lines = []
-        self._command = ''
+    def get_job_id(self, target):
+        return self._tracked[target.name]
 
-    def add_header(self, text):
-        self._header_lines.append('# {}'.format(text))
+    def set_job_id(self, target, job_id):
+        self._tracked[target.name] = job_id
 
-    def add_envvar(self, name, value):
-        self._envvar_lines.append('export {}={}'.format(name, value))
+    def get_status(self, target):
+        job_id = self.get_job_id(target)
+        return self._status[job_id]
 
-    def add_option(self, option, value):
-        pass
-
-    def set_command(self, command):
-        pass
-
-    def render_script(self):
-        return '\n'.join(self.header_lines + self._option_lines + self._envvar_lines + [self._command])
+    def set_status(self, target, status):
+        job_id = self.get_job_id(target)
+        self._status[job_id] = status

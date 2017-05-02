@@ -10,6 +10,7 @@ from glob import iglob as _iglob
 
 import collections
 
+from .backends.base import Status
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
@@ -570,6 +571,9 @@ class Graph(object):
             matched_targets.append(self.targets[name])
         return matched_targets
 
+    def __iter__(self):
+        return iter(self.targets.values())
+
 
 def schedule(graph, backend, target, dry_run=False):
     """Schedule and submit a :class:`gwf.Target` and its dependencies.
@@ -578,7 +582,7 @@ def schedule(graph, backend, target, dry_run=False):
     """
     logger.info('Scheduling target %s.', target.name)
 
-    if backend.submitted(target):
+    if backend.status(target) == Status.SUBMITTED:
         logger.debug('Target %s has already been submitted.', target.name)
         return []
 
@@ -591,7 +595,7 @@ def schedule(graph, backend, target, dry_run=False):
                 target.name
             )
 
-        if backend.submitted(dependency):
+        if backend.status(dependency) == Status.SUBMITTED:
             logger.debug(
                 'Target %s has already been submitted.',
                 dependency.name

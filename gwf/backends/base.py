@@ -3,14 +3,40 @@ import json
 import os.path
 import logging
 from collections import UserDict
+from enum import Enum
 
-from ..exceptions import NoLogFoundError
+from ..exceptions import NoLogFoundError, BackendError
 
 logger = logging.getLogger(__name__)
 
 
-class Backend:
+class Status(Enum):
+    """Status of a target.
 
+    A target is unknown to the backend if it has not been submitted
+    or the target has completed and thus isn't being tracked anymore by
+    the backend.
+
+    A target is submitted if it has been successfully submitted to
+    the backend and is pending execution.
+
+    A target is running if it is currently being executed by the backend.
+    """
+
+    UNKNOWN = 0
+    SUBMITTED = 1
+    RUNNING = 2
+
+
+class UnknownDependencyError(BackendError):
+    pass
+
+
+class UnknownTargetError(BackendError):
+    pass
+
+
+class Backend:
     """Abstract base class for backends."""
 
     def __init__(self, working_dir):
@@ -27,16 +53,8 @@ class Backend:
         return {}
 
     @abc.abstractmethod
-    def submitted(self, target):
-        """Return whether the target has been submitted."""
-
-    @abc.abstractmethod
-    def running(self, target):
-        """Return whether the target is running."""
-
-    @abc.abstractmethod
-    def completed(self, target):
-        """Return whether the target has completed."""
+    def status(self, target):
+        """Return the status of a target."""
 
     @abc.abstractmethod
     def submit(self, target, dependencies):

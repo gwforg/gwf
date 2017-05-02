@@ -6,6 +6,7 @@ from unittest.mock import Mock, patch
 import pathlib
 
 from gwf import Graph, Target, Workflow, template
+from gwf.backends.base import Status
 from gwf.backends.testing import TestingBackend
 from gwf.core import schedule, schedule_many
 from gwf.exceptions import (CircularDependencyError,
@@ -636,17 +637,15 @@ class TestScheduling(unittest.TestCase):
         workflow = Workflow(working_dir='/some/dir')
         target = workflow.target('TestTarget', inputs=[], outputs=[])
 
-
         graph = Graph(targets=workflow.targets)
         backend = TestingBackend(working_dir=workflow.working_dir)
-        with patch.object(backend, 'submitted', return_value=True):
+        with patch.object(backend, 'status', return_value=Status.SUBMITTED):
             sched = schedule(graph, backend, target)
             self.assertListEqual(sched, [])
 
     def test_scheduling_workflow_with_one_target_that_is_not_submitted_returns_schedule_with_target(self):
         workflow = Workflow(working_dir='/some/dir')
         target = workflow.target('TestTarget', inputs=[], outputs=[])
-
 
         graph = Graph(targets=workflow.targets)
         backend = TestingBackend(working_dir=workflow.working_dir)
@@ -659,7 +658,6 @@ class TestScheduling(unittest.TestCase):
         workflow = Workflow(working_dir='/some/dir')
         target1 = workflow.target('TestTarget1', inputs=[], outputs=['test_output.txt'])
         target2 = workflow.target('TestTarget2', inputs=['test_output.txt'], outputs=[])
-
 
         graph = Graph(targets=workflow.targets)
         backend = TestingBackend(working_dir=workflow.working_dir)
@@ -674,7 +672,6 @@ class TestScheduling(unittest.TestCase):
         target2 = workflow.target('TestTarget2', inputs=['test_output1.txt'], outputs=['test_output2.txt'])
         target3 = workflow.target('TestTarget3', inputs=['test_output2.txt'], outputs=['test_output3.txt'])
         target4 = workflow.target('TestTarget4', inputs=['test_output3.txt'], outputs=['final_output.txt'])
-
 
         graph = Graph(targets=workflow.targets)
         backend = TestingBackend(working_dir=workflow.working_dir)
@@ -732,7 +729,7 @@ class TestScheduling(unittest.TestCase):
 
         graph = Graph(targets=workflow.targets)
         backend = TestingBackend(working_dir=workflow.working_dir)
-        with patch.object(backend, 'submitted', side_effect=[False, True, False, False]):
+        with patch.object(backend, 'status', side_effect=[Status.UNKNOWN, Status.SUBMITTED, Status.UNKNOWN, Status.UNKNOWN]):
             sched = schedule(graph, backend, target3)
             self.assertEqual(sched, [target2, target3])
 
