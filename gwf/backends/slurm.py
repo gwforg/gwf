@@ -181,7 +181,7 @@ class SlurmBackend(Backend):
             raise UnknownTargetError(target.name)
 
         _call_scancel(job_id)
-        self.forget_target(target)
+        self.forget_job(target)
 
     def close(self):
         self._tracked.persist()
@@ -223,7 +223,7 @@ class SlurmBackend(Backend):
         self.set_job_id(target, job_id)
         self.set_status(target, initial_status)
 
-    def forget_target(self, target):
+    def forget_job(self, target):
         job_id = self.get_job_id(target)
         del self._status[job_id]
         del self._tracked[target.name]
