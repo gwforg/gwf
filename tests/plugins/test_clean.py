@@ -12,7 +12,7 @@ gwf.target('Target2', inputs=[], outputs=['b.txt']) << "echo world hello"
 """
 
 
-class TestRun(CliTestCase):
+class TestClean(CliTestCase):
 
     def setUp(self):
         super().setUp()
