@@ -63,7 +63,23 @@ def check_options(func, supported_options):
 class BackendType(type):
     """A metaclass for backends.
 
-    All backends are initialized via this metaclass.
+    All backends are initialized via this metaclass. It has three distinct
+    responsibilities:
+    
+        1. Check whether implementations of the Backend base class provide all
+           required methods: submit, cancel, status and close.
+        
+        2. Wrap the submit method in subclasses with a decorator which modifies
+           the given target's options with the option defaults provided by the
+           backend through the ``option_defaults`` attribute. If the attribute
+           is not supplied, submit will not be decorated.
+        
+        3. Wrap the submit method in subclasses with a decorator which removes
+           options used in the given target that are not supported by the
+           backend.
+    
+    This is not necessary magic, however, it removes a lot of boilerplate code
+    from backend implementations and ensures consistency in warnings.
     """
     def __new__(metacls, name, bases, namespace, **kwargs):
         # Check that all required methods exist. The logs() method isn't required,
