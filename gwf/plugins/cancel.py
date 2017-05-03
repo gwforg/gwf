@@ -18,9 +18,10 @@ def cancel(graph, backend, targets):
 
     for target in matched_targets:
         try:
+            click.echo('Cancelling target {}.'.format(target.name))
             backend.cancel(target)
         except UnknownTargetError as exc:
-            click.echo('Target {} could not be cancelled since it has not been submitted to the backend.'.format(exc))
+            click.echo('Target {} could not be cancelled since it is unknown to the backend.'.format(exc))
         except UnsupportedOperationError:
             click.echo('Cancelling targets is not supported by this backend.')
             raise click.Abort()
