@@ -203,12 +203,7 @@ class SlurmBackend(Backend):
         out.append(option_str.format('--job-name=', target.name))
 
         for option_name, option_value in target.options.items():
-            out.append(
-                option_str.format(
-                    OPTION_TABLE[option_name],
-                    option_value
-                )
-            )
+            out.append(option_str.format(OPTION_TABLE[option_name], option_value))
 
         out.append(option_str.format('--output=', self._log_path(target, 'stdout')))
         out.append(option_str.format('--error=', self._log_path(target, 'stderr')))

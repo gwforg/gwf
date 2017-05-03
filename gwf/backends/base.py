@@ -1,9 +1,10 @@
-import abc
 import json
 import os.path
 import logging
+import warnings
 from collections import UserDict
 from enum import Enum
+from functools import wraps
 
 from ..exceptions import NoLogFoundError, BackendError
 
@@ -36,31 +37,70 @@ class UnknownTargetError(BackendError):
     pass
 
 
-class Backend(metaclass=abc.ABCMeta):
+def inherit_options(func, super_options):
+    @wraps(func)
+    def inner_wrapper(self, target, *args, **kwargs):
+        target.inherit_options(super_options)
+        return func(self, target, *args, **kwargs)
+    return inner_wrapper
+
+
+def check_options(func, supported_options):
+    @wraps(func)
+    def inner_wrapper(self, target, *args, **kwargs):
+        for option_name in list(target.options.keys()):
+            if option_name not in supported_options:
+                warnings.warn(
+                    'Backend does not support option {} used in {}. Option will be ignored.'.format(
+                        option_name, target.name
+                    )
+                )
+                del target.options[option_name]
+        return func(self, target, *args, **kwargs)
+    return inner_wrapper
+
+
+class BackendType(type):
+    """A metaclass for backends.
+
+    All backends are initialized via this metaclass.
+    """
+    def __new__(metacls, name, bases, namespace, **kwargs):
+        # Check that all required methods exist. The logs() method isn't required,
+        # since a default implementation is provided by Backend.
+        for method_name in ('submit', 'cancel', 'status', 'close'):
+            if method_name not in namespace:
+                raise BackendError('Invalid backend implementation. Backend does not implement {}.'.format(method_name))
+
+        if not bases:
+            return type.__new__(metacls, name, bases, namespace)
+
+        # Decorate the submit method with a decorator that injects backend
+        # target defaults into the target options.
+        option_defaults = namespace.get('option_defaults', {})
+        namespace['submit'] = inherit_options(namespace['submit'], option_defaults)
+
+        # Decorate the submit method with a decorator that checks whether the
+        # option in the given target are supported by the backend. Warns the
+        # user and removes the option if this is not the case.
+        supported_options = namespace.get('supported_options', {})
+        namespace['submit'] = check_options(namespace['submit'], supported_options)
+
+        return type.__new__(metacls, name, bases, namespace)
+
+
+class Backend(metaclass=BackendType):
     """Abstract base class for backends."""
 
     def __init__(self, working_dir):
         self.working_dir = working_dir
 
-    @property
-    def supported_options(self):
-        """Return the options supported on targets."""
-        return set()
-
-    @property
-    def option_defaults(self):  # pragma: no cover
-        """Return defaults for required target options."""
-        return {}
-
-    @abc.abstractmethod
     def status(self, target):
         """Return the status of a target."""
 
-    @abc.abstractmethod
     def submit(self, target, dependencies):
         """Submit a target."""
 
-    @abc.abstractmethod
     def cancel(self, target):
         """Cancel a target."""
 

@@ -672,13 +672,6 @@ class TestScheduling(unittest.TestCase):
                 self.assertListEqual(
                     sched, [target1, target2, target3, target4])
 
-    def test_option_defaults_contains_specified_option_defaults(self):
-        backend = TestingBackend(working_dir='/some/dir')
-        self.assertDictEqual(
-            backend.option_defaults,
-            {'cores': 2, 'memory': '18gb'}
-        )
-
     def test_scheduling_a_submitted_dependency_does_not_submit_the_dependency(self):
         workflow = Workflow(working_dir='/some/dir')
 

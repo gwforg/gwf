@@ -137,7 +137,6 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         with self.assertRaises(UnknownDependencyError):
             backend.submit(target2, [target1])
 
-
     def test_job_script_is_properly_compiled_with_all_supported_options(self):
         backend = SlurmBackend(working_dir='/some/dor')
 
@@ -176,9 +175,6 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         self.assertIn('cd /some/dir', script)
         self.assertIn('export GWF_JOBID=$SLURM_JOBID', script)
         self.assertIn('echo hello world', script)
-
-        # Now check that the unsupported option never made it into the script.
-        self.assertNotIn('unsupported value', script)
 
 
 class TestSlurmBackendCancel(SlurmTestCase):
