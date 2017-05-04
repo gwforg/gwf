@@ -2,83 +2,10 @@ import statusbar
 
 from ..backends.base import Status
 from ..cli import pass_graph, pass_backend
+from ..filtering import Criteria, filter
 from ..utils import dfs
 
 import click
-
-FILTERS = []
-
-
-def register_filter(filter_cls):
-    FILTERS.append(filter_cls)
-
-
-class Criteria:
-    """A container for filtering criteria."""
-    def __init__(self, **kwargs):
-        self.__dict__ = kwargs
-
-
-class FilterType(type):
-    def __new__(meta, name, bases, class_dict):
-        cls = type.__new__(meta, name, bases, class_dict)
-        if cls.__name__ == 'Filter':
-            return cls
-        register_filter(cls)
-        return cls
-
-
-class Filter(metaclass=FilterType):
-    def __init__(self, graph, backend, criteria):
-        self.graph = graph
-        self.backend = backend
-        self.criteria = criteria
-
-    def apply(self, targets):
-        return (target for target in targets if self.predicate(target))
-
-
-class StatusFilter(Filter):
-    abstract = True
-
-    def use(self):
-        return self.criteria.status
-
-    def predicate(self, target):
-        print(target, self.criteria.status, self.backend.status(target))
-        if self.criteria.status == 'completed':
-            return not self.graph.should_run(target)
-        if self.criteria.status == 'shouldrun':
-            return self.graph.should_run(target) and self.backend.status(target) == Status.UNKNOWN
-        if self.criteria.status == 'running':
-            return self.backend.status(target) == Status.RUNNING
-        if self.criteria.status == 'submitted':
-            return self.backend.status(target) == Status.SUBMITTED
-
-
-class NameFilter(Filter):
-    def use(self):
-        return self.criteria.targets
-
-    def predicate(self, target):
-        return target.name in self.criteria.targets
-
-
-class EndpointFilter(Filter):
-    def use(self):
-        return not self.criteria.all and not self.criteria.targets
-
-    def predicate(self, target):
-        return target in self.graph.endpoints()
-
-
-def filter(graph, backend, criteria):
-    targets = iter(graph.targets.values())
-    for filter_cls in FILTERS:
-        filter = filter_cls(graph, backend, criteria)
-        if filter.use():
-            targets = filter.apply(targets)
-    return targets
 
 
 def _split_target_list(backend, graph, targets):
@@ -110,6 +37,18 @@ def print_progress(backend, graph, targets):
     print('\n'.join(table.format_table()))
 
 
+def _status(backend, graph, names_only, **criteria):
+    filtered_targets = filter(graph, backend, Criteria(**criteria))
+    filtered_targets = sorted(filtered_targets, key=lambda t: t.name)
+
+    if names_only:
+        for target in filtered_targets:
+            click.echo(target.name)
+        return
+
+    print_progress(backend, graph, filtered_targets)
+
+
 @click.command()
 @click.argument('targets', nargs=-1)
 @click.option('-n', '--names-only', is_flag=True)
@@ -130,12 +69,4 @@ def status(backend, graph, names_only, **criteria):
     are submitted (yellow, S), are running (blue, R), are
     completed (green, C), or have failed (red, F).
     """
-    filtered_targets = filter(graph, backend, Criteria(**criteria))
-    filtered_targets = sorted(filtered_targets, key=lambda t: t.name)
-
-    if names_only:
-        for target in filtered_targets:
-            click.echo(target.name)
-        return
-
-    print_progress(backend, graph, filtered_targets)
+    _status(backend, graph, names_only, **criteria)
