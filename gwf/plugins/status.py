@@ -34,19 +34,12 @@ def print_progress(backend, graph, targets):
         status_bar.add_progress(len(running), 'R', color='blue')
         status_bar.add_progress(len(submitted), 'S', color='yellow')
         status_bar.add_progress(len(should_run), '.', color='magenta')
-    print('\n'.join(table.format_table()))
+    click.echo('\n'.join(table.format_table()))
 
 
-def _status(backend, graph, names_only, **criteria):
-    filtered_targets = filter(graph, backend, Criteria(**criteria))
-    filtered_targets = sorted(filtered_targets, key=lambda t: t.name)
-
-    if names_only:
-        for target in filtered_targets:
-            click.echo(target.name)
-        return
-
-    print_progress(backend, graph, filtered_targets)
+def print_names(backend, graph, targets):
+    for target in targets:
+        click.echo(target.name)
 
 
 @click.command()
@@ -69,4 +62,7 @@ def status(backend, graph, names_only, **criteria):
     are submitted (yellow, S), are running (blue, R), are
     completed (green, C), or have failed (red, F).
     """
-    _status(backend, graph, names_only, **criteria)
+    filtered_targets = filter(graph, backend, Criteria(**criteria))
+    filtered_targets = sorted(filtered_targets, key=lambda t: t.name)
+    print_func = print_names if names_only else print_progress
+    print_func(backend, graph, filtered_targets)

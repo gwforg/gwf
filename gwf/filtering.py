@@ -18,7 +18,7 @@ class Criteria:
 
 class FilterType(type):
     """A metaclass for filters.
-    
+
     The only purpose of this metaclass is to automatically register filters.
     """
 
