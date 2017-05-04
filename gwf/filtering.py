@@ -1,3 +1,5 @@
+"""Provides easy, dynamic filtering of targets."""
+
 from .backends.base import Status
 
 
@@ -15,15 +17,20 @@ class Criteria:
 
 
 class FilterType(type):
+    """A metaclass for filters.
+    
+    The only purpose of this metaclass is to automatically register filters.
+    """
+
     def __new__(meta, name, bases, class_dict):
         cls = type.__new__(meta, name, bases, class_dict)
-        if cls.__name__ == 'Filter':
-            return cls
-        register_filter(cls)
+        if bases:
+            register_filter(cls)
         return cls
 
 
 class Filter(metaclass=FilterType):
+    """A base class for filters."""
     def __init__(self, graph, backend, criteria):
         self.graph = graph
         self.backend = backend
@@ -39,7 +46,6 @@ class StatusFilter(Filter):
         return self.criteria.status
 
     def predicate(self, target):
-        print(target, self.criteria.status, self.backend.status(target))
         if self.criteria.status == 'completed':
             return not self.graph.should_run(target)
         if self.criteria.status == 'shouldrun':
