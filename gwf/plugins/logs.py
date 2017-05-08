@@ -19,3 +19,4 @@ def logs(backend, graph, target, stdout):
 
     log = backend.logs(graph.targets[target], stderr=not stdout)
     click.echo(log.read())
+    log.close()
