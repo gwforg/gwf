@@ -156,12 +156,6 @@ class Backend(metaclass=BackendType):
     def close(self):
         """Close the backend."""
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-
 
 class PersistableDict(UserDict):
     """A dictionary which can persist itself to JSON."""
