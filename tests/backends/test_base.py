@@ -1,6 +1,10 @@
+import os.path
+
+from unittest.mock import patch, mock_open
+
 from gwf.exceptions import BackendError
 from gwf import Target
-from gwf.backends.base import Backend
+from gwf.backends.base import Backend, PersistableDict
 from gwf.backends.testing import TestingBackend
 
 from tests import GWFTestCase
@@ -36,4 +40,21 @@ class TestBackendType(GWFTestCase):
 
                 def status(self, target):
                     pass
+
+
+class TestPersistableDict(GWFTestCase):
+
+    def test_dict_is_empty_if_file_does_not_exist(self):
+        d = PersistableDict('test.json')
+        self.assertEqual(d, {})
+
+    def test_dict_write_read(self):
+        d1 = PersistableDict('/tmp/test.json')
+        d1['foo'] = 'bar'
+        d1.persist()
+
+        self.assertTrue(os.path.exists('/tmp/test.json'))
+
+        d2 = PersistableDict('/tmp/test.json')
+        self.assertEqual(d2, {'foo': 'bar'})
 
