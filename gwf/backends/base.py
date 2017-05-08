@@ -82,14 +82,14 @@ class BackendType(type):
     from backend implementations and ensures consistency in warnings.
     """
     def __new__(metacls, name, bases, namespace, **kwargs):
+        if not bases:
+            return type.__new__(metacls, name, bases, namespace)
+
         # Check that all required methods exist. The logs() method isn't required,
         # since a default implementation is provided by Backend.
         for method_name in ('submit', 'cancel', 'status', 'close'):
             if method_name not in namespace:
                 raise BackendError('Invalid backend implementation. Backend does not implement {}.'.format(method_name))
-
-        if not bases:
-            return type.__new__(metacls, name, bases, namespace)
 
         # Decorate the submit method with a decorator that injects backend
         # target defaults into the target options.

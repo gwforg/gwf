@@ -1,10 +1,12 @@
-from unittest import TestCase
-
+from gwf.exceptions import BackendError
 from gwf import Target
+from gwf.backends.base import Backend
 from gwf.backends.testing import TestingBackend
 
+from tests import GWFTestCase
 
-class TestBackendType(TestCase):
+
+class TestBackendType(GWFTestCase):
 
     def setUp(self):
         self.backend = TestingBackend(working_dir='/some/dir')
@@ -22,4 +24,16 @@ class TestBackendType(TestCase):
         target = Target('TestTarget', inputs=[], outputs=[], options={'foo': 'bar'}, working_dir='/some/dir')
         with self.assertWarns(Warning):
             self.backend.submit(target, dependencies=[])
+
+    def test_raise_exception_if_backend_does_not_implement_all_methods(self):
+        with self.assertRaises(BackendError):
+            class InvalidTestingBackend(Backend):
+                def submit(self, target):
+                    pass
+
+                def cancel(self, target):
+                    pass
+
+                def status(self, target):
+                    pass
 
