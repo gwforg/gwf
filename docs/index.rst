@@ -26,17 +26,17 @@ Installation
 
 To install *gwf* via conda::
 
-    conda install -c dansondergaard gwf
+    conda install -c gwforg gwf
 
 We recommend that you install *gwf* in a project-specific environment::
 
     conda create -n myproject python=3.5 dep1 dep2 ...
     source activate myproject
-    conda install -c dansondergaard gwf
+    conda install -c gwforg gwf
 
-You can find the code for *gwf* `here <https://github.com/mailund/gwf>`_. You are
+You can find the code for *gwf* `here <https://github.com/gwforg/gwf>`_. You are
 encouraged to report any issues through the
-`issue tracker <https://github.com/mailund/gwf/issues>`_.
+`issue tracker <https://github.com/gwforg/gwf/issues>`_.
 
 Upgrading from an Older Version
 -------------------------------
@@ -74,7 +74,7 @@ API Reference
    api
 
 
-.. |cistatus| image:: https://travis-ci.org/mailund/gwf.svg?branch=master
+.. |cistatus| image:: https://travis-ci.org/gwforg/gwf.svg?branch=master
     :target: https://travis-ci.org/mailund/gwf
     :alt: Build status
 .. |docs| image:: https://readthedocs.org/projects/gwf/badge/?version=latest
@@ -89,9 +89,9 @@ API Reference
 .. |coveralls| image:: https://img.shields.io/coveralls/mailund/gwf.svg
     :target: https://coveralls.io/github/mailund/gwf
     :alt: Coverage
-.. |anacondaversion| image:: https://anaconda.org/dansondergaard/gwf/badges/version.svg
+.. |anacondaversion| image:: https://anaconda.org/gwforg/gwf/badges/version.svg
     :target: https://anaconda.org/dansondergaard/gwf
     :alt: Version of Conda package
-.. |anacondadownloads| image:: https://anaconda.org/dansondergaard/gwf/badges/downloads.svg
+.. |anacondadownloads| image:: https://anaconda.org/gwforg/gwf/badges/downloads.svg
     :target: https://anaconda.org/dansondergaard/gwf
     :alt: Downloads with Conda

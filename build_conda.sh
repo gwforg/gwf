@@ -14,7 +14,7 @@ export PATH="/tmp/miniconda/bin:$PATH"
 
 # Configure and update...
 conda config --set always_yes yes --set changeps1 no
-conda config --add channels dansondergaard
+conda config --add channels gwforg
 conda update -q conda
 conda install anaconda-client conda-build
 
@@ -25,5 +25,5 @@ mkdir /tmp/builds
 conda convert --platform all /tmp/miniconda/conda-bld/linux-64/gwf-*-*_0.tar.bz2 -o /tmp/builds
 
 for f in $(ls /tmp/builds/*/*.tar.bz2); do
-    anaconda -t $ANACONDA_TOKEN upload $f
+    anaconda -u gwforg -t $ANACONDA_TOKEN upload $f
 done
