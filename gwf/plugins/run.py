@@ -11,5 +11,5 @@ import click
 @pass_graph
 def run(graph, backend, targets, dry_run):
     """Run the specified workflow."""
-    matched_targets = graph.get_targets_by_name(targets) or graph.endpoints()
+    matched_targets = graph.find(targets) or graph.endpoints()
     schedule_many(graph, backend, matched_targets, dry_run=dry_run)

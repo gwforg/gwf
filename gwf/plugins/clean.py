@@ -22,7 +22,7 @@ def _delete_file(path):
 @pass_graph
 def clean(graph, backend, targets, not_endpoints):
     """Clean output files of targets."""
-    matched_targets = graph.get_targets_by_name(targets) or graph.targets.values()
+    matched_targets = graph.find(targets) or graph.targets.values()
 
     if not_endpoints:
         matched_targets = [

@@ -14,9 +14,9 @@ from .backends.base import Status
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
-                         InvalidNameError, TargetExistsError, InvalidTypeError, TargetDoesNotExistError)
+                         InvalidNameError, TargetExistsError, InvalidTypeError)
 from .utils import (cache, dfs, get_file_timestamp, load_workflow,
-                    is_valid_name, iter_inputs, iter_outputs, timer, parse_path)
+                    is_valid_name, iter_inputs, iter_outputs, timer, parse_path, match_targets)
 
 logger = logging.getLogger(__name__)
 
@@ -564,13 +564,9 @@ class Graph(object):
         """Return a set of all targets that are not depended on by other targets."""
         return set(self.targets.values()) - set(self.dependents.keys())
 
-    def get_targets_by_name(self, names):
-        matched_targets = []
-        for name in names:
-            if name not in self.targets:
-                raise TargetDoesNotExistError(name)
-            matched_targets.append(self.targets[name])
-        return matched_targets
+    def find(self, names):
+        """Return a set of targets matching the given names/patterns."""
+        return match_targets(names, self.targets)
 
     def __iter__(self):
         return iter(self.targets.values())

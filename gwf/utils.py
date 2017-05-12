@@ -6,7 +6,7 @@ import re
 import time
 from contextlib import ContextDecorator
 
-from gwf.exceptions import GWFError
+from gwf.exceptions import GWFError, TargetDoesNotExistError
 
 logger = logging.getLogger(__name__)
 
@@ -117,3 +117,17 @@ def parse_path(path, default_obj='gwf'):
     basedir, filename = os.path.split(path)
     filename, _ = os.path.splitext(filename)
     return basedir, filename, obj
+
+
+def match_targets(names, targets):
+    import fnmatch
+    matched_targets = set()
+    for name in names:
+        if '*' in name:
+            for match in fnmatch.filter(targets.keys(), name):
+                matched_targets.add(targets[match])
+        elif name not in targets:
+            raise TargetDoesNotExistError(name)
+        else:
+            matched_targets.add(targets[name])
+    return matched_targets

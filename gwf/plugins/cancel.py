@@ -11,7 +11,7 @@ import click
 @pass_graph
 def cancel(graph, backend, targets):
     """Cancel the specified targets."""
-    matched_targets = graph.get_targets_by_name(targets)
+    matched_targets = graph.find(targets)
     if not matched_targets:
         if click.confirm('This will cancel all targets! Do you want to continue?', abort=True):
             matched_targets = graph.targets.values()
