@@ -132,17 +132,9 @@ class Target(object):
         self.options = options
 
     def __lshift__(self, spec):
-        if isinstance(spec, tuple):
-            options, spec = spec
-            self.inputs = options.get('inputs', list)
-            self.outputs = options.get('outputs', list)
-
-            # Override template options with target options.
-            self.working_dir = options.get('working_dir', self.working_dir)
-            self.inherit_options(options)
-            self.spec = spec
-        else:
-            self.spec = spec
+        if not isinstance(spec, str):
+            raise InvalidTypeError("Target specs must be strings.")
+        self.spec = spec
         return self
 
     def __repr__(self):
