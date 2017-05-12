@@ -1,3 +1,4 @@
+import fnmatch
 import functools
 import imp
 import logging
@@ -120,7 +121,6 @@ def parse_path(path, default_obj='gwf'):
 
 
 def match_targets(names, targets):
-    import fnmatch
     matched_targets = set()
     for name in names:
         if '*' in name:
