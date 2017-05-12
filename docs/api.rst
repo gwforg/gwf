@@ -9,19 +9,18 @@ together and allows for easy creation of targets.
 When all targets have been defined on a workflow, the workflow must be turned
 into a :class:`~gwf.Graph`. Preparing the workflow consists of
 computing the entire dependency graph of the workflow, checking the workflow
-for inconsistensies and circular dependencies, and figuring out which targets
-should be run (see :meth:`~gwf.Graph.should_run`).
+for inconsistencies and circular dependencies.
 
-A :class:`~gwf.Graph` can be given to a
-:class:`~gwf.backends.Backend` implementation which will then execute the
-workflow.
+A targets in a :class:`~gwf.Graph` can be scheduled on a
+:class:`~gwf.backends.Backend` using the :func:`gwf.core.schedule_many`
+function.
 
 
 Core
 ----
 
 .. automodule:: gwf
-   :members: Target, Workflow, Graph
+   :members: Target, Workflow, Graph, schedule_many
 
 
 Backends
