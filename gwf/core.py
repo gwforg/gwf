@@ -622,8 +622,8 @@ def schedule_many(graph, backend, targets, **kwargs):
     Will schedule the targets in `targets` with :func:`schedule`
     and return a list of schedules.
 
-    This method is provided by :class:`Backend` and should not be overriden.
-
+    :param gwf.Graph graph: The full workflow graph.
+    :param gwf.Backend backend: A backend instance.
     :param list targets: A list of targets to be scheduled.
     :return: A list of schedules, one for each target in `targets`.
     """
