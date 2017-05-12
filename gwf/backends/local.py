@@ -356,8 +356,8 @@ class Server:
                 )
         except KeyboardInterrupt:
             logging.info('Shutting down...')
-            workers.join()
             workers.close()
+            workers.join()
 
 
 __all__ = ('Client', 'Server', 'LocalBackend',)
