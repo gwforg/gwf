@@ -15,7 +15,7 @@ script: make test
 after_success:
 - coveralls
 - coverage xml
-- CODACY_PROJECT_TOKEN=47f9ce19327d4adabaab1f40047f504a python-codacy-coverage -r coverage.xml
+- python-codacy-coverage -r coverage.xml
 deploy:
   - provider: pypi
     username: dansondergaard
