@@ -40,7 +40,7 @@ This should show you the commands and options available through *gwf*.
         export LC_ALL=en_US.utf8
 
     If you're not in the US you may want to set it to something else. For example,
-    if you're en Denmark you may want to use the following configuration::
+    if you're in Denmark you may want to use the following configuration::
 
         export LANG=da_DK.utf8
         export LC_ALL=da_DK.utf8
