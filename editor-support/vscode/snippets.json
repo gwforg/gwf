@@ -1,0 +1,22 @@
+{
+    "GWF target": {
+        "prefix": "targ",
+        "body": [
+            "gwf.target('$1', inputs=[$2], outputs=[$3]) << \"\"\"",
+            "$4",
+            "\"\"\"",
+            "",
+            "$0"
+        ],
+		"description": "GWF target"
+    },
+	"GWF target from template": {
+        "prefix": "tmpl",
+        "body": [
+            "gwf.target_from_template('$1', $2($3), override={}) << $4($5)",
+            "",
+            "$0"
+        ],
+		"description": "GWF target from template"
+    }
+}
