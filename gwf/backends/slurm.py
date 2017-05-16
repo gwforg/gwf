@@ -174,9 +174,6 @@ class SlurmBackend(Backend):
             key, = exc.args
             raise UnknownDependencyError(key)
 
-        # Inherit defaults from the backend.
-        target.inherit_options(self.option_defaults)
-
         script = self._compile_script(target)
         stdout, _ = _call_sbatch(script, dependency_ids)
         job_id = stdout.strip()
