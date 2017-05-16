@@ -259,7 +259,7 @@ class Workflow(object):
         new_target = Target(
             name, inputs, outputs, merged_options,
             working_dir=self.working_dir,
-            spec
+            spec=spec
         )
 
         self._add_target(new_target)
