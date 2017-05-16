@@ -231,12 +231,11 @@ class Workflow(object):
         return new_target
 
     def target_from_template(self, name, template, **options):
-        """Create a target and add it to the :class:`gwf.Workflow`.
+        """Create a target from a template and add it to the :class:`gwf.Workflow`.
 
         This is syntactic sugar for creating a new :class:`~gwf.Target` and
         adding it to the workflow. The target is also returned from the method
-        so that the user can directly manipulate it, if necessary. For example,
-        this allows assigning a spec to a target directly after defining it::
+        so that the user can directly manipulate it, if necessary.
 
             workflow = Workflow()
             workflow.target_from_template('NewTarget', my_template())
@@ -246,7 +245,7 @@ class Workflow(object):
         add it to the workflow.
 
         :param str name: Name of the target.
-        :param tuple template: Target specification based on a template.
+        :param tuple template: Target specification of the form (inputs, outputs, options, spec).
 
         Any further keyword arguments are passed to the backend and will
         override any options provided by the template.
@@ -260,7 +259,8 @@ class Workflow(object):
         new_target = Target(
             name, inputs, outputs, merged_options,
             working_dir=self.working_dir,
-        ) << spec
+            spec
+        )
 
         self._add_target(new_target)
         return new_target
