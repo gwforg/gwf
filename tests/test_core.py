@@ -13,7 +13,7 @@ from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
                             FileRequiredButNotProvidedError,
                             IncludeWorkflowError, InvalidNameError,
-                            TargetExistsError, InvalidTypeError)
+                            TargetExistsError, InvalidTypeError, GWFError)
 
 
 class TestWorkflow(unittest.TestCase):
@@ -466,6 +466,16 @@ class TestGraph(unittest.TestCase):
             'TestTarget3', inputs=['test_file2.txt'], outputs=['test_file3.txt'])
 
         with self.assertRaises(CircularDependencyError):
+            Graph(targets=self.workflow.targets)
+
+    def test_raise_exception_if_input_file_is_a_dir(self):
+        self.workflow.target('TestTarget1', inputs=['/tmp'], outputs=['test_file1.txt'])
+        with self.assertRaises(GWFError):
+            Graph(targets=self.workflow.targets)
+
+    def test_raise_exception_if_output_file_is_a_dir(self):
+        self.workflow.target('TestTarget1', inputs=[], outputs=['/tmp'])
+        with self.assertRaises(GWFError):
             Graph(targets=self.workflow.targets)
 
     def test_endpoints_only_includes_target_with_no_dependents(self):

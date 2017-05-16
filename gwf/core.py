@@ -1,22 +1,23 @@
+import collections
 import inspect
 import itertools
 import logging
+import os
 import os.path
+import stat
 import subprocess
 import sys
 from collections import defaultdict
 from glob import glob as _glob
 from glob import iglob as _iglob
 
-import collections
-
 from .backends.base import Status
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
-                         InvalidNameError, TargetExistsError, InvalidTypeError)
-from .utils import (cache, dfs, get_file_timestamp, load_workflow,
-                    is_valid_name, iter_inputs, iter_outputs, timer, parse_path, match_targets)
+                         InvalidNameError, TargetExistsError, InvalidTypeError, GWFError)
+from .utils import (cache, dfs, load_workflow, is_valid_name, iter_inputs, iter_outputs, timer, parse_path,
+                    match_targets)
 
 logger = logging.getLogger(__name__)
 
@@ -389,36 +390,20 @@ class Graph(object):
     :ivar provides: initial value: None
     :ivar dependencies: initial value: None
     :ivar dependents: initial value: None
+
+    :raises FileProvidedByMultipleTargetsError:
+        Raised if the same file is provided by multiple targets.
+    :raises FileRequiredButNotProvidedError:
+        Raised if a target has an input file that does not exist on the
+        file system and that is not provided by another target.
+    :raises CircularDependencyError:
+        Raised if the workflow contains a circular dependency.
     """
 
     def __init__(self, targets):
         self.targets = targets
 
-        self.provides = None
-        self.dependencies = None
-        self.dependents = None
-        self.file_cache = None
-
-        self.prepare()
-
-    def prepare(self):
-        """Prepare this workflow given a :class:`gwf.Workflow` instance.
-
-        :param gwf.Workflow workflow:
-            The workflow which should be prepared.
-        :raises FileProvidedByMultipleTargetsError:
-            Raised if the same file is provided by multiple targets.
-        :raises FileRequiredButNotProvidedError:
-            Raised if a target has an input file that does not exist on the
-            file system and that is not provided by another target.
-        :raises CircularDependencyError:
-            Raised if the workflow contains a circular dependency.
-        """
-
-        logger.debug(
-            'Preparing workflow with %s targets defined.',
-            len(self.targets)
-        )
+        logger.debug('Preparing workflow with %s targets defined.', len(self.targets))
 
         # The order is important here!
         self.provides = self.prepare_file_providers()
@@ -463,10 +448,23 @@ class Graph(object):
 
     @timer('Prepared file cache in %.3fms.', logger=logger)
     def prepare_file_cache(self):
+        cache = {}
+
         input_iter = iter_inputs(self.targets.values())
         output_iter = iter_outputs(self.targets.values())
-        return {path: get_file_timestamp(path)
-                for _, path in itertools.chain(input_iter, output_iter)}
+        for target, path in itertools.chain(input_iter, output_iter):
+            if path in cache:
+                continue
+
+            try:
+                st = os.stat(path)
+            except FileNotFoundError:
+                cache[path] = None
+            else:
+                if stat.S_ISDIR(st.st_mode):
+                    raise GWFError('Path {} used in {} points to a directory.'.format(target.name, path))
+                cache[path] = st.st_mtime
+        return cache
 
     @timer('Checked for circular dependencies in %.3fms.', logger=logger)
     def _check_for_circular_dependencies(self):
