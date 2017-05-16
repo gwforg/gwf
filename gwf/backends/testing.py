@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 class TestingBackend(Backend):
 
-    supported_options = set(['cores', 'memory'])
     option_defaults = {'cores': 2, 'memory': '18g'}
 
     def submit(self, target, dependencies):

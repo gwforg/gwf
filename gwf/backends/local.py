@@ -130,7 +130,6 @@ class LocalBackend(Backend):
     None available.
     """
 
-    supported_options = []
     option_defaults = {}
 
     def __init__(self, working_dir):

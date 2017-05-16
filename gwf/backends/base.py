@@ -48,13 +48,15 @@ def inherit_options(func, super_options):
 def check_options(func, supported_options):
     @wraps(func)
     def inner_wrapper(self, target, *args, **kwargs):
-        for option_name in list(target.options.keys()):
+        for option_name, option_value in list(target.options.items()):
             if option_name not in supported_options:
                 warnings.warn(
                     'Backend does not support option {} used in {}. Option will be ignored.'.format(
                         option_name, target.name
                     )
                 )
+                del target.options[option_name]
+            elif option_value is None:
                 del target.options[option_name]
         return func(self, target, *args, **kwargs)
     return inner_wrapper
@@ -99,8 +101,7 @@ class BackendType(type):
         # Decorate the submit method with a decorator that checks whether the
         # option in the given target are supported by the backend. Warns the
         # user and removes the option if this is not the case.
-        supported_options = namespace.get('supported_options', {})
-        namespace['submit'] = check_options(namespace['submit'], supported_options)
+        namespace['submit'] = check_options(namespace['submit'], option_defaults.keys())
 
         return type.__new__(metacls, name, bases, namespace)
 

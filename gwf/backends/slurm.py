@@ -143,11 +143,17 @@ class SlurmBackend(Backend):
       on `sbatch`.
     """
 
-    supported_options = set(OPTION_TABLE.keys())
     option_defaults = {
         'cores': 1,
         'memory': '1g',
         'walltime': '01:00:00',
+        'nodes': None,
+        'queue': None,
+        'account': None,
+        'constraint': None,
+        'mail_type': None,
+        'mail_user': None,
+        'qos': None,
     }
 
     def __init__(self, working_dir):
