@@ -344,11 +344,13 @@ specification.
 
 Instead, *gwf* allows us to define a template which
 can be used to generate one or more targets easily. In general, a template is just a function
-which returns a tuple containing two things:
+which returns a tuple containing four values:
 
-1. a dictionary with options for the target that is to be generated, for example how many
+1. The *inputs* files,
+2. The *outputs* files,
+3. a dictionary with options for the target that is to be generated, for example how many
    cores the template needs and which files it depends on,
-2. a string which contains the specification of the target that is to be generated.
+4. a string which contains the specification of the target that is to be generated.
 
 Templates are great because they allow you to reuse functionality and encapsulate target
 creation logic. Let's walk through the example above.
@@ -379,13 +381,14 @@ Let's write a template that unpacks files.
 
 This is just a normal Python function that returns a tuple. The function takes two
 arguments, the name of the input file and the name of the output file. In the function
-we define a dictionary that defines the options of the targets created with this
-template. We also define a string describing the action of the template.
+we define the inputs and outputs files, a dictionary that defines the options of the targets created with this
+template, and a string describing the action of the template.
 
 We can now create a concrete target using this template::
 
-    gwf.target('UnzipGenome') << unzip(
-        inputfile='ponAbe2.fa.gz', outputfile='ponAbe2.fa')
+  gwf.target_from_template('UnzipGenome',
+                           unzip(inputfile='ponAbe2.fa.gz',
+                                 outputfile='ponAbe2.fa'))
 
 You could run the workflow now. The ``UnzipGenome`` target would be scheduled and submitted,
 and after a few seconds you should have a ``ponAbe2.fa`` file in the project directory.
@@ -396,12 +399,12 @@ Let's now define another template for indexing a genome.
    :pyobject: bwa_index
 
 This template looks more complicated, but really it's the same thing as before. We define
-a dictionary with options and a string with the command that will be executed.
+the inputs and outputs, a dictionary with options and a string with the command that will be executed.
 
 Let's use this template to create a target for indexing the reference genome::
 
-    gwf.target('IndexGenome') << bwa_index(
-        ref_genome='ponAbe2')
+  gwf.target_from_template('IndexGenome',
+                           bwa_index(ref_genome='ponAbe2'))
 
 Finally, we'll create a template for actually mapping the reads to the reference.
 
@@ -410,11 +413,12 @@ Finally, we'll create a template for actually mapping the reads to the reference
 
 This is much the same as the previous template. Here's how we're going to use it::
 
-    gwf.target('MapReads') << bwa_map(
-        ref_genome='ponAbe2',
-        r1='Masala_R1.fastq.gz',
-        r2='Masala_R2.fastq.gz',
-        bamfile='Masala.bam')
+
+  gwf.target_from_template('MapReads',
+                           bwa_map(ref_genome='ponAbe2',
+                                   r1='Masala_R1.fastq.gz',
+                                   r2='Masala_R2.fastq.gz',
+                                   bamfile='Masala.bam'))
 
 
 As you can see, templates are just normal Python functions and thus they can be inspected

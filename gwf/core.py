@@ -133,17 +133,9 @@ class Target(object):
         self.options = options
 
     def __lshift__(self, spec):
-        if isinstance(spec, tuple):
-            options, spec = spec
-            self.inputs = options.get('inputs', list)
-            self.outputs = options.get('outputs', list)
-
-            # Override template options with target options.
-            self.working_dir = options.get('working_dir', self.working_dir)
-            self.inherit_options(options)
-            self.spec = spec
-        else:
-            self.spec = spec
+        if not isinstance(spec, str):
+            raise InvalidTypeError("Target specs must be strings.")
+        self.spec = spec
         return self
 
     def __repr__(self):
@@ -234,6 +226,41 @@ class Workflow(object):
         new_target = Target(
             name, inputs, outputs, merged_options,
             working_dir=self.working_dir,
+        )
+
+        self._add_target(new_target)
+        return new_target
+
+    def target_from_template(self, name, template, **options):
+        """Create a target from a template and add it to the :class:`gwf.Workflow`.
+
+        This is syntactic sugar for creating a new :class:`~gwf.Target` and
+        adding it to the workflow. The target is also returned from the method
+        so that the user can directly manipulate it, if necessary.
+
+            workflow = Workflow()
+            workflow.target_from_template('NewTarget', my_template())
+
+        This will create a new target named `NewTarget`, configure it based
+        on the specification in the template `my_template`, and
+        add it to the workflow.
+
+        :param str name: Name of the target.
+        :param tuple template: Target specification of the form (inputs, outputs, options, spec).
+
+        Any further keyword arguments are passed to the backend and will
+        override any options provided by the template.
+        """
+        inputs, outputs, target_options, spec = template
+
+        merged_options = self.defaults.copy()
+        merged_options.update(target_options)
+        merged_options.update(options)
+
+        new_target = Target(
+            name, inputs, outputs, merged_options,
+            working_dir=self.working_dir,
+            spec=spec
         )
 
         self._add_target(new_target)

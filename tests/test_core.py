@@ -321,20 +321,6 @@ class TestTarget(unittest.TestCase):
             working_dir='/some/path')
         self.assertEqual(target.outputs, ['/some/path/somefile.txt', '/some/path/otherfile.txt'])
 
-    def test_assigning_template_to_target(self):
-        template = ({'cores': 1, 'memory': '8g'}, 'this is the spec')
-        target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir') << template
-        self.assertEqual(target.options['cores'], 1)
-        self.assertEqual(target.options['memory'], '8g')
-        self.assertEqual(target.spec, 'this is the spec')
-
-    def test_assigning_template_to_target_and_overriding_options(self):
-        template = ({'cores': 1, 'memory': '8g'}, 'this is the spec')
-        target = Target('TestTarget', inputs=[], outputs=[], options={'cores': 8}, working_dir='/some/dir') << template
-        self.assertEqual(target.options['cores'], 8)
-        self.assertEqual(target.options['memory'], '8g')
-        self.assertEqual(target.spec, 'this is the spec')
-
     def test_inherit_options(self):
         target = Target('TestTarget', inputs=[], outputs=[], options={'cores': 8}, working_dir='/some/dir')
         target.inherit_options({'cores': 4, 'memory': '4g'})
