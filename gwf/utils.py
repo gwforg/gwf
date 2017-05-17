@@ -1,3 +1,4 @@
+import copy
 import fnmatch
 import functools
 import imp
@@ -6,6 +7,8 @@ import os.path
 import re
 import time
 from contextlib import ContextDecorator
+
+import click
 
 from gwf.exceptions import GWFError, TargetDoesNotExistError
 
@@ -131,3 +134,23 @@ def match_targets(names, targets):
         else:
             matched_targets.add(targets[name])
     return matched_targets
+
+
+class ColorFormatter(logging.Formatter):
+
+    STYLING = {
+        'WARNING': dict(fg='yellow'),
+        'INFO': dict(fg='blue', bold=True),
+        'DEBUG': dict(fg='white'),
+        'ERROR': dict(fg='red', bold=True),
+        'CRITICAL': dict(fg='magenta', bold=True),
+    }
+
+    def format(self, record):
+        level = record.levelname
+        color_record = copy.copy(record)
+        if record.levelname in self.STYLING:
+            styling = self.STYLING[level]
+            color_record.levelname = click.style(record.levelname, **styling)
+            color_record.msg = click.style(record.msg, **styling)
+        return super().format(color_record)

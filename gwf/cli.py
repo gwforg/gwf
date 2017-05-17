@@ -1,4 +1,5 @@
 import atexit
+import os
 import os.path
 import logging
 from functools import update_wrapper
@@ -9,7 +10,7 @@ from click_plugins import with_plugins
 
 from gwf import Graph
 from . import __version__
-from .utils import parse_path, load_workflow, ensure_dir
+from .utils import ColorFormatter, parse_path, load_workflow, ensure_dir
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ LOGGING_FORMATS = {
     'warning': BASIC_FORMAT,
     'info': BASIC_FORMAT,
     'debug': ADVANCED_FORMAT,
-    'error': ADVANCED_FORMAT,
+    'error': BASIC_FORMAT,
 }
 
 BACKENDS = {ep.name: ep.load() for ep in iter_entry_points('gwf.backends')}
@@ -74,10 +75,17 @@ def pass_graph(f):
     type=click.Choice(['debug', 'info', 'warning', 'error']),
     default='info'
 )
+@click.option(
+    '--no-color/--use-color',
+    help='Enable or disable output colors.'
+)
 @click.pass_context
-def main(ctx, backend, file, verbose):
+def main(ctx, backend, file, verbose, no_color):
     """A flexible, pragmatic workflow tool."""
-    logging.basicConfig(level=get_level(verbose), format=LOGGING_FORMATS[verbose])
+    handler = logging.StreamHandler()
+    if not no_color:
+        handler.setFormatter(ColorFormatter(fmt=LOGGING_FORMATS[verbose]))
+    logging.basicConfig(level=get_level(verbose), handlers=[handler])
 
     basedir, filename, obj = parse_path(file)
     workflow = load_workflow(basedir, filename, obj)
