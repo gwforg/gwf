@@ -598,47 +598,31 @@ class Graph(object):
 
 
 def schedule(graph, backend, target, dry_run=False):
-    """Schedule and submit a :class:`gwf.Target` and its dependencies.
-
-    This method is provided by :class:`Backend` and should not be overriden.
-    """
+    """Schedule and submit a :class:`gwf.Target` and its dependencies."""
     logger.info('Scheduling target %s.', target.name)
 
     if backend.status(target) == Status.SUBMITTED:
         logger.debug('Target %s has already been submitted.', target.name)
-        return []
+        return False, []
 
-    scheduled = []
-    for dependency in graph.dfs(target):
-        if dependency.name != target.name:
-            logger.info(
-                'Scheduling dependency %s of %s.',
-                dependency.name,
-                target.name
-            )
+    sched = []
+    submitted_deps = []
+    for dependency in graph.dependencies[target]:
+        should_submit, partial_schedule = schedule(graph, backend, dependency, dry_run=dry_run)
+        sched.extend(partial_schedule)
+        if should_submit:
+            submitted_deps.append(dependency)
 
-        if backend.status(dependency) == Status.SUBMITTED:
-            logger.debug(
-                'Target %s has already been submitted.',
-                dependency.name
-            )
-            continue
-
-        if not graph.should_run(dependency):
-            logger.debug(
-                'Target %s should not run.',
-                dependency.name
-            )
-            continue
-
+    if submitted_deps or graph.should_run(target):
         if dry_run:
-            logger.info('Would submit target %s.', dependency.name)
+            logger.info('Would submit target %s.', target.name)
         else:
-            logger.info('Submitting target %s.', dependency.name)
-            backend.submit(dependency, graph.dependencies[dependency])
-        scheduled.append(dependency)
-
-    return scheduled
+            logger.info('Submitting target %s with deps %r.', target.name, submitted_deps)
+            backend.submit(target, submitted_deps)
+        return True, sched + [target]
+    else:
+        logger.debug('Target %s should not run.', target.name)
+        return False, sched
 
 
 def schedule_many(graph, backend, targets, **kwargs):
@@ -654,5 +638,6 @@ def schedule_many(graph, backend, targets, **kwargs):
     """
     schedules = []
     for target in targets:
-        schedules.append(schedule(graph, backend, target, **kwargs))
+        _, sched = schedule(graph, backend, target, **kwargs)
+        schedules.append(sched)
     return schedules
