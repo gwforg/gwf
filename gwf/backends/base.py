@@ -50,7 +50,7 @@ def check_options(func, supported_options):
         for option_name, option_value in list(target.options.items()):
             if option_name not in supported_options:
                 logger.warning(
-                    'Backend does not support option {} used in {}. Option will be ignored.'.format(
+                    'Option "{}" used in "{}" is not supported by backend. Ignored.'.format(
                         option_name, target.name
                     )
                 )
