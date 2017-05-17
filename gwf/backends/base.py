@@ -23,9 +23,9 @@ class Status(Enum):
     A target is running if it is currently being executed by the backend.
     """
 
-    UNKNOWN = 0
-    SUBMITTED = 1
-    RUNNING = 2
+    UNKNOWN = 0  #: The backend is not aware of the status of this target (it may be completed or failed).
+    SUBMITTED = 1  #: The target has been submitted, but is not currently running.
+    RUNNING = 2  #: The target is currently running.
 
 
 class UnknownDependencyError(BackendError):

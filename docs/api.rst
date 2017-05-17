@@ -31,6 +31,9 @@ Backends
    :inherited-members:
    :undoc-members:
 
+.. autoclass:: gwf.backends.base.Status
+   :members:
+   :undoc-members:
 
 Exceptions
 ----------
