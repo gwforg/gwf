@@ -5,9 +5,6 @@ Welcome to gwf
 scientific workflows. It is developed at the Bioinformatics Research Centre
 (BiRC), Aarhus University.
 
-In *gwf*, a workflow consists of a collection of *targets*. A target declares
-its input and output files
-
 Examples
   To get a feeling for what a *gwf* workflow looks like, have a look at a few
   `examples <https://github.com/mailund/gwf/tree/master/examples>`_.
