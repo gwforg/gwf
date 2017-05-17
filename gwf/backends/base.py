@@ -108,8 +108,12 @@ class BackendType(type):
 class Backend(metaclass=BackendType):
     """Base class for backends."""
 
-    def __init__(self, working_dir):
+    def __init__(self, working_dir, config=None):
         self.working_dir = working_dir
+        if config is None:
+            self.config = {}
+        else:
+            self.config = config
 
     def status(self, target):
         """Return the status of `target`.

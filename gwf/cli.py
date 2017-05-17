@@ -1,4 +1,5 @@
 import atexit
+import json
 import os
 import os.path
 import logging
@@ -32,14 +33,26 @@ LOGGING_FORMATS = {
 
 BACKENDS = {ep.name: ep.load() for ep in iter_entry_points('gwf.backends')}
 
+CONFIG_DEFAULTS = {
+    'verbose': 'info',
+    'backend': 'local',
+    'no_color': False,
+}
+
 
 def pass_backend(f):
     """Pass the initialized backend to the function."""
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
-        backend_cls = BACKENDS[ctx.obj['_backend']]
-        backend = backend_cls(working_dir=ctx.obj['_workflow'].working_dir)
+        backend_name = ctx.obj['_backend']
+        backend_cls = BACKENDS[backend_name]
+
+        working_dir = ctx.obj['_workflow'].working_dir
+        config = ctx.obj['_config'].get(backend_name, {})
+
+        backend = backend_cls(working_dir=working_dir, config=config)
         atexit.register(backend.close)
+
         return ctx.invoke(f, *args, backend=backend, **kwargs)
     return update_wrapper(new_func, f)
 
@@ -50,6 +63,14 @@ def pass_graph(f):
     def new_func(ctx, *args, **kwargs):
         graph = Graph(targets=ctx.obj['_workflow'].targets)
         return ctx.invoke(f, *args, graph=graph, **kwargs)
+    return update_wrapper(new_func, f)
+
+
+def pass_config(f):
+    """Pass the complete workflow graph to the function."""
+    @click.pass_context
+    def new_func(ctx, *args, **kwargs):
+        return ctx.invoke(f, *args, config=ctx.obj['_config'], **kwargs)
     return update_wrapper(new_func, f)
 
 
@@ -65,33 +86,46 @@ def pass_graph(f):
 @click.option(
     '-b',
     '--backend',
-    default='local',
     type=click.Choice(BACKENDS.keys()),
-    help='Backend used to run workflow.'
+    help='Backend used to run workflow (default: local).'
 )
 @click.option(
     '-v',
     '--verbose',
-    type=click.Choice(['debug', 'info', 'warning', 'error']),
-    default='info'
+    type=click.Choice(['warning', 'debug', 'info', 'error']),
+    help='Verbosity level (default: info).',
 )
 @click.option(
     '--no-color/--use-color',
     help='Enable or disable output colors.'
 )
 @click.pass_context
-def main(ctx, backend, file, verbose, no_color):
+def main(ctx, file, **kwargs):
     """A flexible, pragmatic workflow tool."""
+    basedir, filename, obj = parse_path(file)
+    workflow = load_workflow(basedir, filename, obj)
+
+    try:
+        with open(os.path.join(workflow.working_dir, '.gwfconf.json')) as config_file:
+            config = json.load(config_file)
+    except FileNotFoundError:
+        config = {}
+    finally:
+        config.update(CONFIG_DEFAULTS)
+        config.update({k: v for k, v in kwargs.items() if v is not None})
+
+    ensure_dir(os.path.join(workflow.working_dir, '.gwf'))
+    ensure_dir(os.path.join(workflow.working_dir, '.gwf', 'logs'))
+
+    backend = config['backend']
+    verbose = config['verbose']
+    no_color = config['no_color']
+
     handler = logging.StreamHandler()
     if not no_color:
         handler.setFormatter(ColorFormatter(fmt=LOGGING_FORMATS[verbose]))
     logging.basicConfig(level=get_level(verbose), handlers=[handler])
 
-    basedir, filename, obj = parse_path(file)
-    workflow = load_workflow(basedir, filename, obj)
-
-    ensure_dir(os.path.join(workflow.working_dir, '.gwf'))
-    ensure_dir(os.path.join(workflow.working_dir, '.gwf', 'logs'))
-
     ctx.obj['_workflow'] = workflow
-    ctx.obj['_backend'] = backend
+    ctx.obj['_backend'] = config['backend']
+    ctx.obj['_config'] = config

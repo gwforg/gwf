@@ -132,19 +132,26 @@ class LocalBackend(Backend):
 
     option_defaults = {}
 
-    def __init__(self, working_dir):
-        super().__init__(working_dir)
+    config_defaults = {
+        'host': '',
+        'port': 12345,
+    }
+
+    def __init__(self, working_dir, config=None):
+        super().__init__(working_dir, config)
+        self.config = self.config_defaults.copy()
+        self.config.update(config)
 
         self._tracked = PersistableDict(os.path.join(working_dir, '.gwf/local-backend-tracked.json'))
 
         try:
-            self.client = Client(('', 12345))
+            self.client = Client((self.config['host'], self.config['port']))
         except ConnectionRefusedError:
             raise GWFError(
-                'Local backend could not connect to workers. '
+                'Local backend could not connect to workers on port {}. '
                 'Workers can be started by running "gwf workers". '
                 'You can read more in the documentation: '
-                'http://gwf.readthedocs.io/en/latest/backends.html#local'
+                'http://gwf.readthedocs.io/en/latest/backends.html#local'.format(config['port'])
             )
 
         self._status = self.client.status()

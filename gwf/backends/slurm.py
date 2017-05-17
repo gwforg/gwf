@@ -156,8 +156,8 @@ class SlurmBackend(Backend):
         'qos': None,
     }
 
-    def __init__(self, working_dir):
-        super().__init__(working_dir)
+    def __init__(self, working_dir, config=None):
+        super().__init__(working_dir, config)
         self._tracked = PersistableDict(os.path.join(self.working_dir, '.gwf/slurm-backend-tracked.json'))
         self._status = init_status_from_queue()
 
