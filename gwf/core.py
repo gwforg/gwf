@@ -220,13 +220,11 @@ class Workflow(object):
 
         Any further keyword arguments are passed to the backend.
         """
-        merged_options = self.defaults.copy()
-        merged_options.update(options)
-
         new_target = Target(
-            name, inputs, outputs, merged_options,
+            name, inputs, outputs, options=options,
             working_dir=self.working_dir,
         )
+        new_target.inherit_options(self.defaults)
 
         self._add_target(new_target)
         return new_target
@@ -251,17 +249,15 @@ class Workflow(object):
         Any further keyword arguments are passed to the backend and will
         override any options provided by the template.
         """
-        inputs, outputs, target_options, spec = template
-
-        merged_options = self.defaults.copy()
-        merged_options.update(target_options)
-        merged_options.update(options)
+        inputs, outputs, template_options, spec = template
 
         new_target = Target(
-            name, inputs, outputs, merged_options,
+            name, inputs, outputs, options=options,
             working_dir=self.working_dir,
             spec=spec
         )
+        new_target.inherit_options(template_options)
+        new_target.inherit_options(self.defaults)
 
         self._add_target(new_target)
         return new_target
