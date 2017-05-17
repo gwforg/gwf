@@ -117,7 +117,7 @@ Then run the command:
 
 .. code-block:: console
 
-    $ gwf -b local workers
+    $ gwf workers
 
 This will start a pool of workers that *gwf* can now submit targets to.
 Switch back to the other terminal and then run:
@@ -127,16 +127,14 @@ Switch back to the other terminal and then run:
     $ gwf run
 
 *gwf* schedules and then submits ``MyTarget`` to the pool of workers you started in
-the other terminal window (the ``-b local`` flag tells *gwf* to use the
-:class:`~gwf.backends.local.LocalBackend`). This command doesn't output anything
-since *gwf* tries to only output something when explicitly told so, or if something
-is wrong.
+the other terminal window. This command doesn't output anything since *gwf* tries to
+only output something when explicitly told so, or if something is wrong.
 
 Within a few seconds you should see ``greeting.txt`` in the project directory. Try
 to open it in your favorite text editor!
 
-To actually see what happens when you run ``gwf run``, try to delete
-``greeting.txt`` and then run:
+To actually see what happens when you run ``gwf run``, try to delete ``greeting.txt``
+and then run:
 
 .. code-block:: console
 
@@ -160,46 +158,26 @@ Now try the same command again:
 
 .. code-block:: console
 
-    $ gwf -b local -v info run
+    $ gwf -v info run
     Scheduling target MyTarget.
 
 This time, *gwf* considers the target for submission, but decides not to submit it
 since all of the output files (only one in this case) exist.
 
-Setting a Default Backend
--------------------------
+Setting the Default Verbosity
+-----------------------------
 
-By now you probably got really tired of typing ``-b local`` for every single command.
-To save some keystrokes, let's set the local backend as the default for this project.
-
-.. code-block:: console
-
-    $ gwf config backend local
-
-This creates a configuration file in the project folder and sets the backend to
-``local`` by default. To test it out, let's try to run the same command as before,
-but without the ``-b local`` flag.
-
-.. code-block:: console
-
-    $ gwf -v info run
-    Scheduling target MyTarget.
-
-*gwf* now uses the local backend by default, so everything works as before. If you
-are crazy about seeing what *gwf* does, you can also get rid of the ``-v info``
+If you are crazy about seeing what *gwf* does you can get rid of the ``-v info``
 flag by setting the default verbosity level.
 
 .. code-block:: console
 
-    $ gwf config verbosity info
+    $ gwf config --set verbosity info
     $ gwf run
     Scheduling target MyTarget.
 
 As we'd expect, *gwf* outputs the same as before, but this time we didn't have to
 set the ``-v info`` flag!
-
-From now on we'll assume that you've started a pool of workers for the local backend
-and configured this to be the default backend.
 
 Defining Targets with Dependencies
 ----------------------------------
@@ -245,6 +223,9 @@ Let's try to run this workflow:
     Submitting target TargetB.
     Submitting target TargetC.
 
+(You can leave out the `-v info` option if you set it as the default in the
+previous section).
+
 Notice that *gwf* first attempts to submit ``TargetC``. However, because of the
 file dependencies it first schedules each dependency and submits those to the
 backend. It then submits ``TargetC`` and makes sure that it will only be run
@@ -268,7 +249,7 @@ Run this workflow. You should see the following:
 
 .. code-block:: console
 
-    error: Target TargetA depends on itself.
+    Error: Target TargetA depends on itself.
 
 Observing Target Execution
 --------------------------
@@ -332,6 +313,25 @@ All targets should now have completed, so we see this.
 As you may have noticed, the numbers to the right show the number of targets that are
 in a specific state in the order: completed, running, submitted, should run.
 
+
+
+Here's a few neat things you should know about the status command:
+
+* If you want to get an overview of the entire workflow you can use the ``--all`` option,
+  which will cause a progress bar to be output for all targets in the workflow.
+
+* You can use wildcards in target names. For example, ``gwf status Foo*`` will list all
+  targets beginning with `Foo`. You can specify multiple targets/patterns by separating
+  them with a space. This also works in the cancel and clean commands!
+
+* Only want to see which targets are running? You can filter targets by their status
+  using e.g. ``gwf status -s running``.
+
+* The ``--names-only`` option tells *gwf* to just output the names of the targets,
+  without the progress bar. This can be useful for piping to other commands.
+
+For more details you can always refer to builtin help with ``gwf status --help``.
+
 .. _function_templates:
 
 Reusable Targets with Templates
@@ -339,7 +339,7 @@ Reusable Targets with Templates
 
 Often you will want to reuse a target definition for a lot of different files. For example,
 you may have two files with reads that you need to map to a reference genome. The
-mapping is the same the two files, so it would be annoying to repeat it in the workflow
+mapping is the same for the two files, so it would be annoying to repeat it in the workflow
 specification.
 
 Instead, *gwf* allows us to define a template which
@@ -439,7 +439,7 @@ it's output to diagnose the problem. Luckily, *gwf* makes this very easy.
 When you run this command you'll see nothing. This is because the ``gwf logs`` command by
 default only shows things written to stdout by the target, and not stderr, and apparently
 nothing was written to stdout in this target. Let's try to take a look at stderr instead
-by applying the ``--stderr`` flag.
+by applying the ``--stderr`` flag (or the short version ``-e``).
 
 .. code-block:: console
 
