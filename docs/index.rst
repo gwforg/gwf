@@ -1,25 +1,28 @@
 Welcome to gwf
 ==============
 
-|docs| |anacondaversion| |cistatus| |coveralls|
-
-|versions| |downloads| |anacondadownloads|
-
 *gwf* is a flexible, pragmatic workflow tool for building and running large,
-scientific workflows developed at the Bioinformatics Research Centre
+scientific workflows. It is developed at the Bioinformatics Research Centre
 (BiRC), Aarhus University.
 
-*gwf* provides a make-like system for specifying dependencies between tasks to
-be run. Dependencies are based on files, but unlike *make* where several input
-files can be used for dependencies for one output file, the workflow supports
-tasks that takes several input files and produces several output files. Tasks
-then have dependencies on selected files, either produced by one or many other
-tasks or assumed to be present on the system.
+In *gwf*, a workflow consists of a collection of *targets*. A target declares
+its input and output files
 
-To quickly get started with writing workflows in *gwf* you can read the
-:ref:`tutorial`. If you want to extend *gwf* you should read
-:ref:`writing_plugins`. We don't have the backend you need to run your workflow
-on your cluster? See the :ref:`writing_backends` section!
+Examples
+  To get a feeling for what a *gwf* workflow looks like, have a look at a few
+  `examples <https://github.com/mailund/gwf/tree/master/examples>`_.
+
+Getting started
+  To quickly get started writing workflows in *gwf* you can read the
+  :ref:`tutorial`.
+
+Extending
+  We don't have the backend you need to run your workflow on your cluster?
+  See the :ref:`writing_backends` section to roll your own.
+
+Contributing
+  We aim to make *gwf* a community developed project. Learn how to
+  :doc:`contribute </contributing>`.
 
 Installation
 ------------
@@ -36,7 +39,8 @@ We recommend that you install *gwf* in a project-specific environment::
 
 You can find the code for *gwf* `here <https://github.com/gwforg/gwf>`_. You are
 encouraged to report any issues through the
-`issue tracker <https://github.com/gwforg/gwf/issues>`_.
+`issue tracker <https://github.com/gwforg/gwf/issues>`_, which is also a good place
+to ask questions.
 
 Upgrading from an Older Version
 -------------------------------
@@ -61,37 +65,13 @@ Extending gwf
 .. toctree::
    :maxdepth: 2
 
-   writingplugins
    writingbackends
    contributing
 
-API Reference
--------------
+API
+---
 
 .. toctree::
    :maxdepth: 2
 
    api
-
-
-.. |cistatus| image:: https://travis-ci.org/gwforg/gwf.svg?branch=master
-    :target: https://travis-ci.org/mailund/gwf
-    :alt: Build status
-.. |docs| image:: https://readthedocs.org/projects/gwf/badge/?version=latest
-    :target: http://gwf.readthedocs.io
-    :alt: Documentation
-.. |downloads| image:: https://img.shields.io/pypi/dm/gwf.svg
-    :target: https://pypi.python.org/pypi/gwf
-    :alt: Monthly PyPI downloads
-.. |versions| image:: https://img.shields.io/pypi/pyversions/gwf.svg
-    :target: https://pypi.python.org/pypi/gwf
-    :alt: Python versions supported
-.. |coveralls| image:: https://img.shields.io/coveralls/mailund/gwf.svg
-    :target: https://coveralls.io/github/mailund/gwf
-    :alt: Coverage
-.. |anacondaversion| image:: https://anaconda.org/gwforg/gwf/badges/version.svg
-    :target: https://anaconda.org/dansondergaard/gwf
-    :alt: Version of Conda package
-.. |anacondadownloads| image:: https://anaconda.org/gwforg/gwf/badges/downloads.svg
-    :target: https://anaconda.org/dansondergaard/gwf
-    :alt: Downloads with Conda
