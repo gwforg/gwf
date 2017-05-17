@@ -370,7 +370,7 @@ class TestGraph(unittest.TestCase):
     def test_finds_no_dependencies_for_target_with_no_inputs(self):
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
         graph = Graph(targets=self.workflow.targets)
-        self.assertEqual(graph.dependencies[target], [])
+        self.assertEqual(graph.dependencies[target], set())
 
     @patch('gwf.core.os.path.exists', return_value=False, autospec=True)
     def test_non_existing_files_not_provided_by_other_target_raises_exception(self, mock_os_path_exists):
@@ -381,14 +381,9 @@ class TestGraph(unittest.TestCase):
 
     @patch('gwf.core.os.path.exists', return_value=True, autospec=True)
     def test_existing_files_not_provided_by_other_target_has_no_dependencies(self, mock_exists):
-        target = self.workflow.target(
-            'TestTarget',
-            inputs=['test_file.txt'],
-            outputs=[],
-        )
-
+        target = self.workflow.target('TestTarget', inputs=['test_file.txt'], outputs=[])
         graph = Graph(targets=self.workflow.targets)
-        self.assertListEqual(graph.dependencies[target], [])
+        self.assertEqual(graph.dependencies[target], set())
 
     @patch('gwf.core.os.path.exists', return_value=False, auto_spec=True)
     def test_finds_non_existing_file_provided_by_other_target(self, mock_os_path_exists):
@@ -518,19 +513,6 @@ class TestShouldRun(unittest.TestCase):
             [
                 'DEBUG:gwf.core:TestTarget1 should run because one of its output files does not exist.',
                 'DEBUG:gwf.core:TestTarget2 should run because one of its dependencies should run.'
-            ]
-        )
-
-    def test_target_should_run_if_any_of_its_deep_dependencies_should_run(self):
-        with self.assertLogs(level='DEBUG') as logs:
-            self.assertTrue(self.graph.should_run(self.target4))
-
-        self.assertEqual(
-            logs.output,
-            [
-                'DEBUG:gwf.core:TestTarget1 should run because one of its output files does not exist.',
-                'DEBUG:gwf.core:TestTarget2 should run because one of its dependencies should run.',
-                'DEBUG:gwf.core:TestTarget4 should run because one of its dependencies should run.'
             ]
         )
 
