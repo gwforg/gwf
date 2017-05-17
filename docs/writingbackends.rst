@@ -4,11 +4,8 @@ Writing Backends
 ================
 
 Backends in *gwf* are the interface between *gwf* and whatever can be used to
-execute a target.
-
-To implement a backend you should first read
-:ref:`writing_plugins` since backends are implemented and registered
-much the same way as plugins.
+execute a target. For example, the Slurm backend included with *gwf* submits
+targets to the `Slurm Workload Manager`_.
 
 To get started we must declare define a class that inherits from
 :class:`gwf.backends.Backend`::
@@ -42,51 +39,49 @@ here::
         },
     )
 
-A backend can manipulate *gwf* in much the same way a plugin can. For example,
-the backend could add an argument to the command line interface, add
-subcommands etc. However, backends must implement a set of methods that *gwf*
-uses to submit and query targets.
+Backends must implement a set of methods that *gwf* uses to submit to the backend
+and query the backend for the status of targets.
 
-Specifying Target Options
--------------------------
+Option Defaults
+---------------
 
-The backend must define the two class variables
-:attr:`supported_options` and :attr:`option_defaults`. The first attribute
-declares which options the backend supports. For example, we may want the user
-to be able specify the number of cores to be allocated for a given target::
+The backend should define :attr:`option_defaults` as an attribute. The value must
+be a dictionary mapping option names to defaults, e.g.::
 
     # mybackend/mybackend.py
     from gwf.backends import Backend
 
     class MyBackend(Backend):
-        supported_options = ['cores']
-
-Targets in a workflow can now declare the number of cores they wish to allocate
-and we can use this information in :func:`Backend.submit` to allocate the
-given number of cores for the target to be submitted. However, the user should
-not be forced to specify the number of cores for every target in the workflow,
-so we should supply a sensible default. This is accomplished through
-:attr:`option_defaults`::
-
-    # mybackend/mybackend.py
-    from gwf.backends import Backend
-
-    class MyBackend(Backend):
-        supported_options = ['cores']
         option_defaults = {
             'cores': 1,
         }
 
-Now all targets will by default have 1 core allocated unless the user has
-specified something else for the target.
+Internally, *gwf* uses this dictionary to check whether targets contain options
+not supported by the backend and warn the user if this is the case. Thus, *all*
+options supported by the backend must be specified in this dictionary.
 
+Targets in a workflow can now declare the number of cores they wish to allocate
+and we can use this information in :func:`Backend.submit` to allocate the
+given number of cores for the target to be submitted. If the user doesn't specify
+the `cores` option it will default to 1.
 
+If want to specify support for an option, but there is no sensible default value
+(e.g. in the case of a username or e-mail address), use `None` as the default value.
 
-Reference
----------
+Implementing the Backend Interface
+----------------------------------
 
-.. autoclass:: gwf.backends.Backend
-   :members: submit, cancel, status, logs
-   :member-order: bysource
+Our backend still doesn't really do anything. We've only told *gwf* that our backend
+exists (by its entrypoint) and which options are supported. To get a backend to
+actually work we must implement the following methods:
+
+.. automethod:: gwf.backends.Backend.submit
+.. automethod:: gwf.backends.Backend.cancel
+.. automethod:: gwf.backends.Backend.status
+
+If needed, one may also implement the :func:`close` method, which will be called when
+the backend is no longer needed (right before *gwf* exits).
+
+.. automethod:: gwf.backends.Backend.close
 
 .. _Slurm Workload Manager: http://slurm.schedmd.com/

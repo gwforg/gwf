@@ -106,19 +106,39 @@ class BackendType(type):
 
 
 class Backend(metaclass=BackendType):
-    """Abstract base class for backends."""
+    """Base class for backends."""
 
     def __init__(self, working_dir):
         self.working_dir = working_dir
 
     def status(self, target):
-        """Return the status of a target."""
+        """Return the status of `target`.
+
+        :param gwf.Target target: The target to return the status of.
+        :return gwf.backends.base.Status: Status of `target`.
+        """
 
     def submit(self, target, dependencies):
-        """Submit a target."""
+        """Submit `target` with `dependencies`.
+        
+        This method must submit the `target` and return immediately. That is, the method
+        must not block while waiting for the target to complete.
+        
+        :param gwf.Target target:
+            The target to submit.
+        :param list dependencies:
+            A list of :class:`gwf.Target` objects that `target` depends on and that have
+            already been submitted to the backend.
+        """
 
     def cancel(self, target):
-        """Cancel a target."""
+        """Cancel `target`.
+
+        :param gwf.Target target: 
+            The target to cancel.
+        :raises gwf.exception.UnknownTargetError:
+            If the target does not exist in the workflow.
+        """
 
     def logs(self, target, stderr=False):
         """Return log files for a target.
@@ -154,7 +174,11 @@ class Backend(metaclass=BackendType):
         return os.path.join(self._log_dir(target), '{}.{}'.format(target.name, extension))
 
     def close(self):
-        """Close the backend."""
+        """Close the backend.
+        
+        Called when the backend is no longer needed and should close
+        all resources (open files, connections) used by the backend.
+        """
 
 
 class PersistableDict(UserDict):
