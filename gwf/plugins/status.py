@@ -59,8 +59,8 @@ def status(backend, graph, names_only, **criteria):
 
     A progress bar represents the target and its dependencies, and
     shows how many of the dependencies either should run (magenta, .),
-    are submitted (yellow, S), are running (blue, R), are
-    completed (green, C), or have failed (red, F).
+    are submitted (yellow, S), are running (blue, R), or are
+    completed (green, C).
     """
     filtered_targets = filter(graph, backend, Criteria(**criteria))
     filtered_targets = sorted(filtered_targets, key=lambda t: t.name)
