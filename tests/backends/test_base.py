@@ -26,8 +26,9 @@ class TestBackendType(GWFTestCase):
 
     def test_warn_user_when_submitting_target_with_unsupported_option(self):
         target = Target('TestTarget', inputs=[], outputs=[], options={'foo': 'bar'}, working_dir='/some/dir')
-        with self.assertWarns(Warning):
+        with self.assertLogs(level='WARNING') as logs:
             self.backend.submit(target, dependencies=[])
+            self.assertEqual(logs.output, ['WARNING:gwf.backends.base:Backend does not support option foo used in TestTarget. Option will be ignored.'])
 
     def test_raise_exception_if_backend_does_not_implement_all_methods(self):
         with self.assertRaises(BackendError):

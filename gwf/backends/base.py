@@ -1,7 +1,6 @@
 import json
 import os.path
 import logging
-import warnings
 from collections import UserDict
 from enum import Enum
 from functools import wraps
@@ -50,7 +49,7 @@ def check_options(func, supported_options):
     def inner_wrapper(self, target, *args, **kwargs):
         for option_name, option_value in list(target.options.items()):
             if option_name not in supported_options:
-                warnings.warn(
+                logger.warning(
                     'Backend does not support option {} used in {}. Option will be ignored.'.format(
                         option_name, target.name
                     )
