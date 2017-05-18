@@ -1,27 +1,23 @@
 import atexit
-import json
+import logging
 import os
 import os.path
-import logging
 from functools import update_wrapper
-from pkg_resources import iter_entry_points
 
 import click
 from click_plugins import with_plugins
+from pkg_resources import iter_entry_points
 
-from gwf import Graph
 from . import __version__
+from .config import Config
+from .core import Graph
 from .utils import ColorFormatter, parse_path, load_workflow, ensure_dir
-
 
 logger = logging.getLogger(__name__)
 
 
-def get_level(level):
-    return getattr(logging, level.upper())
-
-
 BASIC_FORMAT = '%(message)s'
+
 ADVANCED_FORMAT = '%(levelname)s:%(name)s:%(message)s'
 
 LOGGING_FORMATS = {
@@ -38,6 +34,21 @@ CONFIG_DEFAULTS = {
     'backend': 'local',
     'no_color': False,
 }
+
+
+def get_level(level):
+    return getattr(logging, level.upper())
+
+
+def configure_logging(level_name, formatter_cls):
+    fmt = LOGGING_FORMATS[level_name]
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter_cls(fmt=fmt))
+
+    root = logging.getLogger()
+    root.addHandler(handler)
+    root.setLevel(get_level(level_name))
 
 
 def pass_backend(f):
@@ -105,27 +116,22 @@ def main(ctx, file, **kwargs):
     basedir, filename, obj = parse_path(file)
     workflow = load_workflow(basedir, filename, obj)
 
-    try:
-        with open(os.path.join(workflow.working_dir, '.gwfconf.json')) as config_file:
-            config = json.load(config_file)
-    except FileNotFoundError:
-        config = {}
-    finally:
-        config.update(CONFIG_DEFAULTS)
-        config.update({k: v for k, v in kwargs.items() if v is not None})
+    config = Config(
+        path=os.path.join(workflow.working_dir, '.gwfconf.json'),
+        defaults=CONFIG_DEFAULTS,
+        override={k: v for k, v in kwargs.items() if v is not None})
 
     ensure_dir(os.path.join(workflow.working_dir, '.gwf'))
     ensure_dir(os.path.join(workflow.working_dir, '.gwf', 'logs'))
 
-    backend = config['backend']
-    verbose = config['verbose']
-    no_color = config['no_color']
+    backend = config.get('backend')
+    verbose = config.get('verbose')
+    no_color = config.get('no_color')
 
-    handler = logging.StreamHandler()
-    if not no_color:
-        handler.setFormatter(ColorFormatter(fmt=LOGGING_FORMATS[verbose]))
-    logging.basicConfig(level=get_level(verbose), handlers=[handler])
+    formatter_cls = logging.Formatter if no_color else ColorFormatter
+    configure_logging(level_name=verbose, formatter_cls=formatter_cls)
 
     ctx.obj['_workflow'] = workflow
-    ctx.obj['_backend'] = config['backend']
+    ctx.obj['_backend'] = backend
     ctx.obj['_config'] = config
+    ctx.obj['working_dir'] = workflow.working_dir
