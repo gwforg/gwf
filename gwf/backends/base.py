@@ -120,10 +120,10 @@ class Backend(metaclass=BackendType):
 
     def submit(self, target, dependencies):
         """Submit `target` with `dependencies`.
-        
+
         This method must submit the `target` and return immediately. That is, the method
         must not block while waiting for the target to complete.
-        
+
         :param gwf.Target target:
             The target to submit.
         :param list dependencies:
@@ -134,7 +134,7 @@ class Backend(metaclass=BackendType):
     def cancel(self, target):
         """Cancel `target`.
 
-        :param gwf.Target target: 
+        :param gwf.Target target:
             The target to cancel.
         :raises gwf.exception.UnknownTargetError:
             If the target does not exist in the workflow.
@@ -175,7 +175,7 @@ class Backend(metaclass=BackendType):
 
     def close(self):
         """Close the backend.
-        
+
         Called when the backend is no longer needed and should close
         all resources (open files, connections) used by the backend.
         """
