@@ -22,8 +22,8 @@ class FilterType(type):
     The only purpose of this metaclass is to automatically register filters.
     """
 
-    def __new__(meta, name, bases, class_dict):
-        cls = type.__new__(meta, name, bases, class_dict)
+    def __new__(mcs, name, bases, class_dict):
+        cls = type.__new__(mcs, name, bases, class_dict)
         if bases:
             register_filter(cls)
         return cls

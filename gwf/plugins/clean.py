@@ -1,7 +1,7 @@
 import logging
 import os
 
-from ..cli import pass_backend, pass_graph
+from ..cli import pass_graph
 
 import click
 
@@ -18,9 +18,8 @@ def _delete_file(path):
 @click.command()
 @click.argument('targets', nargs=-1)
 @click.option('--not-endpoints', is_flag=True, default=False)
-@pass_backend
 @pass_graph
-def clean(graph, backend, targets, not_endpoints):
+def clean(graph, targets, not_endpoints):
     """Clean output files of targets."""
     matched_targets = graph.find(targets) or graph.targets.values()
 
