@@ -53,8 +53,8 @@ Getting Started
    :maxdepth: 2
 
    tutorial
+   configuration
    backends
-   plugins
 
 Extending gwf
 -------------

@@ -123,7 +123,8 @@ class LocalBackend(Backend):
 
     **Backend options:**
 
-    None available.
+    * **local.host (str):** Set the host that the workers are running on (default: localhost).
+    * **local.port (int):** Set the port used to connect to the workers (default: 12345).
 
     **Target options:**
 
@@ -133,7 +134,7 @@ class LocalBackend(Backend):
     option_defaults = {}
 
     config_defaults = {
-        'host': '',
+        'host': 'localhost',
         'port': 12345,
     }
 

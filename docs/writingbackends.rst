@@ -84,4 +84,9 @@ the backend is no longer needed (right before *gwf* exits).
 
 .. automethod:: gwf.backends.Backend.close
 
+
+Handling Configuration
+----------------------
+
+
 .. _Slurm Workload Manager: http://slurm.schedmd.com/
