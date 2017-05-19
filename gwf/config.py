@@ -1,31 +1,39 @@
 import json
 from collections import ChainMap
 
+from .exceptions import GWFError
+
+
+CONFIG_DEFAULTS = {
+    'verbose': 'info',
+    'backend': 'local',
+    'no_color': False,
+}
+
 
 class Config:
 
-    def __init__(self, path, defaults=None, override=None):
+    def __init__(self, path, config):
         self.path = path
-        configs = []
+        self._config = config
+
+    @classmethod
+    def load(cls, path, defaults):
         try:
             with open(path) as config_file:
-                config = json.load(config_file)
+                file_config = json.load(config_file)
         except FileNotFoundError:
-            config = {}
+            file_config = {}
 
         if defaults is None:
             defaults = {}
-        configs.append(defaults)
-        configs.append(config)
-        if override is not None:
-            configs.append(override)
-        self._config = ChainMap(*configs[::-1])
+        return cls(path=path, config=ChainMap(file_config, defaults))
 
     def get_config(self):
         return dict(self._config)
 
     def get_file_config(self):
-        return Config(path=self.path, defaults=self._config.maps[1])
+        return Config(path=self.path, config=self._config.maps[0])
 
     def dump(self):
         with open(self.path, 'w') as config_file:
@@ -40,6 +48,16 @@ class Config:
             config = config[subkey]
         config[parts[-1]] = new_value
 
+    def unset(self, key):
+        parts = key.split('.')
+        config = self._config
+        try:
+            for subkey in parts[:-1]:
+                config = config[subkey]
+            del config[parts[-1]]
+        except KeyError:
+            raise GWFError('Key does not exist.')
+
     def get(self, key, default=None):
         parts = key.split('.')
         try:
@@ -49,3 +67,5 @@ class Config:
             return value
         except KeyError:
             return default
+
+conf = Config.load('.gwfconf.json', defaults=CONFIG_DEFAULTS)

@@ -82,9 +82,9 @@ class BackendType(type):
     This is not necessary magic, however, it removes a lot of boilerplate code
     from backend implementations and ensures consistency in warnings.
     """
-    def __new__(metacls, name, bases, namespace, **kwargs):
+    def __new__(mcs, name, bases, namespace, **kwargs):
         if not bases:
-            return type.__new__(metacls, name, bases, namespace)
+            return type.__new__(mcs, name, bases, namespace)
 
         # Check that all required methods exist. The logs() method isn't required,
         # since a default implementation is provided by Backend.
@@ -102,18 +102,14 @@ class BackendType(type):
         # user and removes the option if this is not the case.
         namespace['submit'] = check_options(namespace['submit'], option_defaults.keys())
 
-        return type.__new__(metacls, name, bases, namespace)
+        return type.__new__(mcs, name, bases, namespace)
 
 
 class Backend(metaclass=BackendType):
     """Base class for backends."""
 
-    def __init__(self, working_dir, config=None):
+    def __init__(self, working_dir):
         self.working_dir = working_dir
-        if config is None:
-            self.config = {}
-        else:
-            self.config = config
 
     def status(self, target):
         """Return the status of `target`.
@@ -170,12 +166,12 @@ class Backend(metaclass=BackendType):
         except OSError:
             raise NoLogFoundError()
 
-    def _log_dir(self, target):
+    def _log_dir(self):
         """Path to directory containing logs for `target`."""
         return os.path.join(self.working_dir, '.gwf', 'logs')
 
     def _log_path(self, target, extension):
-        return os.path.join(self._log_dir(target), '{}.{}'.format(target.name, extension))
+        return os.path.join(self._log_dir(), '{}.{}'.format(target.name, extension))
 
     def close(self):
         """Close the backend.

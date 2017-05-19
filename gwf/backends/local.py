@@ -11,10 +11,15 @@ from multiprocessing.connection import Client as Client_
 from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
+from ..config import conf
 from .base import PersistableDict, UnknownDependencyError
 from .base import Status
 from . import Backend
 from ..exceptions import BackendError, GWFError, UnsupportedOperationError
+
+
+__all__ = ('Client', 'Server', 'LocalBackend',)
+
 
 logger = logging.getLogger(__name__)
 
@@ -133,26 +138,20 @@ class LocalBackend(Backend):
 
     option_defaults = {}
 
-    config_defaults = {
-        'host': 'localhost',
-        'port': 12345,
-    }
-
-    def __init__(self, working_dir, config=None):
-        super().__init__(working_dir, config)
-        self.config = self.config_defaults.copy()
-        self.config.update(config)
-
+    def __init__(self, working_dir):
+        super().__init__(working_dir)
         self._tracked = PersistableDict(os.path.join(working_dir, '.gwf/local-backend-tracked.json'))
 
+        host = conf.get('local.host', 'localhost')
+        port = conf.get('local.port', 12345)
         try:
-            self.client = Client((self.config['host'], self.config['port']))
+            self.client = Client((host, port))
         except ConnectionRefusedError:
             raise GWFError(
                 'Local backend could not connect to workers on port {}. '
                 'Workers can be started by running "gwf workers". '
                 'You can read more in the documentation: '
-                'http://gwf.readthedocs.io/en/latest/backends.html#local'.format(config['port'])
+                'http://gwf.readthedocs.io/en/latest/backends.html#local'.format(port)
             )
 
         self._status = self.client.status()
@@ -365,6 +364,4 @@ class Server:
             logging.info('Shutting down...')
             workers.close()
             workers.join()
-
-
-__all__ = ('Client', 'Server', 'LocalBackend',)
+            self.manager.shutdown()
