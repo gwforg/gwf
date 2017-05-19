@@ -68,4 +68,5 @@ class Config:
         except KeyError:
             return default
 
+
 conf = Config.load('.gwfconf.json', defaults=CONFIG_DEFAULTS)
