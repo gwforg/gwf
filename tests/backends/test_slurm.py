@@ -111,7 +111,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
             working_dir='/some/dir',
         )
 
-        backend = SlurmBackend(working_dir='/some/dir')
+        backend = SlurmBackend()
         with self.force_job_id(1000):
             backend.submit(target1, [])
         with self.force_job_id(2000):
@@ -124,7 +124,7 @@ class TestSlurmBackendSubmit(SlurmTestCase):
     def test_no_dependency_flag_is_set_if_target_has_no_dependencies(self):
         target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
-        backend = SlurmBackend(working_dir='/some/dir')
+        backend = SlurmBackend()
         backend.submit(target, [])
 
         self.mock_call_sbatch.assert_any_call(ANY, [])
@@ -133,12 +133,12 @@ class TestSlurmBackendSubmit(SlurmTestCase):
         target1 = Target('TestTarget1', inputs=[], outputs=[], options={}, working_dir='/some/dir')
         target2 = Target('TestTarget2', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
-        backend = SlurmBackend(working_dir='/some/dir')
+        backend = SlurmBackend()
         with self.assertRaises(UnknownDependencyError):
             backend.submit(target2, [target1])
 
     def test_job_script_is_properly_compiled_with_all_supported_options(self):
-        backend = SlurmBackend(working_dir='/some/dor')
+        backend = SlurmBackend()
 
         target = Target(
             name='TestTarget',
@@ -182,7 +182,7 @@ class TestSlurmBackendCancel(SlurmTestCase):
     def test_cancel_submitted_target(self):
         target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
-        backend = SlurmBackend(working_dir='/some/dir')
+        backend = SlurmBackend()
         with self.force_job_id(1000):
             backend.submit(target, dependencies=[])
 
@@ -193,7 +193,7 @@ class TestSlurmBackendCancel(SlurmTestCase):
     def test_cancel_unknown_target_raises_exception(self):
         target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
-        backend = SlurmBackend(working_dir='/some/dir')
+        backend = SlurmBackend()
         with self.assertRaises(UnknownTargetError):
             backend.cancel(target)
 
@@ -204,7 +204,7 @@ class TestSlurmBackendSubmitted(SlurmTestCase):
         target1 = Target('TestTarget1', inputs=[], outputs=[], options={}, working_dir='/some/dir')
         target2 = Target('TestTarget2', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
-        backend = SlurmBackend(working_dir='/some/dir')
+        backend = SlurmBackend()
         with self.force_job_id(1000):
             backend.submit(target1, dependencies=[])
 
@@ -216,7 +216,7 @@ class TestSlurmBackendSubmitted(SlurmTestCase):
 class TestSlurmBackendClose(SlurmTestCase):
 
     def test_persist_tracked_targets_on_close(self):
-        backend = SlurmBackend(working_dir='/tmp')
+        backend = SlurmBackend()
 
         with patch.object(backend._tracked, 'persist') as mock_persist:
             backend.close()

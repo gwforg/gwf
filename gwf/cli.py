@@ -38,7 +38,7 @@ def pass_backend(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
         backend_cls = BACKENDS[ctx.obj['_backend']]
-        backend = backend_cls(working_dir=ctx.obj['_workflow'].working_dir)
+        backend = backend_cls()
         atexit.register(backend.close)
         return ctx.invoke(f, *args, backend=backend, **kwargs)
     return update_wrapper(new_func, f)
