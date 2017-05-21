@@ -7,3 +7,4 @@ sphinx_rtd_theme==0.1.9
 statusbar==0.1.4
 termcolor==1.1.0
 versioneer==0.18
+pytest==3.0.7

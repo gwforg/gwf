@@ -13,13 +13,13 @@ init-slurm:
 	sudo /etc/init.d/munge restart
 	sudo /etc/init.d/slurm-llnl restart
 
-test: lint
+test:
 	coverage run --source gwf setup.py test
 
 lint:
 	flake8
 
-coverage: test
+coverage:
 	coverage report
 
 docs:
