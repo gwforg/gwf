@@ -3,7 +3,7 @@ click-plugins==1.0.3
 coverage==4.2
 flake8==3.3.0
 sphinx==1.5.5
-sphinx_rtd_theme==0.1.9
+sphinx_rtd_theme==0.2.4
 statusbar==0.1.4
 termcolor==1.1.0
 versioneer==0.18
