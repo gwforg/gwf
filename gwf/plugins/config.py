@@ -1,8 +1,5 @@
-import json
-
 import click
 
-from ..conf import config as user_config
 from ..conf import file_config
 
 
@@ -33,8 +30,7 @@ def config():
 @click.argument('key')
 def get(key):
     """Get the value of KEY."""
-    value = user_config.get(key)
-    click.echo(json.dumps(value, indent=4, sort_keys=True))
+    click.echo(file_config.get(key))
 
 
 @config.command()
@@ -45,7 +41,7 @@ def set(key, value):
 
     The key will be created if it does not exist.
     """
-    file_config.set(key, cast_value(value))
+    file_config[key] = cast_value(value)
     file_config.dump()
 
 
@@ -53,5 +49,5 @@ def set(key, value):
 @click.argument('key')
 def unset(key):
     """Unset KEY."""
-    file_config.unset(key)
+    del file_config[key]
     file_config.dump()
