@@ -84,11 +84,11 @@ class FileConfig(Config):
     @classmethod
     def load(cls, path):
         """Load configuration from a file.
-    
+
         Reads configuration from `file` and returns a :class:`Config` instance
         with the configuration. The `defaults` will be merged into the
         configuration.
-    
+
         :param path str: Path to the configuration file.
         :param defaults dict: A set of defaults to merge into the configuration.
         """
