@@ -88,5 +88,21 @@ the backend is no longer needed (right before *gwf* exits).
 Handling Configuration
 ----------------------
 
+We can allow the user to configure aspects of the backend by using the central
+configuration object.
+
+.. code-block:: python
+
+    from gwf.conf import config
+
+    key1 = config.get('yourbackend.key1', 'default1')
+    key2 = config.get('yourbackend.key2', 'default2')
+
+Backends should provide reasonable defaults, as shown above.
+The user can set configuration keys using the builtin ``config`` command::
+
+    $ gwf config set yourbackend.key1 value1
+    $ gwf config set yourbackend.key2 value2
+
 
 .. _Slurm Workload Manager: http://slurm.schedmd.com/
