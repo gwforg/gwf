@@ -2,7 +2,8 @@ import json
 
 import click
 
-from ..config import config, file_config
+from ..conf import config as user_config
+from ..conf import file_config
 
 
 def humanbool(x):
@@ -32,7 +33,7 @@ def config():
 @click.argument('key')
 def get(key):
     """Get the value of KEY."""
-    value = config.get(key)
+    value = user_config.get(key)
     click.echo(json.dumps(value, indent=4, sort_keys=True))
 
 

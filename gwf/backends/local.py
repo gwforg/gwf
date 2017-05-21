@@ -11,7 +11,7 @@ from multiprocessing.connection import Client as Client_
 from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
-from ..config import config
+from ..conf import config
 from .base import PersistableDict, UnknownDependencyError
 from .base import Status
 from . import Backend

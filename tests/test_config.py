@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from gwf.config import Config, FileConfig
+from gwf.conf import Config, FileConfig
 
 
 class TestConfig(TestCase):

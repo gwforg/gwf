@@ -9,7 +9,7 @@ from click_plugins import with_plugins
 from pkg_resources import iter_entry_points
 
 from . import __version__
-from .config import config
+from .conf import config
 from .core import Graph
 from .utils import ColorFormatter, parse_path, load_workflow, ensure_dir
 

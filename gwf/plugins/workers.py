@@ -2,7 +2,7 @@ import multiprocessing
 
 import click
 
-from ..config import config
+from ..conf import config
 from ..backends.local import Server
 
 
