@@ -17,7 +17,7 @@ Coming from an older (pre-1.0) version of *gwf*? Learn how to upgrade_ your work
 .. _upgrade: http://gwf.readthedocs.io/en/latest/upgrading_from_pre_1.0.html
 
 
-.. |cistatus| image:: https://img.shields.io/travis/mailund/gwf.svg
+.. |cistatus| image:: https://img.shields.io/travis/gwforg/gwf.svg
     :target: https://travis-ci.org/mailund/gwf
     :alt: Build status
 .. |docs| image:: https://readthedocs.org/projects/gwf/badge/?version=latest&style=flat
@@ -29,8 +29,8 @@ Coming from an older (pre-1.0) version of *gwf*? Learn how to upgrade_ your work
 .. |versions| image:: https://img.shields.io/pypi/pyversions/gwf.svg
     :target: https://pypi.python.org/pypi/gwf
     :alt: Python versions supported
-.. |coveralls| image:: https://img.shields.io/coveralls/mailund/gwf.svg
-    :target: https://coveralls.io/github/mailund/gwf
+.. |coveralls| image:: https://img.shields.io/coveralls/gwforg/gwf.svg
+    :target: https://coveralls.io/github/gwforg/gwf
     :alt: Coverage
 .. |anacondaversion| image:: https://anaconda.org/dansondergaard/gwf/badges/version.svg
     :target: https://anaconda.org/dansondergaard/gwf
