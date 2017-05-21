@@ -4,7 +4,7 @@ gwf
 
 A flexible, pragmatic workflow tool.
 
-|docs| |anacondaversion| |cistatus| |coveralls| |codacy|
+|docs| |anacondaversion| |cistatus| |coveralls|
 
 |versions| |downloads| |anacondadownloads|
 
@@ -38,6 +38,3 @@ Coming from an older (pre-1.0) version of *gwf*? Learn how to upgrade_ your work
 .. |anacondadownloads| image:: https://anaconda.org/dansondergaard/gwf/badges/downloads.svg
     :target: https://anaconda.org/dansondergaard/gwf
     :alt: Downloads with Conda
-.. |codacy| image:: https://img.shields.io/codacy/grade/e27821fb6289410b8f58338c7e0bc686/master.svg
-    :target: https://www.codacy.com/app/mailund/gwf?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=mailund/gwf&amp;utm_campaign=Badge_Grade
-    :alt: Codacy code review
