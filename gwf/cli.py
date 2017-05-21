@@ -9,7 +9,7 @@ from click_plugins import with_plugins
 from pkg_resources import iter_entry_points
 
 from . import __version__
-from .config import conf
+from .config import config
 from .core import Graph
 from .utils import ColorFormatter, parse_path, load_workflow, ensure_dir
 
@@ -82,19 +82,19 @@ def pass_graph(f):
     '-b',
     '--backend',
     type=click.Choice(BACKENDS.keys()),
-    default=conf.get('backend', 'local'),
+    default=config.get('backend', 'local'),
     help='Backend used to run workflow.'
 )
 @click.option(
     '-v',
     '--verbose',
     type=click.Choice(['warning', 'debug', 'info', 'error']),
-    default=conf.get('verbose', 'info'),
+    default=config.get('verbose', 'info'),
     help='Verbosity level.',
 )
 @click.option(
     '--no-color/--use-color',
-    default=conf.get('no_color', False),
+    default=config.get('no_color', False),
     help='Enable or disable output colors.'
 )
 @click.pass_context

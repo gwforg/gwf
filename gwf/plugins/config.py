@@ -2,7 +2,7 @@ import json
 
 import click
 
-from ..config import conf
+from ..config import config, file_config
 
 
 def humanbool(x):
@@ -25,14 +25,14 @@ def cast_value(value):
 
 @click.group()
 def config():
-    """Set, unset and retrieve configuration."""
+    """Set, unset and get configuration."""
 
 
 @config.command()
 @click.argument('key')
 def get(key):
     """Get the value of KEY."""
-    value = conf.get(key)
+    value = config.get(key)
     click.echo(json.dumps(value, indent=4, sort_keys=True))
 
 
@@ -44,7 +44,6 @@ def set(key, value):
 
     The key will be created if it does not exist.
     """
-    file_config = conf.get_file_config()
     file_config.set(key, cast_value(value))
     file_config.dump()
 
@@ -53,6 +52,5 @@ def set(key, value):
 @click.argument('key')
 def unset(key):
     """Unset KEY."""
-    file_config = conf.get_file_config()
     file_config.unset(key)
     file_config.dump()

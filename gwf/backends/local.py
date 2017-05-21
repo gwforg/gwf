@@ -11,7 +11,7 @@ from multiprocessing.connection import Client as Client_
 from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
-from ..config import conf
+from ..config import config
 from .base import PersistableDict, UnknownDependencyError
 from .base import Status
 from . import Backend
@@ -142,8 +142,8 @@ class LocalBackend(Backend):
         super().__init__(working_dir)
         self._tracked = PersistableDict(os.path.join(working_dir, '.gwf/local-backend-tracked.json'))
 
-        host = conf.get('local.host', 'localhost')
-        port = conf.get('local.port', 12345)
+        host = config.get('local.host', 'localhost')
+        port = config.get('local.port', 12345)
         try:
             self.client = Client((host, port))
         except ConnectionRefusedError:
