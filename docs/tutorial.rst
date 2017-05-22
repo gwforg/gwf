@@ -24,7 +24,7 @@ You should now be able to run the following command.
 
 .. code-block:: console
 
-    $ gwf
+    $ gwf --help
 
 This should show you the commands and options available through *gwf*.
 
@@ -118,6 +118,7 @@ Then run the command:
 .. code-block:: console
 
     $ gwf workers
+    Started 4 workers, listening on port 12345.
 
 This will start a pool of workers that *gwf* can now submit targets to.
 Switch back to the other terminal and then run:
@@ -125,40 +126,24 @@ Switch back to the other terminal and then run:
 .. code-block:: console
 
     $ gwf run
+    Scheduling target MyTarget.
+    Submitting target MyTarget
 
 *gwf* schedules and then submits ``MyTarget`` to the pool of workers you started in
-the other terminal window. This command doesn't output anything since *gwf* tries to
-only output something when explicitly told so, or if something is wrong.
+the other terminal window.
+
+This says that *gwf* considered the target for execution and then decided to submit
+it to the backend (because the output file, ``greeting.txt``, does not
+already exist).
 
 Within a few seconds you should see ``greeting.txt`` in the project directory. Try
 to open it in your favorite text editor!
-
-To actually see what happens when you run ``gwf run``, try to delete ``greeting.txt``
-and then run:
-
-.. code-block:: console
-
-    $ gwf -v info run
-
-The ``-v info`` flag tells *gwf* to output a bit more information when it runs.
-If you want even more information you may use ``-v debug``. The command should now
-output this:
-
-.. code-block:: console
-
-    Scheduling target MyTarget.
-    Submitting target MyTarget.
-
-This says that *gwf* considered the target for execution and then decided to submit
-it to the backend (in this case because the output file, ``greeting.txt``, does not
-already exist). After a few seconds, you should see that ``greeting.txt`` has been
-created again.
 
 Now try the same command again:
 
 .. code-block:: console
 
-    $ gwf -v info run
+    $ gwf run
     Scheduling target MyTarget.
 
 This time, *gwf* considers the target for submission, but decides not to submit it
@@ -167,17 +152,29 @@ since all of the output files (only one in this case) exist.
 Setting the Default Verbosity
 -----------------------------
 
-If you are crazy about seeing what *gwf* does you can get rid of the ``-v info``
-flag by setting the default verbosity level.
+Maybe you got tired of seeing this much output from *gwf* all the time, despite
+the pretty colors. We can change the verbosity (how chatty *gwf* is) using the
+``-v/--verbose`` flag:
 
 .. code-block:: console
 
-    $ gwf config --set verbosity info
+    $ gwf -v warning run
+
+Now *gwf* only prints warnings. However, it quickly gets annoying to type this
+again and again, so let's configure *gwf* to make ``warning`` the default
+verbosity level.
+
+.. code-block:: console
+
+    $ gwf config set verbose warning
     $ gwf run
-    Scheduling target MyTarget.
 
 As we'd expect, *gwf* outputs the same as before, but this time we didn't have to
-set the ``-v info`` flag!
+set the ``-v warning`` flag!
+
+We can configure other aspects of *gwf* through the `config` command. For more
+details, refer to the :ref:`configuration` page.
+
 
 Defining Targets with Dependencies
 ----------------------------------
@@ -215,7 +212,7 @@ Let's try to run this workflow:
 
 .. code-block:: console
 
-    $ gwf -v info run
+    $ gwf run
     Scheduling target TargetC.
     Scheduling dependency TargetA of TargetC.
     Submitting target TargetA.
@@ -312,8 +309,6 @@ All targets should now have completed, so we see this.
 
 As you may have noticed, the numbers to the right show the number of targets that are
 in a specific state in the order: completed, running, submitted, should run.
-
-
 
 Here's a few neat things you should know about the status command:
 
