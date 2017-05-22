@@ -13,7 +13,7 @@ from tests import GWFTestCase
 class TestBackendType(GWFTestCase):
 
     def setUp(self):
-        self.backend = TestingBackend(working_dir='/some/dir')
+        self.backend = TestingBackend()
 
     def test_inject_target_defaults_into_target_options_on_submit(self):
         target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
@@ -33,7 +33,7 @@ class TestBackendType(GWFTestCase):
     def test_raise_exception_if_backend_does_not_implement_all_methods(self):
         with self.assertRaises(BackendError):
             class InvalidTestingBackend(Backend):
-                def submit(self, target):
+                def submit(self, target, dependencies):
                     pass
 
                 def cancel(self, target):

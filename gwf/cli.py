@@ -49,11 +49,9 @@ def pass_backend(f):
     """Pass the initialized backend to the function."""
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
-        backend_name = ctx.obj['_backend']
-        backend_cls = BACKENDS[backend_name]
-        backend = backend_cls(working_dir='.')
+        backend_cls = BACKENDS[ctx.obj['_backend']]
+        backend = backend_cls()
         atexit.register(backend.close)
-
         return ctx.invoke(f, *args, backend=backend, **kwargs)
     return update_wrapper(new_func, f)
 

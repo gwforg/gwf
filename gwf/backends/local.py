@@ -138,9 +138,8 @@ class LocalBackend(Backend):
 
     option_defaults = {}
 
-    def __init__(self, working_dir):
-        super().__init__(working_dir)
-        self._tracked = PersistableDict(os.path.join(working_dir, '.gwf/local-backend-tracked.json'))
+    def __init__(self):
+        self._tracked = PersistableDict(os.path.join('.gwf/local-backend-tracked.json'))
 
         host = config.get('local.host', 'localhost')
         port = config.get('local.port', 12345)

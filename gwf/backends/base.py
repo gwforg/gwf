@@ -108,9 +108,6 @@ class BackendType(type):
 class Backend(metaclass=BackendType):
     """Base class for backends."""
 
-    def __init__(self, working_dir):
-        self.working_dir = working_dir
-
     def status(self, target):
         """Return the status of `target`.
 
@@ -168,7 +165,7 @@ class Backend(metaclass=BackendType):
 
     def _log_dir(self):
         """Path to directory containing logs for `target`."""
-        return os.path.join(self.working_dir, '.gwf', 'logs')
+        return os.path.join('.gwf', 'logs')
 
     def _log_path(self, target, extension):
         return os.path.join(self._log_dir(), '{}.{}'.format(target.name, extension))

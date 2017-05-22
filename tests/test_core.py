@@ -575,7 +575,7 @@ class TestScheduling(unittest.TestCase):
         target = workflow.target('TestTarget', inputs=[], outputs=[])
 
         graph = Graph(targets=workflow.targets)
-        backend = TestingBackend(working_dir=workflow.working_dir)
+        backend = TestingBackend()
         with patch.object(backend, 'status', return_value=Status.SUBMITTED, autospec=True):
             sched = schedule(graph, backend, target)
             self.assertEqual(sched, (False, []))
@@ -585,7 +585,7 @@ class TestScheduling(unittest.TestCase):
         target = workflow.target('TestTarget', inputs=[], outputs=[])
 
         graph = Graph(targets=workflow.targets)
-        backend = TestingBackend(working_dir=workflow.working_dir)
+        backend = TestingBackend()
         with patch.object(backend, 'status', return_value=Status.UNKNOWN, autospec=True):
             with patch.object(graph, 'should_run', return_value=True):
                 sched = schedule(graph, backend, target)
@@ -597,7 +597,7 @@ class TestScheduling(unittest.TestCase):
         target2 = workflow.target('TestTarget2', inputs=['test_output.txt'], outputs=[])
 
         graph = Graph(targets=workflow.targets)
-        backend = TestingBackend(working_dir=workflow.working_dir)
+        backend = TestingBackend()
         with patch.object(backend, 'status', return_value=Status.UNKNOWN, autospec=True):
             with patch.object(graph, 'should_run', return_value=True):
                 sched = schedule(graph, backend, target2)
@@ -611,7 +611,7 @@ class TestScheduling(unittest.TestCase):
         target4 = workflow.target('TestTarget4', inputs=['test_output3.txt'], outputs=['final_output.txt'])
 
         graph = Graph(targets=workflow.targets)
-        backend = TestingBackend(working_dir=workflow.working_dir)
+        backend = TestingBackend()
         with patch.object(backend, 'status', return_value=Status.UNKNOWN):
             with patch.object(graph, 'should_run', return_value=True, autospec=True):
                 sched = schedule(graph, backend, target4)
@@ -625,7 +625,7 @@ class TestScheduling(unittest.TestCase):
         target4 = workflow.target('TestTarget4', inputs=['test_output2.txt', 'test_output3.txt'], outputs=['final_output.txt'])
 
         graph = Graph(targets=workflow.targets)
-        backend = TestingBackend(working_dir=workflow.working_dir)
+        backend = TestingBackend()
 
         with patch.object(backend, 'status', return_value=Status.UNKNOWN):
             with patch.object(graph, 'should_run', return_value=True, autospec=True):
@@ -637,7 +637,7 @@ class TestScheduling(unittest.TestCase):
         target = workflow.target('TestTarget1', inputs=[], outputs=['test_output1.txt'])
 
         graph = Graph(targets=workflow.targets)
-        backend = TestingBackend(working_dir=workflow.working_dir)
+        backend = TestingBackend()
         with patch.object(backend, 'status', return_value=Status.SUBMITTED, autospec=True):
             sched = schedule(graph, backend, target)
             self.assertEqual(sched, (False, []))
@@ -649,7 +649,7 @@ class TestScheduling(unittest.TestCase):
         target3 = workflow.target('TestTarget3', inputs=['test_output1.txt', 'test_output2.txt'], outputs=['test_output3.txt'])
 
         graph = Graph(targets=workflow.targets)
-        backend = TestingBackend(working_dir=workflow.working_dir)
+        backend = TestingBackend()
 
         with patch.object(backend, 'status', return_value=Status.UNKNOWN):
             with patch.object(graph, 'should_run', side_effect=[False, False, False, False], autospec=True):
@@ -665,6 +665,6 @@ class TestScheduling(unittest.TestCase):
         target4 = workflow.target('TestTarget4', inputs=['test_output2.txt'], outputs=['test_output4.txt'])
 
         graph = Graph(targets=workflow.targets)
-        backend = TestingBackend(working_dir=workflow.working_dir)
+        backend = TestingBackend()
         sched = schedule_many(graph, backend, [target3, target4])
         self.assertEqual(sched, [[target1, target3], [target2, target4]])
