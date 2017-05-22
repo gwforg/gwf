@@ -398,7 +398,7 @@ class Workflow(object):
           set *universal_newlines* to `True` to get a string with the output
           instead.
         """
-        return subprocess.check_output(*args, shell=True, cwd=self.working_dir)
+        return subprocess.check_output(*args, shell=True, cwd=self.working_dir, **kwargs)
 
     def __repr__(self):
         return '{}(name={!r}, working_dir={!r})'.format(

@@ -163,12 +163,12 @@ class Backend(metaclass=BackendType):
         except OSError:
             raise NoLogFoundError()
 
-    def _log_dir(self, target):
+    def _log_dir(self):
         """Path to directory containing logs for `target`."""
         return os.path.join('.gwf', 'logs')
 
     def _log_path(self, target, extension):
-        return os.path.join(self._log_dir(target), '{}.{}'.format(target.name, extension))
+        return os.path.join(self._log_dir(), '{}.{}'.format(target.name, extension))
 
     def close(self):
         """Close the backend.
