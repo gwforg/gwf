@@ -6,6 +6,7 @@ import logging
 import os.path
 import re
 import time
+import sys
 from contextlib import ContextDecorator
 
 import click
@@ -55,13 +56,16 @@ def iter_outputs(targets):
 
 
 def load_workflow(basedir, filename, objname):
+    if not basedir:
+        basedir = os.getcwd()
     fullpath = os.path.join(basedir, filename + '.py')
 
     if not os.path.exists(fullpath):
         raise GWFError('The file "{}" does not exist.'.format(fullpath))
 
-    mod_loc = imp.find_module(filename, [basedir])
-    mod = imp.load_module(filename, *mod_loc)
+    sys.path.insert(0, basedir)
+    mod = imp.load_source(filename, fullpath)
+    sys.path.pop(0)
 
     try:
         return getattr(mod, objname)
