@@ -36,17 +36,17 @@ class UnknownTargetError(BackendError):
     pass
 
 
-def inherit_options(func, super_options):
+def check_options(func, supported_options, super_options):
+    """Decorator for the submit method of backends.
+
+    Injects backend target defaults into the target options and
+    checks whether the option in the given target are supported by
+    the backend. Warns the user and removes the option if this is
+    not the case.
+    """
     @wraps(func)
     def inner_wrapper(self, target, *args, **kwargs):
         target.inherit_options(super_options)
-        return func(self, target, *args, **kwargs)
-    return inner_wrapper
-
-
-def check_options(func, supported_options):
-    @wraps(func)
-    def inner_wrapper(self, target, *args, **kwargs):
         for option_name, option_value in list(target.options.items()):
             if option_name not in supported_options:
                 logger.warning(
@@ -92,16 +92,8 @@ class BackendType(type):
             if method_name not in namespace:
                 raise BackendError('Invalid backend implementation. Backend does not implement {}.'.format(method_name))
 
-        # Decorate the submit method with a decorator that injects backend
-        # target defaults into the target options.
         option_defaults = namespace.get('option_defaults', {})
-        namespace['submit'] = inherit_options(namespace['submit'], option_defaults)
-
-        # Decorate the submit method with a decorator that checks whether the
-        # option in the given target are supported by the backend. Warns the
-        # user and removes the option if this is not the case.
-        namespace['submit'] = check_options(namespace['submit'], option_defaults.keys())
-
+        namespace['submit'] = check_options(namespace['submit'], option_defaults.keys(), option_defaults)
         return type.__new__(mcs, name, bases, namespace)
 
 

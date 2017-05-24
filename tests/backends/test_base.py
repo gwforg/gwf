@@ -1,6 +1,5 @@
 import os.path
-
-from unittest.mock import patch, mock_open
+from unittest.mock import Mock
 
 from gwf.exceptions import BackendError
 from gwf import Target
@@ -29,6 +28,11 @@ class TestBackendType(GWFTestCase):
         with self.assertLogs(level='WARNING') as logs:
             self.backend.submit(target, dependencies=[])
             self.assertEqual(logs.output, ['WARNING:gwf.backends.base:Option "foo" used in "TestTarget" is not supported by backend. Ignored.'])
+
+    def test_remove_options_with_none_value(self):
+        target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+        self.backend.submit(target, dependencies=[])
+        assert target.options == {'cores': 2, 'memory': '18g'}
 
     def test_raise_exception_if_backend_does_not_implement_all_methods(self):
         with self.assertRaises(BackendError):
