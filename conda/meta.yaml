@@ -1,6 +1,6 @@
 package:
   name: gwf
-  version: "1.0b4"
+  version: "1.0b5"
 
 source:
   path: ../
