@@ -27,7 +27,7 @@ script: make test
 
 after_success:
   - coveralls
-  - chmod +x ./build_conda.sh
+  - chmod +x ./deploy_conda.sh
 
 deploy:
   - provider: pypi
@@ -41,7 +41,7 @@ deploy:
       tags: true
       branch: master
   - provider: script
-    script: ./build_conda.sh
+    script: ./deploy_conda.sh
     skip_cleanup: true
     skip_upload_docs: true
     on:
