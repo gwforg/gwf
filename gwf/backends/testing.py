@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class TestingBackend(Backend):
 
-    option_defaults = {'cores': 2, 'memory': '18g'}
+    option_defaults = {'cores': 2, 'memory': '18g', 'nodes': None}
 
     def submit(self, target, dependencies):
         pass
