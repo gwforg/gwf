@@ -6,7 +6,8 @@ source:
   path: ../
 
 build:
-  preserve_egg_dir: True
+  noarch_python: True
+  preserve_egg_dir: False
   entry_points:
     - gwf = gwf.cli:main
 
