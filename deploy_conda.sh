@@ -9,4 +9,4 @@
 set -eu
 set -o pipefail
 
-anaconda -t $ANACONDA_TOKEN upload --user gwforg conda-bld/*/*.tar.bz2
+anaconda -t $ANACONDA_TOKEN upload --user gwforg $HOME/miniconda/conda-bld/*/*.tar.bz2
