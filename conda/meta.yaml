@@ -1,0 +1,44 @@
+package:
+  name: gwf
+  version: "1.0b4"
+
+source:
+  path: ../
+
+build:
+  preserve_egg_dir: True
+  entry_points:
+    - gwf = gwf.cli:main
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - click >=6.6
+    - click-plugins >=0.2.2
+    - statusbar >=0.1.4
+
+  run:
+    - python
+    - setuptools
+    - click >=6.6
+    - click-plugins >=0.2.2
+    - statusbar >=0.1.4
+
+test:
+  imports:
+    - gwf
+    - gwf.backends
+    - gwf.plugins
+
+  commands:
+    - gwf --help
+
+  requires:
+    - pytest
+
+about:
+  home: http://gwf.readthedocs.io/
+  license: GNU General Public License v3 (GPLv3)
+  summary: 'A flexible, pragmatic workflow tool.'
+  license_family: GPL3
