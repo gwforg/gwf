@@ -477,9 +477,16 @@ by an endpoint:
 .. code-block:: console
 
     $ gwf clean --not-endpoints
-    INFO    |  Cleaning up: IndexGenome.
-    INFO    |  Cleaning up: UnzipGenome.
-
+    Deleting IndexGenome
+    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.amb" from target "IndexGenome".
+    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.ann" from target "IndexGenome".
+    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.pac" from target "IndexGenome".
+    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.bwt" from target "IndexGenome".
+    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.sa" from target "IndexGenome".
+    Deleting UnzipGenome
+    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.fa" from target "UnzipGenome".
+    Deleting MapReads
+    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/Masala.bam" from target "MapReads".
 
 A Note About Reproducibility
 ----------------------------
