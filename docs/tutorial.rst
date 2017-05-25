@@ -356,7 +356,7 @@ creation logic. Let's walk through the example above.
     `here <https://github.com/mailund/gwf/blob/master/examples/readmapping/>`_.
     To get started, follow these steps:
 
-    #. Change your working directory to the readmapping directory.
+    #. Change your working directory to the ``readmapping`` directory.
     #. Run ``conda env create`` to create a new environment called `readmapping`. This will
        install all required packages, including `gwf` itself, `samtools` and `bwa`.
     #. Activate the environment with ``source activate readmapping``.
