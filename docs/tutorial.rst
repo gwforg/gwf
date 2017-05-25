@@ -205,7 +205,7 @@ understood through an example::
 
 In this workflow, ``TargetA`` and ``TargetB`` each produce a file. ``TargetC``
 declares that it needs two files as inputs. Since the file names match the
-file names produced by `TargetA`` and ``TargetB``, ``TargetC`` depends on these
+file names produced by ``TargetA`` and ``TargetB``, ``TargetC`` depends on these
 two targets.
 
 Let's try to run this workflow:
