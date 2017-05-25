@@ -1,5 +1,5 @@
-Contributing
-============
+For contributors
+================
 
 We appreciate all contributions to *gwf*, not just contributions to the code! Think something is missing from the
 documentation? Defined useful snippets for your text editor? Add it and submit a pull request!
