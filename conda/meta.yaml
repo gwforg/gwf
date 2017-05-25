@@ -1,13 +1,15 @@
+{% set data = load_setup_py_data() %}
+
 package:
   name: gwf
-  version: "1.0b5"
+  version: {{ data.get('version') }}
 
 source:
   path: ../
 
 build:
   noarch_python: True
-  preserve_egg_dir: False
+  preserve_egg_dir: True
   entry_points:
     - gwf = gwf.cli:main
 
