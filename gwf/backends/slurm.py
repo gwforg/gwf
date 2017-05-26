@@ -89,7 +89,7 @@ def _call_sbatch(script, dependencies):
     return _call_generic('sbatch', *args, input=script)
 
 
-@timer('Fetched job queue in %0.2fms', logger=logger)
+@timer('Fetched job queue in %0.2fms.', logger=logger)
 def init_status_from_queue():
     """Ask Slurm for the state of all live jobs.
 
