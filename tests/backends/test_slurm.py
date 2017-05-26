@@ -233,26 +233,6 @@ class TestCallSqueue(GWFTestCase):
             'gwf.backends.slurm.subprocess.Popen', autospec=True
         )
 
-    def test_cmd_uses_executable_found_and_returns_stdout_and_stderr(self):
-        self.mock_find_exe.return_value = '/bin/squeue'
-        self.mock_popen.return_value.returncode = 0
-        self.mock_popen.return_value.communicate.return_value = (
-            'this is stdout', 'this is stderr'
-        )
-
-        stdout, stderr = _call_squeue()
-
-        self.mock_popen.assert_called_once_with(
-            ['/bin/squeue', '--noheader', '--format=%i;%t;%E'],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            stdin=subprocess.PIPE,
-            universal_newlines=True,
-        )
-
-        self.assertEqual(stdout, 'this is stdout')
-        self.assertEqual(stderr, 'this is stderr')
-
     def test_raises_exception_with_stderr_if_command_fails(self):
         self.mock_find_exe.return_value = '/bin/squeue'
         self.mock_popen.return_value.returncode = 42
