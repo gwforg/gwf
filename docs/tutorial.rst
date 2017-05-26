@@ -205,7 +205,7 @@ understood through an example::
 
 In this workflow, ``TargetA`` and ``TargetB`` each produce a file. ``TargetC``
 declares that it needs two files as inputs. Since the file names match the
-file names produced by `TargetA`` and ``TargetB``, ``TargetC`` depends on these
+file names produced by ``TargetA`` and ``TargetB``, ``TargetC`` depends on these
 two targets.
 
 Let's try to run this workflow:
@@ -356,7 +356,7 @@ creation logic. Let's walk through the example above.
     `here <https://github.com/mailund/gwf/blob/master/examples/readmapping/>`_.
     To get started, follow these steps:
 
-    #. Change your working directory to the readmapping directory.
+    #. Change your working directory to the ``readmapping`` directory.
     #. Run ``conda env create`` to create a new environment called `readmapping`. This will
        install all required packages, including `gwf` itself, `samtools` and `bwa`.
     #. Activate the environment with ``source activate readmapping``.
@@ -477,9 +477,16 @@ by an endpoint:
 .. code-block:: console
 
     $ gwf clean --not-endpoints
-    INFO    |  Cleaning up: IndexGenome.
-    INFO    |  Cleaning up: UnzipGenome.
-
+    Deleting IndexGenome
+    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.amb" from target "IndexGenome".
+    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.ann" from target "IndexGenome".
+    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.pac" from target "IndexGenome".
+    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.bwt" from target "IndexGenome".
+    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.sa" from target "IndexGenome".
+    Deleting UnzipGenome
+    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.fa" from target "UnzipGenome".
+    Deleting MapReads
+    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/Masala.bam" from target "MapReads".
 
 A Note About Reproducibility
 ----------------------------

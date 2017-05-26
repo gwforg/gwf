@@ -19,7 +19,7 @@ Extending
 
 Contributing
   We aim to make *gwf* a community developed project. Learn how to
-  :doc:`contribute </contributing>`.
+  :doc:`contribute </forcontributors>`.
 
 Installation
 ------------
@@ -55,15 +55,16 @@ Getting Started
    tutorial
    configuration
    backends
+   writingbackends
 
-Extending gwf
--------------
+Development
+-----------
 
 .. toctree::
    :maxdepth: 2
 
-   writingbackends
-   contributing
+   forcontributors
+   formaintainers
 
 API
 ---
