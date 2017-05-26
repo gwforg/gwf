@@ -613,7 +613,7 @@ def schedule(graph, backend, target, dry_run=False):
         if dry_run:
             logger.info('Would submit target %s.', target.name)
         else:
-            logger.info('Submitting target %s', target.name)
+            logger.info('Submitting target %s.', target.name)
             backend.submit(target, dependencies=[])
         return True, sched + [target]
     else:
