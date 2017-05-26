@@ -1,9 +1,9 @@
 click==6.7
 click-plugins==1.0.3
-coverage==4.2
+coverage==4.4.1
 flake8==3.3.0
-sphinx==1.5.5
+sphinx==1.6.1
 sphinx_rtd_theme==0.2.4
 statusbar==0.1.4
 termcolor==1.1.0
-pytest==3.0.7
+pytest==3.1.0
