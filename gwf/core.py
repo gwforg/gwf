@@ -614,7 +614,7 @@ def schedule(graph, backend, target, dry_run=False):
             logger.info('Would submit target %s.', target.name)
         else:
             logger.info('Submitting target %s.', target.name)
-            backend.submit(target, dependencies=[])
+            backend.submit(target, dependencies=submitted_deps)
         return True, sched + [target]
     else:
         logger.debug('Target %s should not run.', target.name)
