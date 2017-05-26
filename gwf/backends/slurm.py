@@ -75,7 +75,7 @@ def _call_sacct(job_id):
 
 
 def _call_squeue():
-    return _call_generic('squeue', '--noheader', '--format=%i;%t;%E')
+    return _call_generic('squeue', '--noheader', '--format="%i;%t;%E"')
 
 
 def _call_scancel(job_id):
