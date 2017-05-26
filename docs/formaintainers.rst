@@ -11,8 +11,22 @@ branch. The requirements for merging a feature branch into ``master`` are:
    when the tests pass.
 2. The feature branch must be completely up to date with `master` before merging.
 
-This ensures that ``master`` is reasonably stable. Before changes are merged into
-``master`` they should be discussed and reviewed via a PR.
+This ensures that ``master`` is reasonably stable. Before major changes are merged
+into ``master`` they should be discussed and reviewed via a PR.
+
+Merging changes
+---------------
+
+1. Make sure that the changes have proper test coverage, e.g. by checking the branch
+   on `Coveralls <https://coveralls.io/github/gwforg/gwf>`_.
+
+2. Always make a merge commit (don't rebase/fast-forward). The merge commit will be
+   referenced in the change log.
+
+3. Add the change to the change log for the coming (draft) release on
+   `GitHub <https://github.com/gwforg/gwf/releases>`_. Make sure to follow the
+   formatting used in previous change logs. Also, read about
+   `how to keep a change log <http://keepachangelog.com/en/0.3.0/>`_.
 
 Rolling a new release
 ---------------------
