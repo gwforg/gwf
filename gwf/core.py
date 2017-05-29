@@ -236,6 +236,8 @@ class Workflow(object):
         adding it to the workflow. The target is also returned from the method
         so that the user can directly manipulate it, if necessary.
 
+        .. code-block:: python
+
             workflow = Workflow()
             workflow.target_from_template('NewTarget', my_template())
 
@@ -392,11 +394,12 @@ class Workflow(object):
         automatically runs the command in a shell with the current working
         directory set to the working directory of the workflow.
 
-        .. note:: This function has changed in 1.0. It will no longer return a
-          list of lines in the output, but a byte array with the output,
-          exactly like :func:`python:subprocess.check_output`. You may specifically
-          set *universal_newlines* to `True` to get a string with the output
-          instead.
+        .. versionchanged:: 1.0
+
+            This function no longer return a list of lines in the output, but a
+            byte array with the output, exactly like :func:`python:subprocess.check_output`. 
+            You may specifically set *universal_newlines* to `True` to get a
+            string with the output instead.
         """
         return subprocess.check_output(*args, shell=True, cwd=self.working_dir, **kwargs)
 

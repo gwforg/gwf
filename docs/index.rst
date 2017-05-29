@@ -39,7 +39,7 @@ encouraged to report any issues through the
 `issue tracker <https://github.com/gwforg/gwf/issues>`_, which is also a good place
 to ask questions.
 
-Upgrading from an Older Version
+Upgrading from an older version
 -------------------------------
 
 If you have been using an older version of *gwf* you will have to
@@ -52,6 +52,7 @@ Getting Started
 .. toctree::
    :maxdepth: 2
 
+   upgrading_from_pre_1.0
    tutorial
    configuration
    backends
