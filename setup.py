@@ -4,7 +4,7 @@ import os
 import re
 import io
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 
 def read(*names, **kwargs):
