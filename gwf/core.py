@@ -134,7 +134,14 @@ class Target(object):
 
     def __lshift__(self, spec):
         if not isinstance(spec, str):
-            raise InvalidTypeError('Target spec must be a string, not {}.'.format(type(spec)))
+            msg = (
+                'Target spec must be a string, not {}. '
+                'Did you attempt to assign a template to this target? ' 
+                'This is no is not allowed since version 1.0. Use the '
+                'Workflow.target_from_template() method instead. See '
+                'the tutorial for more details.'
+            )
+            raise InvalidTypeError(msg.format(type(spec)))
         self.spec = spec
         return self
 
