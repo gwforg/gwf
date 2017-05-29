@@ -16,7 +16,7 @@ from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
                          InvalidNameError, TargetExistsError, InvalidTypeError, GWFError)
-from .utils import (cache, dfs, load_workflow, is_valid_name, iter_inputs, iter_outputs, timer, parse_path,
+from .utils import (cache, load_workflow, is_valid_name, iter_inputs, iter_outputs, timer, parse_path,
                     match_targets)
 
 logger = logging.getLogger(__name__)
@@ -397,7 +397,7 @@ class Workflow(object):
         .. versionchanged:: 1.0
 
             This function no longer return a list of lines in the output, but a
-            byte array with the output, exactly like :func:`python:subprocess.check_output`. 
+            byte array with the output, exactly like :func:`python:subprocess.check_output`.
             You may specifically set *universal_newlines* to `True` to get a
             string with the output instead.
         """
@@ -594,20 +594,20 @@ class Graph(object):
 
 def schedule(graph, backend, target, dry_run=False):
     """Schedule a target and its dependencies.
-    
+
     Scheduling a target will determine whether the target needs to run based on
     whether it already has been submitted and whether any of its dependencies have
     been submitted.
-    
+
     Targets that should run will be submitted to *backend*, unless *dry_run*
     is set to ``True``.
 
     Returns ``True`` if *target* was submitted to the backend (even when
     *dry_run* is ``True``).
 
-    :param gwf.Graph graph: 
+    :param gwf.Graph graph:
         Graph of the workflow.
-    :param gwf.backends.Backend backend: 
+    :param gwf.backends.Backend backend:
         An instance of :class:`gwf.backends.Backend` to which targets will be
         submitted.
     :param gwf.Target target:
