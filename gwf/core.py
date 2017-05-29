@@ -284,7 +284,12 @@ class Workflow(object):
         Any further keyword arguments are passed to the backend and will
         override any options provided by the template.
         """
-        inputs, outputs, template_options, spec = template
+        try:
+            inputs, outputs, template_options, spec = template
+            if not isinstance(template_options, dict) or not isinstance(spec, str):
+                raise Exception()
+        except Exception:
+            raise InvalidTypeError('Target `{}` received an invalid template.'.format(name))
 
         new_target = Target(
             name, inputs, outputs, options=options,
