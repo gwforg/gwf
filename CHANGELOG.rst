@@ -1,6 +1,28 @@
 Change Log
 ==========
 
+Version 1.0
+-----------
+
+First stable release of *gwf*! We strongly encourage users of pre-1.0 users to read the tutorial, since quite a lot
+of things have changed. We also recommend reading the guide for converting pre-1.0 workflows to version 1.0. However,
+users attempting to do this should be aware that the the template mechanism in 1.0 is slightly different and thus
+requires rewriting template functions.
+
+Changed
+^^^^^^^
+
+* Improved error message when trying to create a target from an invalid template (d27d1f).
+
+* Improved error message when assigning a non-string spec to a target (2aca0a).
+
+Added
+^^^^^
+
+* Added more tests to cover scenarios with included workflows when building the workflow graph (86a68d0).
+
+* Added a bunch of documentation (69e136, 51a0e7, 942b05).
+
 Version 1.0b7
 -------------
 
@@ -21,7 +43,7 @@ Version 1.0b6
 Fixed
 ^^^^^
 
-* A bug in `SlurmBackend` which caused dependencies between targets to not be set correctly (6b71d2).
+* A bug in ``SlurmBackend`` which caused dependencies between targets to not be set correctly (6b71d2).
 
 Changed
 ^^^^^^^
