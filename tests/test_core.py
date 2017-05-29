@@ -465,6 +465,35 @@ class TestGraph(unittest.TestCase):
         graph = Graph(targets=self.workflow.targets)
         self.assertSetEqual(graph.endpoints(), {target2, target3})
 
+    def test_dependencies_correctly_resolved_for_named_workflow(self):
+        workflow = Workflow(name='foo')
+        target1 = workflow.target('TestTarget1', inputs=[], outputs=['test.txt'])
+        target2 = workflow.target('TestTarget2', inputs=['test.txt'], outputs=[])
+
+        other_workflow = Workflow(name='bar')
+        other_workflow.include(workflow)
+        other_target1 = other_workflow.target('TestTarget1', inputs=['test.txt'], outputs=[])
+
+        graph = Graph(targets=other_workflow.targets)
+        assert 'TestTarget1' in graph.targets
+        assert 'foo.TestTarget2' in graph.targets
+        assert 'foo.TestTarget2' in graph.targets
+
+        assert target1 in graph.dependencies[other_target1]
+        assert target2 in graph.dependents[target1]
+        assert other_target1 in graph.dependents[target1]
+
+    def test_raise_error_if_two_targets_in_different_namespaces_produce_the_same_file(self):
+        w1 = Workflow(name='foo')
+        w1.target('SayHello', inputs=[], outputs=['greeting.txt'])
+
+        w2 = Workflow(name='bar')
+        w2.target('SayHi', inputs=[], outputs=['greeting.txt'])
+        w2.include(w1)
+
+        with self.assertRaises(FileProvidedByMultipleTargetsError):
+            g = Graph(targets=w2.targets)
+
 
 class TestShouldRun(unittest.TestCase):
     def setUp(self):
