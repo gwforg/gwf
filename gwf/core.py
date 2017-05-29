@@ -136,7 +136,7 @@ class Target(object):
         if not isinstance(spec, str):
             msg = (
                 'Target spec must be a string, not {}. '
-                'Did you attempt to assign a template to this target? ' 
+                'Did you attempt to assign a template to this target? '
                 'This is no is not allowed since version 1.0. Use the '
                 'Workflow.target_from_template() method instead. See '
                 'the tutorial for more details.'
@@ -184,26 +184,26 @@ class Workflow(object):
     :ivar dict defaults:
         A dictionary with defaults for target options.
 
-    By default, *working_dir* is set to the directory of the workflow file which 
+    By default, *working_dir* is set to the directory of the workflow file which
     initialized the workflow. However, advanced users may wish to set it manually.
     Targets added to the workflow will inherit the workflow working directory.
-    
+
     The *defaults* argument is a dictionary of option defaults for targets and
-    overrides defaults provided by the backend. Targets can override the 
+    overrides defaults provided by the backend. Targets can override the
     defaults individually. For example::
-    
+
         gwf = Workflow(defaults={
             'cores': 12,
             'memory': '16g',
         })
-        
+
         gwf.target('Foo', inputs=[], outputs=[]) << \"\"\"echo hello\"\"\"
         gwf.target('Bar', inputs=[], outputs=[], cores=2) << \"\"\"echo world\"\"\"
-    
+
     In this case `Foo` and `Bar` inherit the `cores` and `memory` options set in
     `defaults`, but `Bar` overrides the `cores` option.
-    
-    See :func:`~include` for a description of the use of the `name` argument. 
+
+    See :func:`~include` for a description of the use of the `name` argument.
     """
 
     def __init__(self, name=None, working_dir=None, defaults=None):
