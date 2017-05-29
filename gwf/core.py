@@ -594,7 +594,28 @@ class Graph(object):
 
 
 def schedule(graph, backend, target, dry_run=False):
-    """Schedule and submit a :class:`gwf.Target` and its dependencies."""
+    """Schedule a target and its dependencies.
+    
+    Scheduling a target will determine whether the target needs to run based on
+    whether it already has been submitted and whether any of its dependencies have
+    been submitted.
+    
+    Targets that should run will be submitted to *backend*, unless *dry_run*
+    is set to ``True``.
+    
+    Returns ``True`` if *target* was submitted to the backend (even when
+    *dry_run* is ``True``).
+    
+    :param gwf.Graph graph: 
+    :param gwf.backends.Backend backend: 
+        An instance of :class:`gwf.backends.Backend` to which targets will be
+        submitted.
+    :param gwf.Target target:
+        Target to be scheduled.
+    :param bool dry_run:
+        If ``True``, targets will not be submitted to the backend. Defaults
+        to ``False``.
+    """
     logger.info('Scheduling target %s.', target.name)
 
     if backend.status(target) == Status.SUBMITTED:
@@ -620,15 +641,12 @@ def schedule(graph, backend, target, dry_run=False):
 
 
 def schedule_many(graph, backend, targets, **kwargs):
-    """Schedule a list of :class:`gwf.Target` and their dependencies.
+    """Schedule multiple targets and their dependencies.
 
-    Will schedule the targets in `targets` with :func:`schedule`
-    and return a list of schedules.
+    This is a convenience function for scheduling multiple targets. See
+    :func:`schedule` for a detailed description of the arguments.
 
-    :param gwf.Graph graph: The full workflow graph.
-    :param gwf.Backend backend: A backend instance.
     :param list targets: A list of targets to be scheduled.
-    :return: A list of schedules, one for each target in `targets`.
     """
     schedules = []
     for target in targets:

@@ -15,12 +15,11 @@ A targets in a :class:`~gwf.Graph` can be scheduled on a
 :class:`~gwf.backends.Backend` using the :func:`gwf.core.schedule_many`
 function.
 
-
 Core
 ----
 
 .. automodule:: gwf
-   :members: Target, Workflow, Graph, schedule_many
+   :members: Target, Workflow, Graph, schedule, schedule_many
 
 
 Backends
