@@ -20,10 +20,12 @@ Merging changes
 1. Make sure that the changes have proper test coverage, e.g. by checking the branch
    on `Coveralls <https://coveralls.io/github/gwforg/gwf>`_.
 
-2. Always make a merge commit (don't rebase/fast-forward). The merge commit will be
+2. Check that the PR includes necessary updates of ``CHANGELOG.rst`` and ``CONTRIBUTORS.rst``.
+
+3. Always make a merge commit (don't rebase/fast-forward). The merge commit will be
    referenced in the change log.
 
-3. Add the change to the change log for the coming (draft) release on
+4. Add the change to the change log for the coming (draft) release on
    `GitHub <https://github.com/gwforg/gwf/releases>`_. Make sure to follow the
    formatting used in previous change logs. Also, read about
    `how to keep a change log <http://keepachangelog.com/en/0.3.0/>`_.

@@ -33,7 +33,10 @@ Make your changes
 
 2. Make the necessary changes and add unit tests if necessary.
 
-3. Test your changes and check for style violations::
+3. Add a description of the changes to ``CHANGELOG.rst`` and add yourself to ``CONTRIBUTORS.rst`` (if you're not
+   already there).
+
+4. Test your changes and check for style violations::
 
     make init      # to install gwf for development
     gwf ...        # test your changes by running gwf
@@ -41,7 +44,7 @@ Make your changes
     make test      # to run tests
     make coverage  # to check test coverage
 
-4. If everything is alright, commit your changes::
+5. If everything is alright, commit your changes::
 
     git add .
     git commit -m "Added some-feature"

@@ -74,3 +74,6 @@ API
    :maxdepth: 2
 
    api
+
+.. include:: ../CHANGELOG.rst
+.. include:: ../CONTRIBUTORS.rst
