@@ -1,4 +1,4 @@
-Upgrading from pre-1.0
+Upgrading from Pre-1.0
 ======================
 
 

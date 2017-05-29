@@ -1,11 +1,11 @@
-For contributors
+For Contributors
 ================
 
 We appreciate all contributions to *gwf*, not just contributions to the code! Think something is missing from the
 documentation? Defined useful snippets for your text editor? Add it and submit a pull request!
 
 
-Set up a development environment
+Set Up a Development Environment
 --------------------------------
 
 We strongly recommend that you use the `Anaconda Python distribution <https://www.continuum.io/anaconda-overview>`_
@@ -24,7 +24,7 @@ work).
     source activate gwfdev
 
 
-Make your changes
+Make Your Changes
 -----------------
 
 1. Fork the repository, clone it and create a branch for your changes::
@@ -50,7 +50,7 @@ Make your changes
     git commit -m "Added some-feature"
 
 
-Show us your contribution!
+Show Us Your Contribution!
 --------------------------
 
 1. Push your committed changes back to your fork on GitHub::
