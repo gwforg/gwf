@@ -580,10 +580,6 @@ class Graph(object):
 
         return False
 
-    def dfs(self, target):
-        """Return a depth-first search path starting at `target`."""
-        return dfs(target, self.dependencies)
-
     def endpoints(self):
         """Return a set of all targets that are not depended on by other targets."""
         return set(self.targets.values()) - set(self.dependents.keys())
