@@ -599,15 +599,13 @@ def schedule(graph, backend, target, dry_run=False):
 
     if backend.status(target) == Status.SUBMITTED:
         logger.debug('Target %s has already been submitted.', target.name)
-        return False, []
+        return False
 
-    sched = []
-    submitted_deps = []
-    for dependency in graph.dependencies[target]:
-        should_submit, partial_schedule = schedule(graph, backend, dependency, dry_run=dry_run)
-        sched.extend(partial_schedule)
-        if should_submit:
-            submitted_deps.append(dependency)
+    submitted_deps = set()
+    for dependency in sorted(graph.dependencies[target], key=lambda t: t.name):
+        was_submitted = schedule(graph, backend, dependency, dry_run=dry_run)
+        if was_submitted:
+            submitted_deps.add(dependency)
 
     if submitted_deps or graph.should_run(target):
         if dry_run:
@@ -615,10 +613,10 @@ def schedule(graph, backend, target, dry_run=False):
         else:
             logger.info('Submitting target %s.', target.name)
             backend.submit(target, dependencies=submitted_deps)
-        return True, sched + [target]
+        return True
     else:
         logger.debug('Target %s should not run.', target.name)
-        return False, sched
+        return False
 
 
 def schedule_many(graph, backend, targets, **kwargs):
@@ -634,6 +632,6 @@ def schedule_many(graph, backend, targets, **kwargs):
     """
     schedules = []
     for target in targets:
-        _, sched = schedule(graph, backend, target, **kwargs)
-        schedules.append(sched)
+        was_submitted = schedule(graph, backend, target, **kwargs)
+        schedules.append(was_submitted)
     return schedules
