@@ -6,13 +6,12 @@ are defined by creating :class:`~gwf.Target` instances which also define
 the files used and produced by the target. A :class:`~gwf.Workflow` ties
 together and allows for easy creation of targets.
 
-When all targets have been defined on a workflow, the workflow must be turned
-into a :class:`~gwf.Graph`. Preparing the workflow consists of
-computing the entire dependency graph of the workflow, checking the workflow
-for inconsistencies and circular dependencies.
+When all targets have been defined on a workflow, the workflow is turned
+into a :class:`~gwf.Graph` which will compute the entire dependency graph of the
+workflow, checking the workflow for inconsistencies and circular dependencies.
 
-A targets in a :class:`~gwf.Graph` can be scheduled on a
-:class:`~gwf.backends.Backend` using the :func:`gwf.core.schedule_many`
+A target in a :class:`~gwf.Graph` can be scheduled on a
+:class:`~gwf.backends.Backend` using the :func:`~gwf.schedule`
 function.
 
 Core
