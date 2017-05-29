@@ -67,7 +67,6 @@ setup(
     long_description=read('README.rst'),
 
     classifiers=[
-        'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Operating System :: OS Independent',
         'Topic :: Utilities',
