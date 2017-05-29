@@ -16,7 +16,7 @@ from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
                          InvalidNameError, TargetExistsError, InvalidTypeError, GWFError)
-from .utils import (cache, dfs, load_workflow, is_valid_name, iter_inputs, iter_outputs, timer, parse_path,
+from .utils import (cache, load_workflow, is_valid_name, iter_inputs, iter_outputs, timer, parse_path,
                     match_targets)
 
 logger = logging.getLogger(__name__)
@@ -236,6 +236,8 @@ class Workflow(object):
         adding it to the workflow. The target is also returned from the method
         so that the user can directly manipulate it, if necessary.
 
+        .. code-block:: python
+
             workflow = Workflow()
             workflow.target_from_template('NewTarget', my_template())
 
@@ -392,11 +394,12 @@ class Workflow(object):
         automatically runs the command in a shell with the current working
         directory set to the working directory of the workflow.
 
-        .. note:: This function has changed in 1.0. It will no longer return a
-          list of lines in the output, but a byte array with the output,
-          exactly like :func:`python:subprocess.check_output`. You may specifically
-          set *universal_newlines* to `True` to get a string with the output
-          instead.
+        .. versionchanged:: 1.0
+
+            This function no longer return a list of lines in the output, but a
+            byte array with the output, exactly like :func:`python:subprocess.check_output`.
+            You may specifically set *universal_newlines* to `True` to get a
+            string with the output instead.
         """
         return subprocess.check_output(*args, shell=True, cwd=self.working_dir, **kwargs)
 
@@ -577,10 +580,6 @@ class Graph(object):
 
         return False
 
-    def dfs(self, target):
-        """Return a depth-first search path starting at `target`."""
-        return dfs(target, self.dependencies)
-
     def endpoints(self):
         """Return a set of all targets that are not depended on by other targets."""
         return set(self.targets.values()) - set(self.dependents.keys())
@@ -594,46 +593,63 @@ class Graph(object):
 
 
 def schedule(graph, backend, target, dry_run=False):
-    """Schedule and submit a :class:`gwf.Target` and its dependencies."""
+    """Schedule a target and its dependencies.
+
+    Scheduling a target will determine whether the target needs to run based on
+    whether it already has been submitted and whether any of its dependencies have
+    been submitted.
+
+    Targets that should run will be submitted to *backend*, unless *dry_run*
+    is set to ``True``.
+
+    Returns ``True`` if *target* was submitted to the backend (even when
+    *dry_run* is ``True``).
+
+    :param gwf.Graph graph:
+        Graph of the workflow.
+    :param gwf.backends.Backend backend:
+        An instance of :class:`gwf.backends.Backend` to which targets will be
+        submitted.
+    :param gwf.Target target:
+        Target to be scheduled.
+    :param bool dry_run:
+        If ``True``, targets will not be submitted to the backend. Defaults
+        to ``False``.
+    """
     logger.info('Scheduling target %s.', target.name)
 
     if backend.status(target) == Status.SUBMITTED:
         logger.debug('Target %s has already been submitted.', target.name)
-        return False, []
+        return False
 
-    sched = []
-    submitted_deps = []
-    for dependency in graph.dependencies[target]:
-        should_submit, partial_schedule = schedule(graph, backend, dependency, dry_run=dry_run)
-        sched.extend(partial_schedule)
-        if should_submit:
-            submitted_deps.append(dependency)
+    submitted_deps = set()
+    for dependency in sorted(graph.dependencies[target], key=lambda t: t.name):
+        was_submitted = schedule(graph, backend, dependency, dry_run=dry_run)
+        if was_submitted:
+            submitted_deps.add(dependency)
 
     if submitted_deps or graph.should_run(target):
         if dry_run:
             logger.info('Would submit target %s.', target.name)
         else:
             logger.info('Submitting target %s.', target.name)
-            backend.submit(target, dependencies=[])
-        return True, sched + [target]
+            backend.submit(target, dependencies=submitted_deps)
+        return True
     else:
         logger.debug('Target %s should not run.', target.name)
-        return False, sched
+        return False
 
 
 def schedule_many(graph, backend, targets, **kwargs):
-    """Schedule a list of :class:`gwf.Target` and their dependencies.
+    """Schedule multiple targets and their dependencies.
 
-    Will schedule the targets in `targets` with :func:`schedule`
-    and return a list of schedules.
+    This is a convenience function for scheduling multiple targets. See
+    :func:`schedule` for a detailed description of the arguments.
 
-    :param gwf.Graph graph: The full workflow graph.
-    :param gwf.Backend backend: A backend instance.
     :param list targets: A list of targets to be scheduled.
-    :return: A list of schedules, one for each target in `targets`.
     """
     schedules = []
     for target in targets:
-        _, sched = schedule(graph, backend, target, **kwargs)
-        schedules.append(sched)
+        was_submitted = schedule(graph, backend, target, **kwargs)
+        schedules.append(was_submitted)
     return schedules

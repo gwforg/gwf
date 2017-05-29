@@ -115,8 +115,8 @@ class Backend(metaclass=BackendType):
 
         :param gwf.Target target:
             The target to submit.
-        :param list dependencies:
-            A list of :class:`gwf.Target` objects that `target` depends on and that have
+        :param dependencies:
+            An iterable of :class:`gwf.Target` objects that `target` depends on and that have
             already been submitted to the backend.
         """
 

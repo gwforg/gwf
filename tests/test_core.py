@@ -1,13 +1,12 @@
 import os
 import os.path
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, call
 
 import pathlib
 
 from gwf import Graph, Target, Workflow
 from gwf.backends.base import Status
-from gwf.backends.testing import TestingBackend
 from gwf.core import schedule, schedule_many
 from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
@@ -570,101 +569,128 @@ class TestShouldRun(unittest.TestCase):
 
 
 class TestScheduling(unittest.TestCase):
-    def test_scheduling_workflow_with_one_target_that_is_already_submitted_returns_empty_schedule(self):
-        workflow = Workflow(working_dir='/some/dir')
-        target = workflow.target('TestTarget', inputs=[], outputs=[])
 
-        graph = Graph(targets=workflow.targets)
-        backend = TestingBackend()
-        with patch.object(backend, 'status', return_value=Status.SUBMITTED, autospec=True):
-            sched = schedule(graph, backend, target)
-            self.assertEqual(sched, (False, []))
+    def setUp(self):
+        self.backend = Mock(name='MockBackend', spec_set=['status', 'submit', 'close'])
+
+    def test_scheduling_workflow_with_one_target_that_is_already_submitted_returns_empty_schedule(self):
+        target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+
+        graph = Graph(targets={'TestTarget': target})
+        self.backend.status = Mock(return_value=Status.SUBMITTED)
+        was_submitted = schedule(graph, self.backend, target)
+
+        assert was_submitted == False
+        assert len(self.backend.submit.call_args_list) == 0
 
     def test_scheduling_workflow_with_one_target_that_is_not_submitted_returns_schedule_with_target(self):
-        workflow = Workflow(working_dir='/some/dir')
-        target = workflow.target('TestTarget', inputs=[], outputs=[])
+        target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
-        graph = Graph(targets=workflow.targets)
-        backend = TestingBackend()
-        with patch.object(backend, 'status', return_value=Status.UNKNOWN, autospec=True):
-            with patch.object(graph, 'should_run', return_value=True):
-                sched = schedule(graph, backend, target)
-                self.assertEqual(sched, (True, [target]))
+        graph = Graph(targets={'TestTarget': target})
+        self.backend.status.return_value = Status.UNKNOWN
+
+        with patch.object(graph, 'should_run', return_value=True):
+            was_submitted = schedule(graph, self.backend, target)
+
+            assert was_submitted == True
+            assert len(self.backend.submit.call_args_list) == 1
+            assert call(target, dependencies=set()) in self.backend.submit.call_args_list
 
     def test_scheduling_workflow_with_target_with_deps_that_are_not_submitted(self):
-        workflow = Workflow(working_dir='/some/dir')
-        target1 = workflow.target('TestTarget1', inputs=[], outputs=['test_output.txt'])
-        target2 = workflow.target('TestTarget2', inputs=['test_output.txt'], outputs=[])
+        target1 = Target('TestTarget1', inputs=[], outputs=['test_output.txt'], options={}, working_dir='/some/dir')
+        target2 = Target('TestTarget2', inputs=['test_output.txt'], outputs=[], options={}, working_dir='/some/dir')
 
-        graph = Graph(targets=workflow.targets)
-        backend = TestingBackend()
-        with patch.object(backend, 'status', return_value=Status.UNKNOWN, autospec=True):
-            with patch.object(graph, 'should_run', return_value=True):
-                sched = schedule(graph, backend, target2)
-                self.assertEqual(sched, (True, [target1, target2]))
+        graph = Graph(targets={'TestTarget1': target1, 'TestTarget2': target2})
+        self.backend.status.return_value = Status.UNKNOWN
+
+        with patch.object(graph, 'should_run', return_value=True):
+            was_submitted = schedule(graph, self.backend, target2)
+            assert was_submitted == True
+
+            assert len(self.backend.submit.call_args_list) == 2
+            assert call(target1, dependencies=set()) in self.backend.submit.call_args_list
+            assert call(target2, dependencies=set([target1])) in self.backend.submit.call_args_list
 
     def test_scheduling_workflow_with_deep_deps_that_are_not_submitted(self):
-        workflow = Workflow(working_dir='/some/dir')
-        target1 = workflow.target('TestTarget1', inputs=[], outputs=['test_output1.txt'])
-        target2 = workflow.target('TestTarget2', inputs=['test_output1.txt'], outputs=['test_output2.txt'])
-        target3 = workflow.target('TestTarget3', inputs=['test_output2.txt'], outputs=['test_output3.txt'])
-        target4 = workflow.target('TestTarget4', inputs=['test_output3.txt'], outputs=['final_output.txt'])
+        target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
+        target2 = Target('TestTarget2', inputs=['test_output1.txt'], outputs=['test_output2.txt'], options={}, working_dir='/some/dir')
+        target3 = Target('TestTarget3', inputs=['test_output2.txt'], outputs=['test_output3.txt'], options={}, working_dir='/some/dir')
+        target4 = Target('TestTarget4', inputs=['test_output3.txt'], outputs=['final_output.txt'], options={}, working_dir='/some/dir')
 
-        graph = Graph(targets=workflow.targets)
-        backend = TestingBackend()
-        with patch.object(backend, 'status', return_value=Status.UNKNOWN):
-            with patch.object(graph, 'should_run', return_value=True, autospec=True):
-                sched = schedule(graph, backend, target4)
-                self.assertEqual(sched, (True, [target1, target2, target3, target4]))
+        graph = Graph(targets={'target1': target1, 'target2': target2, 'target3': target3, 'target4': target4})
+        self.backend.status.return_value = Status.UNKNOWN
+
+        with patch.object(graph, 'should_run', return_value=True, autospec=True):
+            was_submitted = schedule(graph, self.backend, target4)
+            assert was_submitted == True
+
+            assert len(self.backend.submit.call_args_list) == 4
+            assert call(target1, dependencies=set()) in self.backend.submit.call_args_list
+            assert call(target2, dependencies=set([target1])) in self.backend.submit.call_args_list
+            assert call(target3, dependencies=set([target2])) in self.backend.submit.call_args_list
+            assert call(target4, dependencies=set([target3])) in self.backend.submit.call_args_list
 
     def test_scheduling_workflow_with_branch_and_join_structure(self):
-        workflow = Workflow(working_dir='/some/dir')
-        target1 = workflow.target('TestTarget1', inputs=[], outputs=['test_output1.txt'])
-        target2 = workflow.target('TestTarget2', inputs=['test_output1.txt'], outputs=['test_output2.txt'])
-        target3 = workflow.target('TestTarget3', inputs=['test_output1.txt'], outputs=['test_output3.txt'])
-        target4 = workflow.target('TestTarget4', inputs=['test_output2.txt', 'test_output3.txt'], outputs=['final_output.txt'])
+        target1 = Target('TestTarget1', inputs=[], outputs=['output1.txt'], options={}, working_dir='/some/dir')
+        target2 = Target('TestTarget2', inputs=['output1.txt'], outputs=['output2.txt'], options={}, working_dir='/some/dir')
+        target3 = Target('TestTarget3', inputs=['output1.txt'], outputs=['output3.txt'], options={}, working_dir='/some/dir')
+        target4 = Target('TestTarget4', inputs=['output2.txt', 'output3.txt'], outputs=['final.txt'], options={}, working_dir='/some/dir')
 
-        graph = Graph(targets=workflow.targets)
-        backend = TestingBackend()
+        graph = Graph(targets={'target1': target1, 'target2': target2, 'target3': target3, 'target4': target4})
 
-        with patch.object(backend, 'status', return_value=Status.UNKNOWN):
-            with patch.object(graph, 'should_run', return_value=True, autospec=True):
-                should_submit, sched = schedule(graph, backend, target4)
-                self.assertEqual((should_submit, set(sched)), (True, {target1, target2, target3, target4}))
+        # Schedule performs a depth-first walk of the target dependencies.
+        # Thus, we will visit TestTarget1 twice. The second time we visit
+        # it, it will have been submitted, so status() should return
+        # SUBMITTED.
+        self.backend.status.side_effect = [
+            Status.UNKNOWN,   # TestTarget4
+            Status.UNKNOWN,   # TestTarget3/TestTarget2
+            Status.UNKNOWN,   # TestTarget1
+            Status.UNKNOWN,   # TestTarget3/TestTarget2
+            Status.SUBMITTED, # TestTarget1
+        ]
+
+        with patch.object(graph, 'should_run', return_value=True, autospec=True):
+            was_submitted = schedule(graph, self.backend, target4)
+            assert was_submitted == True
+
+            assert len(self.backend.submit.call_args_list) == 4
+            assert call(target1, dependencies=set()) in self.backend.submit.call_args_list
+            assert call(target2, dependencies=set([target1])) in self.backend.submit.call_args_list
+            assert call(target3, dependencies=set()) in self.backend.submit.call_args_list
+            assert call(target4, dependencies=set([target3, target2])) in self.backend.submit.call_args_list
 
     def test_scheduling_a_submitted_target_does_not_submit_it(self):
-        workflow = Workflow(working_dir='/some/dir')
-        target = workflow.target('TestTarget1', inputs=[], outputs=['test_output1.txt'])
-
-        graph = Graph(targets=workflow.targets)
-        backend = TestingBackend()
-        with patch.object(backend, 'status', return_value=Status.SUBMITTED, autospec=True):
-            sched = schedule(graph, backend, target)
-            self.assertEqual(sched, (False, []))
+        target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
+        graph = Graph(targets={'TestTarget1': target1})
+        self.backend.status.return_value = Status.SUBMITTED
+        was_submitted = schedule(graph, self.backend, target1)
+        self.assertEqual(was_submitted, False)
+        self.assertEqual(self.backend.submit.call_args_list, [])
 
     def test_scheduling_non_submitted_targets_that_should_not_run_does_not_submit_any_targets(self):
-        workflow = Workflow(working_dir='/some/dir')
-        target1 = workflow.target('TestTarget1', inputs=[], outputs=['test_output1.txt'])
-        target2 = workflow.target('TestTarget2', inputs=[], outputs=['test_output2.txt'])
-        target3 = workflow.target('TestTarget3', inputs=['test_output1.txt', 'test_output2.txt'], outputs=['test_output3.txt'])
+        target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
+        target2 = Target('TestTarget2', inputs=[], outputs=['test_output2.txt'], options={}, working_dir='/some/dir')
+        target3 = Target('TestTarget3', inputs=['test_output1.txt', 'test_output2.txt'], outputs=['test_output3.txt'], options={}, working_dir='/some/dir')
 
-        graph = Graph(targets=workflow.targets)
-        backend = TestingBackend()
-
-        with patch.object(backend, 'status', return_value=Status.UNKNOWN):
-            with patch.object(graph, 'should_run', side_effect=[False, False, False, False], autospec=True):
-                res = schedule(graph, backend, target3)
-                self.assertEqual(res, (False, []))
+        graph = Graph(targets={'TestTarget1': target1, 'TestTarget2': target2, 'TestTarget3': target3})
+        self.backend.status.return_value = Status.UNKNOWN
+        with patch.object(graph, 'should_run', side_effect=[False, False, False, False], autospec=True):
+            was_submitted = schedule(graph, self.backend, target3)
+            self.assertEqual(was_submitted, False)
+            self.assertEqual(self.backend.submit.call_args_list, [])
 
     def test_scheduling_many_targets_calls_schedule_for_each_target(self):
-        workflow = Workflow(working_dir='/some/dir')
+        target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
+        target2 = Target('TestTarget2', inputs=[], outputs=['test_output2.txt'], options={}, working_dir='/some/dir')
+        target3 = Target('TestTarget3', inputs=['test_output1.txt'], outputs=['test_output3.txt'], options={}, working_dir='/some/dir')
+        target4 = Target('TestTarget4', inputs=['test_output2.txt'], outputs=['test_output4.txt'], options={}, working_dir='/some/dir')
 
-        target1 = workflow.target('TestTarget1', inputs=[], outputs=['test_output1.txt'])
-        target2 = workflow.target('TestTarget2', inputs=[], outputs=['test_output2.txt'])
-        target3 = workflow.target('TestTarget3', inputs=['test_output1.txt'], outputs=['test_output3.txt'])
-        target4 = workflow.target('TestTarget4', inputs=['test_output2.txt'], outputs=['test_output4.txt'])
-
-        graph = Graph(targets=workflow.targets)
-        backend = TestingBackend()
-        sched = schedule_many(graph, backend, [target3, target4])
-        self.assertEqual(sched, [[target1, target3], [target2, target4]])
+        graph = Graph(targets={'TestTarget1': target1, 'TestTarget2': target2, 'TestTarget3': target3, 'TestTarget4': target4})
+        self.backend.status.return_value = Status.UNKNOWN
+        was_submitted = schedule_many(graph, self.backend, [target3, target4])
+        self.assertEqual(was_submitted, [True, True])
+        self.assertIn(call(target4, dependencies=set([target2])), self.backend.submit.call_args_list)
+        self.assertIn(call(target3, dependencies=set([target1])), self.backend.submit.call_args_list)
+        self.assertIn(call(target2, dependencies=set()), self.backend.submit.call_args_list)
+        self.assertIn(call(target1, dependencies=set()), self.backend.submit.call_args_list)
