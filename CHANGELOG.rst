@@ -9,6 +9,11 @@ of things have changed. We also recommend reading the guide for converting pre-1
 users attempting to do this should be aware that the the template mechanism in 1.0 is slightly different and thus
 requires rewriting template functions.
 
+Fixed
+^^^^^
+
+* Fixed a bug which caused the *gwf logs* command to always show stderr.
+
 Changed
 ^^^^^^^
 
