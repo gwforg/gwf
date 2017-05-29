@@ -602,11 +602,12 @@ def schedule(graph, backend, target, dry_run=False):
     
     Targets that should run will be submitted to *backend*, unless *dry_run*
     is set to ``True``.
-    
+
     Returns ``True`` if *target* was submitted to the backend (even when
     *dry_run* is ``True``).
-    
+
     :param gwf.Graph graph: 
+        Graph of the workflow.
     :param gwf.backends.Backend backend: 
         An instance of :class:`gwf.backends.Backend` to which targets will be
         submitted.
