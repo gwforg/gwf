@@ -104,7 +104,7 @@ class Backend(metaclass=BackendType):
         """Return the status of `target`.
 
         :param gwf.Target target: The target to return the status of.
-        :return gwf.backends.base.Status: Status of `target`.
+        :return gwf.backends.Status: Status of `target`.
         """
 
     def submit(self, target, dependencies):

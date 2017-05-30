@@ -3,7 +3,7 @@ import subprocess
 from unittest.mock import ANY, patch
 
 from gwf import Target
-from gwf.backends.base import Status, UnknownTargetError, UnknownDependencyError
+from gwf.backends import Status, UnknownTargetError, UnknownDependencyError
 from gwf.backends.slurm import (SlurmBackend, _call_sbatch, _call_scancel,
                                 _call_squeue, _find_exe, init_status_from_queue)
 from gwf.exceptions import BackendError

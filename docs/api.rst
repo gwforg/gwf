@@ -24,12 +24,12 @@ Core
 Backends
 --------
 
-.. autoclass:: gwf.backends.base.Backend
+.. autoclass:: gwf.backends.Backend
    :members:
    :inherited-members:
    :undoc-members:
 
-.. autoclass:: gwf.backends.base.Status
+.. autoclass:: gwf.backends.Status
    :members:
    :undoc-members:
 

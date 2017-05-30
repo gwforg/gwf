@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch, call
 import pathlib
 
 from gwf import Graph, Target, Workflow
-from gwf.backends.base import Status
+from gwf.backends import Status
 from gwf.core import schedule, schedule_many
 from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
