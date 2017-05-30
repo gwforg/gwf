@@ -76,9 +76,9 @@ class Target(object):
         A list of output paths for this target.
     :ivar dict options:
         Options such as number of cores, memory requirements etc. Options are
-        backend-dependent.
-    :ivar gwf.Workflow workflow:
-        Workflow that the target is associated to.
+        backend-dependent. Backends will ignore unsupported options.
+    :ivar str working_dir:
+        Working directory of this target.
     :ivar str spec:
         The specification of the target.
     """
@@ -134,7 +134,14 @@ class Target(object):
 
     def __lshift__(self, spec):
         if not isinstance(spec, str):
-            raise InvalidTypeError("Target specs must be strings.")
+            msg = (
+                'Target spec must be a string, not {}. '
+                'Did you attempt to assign a template to this target? '
+                'This is no is not allowed since version 1.0. Use the '
+                'Workflow.target_from_template() method instead. See '
+                'the tutorial for more details.'
+            )
+            raise InvalidTypeError(msg.format(type(spec)))
         self.spec = spec
         return self
 
@@ -159,18 +166,44 @@ class Target(object):
 
 
 class Workflow(object):
-
     """Represents a workflow.
+
+    This is the most central user-facing abstraction in *gwf*.
+
+    A workflow consists of a collection of targets and has methods for adding
+    targets to the workflow in two different ways. A workflow can be initialized
+    with the following arguments:
 
     :ivar str name: initial value: None
         The name is used for namespacing when including workflows. See
         :func:`~include` for more details on namespacing.
-    :ivar dict targets:
-        A dictionary of the targets in this workflow.
     :ivar str working_dir:
         The directory containing the file where the workflow was initialized.
         All file paths used in targets added to this workflow are relative to
         the working directory.
+    :ivar dict defaults:
+        A dictionary with defaults for target options.
+
+    By default, *working_dir* is set to the directory of the workflow file which
+    initialized the workflow. However, advanced users may wish to set it manually.
+    Targets added to the workflow will inherit the workflow working directory.
+
+    The *defaults* argument is a dictionary of option defaults for targets and
+    overrides defaults provided by the backend. Targets can override the
+    defaults individually. For example::
+
+        gwf = Workflow(defaults={
+            'cores': 12,
+            'memory': '16g',
+        })
+
+        gwf.target('Foo', inputs=[], outputs=[]) << \"\"\"echo hello\"\"\"
+        gwf.target('Bar', inputs=[], outputs=[], cores=2) << \"\"\"echo world\"\"\"
+
+    In this case `Foo` and `Bar` inherit the `cores` and `memory` options set in
+    `defaults`, but `Bar` overrides the `cores` option.
+
+    See :func:`~include` for a description of the use of the `name` argument.
     """
 
     def __init__(self, name=None, working_dir=None, defaults=None):
@@ -251,7 +284,12 @@ class Workflow(object):
         Any further keyword arguments are passed to the backend and will
         override any options provided by the template.
         """
-        inputs, outputs, template_options, spec = template
+        try:
+            inputs, outputs, template_options, spec = template
+            if not isinstance(template_options, dict) or not isinstance(spec, str):
+                raise Exception()
+        except Exception:
+            raise InvalidTypeError('Target `{}` received an invalid template.'.format(name))
 
         new_target = Target(
             name, inputs, outputs, options=options,
@@ -620,7 +658,7 @@ def schedule(graph, backend, target, dry_run=False):
 
     if backend.status(target) == Status.SUBMITTED:
         logger.debug('Target %s has already been submitted.', target.name)
-        return False
+        return True
 
     submitted_deps = set()
     for dependency in sorted(graph.dependencies[target], key=lambda t: t.name):

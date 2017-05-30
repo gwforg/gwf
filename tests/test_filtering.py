@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
 from gwf import Target
-from gwf.backends.base import Status
+from gwf.backends import Status
 from gwf.filtering import StatusFilter, Criteria, filter, NameFilter, EndpointFilter
 
 from tests import GWFTestCase

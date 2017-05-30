@@ -1,4 +1,4 @@
-For maintainers
+For Maintainers
 ===============
 
 The *gwf* build, testing and deployment process is automated through Travis
@@ -14,7 +14,7 @@ branch. The requirements for merging a feature branch into ``master`` are:
 This ensures that ``master`` is reasonably stable. Before major changes are merged
 into ``master`` they should be discussed and reviewed via a PR.
 
-Merging changes
+Merging Changes
 ---------------
 
 1. Make sure that the changes have proper test coverage, e.g. by checking the branch
@@ -30,7 +30,7 @@ Merging changes
    formatting used in previous change logs. Also, read about
    `how to keep a change log <http://keepachangelog.com/en/0.3.0/>`_.
 
-Rolling a new release
+Rolling a New Release
 ---------------------
 
 1. Make sure that all changes for the new release have been merged into ``master``

@@ -1,9 +1,8 @@
 import os.path
-from unittest.mock import Mock
 
 from gwf.exceptions import BackendError
 from gwf import Target
-from gwf.backends.base import Backend, PersistableDict
+from gwf.backends import Backend, PersistableDict
 from gwf.backends.testing import TestingBackend
 
 from tests import GWFTestCase

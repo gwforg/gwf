@@ -4,7 +4,7 @@ import os
 import re
 import io
 
-from setuptools import find_packages, setup
+from setuptools import setup
 
 
 def read(*names, **kwargs):
@@ -27,7 +27,7 @@ def find_version(*file_paths):
 setup(
     name='gwf',
     version=find_version('gwf', '__init__.py'),
-    packages=find_packages(),
+    packages=['gwf', 'gwf.backends', 'gwf.plugins'],
     entry_points={
         'console_scripts': [
             'gwf = gwf.cli:main',
@@ -67,7 +67,6 @@ setup(
     long_description=read('README.rst'),
 
     classifiers=[
-        'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Operating System :: OS Independent',
         'Topic :: Utilities',
