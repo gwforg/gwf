@@ -1,9 +1,10 @@
 import os
 import os.path
+import pathlib
 import unittest
 from unittest.mock import Mock, patch, call
 
-import pathlib
+import pytest
 
 from gwf import Graph, Target, Workflow
 from gwf.backends import Status
@@ -13,6 +14,16 @@ from gwf.exceptions import (CircularDependencyError,
                             FileRequiredButNotProvidedError,
                             IncludeWorkflowError, InvalidNameError,
                             TargetExistsError, InvalidTypeError, GWFError)
+
+from . import MockBackend
+
+
+@pytest.fixture
+def backend():
+    backend = MockBackend()
+    backend.submit = Mock(wraps=backend.submit)
+    backend.status = Mock(wraps=backend.status)
+    return backend
 
 
 class TestWorkflow(unittest.TestCase):
@@ -597,122 +608,85 @@ class TestShouldRun(unittest.TestCase):
             Graph(targets=workflow.targets)
 
 
-class TestScheduling(unittest.TestCase):
+def test_scheduling_submitted_target(backend, monkeypatch):
+    target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+    graph = Graph(targets={'TestTarget': target})
+    monkeypatch.setattr(graph, 'should_run', lambda t: True)
+    backend.submit(target, dependencies=set())
+    assert len(backend.submit.call_args_list) == 1
+    assert schedule(graph, backend, target) == True
+    assert len(backend.submit.call_args_list) == 1
 
-    def setUp(self):
-        self.backend = Mock(name='MockBackend', spec_set=['status', 'submit', 'close'])
 
-    def test_scheduling_already_submitted_target(self):
-        target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+def test_scheduling_unsubmitted_target(backend, monkeypatch):
+    target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+    graph = Graph(targets={'TestTarget': target})
+    monkeypatch.setattr(graph, 'should_run', lambda t: True)
+    assert schedule(graph, backend, target) == True
+    assert len(backend.submit.call_args_list) == 1
+    assert call(target, dependencies=set()) in backend.submit.call_args_list
 
-        graph = Graph(targets={'TestTarget': target})
-        self.backend.status = Mock(return_value=Status.SUBMITTED)
-        is_submitted = schedule(graph, self.backend, target)
 
-        assert is_submitted == True
-        assert len(self.backend.submit.call_args_list) == 0
+def test_scheduling_target_with_deps_that_are_not_submitted(backend, monkeypatch):
+    target1 = Target('TestTarget1', inputs=[], outputs=['test_output.txt'], options={}, working_dir='/some/dir')
+    target2 = Target('TestTarget2', inputs=['test_output.txt'], outputs=[], options={}, working_dir='/some/dir')
+    graph = Graph(targets={'TestTarget1': target1, 'TestTarget2': target2})
+    monkeypatch.setattr(graph, 'should_run', lambda t: True)
+    assert schedule(graph, backend, target2) == True
+    assert len(backend.submit.call_args_list) == 2
+    assert call(target1, dependencies=set()) in backend.submit.call_args_list
+    assert call(target2, dependencies=set([target1])) in backend.submit.call_args_list
 
-    def test_scheduling_unsubmitted_target_submits_the_target(self):
-        target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
-        graph = Graph(targets={'TestTarget': target})
-        self.backend.status.return_value = Status.UNKNOWN
+def test_scheduling_target_with_deep_deps_that_are_not_submitted(backend, monkeypatch):
+    target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
+    target2 = Target('TestTarget2', inputs=['test_output1.txt'], outputs=['test_output2.txt'], options={}, working_dir='/some/dir')
+    target3 = Target('TestTarget3', inputs=['test_output2.txt'], outputs=['test_output3.txt'], options={}, working_dir='/some/dir')
+    target4 = Target('TestTarget4', inputs=['test_output3.txt'], outputs=['final_output.txt'], options={}, working_dir='/some/dir')
+    graph = Graph(targets={'target1': target1, 'target2': target2, 'target3': target3, 'target4': target4})
+    monkeypatch.setattr(graph, 'should_run', lambda t: True)
+    assert schedule(graph, backend, target4) == True
+    assert len(backend.submit.call_args_list) == 4
+    assert call(target1, dependencies=set()) in backend.submit.call_args_list
+    assert call(target2, dependencies=set([target1])) in backend.submit.call_args_list
+    assert call(target3, dependencies=set([target2])) in backend.submit.call_args_list
+    assert call(target4, dependencies=set([target3])) in backend.submit.call_args_list
 
-        with patch.object(graph, 'should_run', return_value=True):
-            is_submitted = schedule(graph, self.backend, target)
 
-            assert is_submitted == True
-            assert len(self.backend.submit.call_args_list) == 1
-            assert call(target, dependencies=set()) in self.backend.submit.call_args_list
+def test_scheduling_branch_and_join_structure(backend, monkeypatch):
+    target1 = Target('TestTarget1', inputs=[], outputs=['output1.txt'], options={}, working_dir='/some/dir')
+    target2 = Target('TestTarget2', inputs=['output1.txt'], outputs=['output2.txt'], options={}, working_dir='/some/dir')
+    target3 = Target('TestTarget3', inputs=['output1.txt'], outputs=['output3.txt'], options={}, working_dir='/some/dir')
+    target4 = Target('TestTarget4', inputs=['output2.txt', 'output3.txt'], outputs=['final.txt'], options={}, working_dir='/some/dir')
+    graph = Graph(targets={'target1': target1, 'target2': target2, 'target3': target3, 'target4': target4})
+    monkeypatch.setattr(graph, 'should_run', lambda t: True)
+    assert schedule(graph, backend, target4) == True
+    assert len(backend.submit.call_args_list) == 4
+    assert call(target1, dependencies=set([])) in backend.submit.call_args_list
+    assert call(target2, dependencies=set([target1])) in backend.submit.call_args_list
+    assert call(target3, dependencies=set([target1])) in backend.submit.call_args_list
+    assert call(target4, dependencies=set([target3, target2])) in backend.submit.call_args_list
 
-    def test_scheduling_target_with_deps_that_are_not_submitted(self):
-        target1 = Target('TestTarget1', inputs=[], outputs=['test_output.txt'], options={}, working_dir='/some/dir')
-        target2 = Target('TestTarget2', inputs=['test_output.txt'], outputs=[], options={}, working_dir='/some/dir')
 
-        graph = Graph(targets={'TestTarget1': target1, 'TestTarget2': target2})
-        self.backend.status.return_value = Status.UNKNOWN
+def test_scheduling_non_submitted_targets_that_should_not_run(backend, monkeypatch):
+    target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
+    target2 = Target('TestTarget2', inputs=[], outputs=['test_output2.txt'], options={}, working_dir='/some/dir')
+    target3 = Target('TestTarget3', inputs=['test_output1.txt', 'test_output2.txt'], outputs=['test_output3.txt'], options={}, working_dir='/some/dir')
+    graph = Graph(targets={'TestTarget1': target1, 'TestTarget2': target2, 'TestTarget3': target3})
+    monkeypatch.setattr(graph, 'should_run', lambda t: False)
+    assert schedule(graph, backend, target3) == False
+    assert backend.submit.call_args_list == []
 
-        with patch.object(graph, 'should_run', return_value=True):
-            is_submitted = schedule(graph, self.backend, target2)
-            assert is_submitted == True
 
-            assert len(self.backend.submit.call_args_list) == 2
-            assert call(target1, dependencies=set()) in self.backend.submit.call_args_list
-            assert call(target2, dependencies=set([target1])) in self.backend.submit.call_args_list
-
-    def test_scheduling_target_with_deep_deps_that_are_not_submitted(self):
-        target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
-        target2 = Target('TestTarget2', inputs=['test_output1.txt'], outputs=['test_output2.txt'], options={}, working_dir='/some/dir')
-        target3 = Target('TestTarget3', inputs=['test_output2.txt'], outputs=['test_output3.txt'], options={}, working_dir='/some/dir')
-        target4 = Target('TestTarget4', inputs=['test_output3.txt'], outputs=['final_output.txt'], options={}, working_dir='/some/dir')
-
-        graph = Graph(targets={'target1': target1, 'target2': target2, 'target3': target3, 'target4': target4})
-        self.backend.status.return_value = Status.UNKNOWN
-
-        with patch.object(graph, 'should_run', return_value=True, autospec=True):
-            is_submitted = schedule(graph, self.backend, target4)
-            assert is_submitted == True
-
-            assert len(self.backend.submit.call_args_list) == 4
-            assert call(target1, dependencies=set()) in self.backend.submit.call_args_list
-            assert call(target2, dependencies=set([target1])) in self.backend.submit.call_args_list
-            assert call(target3, dependencies=set([target2])) in self.backend.submit.call_args_list
-            assert call(target4, dependencies=set([target3])) in self.backend.submit.call_args_list
-
-    def test_scheduling_branch_and_join_structure(self):
-        target1 = Target('TestTarget1', inputs=[], outputs=['output1.txt'], options={}, working_dir='/some/dir')
-        target2 = Target('TestTarget2', inputs=['output1.txt'], outputs=['output2.txt'], options={}, working_dir='/some/dir')
-        target3 = Target('TestTarget3', inputs=['output1.txt'], outputs=['output3.txt'], options={}, working_dir='/some/dir')
-        target4 = Target('TestTarget4', inputs=['output2.txt', 'output3.txt'], outputs=['final.txt'], options={}, working_dir='/some/dir')
-
-        graph = Graph(targets={'target1': target1, 'target2': target2, 'target3': target3, 'target4': target4})
-
-        # Schedule performs a depth-first walk of the target dependencies.
-        # Dependencies are visited in alphabetical order.
-        # Thus, we will visit TestTarget1 twice. The second time we visit
-        # it, it will have been submitted, so status() should return
-        # SUBMITTED.
-        self.backend.status.side_effect = [
-            Status.UNKNOWN,   # TestTarget4
-            Status.UNKNOWN,   # TestTarget2
-            Status.UNKNOWN,   # TestTarget1
-            Status.UNKNOWN,   # TestTarget3
-            Status.SUBMITTED, # TestTarget1
-        ]
-
-        with patch.object(graph, 'should_run', return_value=True, autospec=True):
-            is_submitted = schedule(graph, self.backend, target4)
-            assert is_submitted == True
-
-            assert len(self.backend.submit.call_args_list) == 4
-            assert call(target1, dependencies=set([])) in self.backend.submit.call_args_list
-            assert call(target2, dependencies=set([target1])) in self.backend.submit.call_args_list
-            assert call(target3, dependencies=set([target1])) in self.backend.submit.call_args_list
-            assert call(target4, dependencies=set([target3, target2])) in self.backend.submit.call_args_list
-
-    def test_scheduling_non_submitted_targets_that_should_not_run_does_not_submit_any_targets(self):
-        target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
-        target2 = Target('TestTarget2', inputs=[], outputs=['test_output2.txt'], options={}, working_dir='/some/dir')
-        target3 = Target('TestTarget3', inputs=['test_output1.txt', 'test_output2.txt'], outputs=['test_output3.txt'], options={}, working_dir='/some/dir')
-
-        graph = Graph(targets={'TestTarget1': target1, 'TestTarget2': target2, 'TestTarget3': target3})
-        self.backend.status.return_value = Status.UNKNOWN
-        with patch.object(graph, 'should_run', side_effect=[False, False, False, False], autospec=True):
-            is_submitted = schedule(graph, self.backend, target3)
-            self.assertEqual(is_submitted, False)
-            self.assertEqual(self.backend.submit.call_args_list, [])
-
-    def test_scheduling_many_targets_calls_schedule_for_each_target(self):
-        target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
-        target2 = Target('TestTarget2', inputs=[], outputs=['test_output2.txt'], options={}, working_dir='/some/dir')
-        target3 = Target('TestTarget3', inputs=['test_output1.txt'], outputs=['test_output3.txt'], options={}, working_dir='/some/dir')
-        target4 = Target('TestTarget4', inputs=['test_output2.txt'], outputs=['test_output4.txt'], options={}, working_dir='/some/dir')
-
-        graph = Graph(targets={'TestTarget1': target1, 'TestTarget2': target2, 'TestTarget3': target3, 'TestTarget4': target4})
-        self.backend.status.return_value = Status.UNKNOWN
-        is_submitted = schedule_many(graph, self.backend, [target3, target4])
-        self.assertEqual(is_submitted, [True, True])
-        self.assertIn(call(target4, dependencies=set([target2])), self.backend.submit.call_args_list)
-        self.assertIn(call(target3, dependencies=set([target1])), self.backend.submit.call_args_list)
-        self.assertIn(call(target2, dependencies=set()), self.backend.submit.call_args_list)
-        self.assertIn(call(target1, dependencies=set()), self.backend.submit.call_args_list)
+def test_scheduling_many_targets_calls_schedule_for_each_target(backend, monkeypatch):
+    target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
+    target2 = Target('TestTarget2', inputs=[], outputs=['test_output2.txt'], options={}, working_dir='/some/dir')
+    target3 = Target('TestTarget3', inputs=['test_output1.txt'], outputs=['test_output3.txt'], options={}, working_dir='/some/dir')
+    target4 = Target('TestTarget4', inputs=['test_output2.txt'], outputs=['test_output4.txt'], options={}, working_dir='/some/dir')
+    graph = Graph(targets={'TestTarget1': target1, 'TestTarget2': target2, 'TestTarget3': target3, 'TestTarget4': target4})
+    monkeypatch.setattr(graph, 'should_run', lambda t: True)
+    assert schedule_many(graph, backend, [target3, target4]) == [True, True]
+    assert call(target4, dependencies=set([target2])) in backend.submit.call_args_list
+    assert call(target3, dependencies=set([target1])) in backend.submit.call_args_list
+    assert call(target2, dependencies=set()) in backend.submit.call_args_list
+    assert call(target1, dependencies=set()) in backend.submit.call_args_list
