@@ -1,8 +1,8 @@
 Change Log
 ==========
 
-Version 1.0
------------
+Version 1.0b8
+-------------
 
 First stable release of *gwf*! We strongly encourage users of pre-1.0 users to read the tutorial, since quite a lot
 of things have changed. We also recommend reading the guide for converting pre-1.0 workflows to version 1.0. However,
@@ -12,7 +12,9 @@ requires rewriting template functions.
 Fixed
 ^^^^^
 
-* Fixed a bug which caused the *gwf logs* command to always show stderr.
+* Fixed a bug which caused the *gwf logs* command to always show stderr (01b267).
+
+* Fixed a bug which caused dependencies to be set incorrectly when two targets depended on the same target (4d9e07).
 
 Changed
 ^^^^^^^
@@ -20,6 +22,8 @@ Changed
 * Improved error message when trying to create a target from an invalid template (d27d1f).
 
 * Improved error message when assigning a non-string spec to a target (2aca0a).
+
+* `gwf logs` command now outputs logs via a pager when the system supports it, unless `--no-pager` is used (01b267).
 
 Added
 ^^^^^
