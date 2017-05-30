@@ -602,30 +602,30 @@ class TestScheduling(unittest.TestCase):
     def setUp(self):
         self.backend = Mock(name='MockBackend', spec_set=['status', 'submit', 'close'])
 
-    def test_scheduling_workflow_with_one_target_that_is_already_submitted_returns_empty_schedule(self):
+    def test_scheduling_already_submitted_target(self):
         target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
         graph = Graph(targets={'TestTarget': target})
         self.backend.status = Mock(return_value=Status.SUBMITTED)
-        was_submitted = schedule(graph, self.backend, target)
+        is_submitted = schedule(graph, self.backend, target)
 
-        assert was_submitted == False
+        assert is_submitted == True
         assert len(self.backend.submit.call_args_list) == 0
 
-    def test_scheduling_workflow_with_one_target_that_is_not_submitted_returns_schedule_with_target(self):
+    def test_scheduling_unsubmitted_target_submits_the_target(self):
         target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
         graph = Graph(targets={'TestTarget': target})
         self.backend.status.return_value = Status.UNKNOWN
 
         with patch.object(graph, 'should_run', return_value=True):
-            was_submitted = schedule(graph, self.backend, target)
+            is_submitted = schedule(graph, self.backend, target)
 
-            assert was_submitted == True
+            assert is_submitted == True
             assert len(self.backend.submit.call_args_list) == 1
             assert call(target, dependencies=set()) in self.backend.submit.call_args_list
 
-    def test_scheduling_workflow_with_target_with_deps_that_are_not_submitted(self):
+    def test_scheduling_target_with_deps_that_are_not_submitted(self):
         target1 = Target('TestTarget1', inputs=[], outputs=['test_output.txt'], options={}, working_dir='/some/dir')
         target2 = Target('TestTarget2', inputs=['test_output.txt'], outputs=[], options={}, working_dir='/some/dir')
 
@@ -633,14 +633,14 @@ class TestScheduling(unittest.TestCase):
         self.backend.status.return_value = Status.UNKNOWN
 
         with patch.object(graph, 'should_run', return_value=True):
-            was_submitted = schedule(graph, self.backend, target2)
-            assert was_submitted == True
+            is_submitted = schedule(graph, self.backend, target2)
+            assert is_submitted == True
 
             assert len(self.backend.submit.call_args_list) == 2
             assert call(target1, dependencies=set()) in self.backend.submit.call_args_list
             assert call(target2, dependencies=set([target1])) in self.backend.submit.call_args_list
 
-    def test_scheduling_workflow_with_deep_deps_that_are_not_submitted(self):
+    def test_scheduling_target_with_deep_deps_that_are_not_submitted(self):
         target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
         target2 = Target('TestTarget2', inputs=['test_output1.txt'], outputs=['test_output2.txt'], options={}, working_dir='/some/dir')
         target3 = Target('TestTarget3', inputs=['test_output2.txt'], outputs=['test_output3.txt'], options={}, working_dir='/some/dir')
@@ -650,8 +650,8 @@ class TestScheduling(unittest.TestCase):
         self.backend.status.return_value = Status.UNKNOWN
 
         with patch.object(graph, 'should_run', return_value=True, autospec=True):
-            was_submitted = schedule(graph, self.backend, target4)
-            assert was_submitted == True
+            is_submitted = schedule(graph, self.backend, target4)
+            assert is_submitted == True
 
             assert len(self.backend.submit.call_args_list) == 4
             assert call(target1, dependencies=set()) in self.backend.submit.call_args_list
@@ -659,7 +659,7 @@ class TestScheduling(unittest.TestCase):
             assert call(target3, dependencies=set([target2])) in self.backend.submit.call_args_list
             assert call(target4, dependencies=set([target3])) in self.backend.submit.call_args_list
 
-    def test_scheduling_workflow_with_branch_and_join_structure(self):
+    def test_scheduling_branch_and_join_structure(self):
         target1 = Target('TestTarget1', inputs=[], outputs=['output1.txt'], options={}, working_dir='/some/dir')
         target2 = Target('TestTarget2', inputs=['output1.txt'], outputs=['output2.txt'], options={}, working_dir='/some/dir')
         target3 = Target('TestTarget3', inputs=['output1.txt'], outputs=['output3.txt'], options={}, working_dir='/some/dir')
@@ -668,34 +668,27 @@ class TestScheduling(unittest.TestCase):
         graph = Graph(targets={'target1': target1, 'target2': target2, 'target3': target3, 'target4': target4})
 
         # Schedule performs a depth-first walk of the target dependencies.
+        # Dependencies are visited in alphabetical order.
         # Thus, we will visit TestTarget1 twice. The second time we visit
         # it, it will have been submitted, so status() should return
         # SUBMITTED.
         self.backend.status.side_effect = [
             Status.UNKNOWN,   # TestTarget4
-            Status.UNKNOWN,   # TestTarget3/TestTarget2
+            Status.UNKNOWN,   # TestTarget2
             Status.UNKNOWN,   # TestTarget1
-            Status.UNKNOWN,   # TestTarget3/TestTarget2
+            Status.UNKNOWN,   # TestTarget3
             Status.SUBMITTED, # TestTarget1
         ]
 
         with patch.object(graph, 'should_run', return_value=True, autospec=True):
-            was_submitted = schedule(graph, self.backend, target4)
-            assert was_submitted == True
+            is_submitted = schedule(graph, self.backend, target4)
+            assert is_submitted == True
 
             assert len(self.backend.submit.call_args_list) == 4
-            assert call(target1, dependencies=set()) in self.backend.submit.call_args_list
+            assert call(target1, dependencies=set([])) in self.backend.submit.call_args_list
             assert call(target2, dependencies=set([target1])) in self.backend.submit.call_args_list
-            assert call(target3, dependencies=set()) in self.backend.submit.call_args_list
+            assert call(target3, dependencies=set([target1])) in self.backend.submit.call_args_list
             assert call(target4, dependencies=set([target3, target2])) in self.backend.submit.call_args_list
-
-    def test_scheduling_a_submitted_target_does_not_submit_it(self):
-        target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
-        graph = Graph(targets={'TestTarget1': target1})
-        self.backend.status.return_value = Status.SUBMITTED
-        was_submitted = schedule(graph, self.backend, target1)
-        self.assertEqual(was_submitted, False)
-        self.assertEqual(self.backend.submit.call_args_list, [])
 
     def test_scheduling_non_submitted_targets_that_should_not_run_does_not_submit_any_targets(self):
         target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
@@ -705,8 +698,8 @@ class TestScheduling(unittest.TestCase):
         graph = Graph(targets={'TestTarget1': target1, 'TestTarget2': target2, 'TestTarget3': target3})
         self.backend.status.return_value = Status.UNKNOWN
         with patch.object(graph, 'should_run', side_effect=[False, False, False, False], autospec=True):
-            was_submitted = schedule(graph, self.backend, target3)
-            self.assertEqual(was_submitted, False)
+            is_submitted = schedule(graph, self.backend, target3)
+            self.assertEqual(is_submitted, False)
             self.assertEqual(self.backend.submit.call_args_list, [])
 
     def test_scheduling_many_targets_calls_schedule_for_each_target(self):
@@ -717,8 +710,8 @@ class TestScheduling(unittest.TestCase):
 
         graph = Graph(targets={'TestTarget1': target1, 'TestTarget2': target2, 'TestTarget3': target3, 'TestTarget4': target4})
         self.backend.status.return_value = Status.UNKNOWN
-        was_submitted = schedule_many(graph, self.backend, [target3, target4])
-        self.assertEqual(was_submitted, [True, True])
+        is_submitted = schedule_many(graph, self.backend, [target3, target4])
+        self.assertEqual(is_submitted, [True, True])
         self.assertIn(call(target4, dependencies=set([target2])), self.backend.submit.call_args_list)
         self.assertIn(call(target3, dependencies=set([target1])), self.backend.submit.call_args_list)
         self.assertIn(call(target2, dependencies=set()), self.backend.submit.call_args_list)

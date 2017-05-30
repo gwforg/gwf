@@ -658,7 +658,7 @@ def schedule(graph, backend, target, dry_run=False):
 
     if backend.status(target) == Status.SUBMITTED:
         logger.debug('Target %s has already been submitted.', target.name)
-        return False
+        return True
 
     submitted_deps = set()
     for dependency in sorted(graph.dependencies[target], key=lambda t: t.name):
