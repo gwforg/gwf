@@ -1,13 +1,29 @@
 Change Log
 ==========
 
-Version 1.0b8
--------------
+Version 1.0 (Unreleased)
+------------------------
 
 First stable release of *gwf*! We strongly encourage users of pre-1.0 users to read the tutorial, since quite a lot
 of things have changed. We also recommend reading the guide for converting pre-1.0 workflows to version 1.0. However,
 users attempting to do this should be aware that the the template mechanism in 1.0 is slightly different and thus
 requires rewriting template functions.
+
+Version 1.0b9
+-------------
+
+Fixed
+^^^^^
+
+* Fixed a bug in the ``SlurmBackend`` which caused running targets as unknown (33a6bd).
+
+Changed
+^^^^^^^
+
+* The Slurm backend's database of tracked jobs is now cleaned on initialization to keep it from growing indefinitely (bd3f95).
+
+Version 1.0b8
+-------------
 
 Fixed
 ^^^^^

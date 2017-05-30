@@ -75,7 +75,7 @@ def _call_sacct(job_id):
 
 
 def _call_squeue():
-    return _call_generic('squeue', '--noheader', '--format="%i;%t;%E"')
+    return _call_generic('squeue', '--noheader', '--format=%i;%t;%E')
 
 
 def _call_scancel(job_id):
@@ -157,8 +157,12 @@ class SlurmBackend(Backend):
     }
 
     def __init__(self):
-        self._tracked = PersistableDict(os.path.join('.gwf/slurm-backend-tracked.json'))
+        self._tracked = PersistableDict('.gwf/slurm-backend-tracked.json')
         self._status = init_status_from_queue()
+
+        for job_name, job_id in list(self._tracked.items()):
+            if job_id not in self._status:
+                del self._tracked[job_name]
 
     def status(self, target):
         try:
@@ -167,13 +171,8 @@ class SlurmBackend(Backend):
             return Status.UNKNOWN
 
     def submit(self, target, dependencies):
-        try:
-            dependency_ids = [self._tracked[dep.name] for dep in dependencies]
-        except KeyError as exc:
-            key, = exc.args
-            raise UnknownDependencyError(key)
-
         script = self._compile_script(target)
+        dependency_ids = self.collect_dependency_ids(dependencies)
         stdout, _ = _call_sbatch(script, dependency_ids)
         job_id = stdout.strip()
         self.add_job(target, job_id)
@@ -241,3 +240,9 @@ class SlurmBackend(Backend):
     def set_status(self, target, status):
         job_id = self.get_job_id(target)
         self._status[job_id] = status
+
+    def collect_dependency_ids(self, dependencies):
+        try:
+            return [self._tracked[dep.name] for dep in dependencies]
+        except KeyError as exc:
+            raise UnknownDependencyError(exc.args[0])
