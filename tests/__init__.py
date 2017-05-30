@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from exceptions import NoLogFoundError
+from gwf.exceptions import NoLogFoundError
 from gwf.backends import Backend, Status
 
 
