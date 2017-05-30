@@ -656,7 +656,7 @@ def schedule(graph, backend, target, dry_run=False):
     """
     logger.info('Scheduling target %s.', target.name)
 
-    if backend.status(target) == Status.SUBMITTED:
+    if backend.status(target) != Status.UNKNOWN:
         logger.debug('Target %s has already been submitted.', target.name)
         return True
 

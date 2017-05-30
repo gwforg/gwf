@@ -668,6 +668,26 @@ def test_scheduling_branch_and_join_structure(backend, monkeypatch):
     assert call(target4, dependencies=set([target3, target2])) in backend.submit.call_args_list
 
 
+def test_scheduling_branch_and_join_structure_with_running_dependency(backend, monkeypatch):
+    target1 = Target('TestTarget1', inputs=[], outputs=['output1.txt'], options={}, working_dir='/some/dir')
+    target2 = Target('TestTarget2', inputs=['output1.txt'], outputs=['output2.txt'], options={}, working_dir='/some/dir')
+    target3 = Target('TestTarget3', inputs=['output1.txt'], outputs=['output3.txt'], options={}, working_dir='/some/dir')
+    target4 = Target('TestTarget4', inputs=['output2.txt', 'output3.txt'], outputs=['final.txt'], options={}, working_dir='/some/dir')
+
+    graph = Graph(targets={'target1': target1, 'target2': target2, 'target3': target3, 'target4': target4})
+    monkeypatch.setattr(graph, 'should_run', lambda t: True)
+
+    backend.submit(target1, dependencies=set())
+    backend.set_status(target1, Status.RUNNING)
+    assert len(backend.submit.call_args_list) == 1
+
+    assert schedule(graph, backend, target4) == True
+    assert len(backend.submit.call_args_list) == 4
+    assert call(target2, dependencies=set([target1])) in backend.submit.call_args_list
+    assert call(target3, dependencies=set([target1])) in backend.submit.call_args_list
+    assert call(target4, dependencies=set([target3, target2])) in backend.submit.call_args_list
+
+
 def test_scheduling_non_submitted_targets_that_should_not_run(backend, monkeypatch):
     target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
     target2 = Target('TestTarget2', inputs=[], outputs=['test_output2.txt'], options={}, working_dir='/some/dir')
