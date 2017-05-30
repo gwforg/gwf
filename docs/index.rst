@@ -40,7 +40,7 @@ encouraged to report any issues through the
 `issue tracker <https://github.com/gwforg/gwf/issues>`_, which is also a good place
 to ask questions.
 
-Upgrading from an older version
+Upgrading From an Older Version
 -------------------------------
 
 If you have been using an older version of *gwf* you will have to
