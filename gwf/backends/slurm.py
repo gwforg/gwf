@@ -1,7 +1,5 @@
 import csv
 import logging
-import os
-import os.path
 import subprocess
 from distutils.spawn import find_executable
 
