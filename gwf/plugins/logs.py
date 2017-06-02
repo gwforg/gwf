@@ -6,7 +6,7 @@ from ..exceptions import TargetDoesNotExistError
 
 @click.command()
 @click.argument('target')
-@click.option('--stderr', is_flag=True)
+@click.option('-e', '--stderr', is_flag=True)
 @click.option('--no-pager', is_flag=True)
 @pass_graph
 @pass_backend
