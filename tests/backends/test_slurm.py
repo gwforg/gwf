@@ -66,9 +66,9 @@ class TestInitStatesFromQueue(SlurmTestCase):
 
     def test_parse_squeue_output(self):
         fake_squeue_stdout = '\n'.join([
-            "36971043;PD;afterok:36970708,afterok:36970710,afterok:36971042",
-            "36971044;R;afterok:36971043",
-            "36971045;PD;",
+            "36971043;PD",
+            "36971044;R",
+            "36971045;PD",
         ])
 
         fake_squeue_stderr = ''

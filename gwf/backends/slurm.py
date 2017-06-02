@@ -73,7 +73,7 @@ def _call_sacct(job_id):
 
 
 def _call_squeue():
-    return _call_generic('squeue', '--noheader', '--format=%i;%t;%E')
+    return _call_generic('squeue', '--noheader', '--format=%i;%t')
 
 
 def _call_scancel(job_id):
@@ -98,16 +98,10 @@ def init_status_from_queue():
            potentially very long commandline - which could fail if too long.
     """
     stdout, _ = _call_squeue()
-
-    reader = csv.reader(stdout.splitlines(), delimiter=';', quoting=csv.QUOTE_NONE)
-
     job_states = {}
-    for job_id, state, depends in reader:
-        simple_state = JOB_STATE_CODES[state]
-        if simple_state == Status.SUBMITTED and depends:
-            job_states[job_id] = Status.SUBMITTED
-        else:
-            job_states[job_id] = simple_state
+    for line in stdout.splitlines():
+        job_id, state = line.split(';')
+        job_states[job_id] = JOB_STATE_CODES[state]
     return job_states
 
 
