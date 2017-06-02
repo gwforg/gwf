@@ -9,6 +9,19 @@ of things have changed. We also recommend reading the guide for converting pre-1
 users attempting to do this should be aware that the the template mechanism in 1.0 is slightly different and thus
 requires rewriting template functions.
 
+
+Version 1.0b10
+--------------
+
+Fixed
+^^^^^
+
+* Fixed a subtle bug in scheduling which caused problems when resubmitting a workflow where some targets were already running (a5d884).
+
+* Fixed a bug in the ``SlurmBackend`` which caused *gwf* to crash if the Slurm queue contained a job with many dependencies (eb4446).
+
+* Added back the `-e` flag in the ``logs`` command.
+
 Version 1.0b9
 -------------
 
