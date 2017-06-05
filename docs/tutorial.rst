@@ -16,9 +16,9 @@ for your project, we'll call it *myproject*.
 
 .. code-block:: console
 
-    $ conda create -n myproject python=3.4
+    $ conda config --add channels gwforg
+    $ conda create -n myproject python=3.5 gwf
     $ source activate myproject
-    $ conda install -c dansondergaard gwf
 
 You should now be able to run the following command.
 
