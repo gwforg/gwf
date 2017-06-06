@@ -144,7 +144,7 @@ class ColorFormatter(logging.Formatter):
 
     STYLING = {
         'WARNING': dict(fg='yellow'),
-        'INFO': dict(fg='blue', bold=True),
+        'INFO': dict(fg='blue'),
         'DEBUG': dict(fg='white'),
         'ERROR': dict(fg='red', bold=True),
         'CRITICAL': dict(fg='magenta', bold=True),
