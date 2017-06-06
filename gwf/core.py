@@ -225,10 +225,11 @@ class Workflow(object):
             self.working_dir = os.path.dirname(os.path.realpath(filename))
 
     def _add_target(self, target, namespace=None):
-        qualname = target.qualname(namespace)
-        if qualname in self.targets:
+        if namespace is not None:
+            target.name = target.qualname(namespace)
+        if target.name in self.targets:
             raise TargetExistsError(target)
-        self.targets[qualname] = target
+        self.targets[target.name] = target
 
     def target(self, name, inputs, outputs, **options):
         """Create a target and add it to the :class:`gwf.Workflow`.
@@ -330,7 +331,7 @@ class Workflow(object):
             )
 
         for target in other_workflow.targets.values():
-            self._add_target(target, namespace_prefix)
+            self._add_target(target, namespace=namespace_prefix)
 
     def include(self, other_workflow, namespace=None):
         """Include targets from another :class:`gwf.Workflow` into this workflow.
@@ -397,11 +398,9 @@ class Workflow(object):
         elif isinstance(other_workflow, str):
             self.include_path(other_workflow, namespace=namespace)
         elif inspect.ismodule(other_workflow):
-            self.include_workflow(
-                getattr(other_workflow, 'gwf'), namespace=namespace)
+            self.include_workflow(getattr(other_workflow, 'gwf'), namespace=namespace)
         else:
-            raise TypeError('First argument must be either a string or a '
-                            'Workflow object.')
+            raise TypeError('First argument must be either a string or a Workflow object.')
 
     def glob(self, pathname, *args, **kwargs):
         """Return a list of paths matching `pathname`.

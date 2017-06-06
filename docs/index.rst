@@ -2,8 +2,8 @@ Welcome to gwf
 ==============
 
 *gwf* is a flexible, pragmatic workflow tool for building and running large,
-scientific workflows. It is developed at the Bioinformatics Research Centre
-(BiRC), Aarhus University.
+scientific workflows. It runs on Python 3.5+ and is developed at the Bioinformatics
+Research Centre (BiRC), Aarhus University.
 
 Examples
   To get a feeling for what a *gwf* workflow looks like, have a look at a few

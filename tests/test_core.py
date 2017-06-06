@@ -43,16 +43,17 @@ class TestWorkflow(unittest.TestCase):
 
     def test_adding_a_target_makes_it_available_to_the_workflow(self):
         workflow = Workflow()
-        workflow.target('TestTarget', inputs=[], outputs=[], spec='')
+        target = workflow.target('TestTarget', inputs=[], outputs=[])
 
         self.assertIn('TestTarget', workflow.targets)
+        self.assertIn(target, workflow.targets.values())
 
     def test_adding_two_targets_with_the_same_names_should_raise_an_exception(self):
         workflow = Workflow()
-        workflow.target('TestTarget', inputs=[], outputs=[], spec='')
+        workflow.target('TestTarget', inputs=[], outputs=[])
 
         with self.assertRaises(TargetExistsError):
-            workflow.target('TestTarget', inputs=[], outputs=[], spec='')
+            workflow.target('TestTarget', inputs=[], outputs=[])
 
     def test_including_workflow_with_no_name_raises_an_exception(self):
         workflow = Workflow()
@@ -74,17 +75,18 @@ class TestWorkflow(unittest.TestCase):
         self.assertIn('foo.TestTarget2', workflow.targets)
         self.assertIn('foo.TestTarget3', workflow.targets)
 
-    def test_include_with_namespace_overrides_included_workflow_name(self):
-        workflow = Workflow()
-        workflow.target('TestTarget', inputs=[], outputs=[])
-
-        other_workflow = Workflow(name='foo')
+    def test_include_workflow_1(self):
+        other_workflow = Workflow(working_dir='/some/dir/other')
         other_workflow.target('TestTarget', inputs=[], outputs=[])
 
-        workflow.include_workflow(other_workflow, namespace='bar')
-        self.assertIn('bar.TestTarget', workflow.targets)
-        self.assertNotIn('foo.TestTarget', workflow.targets)
-        self.assertIn('TestTarget', workflow.targets)
+        gwf = Workflow(working_dir='/some/dir')
+        gwf.include_workflow(other_workflow, namespace='other')
+        gwf.target('TestTarget', inputs=[], outputs=[])
+
+        self.assertIn('TestTarget', gwf.targets)
+        self.assertIn('other.TestTarget', gwf.targets)
+        self.assertEqual(gwf.targets['TestTarget'].name, 'TestTarget')
+        self.assertEqual(gwf.targets['other.TestTarget'].name, 'other.TestTarget')
 
     def test_including_workflow_with_same_name_as_this_workflow_raises_an_exception(self):
         workflow = Workflow(name='foo')
