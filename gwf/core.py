@@ -209,9 +209,7 @@ class Workflow(object):
     def __init__(self, name=None, working_dir=None, defaults=None):
         self.name = name
         if self.name is not None and not is_valid_name(self.name):
-            raise InvalidNameError(
-                'Workflow defined with invalid name: "{}".'.format(self.name)
-            )
+            raise InvalidNameError('Workflow defined with invalid name: "{}".'.format(self.name))
 
         self.targets = {}
         self.defaults = defaults or {}
@@ -254,7 +252,10 @@ class Workflow(object):
         Any further keyword arguments are passed to the backend.
         """
         new_target = Target(
-            name, inputs, outputs, options=options,
+            name=name,
+            inputs=inputs,
+            outputs=outputs,
+            options=options,
             working_dir=self.working_dir,
         )
         new_target.inherit_options(self.defaults)
@@ -292,9 +293,12 @@ class Workflow(object):
             raise InvalidTypeError('Target `{}` received an invalid template.'.format(name))
 
         new_target = Target(
-            name, inputs, outputs, options=options,
+            name=name,
+            inputs=inputs,
+            outputs=outputs,
+            options=options,
             working_dir=self.working_dir,
-            spec=spec
+            spec=spec,
         )
         new_target.inherit_options(template_options)
         new_target.inherit_options(self.defaults)
@@ -310,7 +314,6 @@ class Workflow(object):
         basedir, filename, obj = parse_path(path)
         other_workflow = load_workflow(basedir, filename, obj)
         self.include_workflow(other_workflow, namespace=namespace)
-        return other_workflow
 
     def include_workflow(self, other_workflow, namespace=None):
         """Include targets from another :class:`gwf.Workflow` into this workflow.
@@ -325,9 +328,7 @@ class Workflow(object):
             )
         namespace_prefix = namespace or other_workflow.name
         if namespace_prefix == self.name:
-            raise IncludeWorkflowError(
-                'The included workflow has the same name as this workflow.'
-            )
+            raise IncludeWorkflowError('The included workflow has the same name as this workflow.')
 
         for target in other_workflow.targets.values():
             self._add_target(target, namespace_prefix)
