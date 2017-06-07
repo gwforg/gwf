@@ -1,3 +1,4 @@
+import copy
 import collections
 import inspect
 import itertools
@@ -331,7 +332,7 @@ class Workflow(object):
             )
 
         for target in other_workflow.targets.values():
-            self._add_target(target, namespace=namespace_prefix)
+            self._add_target(copy.deepcopy(target), namespace=namespace_prefix)
 
     def include(self, other_workflow, namespace=None):
         """Include targets from another :class:`gwf.Workflow` into this workflow.
