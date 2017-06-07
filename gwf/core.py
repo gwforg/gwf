@@ -683,7 +683,7 @@ def schedule_many(graph, backend, targets, **kwargs):
     """Schedule multiple targets and their dependencies.
 
     This is a convenience function for scheduling multiple targets. See
-    :func:`schedule` for a detailed description of the arguments.
+    :func:`schedule` for a detailed description of the arguments and behavior.
 
     :param list targets: A list of targets to be scheduled.
     """
