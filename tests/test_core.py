@@ -43,16 +43,17 @@ class TestWorkflow(unittest.TestCase):
 
     def test_adding_a_target_makes_it_available_to_the_workflow(self):
         workflow = Workflow()
-        workflow.target('TestTarget', inputs=[], outputs=[], spec='')
+        target = workflow.target('TestTarget', inputs=[], outputs=[])
 
         self.assertIn('TestTarget', workflow.targets)
+        self.assertIn(target, workflow.targets.values())
 
     def test_adding_two_targets_with_the_same_names_should_raise_an_exception(self):
         workflow = Workflow()
-        workflow.target('TestTarget', inputs=[], outputs=[], spec='')
+        workflow.target('TestTarget', inputs=[], outputs=[])
 
         with self.assertRaises(TargetExistsError):
-            workflow.target('TestTarget', inputs=[], outputs=[], spec='')
+            workflow.target('TestTarget', inputs=[], outputs=[])
 
     def test_including_workflow_with_no_name_raises_an_exception(self):
         workflow = Workflow()
@@ -74,17 +75,21 @@ class TestWorkflow(unittest.TestCase):
         self.assertIn('foo.TestTarget2', workflow.targets)
         self.assertIn('foo.TestTarget3', workflow.targets)
 
-    def test_include_with_namespace_overrides_included_workflow_name(self):
-        workflow = Workflow()
-        workflow.target('TestTarget', inputs=[], outputs=[])
+    def test_include_target_from_workflow_in_two_different_workflows_(self):
+        w1 = Workflow()
+        target = w1.target('MyTarget', inputs=[], outputs=[])
 
-        other_workflow = Workflow(name='foo')
-        other_workflow.target('TestTarget', inputs=[], outputs=[])
+        w3 = Workflow()
+        w3.include(w1, namespace='bar')
 
-        workflow.include_workflow(other_workflow, namespace='bar')
-        self.assertIn('bar.TestTarget', workflow.targets)
-        self.assertNotIn('foo.TestTarget', workflow.targets)
-        self.assertIn('TestTarget', workflow.targets)
+        w2 = Workflow()
+        w2.include(w1, namespace='foo')
+
+        self.assertEqual(target.name, 'MyTarget')
+        self.assertIn('bar.MyTarget', w3.targets)
+        self.assertEqual(w3.targets['bar.MyTarget'].name, 'bar.MyTarget')
+        self.assertIn('foo.MyTarget', w2.targets)
+        self.assertEqual(w2.targets['foo.MyTarget'].name, 'foo.MyTarget')
 
     def test_including_workflow_with_same_name_as_this_workflow_raises_an_exception(self):
         workflow = Workflow(name='foo')
@@ -104,11 +109,7 @@ class TestWorkflow(unittest.TestCase):
         mock_load_workflow.return_value = other_workflow
 
         workflow.include_path('/path/to/other_workflow.py', namespace='other')
-        self.assertEqual(workflow.targets, {
-            'TestTarget1': target1,
-            'other.TestTarget2': target2,
-            'other.TestTarget3': target3,
-        })
+        self.assertEqual(workflow.targets.keys(), {'TestTarget1', 'other.TestTarget2', 'other.TestTarget3'})
 
     def test_including_workflow_instance_dispatches_to_include_workflow(self):
         workflow = Workflow()
@@ -489,10 +490,6 @@ class TestGraph(unittest.TestCase):
         assert 'TestTarget1' in graph.targets
         assert 'foo.TestTarget2' in graph.targets
         assert 'foo.TestTarget2' in graph.targets
-
-        assert target1 in graph.dependencies[other_target1]
-        assert target2 in graph.dependents[target1]
-        assert other_target1 in graph.dependents[target1]
 
     def test_raise_error_if_two_targets_in_different_namespaces_produce_the_same_file(self):
         w1 = Workflow(name='foo')

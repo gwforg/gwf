@@ -1,12 +1,12 @@
 import copy
 import fnmatch
 import functools
-import imp
+import importlib
 import logging
 import os.path
 import re
-import time
 import sys
+import time
 from contextlib import ContextDecorator
 
 import click
@@ -24,11 +24,11 @@ def cache(obj):
         if args not in _cache:
             _cache[args] = obj(*args, **kwargs)
         return _cache[args]
+
     return memoizer
 
 
 class timer(ContextDecorator):
-
     def __init__(self, msg, logger=None):
         self.msg = msg
         self.logger = logger or logging.getLogger(__name__)
@@ -63,8 +63,10 @@ def load_workflow(basedir, filename, objname):
     if not os.path.exists(fullpath):
         raise GWFError('The file "{}" does not exist.'.format(fullpath))
 
-    sys.path.insert(0, basedir)
-    mod = imp.load_source(filename, fullpath)
+    sys.path.insert(0, os.path.join(os.getcwd(), basedir))
+    spec = importlib.util.spec_from_file_location(filename, fullpath)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
     sys.path.pop(0)
 
     try:
@@ -141,7 +143,6 @@ def match_targets(names, targets):
 
 
 class ColorFormatter(logging.Formatter):
-
     STYLING = {
         'WARNING': dict(fg='yellow'),
         'INFO': dict(fg='blue'),
