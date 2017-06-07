@@ -451,18 +451,34 @@ class Workflow(object):
 class Graph(object):
     """Represents a finalized workflow graph.
 
-    :ivar targets: initial value: dict()
-    :ivar provides: initial value: None
-    :ivar dependencies: initial value: None
-    :ivar dependents: initial value: None
+    The represents the targets present in a workflow, but also their dependencies and the files they provide. When a
+    graph is initialized it computes all dependency relations between targets, ensuring that the graph is semantically
+    sane. Therefore, construction of the graph is an expensive operation which may raise a number of exceptions:
 
-    :raises FileProvidedByMultipleTargetsError:
+    :raises gwf.exceptions.FileProvidedByMultipleTargetsError:
         Raised if the same file is provided by multiple targets.
-    :raises FileRequiredButNotProvidedError:
+    :raises gwf.exceptions.FileRequiredButNotProvidedError:
         Raised if a target has an input file that does not exist on the
         file system and that is not provided by another target.
-    :raises CircularDependencyError:
+    :raises gwf.exceptions.InvalidPathError:
+        Raised if a target has declared a directory in either `inputs` or `outputs`.
+    :raises gwf.exceptions.CircularDependencyError:
         Raised if the workflow contains a circular dependency.
+
+    If the graph is constructed successfully, the following instance variables will be available:
+
+    :ivar dict targets:
+        A dictionary mapping target names to instances of :class:`gwf.Target`.
+    :ivar dict provides:
+        A dictionary mapping a file path to the target that provides that path.
+    :ivar dict dependencies:
+        A dictionary mapping a target to a set of its dependencies.
+    :ivar dict dependents:
+        A dictionary mapping a target to a list of all targets which depend on the target.
+
+    The graph can be manipulated in arbitrary, diabolic ways after it has been constructed. Checks are only performed
+    at construction-time, thus introducing e.g. a circular dependency by manipulating *dependencies* will not raise an
+    exception.
     """
 
     def __init__(self, targets):
