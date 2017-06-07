@@ -4,8 +4,8 @@
 Writing Backends
 ================
 
-Backends in *gwf* are the interface between *gwf*and whatever can be used to
-execute a target. For example, the Slurm backend included with *gwf*submits
+Backends in *gwf* are the interface between *gwf* and whatever can be used to
+execute a target. For example, the Slurm backend included with *gwf* submits
 targets to the `Slurm Workload Manager`_.
 
 To get started we must declare define a class that inherits from
