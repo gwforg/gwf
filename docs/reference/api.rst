@@ -14,15 +14,8 @@ A target in a :class:`~gwf.Graph` can be scheduled on a
 :class:`~gwf.backends.Backend` using the :func:`~gwf.schedule`
 function.
 
-Core
-----
-
 .. automodule:: gwf
    :members: Target, Workflow, Graph, schedule, schedule_many
-
-
-Backends
---------
 
 .. autoclass:: gwf.backends.Backend
    :members:
@@ -31,12 +24,4 @@ Backends
 
 .. autoclass:: gwf.backends.Status
    :members:
-   :undoc-members:
-
-Exceptions
-----------
-
-.. automodule:: gwf.exceptions
-   :members:
-   :member-order: bysource
    :undoc-members:
