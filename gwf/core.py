@@ -16,7 +16,7 @@ from .backends.base import Status
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
-                         InvalidNameError, TargetExistsError, InvalidTypeError, GWFError)
+                         InvalidNameError, TargetExistsError, InvalidTypeError, InvalidPathError)
 from .utils import (cache, load_workflow, is_valid_name, iter_inputs, iter_outputs, timer, parse_path,
                     match_targets)
 
@@ -527,7 +527,7 @@ class Graph(object):
                 cache[path] = None
             else:
                 if stat.S_ISDIR(st.st_mode):
-                    raise GWFError('Path {} used in {} points to a directory.'.format(target.name, path))
+                    raise InvalidPathError('Path {} used in {} points to a directory.'.format(target.name, path))
                 cache[path] = st.st_mtime
         return cache
 
