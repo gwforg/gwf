@@ -1,3 +1,6 @@
+.. _formaintainers:
+
+===============
 For Maintainers
 ===============
 
@@ -15,7 +18,7 @@ This ensures that ``master`` is reasonably stable. Before major changes are merg
 into ``master`` they should be discussed and reviewed via a PR.
 
 Merging Changes
----------------
+===============
 
 1. Make sure that the changes have proper test coverage, e.g. by checking the branch
    on `Coveralls <https://coveralls.io/github/gwforg/gwf>`_.
@@ -31,7 +34,7 @@ Merging Changes
    `how to keep a change log <http://keepachangelog.com/en/0.3.0/>`_.
 
 Rolling a New Release
----------------------
+=====================
 
 1. Make sure that all changes for the new release have been merged into ``master``
    and that tests pass. Check `Travis <https://travis-ci.org/mailund/gwf>`_.

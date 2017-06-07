@@ -1,5 +1,6 @@
 .. _tutorial:
 
+========
 Tutorial
 ========
 
@@ -47,7 +48,7 @@ This should show you the commands and options available through *gwf*.
 
 
 A Minimal Workflow
-------------------
+==================
 
 To get started we must define a *workflow file* containing a workflow to which
 we can add targets. Unless *gwf* is told otherwise it assumes that the workflow
@@ -87,7 +88,7 @@ creates the file ``greeting.txt`` with the line ``hello world`` in it. Now let's
 try to run our workflow...
 
 Running Your First Workflow
----------------------------
+===========================
 
 First, let's make a directory for our project. We'll call the directory
 ``myproject``. Now create an empty file called ``workflow.py`` in the project
@@ -150,7 +151,7 @@ This time, *gwf* considers the target for submission, but decides not to submit 
 since all of the output files (only one in this case) exist.
 
 Setting the Default Verbosity
------------------------------
+=============================
 
 Maybe you got tired of seeing this much output from *gwf* all the time, despite
 the pretty colors. We can change the verbosity (how chatty *gwf* is) using the
@@ -177,7 +178,7 @@ details, refer to the :ref:`configuration` page.
 
 
 Defining Targets with Dependencies
-----------------------------------
+==================================
 
 Targets in *gwf* represent isolated units of work. However, we can declare
 dependencies between targets to construct complex workflows. A target B that
@@ -249,7 +250,7 @@ Run this workflow. You should see the following:
     Error: Target TargetA depends on itself.
 
 Observing Target Execution
---------------------------
+==========================
 
 As workflows get larger they make take a very long time to run. With *gwf* it's
 easy to see how many targets have been completed, how many failed and how many
@@ -330,7 +331,7 @@ For more details you can always refer to builtin help with ``gwf status --help``
 .. _function_templates:
 
 Reusable Targets with Templates
--------------------------------
+===============================
 
 Often you will want to reuse a target definition for a lot of different files. For example,
 you may have two files with reads that you need to map to a reference genome. The
@@ -421,7 +422,7 @@ and manipulated in much the same way. Also, templates can be put into modules an
 into your workflow files to facilitate reuse. It's all up to you!
 
 Viewing Logs
-------------
+============
 
 We may be curious about what the ``MapReads`` target wrote to the console when the target
 ran, to see if there were any warnings. If a target failed, it's also valuable to see
@@ -459,7 +460,7 @@ We can do this for any target in our workflow. The logs shown are always the mos
 ones since *gwf* does not archive logs from old runs of targets.
 
 Cleaning Up
------------
+===========
 
 Now that we have run our workflow we may wish to remove intermediate files to save disk
 space. In *gwf* we can use the ``gwf clean`` command for this. If we wanted to remove all
@@ -489,7 +490,7 @@ by an endpoint:
     Deleting output file "/Users/das/Projects/gwf/examples/readmapping/Masala.bam" from target "MapReads".
 
 A Note About Reproducibility
-----------------------------
+============================
 
 Reproducibility is an important part of research and since *gwf* workflows describe every
 step of your computation, how the steps are connected, and the files produced in each step,
