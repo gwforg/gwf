@@ -497,9 +497,9 @@ class Graph(object):
         dependencies = defaultdict(set)
         for target, path in iter_inputs(self.targets.values()):
             if path not in self.provides:
-                if not os.path.exists(path):  # pragma: no branch
+                if not os.path.exists(path):
                     raise FileRequiredButNotProvidedError(path, target)
-                continue  # pragma: no cover
+                continue
             dependencies[target].add(self.provides[path])
         return dependencies
 
