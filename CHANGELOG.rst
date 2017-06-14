@@ -2,13 +2,28 @@
 Change Log
 ==========
 
-Version 1.0 (Unreleased)
-========================
+Version 1.0
+===========
 
 First stable release of *gwf*! We strongly encourage users of pre-1.0 users to read the tutorial, since quite a lot
 of things have changed. We also recommend reading the guide for converting pre-1.0 workflows to version 1.0. However,
 users attempting to do this should be aware that the the template mechanism in 1.0 is slightly different and thus
 requires rewriting template functions.
+
+Fixed
+-----
+
+* Fixed a bug which caused *gwf* to fail when cancelling jobs when using the Slurm backend (8c1717).
+
+Changed
+-------
+
+* Documentation in various places, especially the core API.
+
+Added
+-----
+
+* Topic guide covering templates (b175fe).
 
 
 Version 1.0b10
