@@ -44,7 +44,7 @@ Rolling a New Release
 3. In the release branch, increase the version number in ``gwf/__init__.py``.
 
 4. Make any other release-related changes such as adding new contributors to
-   ``CONTRIBUTORS.rst``.
+   ``CONTRIBUTORS.rst`` or adding missing items to ``CHANGELOG.rst``.
 
 5. Commit the changes and push the branch. Wait for tests to run.
 
@@ -53,13 +53,12 @@ Rolling a New Release
 
 7. Merge the PR into master when everyone's happy. Wait for tests to run.
 
-8. Make a new `release <https://github.com/gwforg/gwf/releases>`_. Specify
-   ``vX.X.X`` as the tag name. The title should be a short description of the
-   changes in the release. The description should contain a brief change log.
-   Note any deprecations!
+8. Make a new release by tagging the merge commit with the version number, e.g.
+   ``vX.X.X``. Push the tag and wait for Travis to catch up.
 
-9. Click `Publish release` and pop a bottle of champagne!
+9. Pop a bottle of champagne!
 
 Creating the release on GitHub will automatically run all tests (again),
 build a source and wheel package and deploy them to PyPI, and build a Conda
-package and deploy it to the `gwforg` channel on `Anaconda.org`.
+package and deploy it to the `gwforg` channel on `Anaconda.org`. The documentation
+will be automatically be built by `ReadTheDocs`.
