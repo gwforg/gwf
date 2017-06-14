@@ -77,7 +77,7 @@ def _call_squeue():
 
 
 def _call_scancel(job_id):
-    return _call_generic('scancel_', '-j', job_id)
+    return _call_generic('scancel', '-j', job_id)
 
 
 def _call_sbatch(script, dependencies):
