@@ -1,9 +1,10 @@
+==============
 Welcome to gwf
 ==============
 
 *gwf* is a flexible, pragmatic workflow tool for building and running large,
-scientific workflows. It is developed at the Bioinformatics Research Centre
-(BiRC), Aarhus University.
+scientific workflows. It runs on Python 3.5+ and is developed at the Bioinformatics
+Research Centre (BiRC), Aarhus University.
 
 Examples
   To get a feeling for what a *gwf* workflow looks like, have a look at a few
@@ -19,10 +20,10 @@ Extending
 
 Contributing
   We aim to make *gwf* a community developed project. Learn how to
-  :doc:`contribute </forcontributors>`.
+  :doc:`contribute </development/forcontributors>`.
 
 Installation
-------------
+============
 
 To install *gwf* via conda::
 
@@ -41,40 +42,46 @@ encouraged to report any issues through the
 to ask questions.
 
 Upgrading From an Older Version
--------------------------------
+===============================
 
 If you have been using an older version of *gwf* you will have to
 make a few changes to your workflows to be able to run them with version 1.0
 and above. :doc:`Read more... </upgrading_from_pre_1.0>`
 
 Getting Started
----------------
+===============
 
 .. toctree::
    :maxdepth: 2
 
    upgrading_from_pre_1.0
    tutorial
-   configuration
-   backends
-   writingbackends
+
+Topic Guides
+============
+
+.. toctree::
+   :maxdepth: 2
+
+   topic-guides/index
 
 Development
------------
+===========
 
 .. toctree::
    :maxdepth: 2
 
-   forcontributors
-   formaintainers
+   development/index
 
-API
----
+Reference
+=========
 
 .. toctree::
    :maxdepth: 2
 
-   api
+   reference/settings
+   reference/backends
+   reference/api
 
 .. include:: ../CHANGELOG.rst
 .. include:: ../CONTRIBUTORS.rst

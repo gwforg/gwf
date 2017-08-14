@@ -115,3 +115,7 @@ class NoLogFoundError(BackendError):
 
 class UnsupportedOperationError(BackendError):
     """Operation not supported by this backend."""
+
+
+class InvalidPathError(GWFError):
+    """Target declared a directory as as input or output."""

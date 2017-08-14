@@ -1,8 +1,5 @@
 [run]
 branch = True
-omit =
-    versioneer.py
-    gwf/_version.py
 
 [report]
 # Regexes for lines to exclude from consideration
@@ -22,4 +19,5 @@ exclude_lines =
     if 0:
     if __name__ == .__main__.:
 
+skip_covered = True
 show_missing = True

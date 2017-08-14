@@ -1,3 +1,4 @@
+import copy
 import collections
 import inspect
 import itertools
@@ -15,7 +16,7 @@ from .backends.base import Status
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
-                         InvalidNameError, TargetExistsError, InvalidTypeError, GWFError)
+                         InvalidNameError, TargetExistsError, InvalidTypeError, InvalidPathError)
 from .utils import (cache, load_workflow, is_valid_name, iter_inputs, iter_outputs, timer, parse_path,
                     match_targets)
 
@@ -209,9 +210,7 @@ class Workflow(object):
     def __init__(self, name=None, working_dir=None, defaults=None):
         self.name = name
         if self.name is not None and not is_valid_name(self.name):
-            raise InvalidNameError(
-                'Workflow defined with invalid name: "{}".'.format(self.name)
-            )
+            raise InvalidNameError('Workflow defined with invalid name: "{}".'.format(self.name))
 
         self.targets = {}
         self.defaults = defaults or {}
@@ -225,10 +224,11 @@ class Workflow(object):
             self.working_dir = os.path.dirname(os.path.realpath(filename))
 
     def _add_target(self, target, namespace=None):
-        qualname = target.qualname(namespace)
-        if qualname in self.targets:
+        if namespace is not None:
+            target.name = target.qualname(namespace)
+        if target.name in self.targets:
             raise TargetExistsError(target)
-        self.targets[qualname] = target
+        self.targets[target.name] = target
 
     def target(self, name, inputs, outputs, **options):
         """Create a target and add it to the :class:`gwf.Workflow`.
@@ -254,7 +254,10 @@ class Workflow(object):
         Any further keyword arguments are passed to the backend.
         """
         new_target = Target(
-            name, inputs, outputs, options=options,
+            name=name,
+            inputs=inputs,
+            outputs=outputs,
+            options=options,
             working_dir=self.working_dir,
         )
         new_target.inherit_options(self.defaults)
@@ -292,9 +295,12 @@ class Workflow(object):
             raise InvalidTypeError('Target `{}` received an invalid template.'.format(name))
 
         new_target = Target(
-            name, inputs, outputs, options=options,
+            name=name,
+            inputs=inputs,
+            outputs=outputs,
+            options=options,
             working_dir=self.working_dir,
-            spec=spec
+            spec=spec,
         )
         new_target.inherit_options(template_options)
         new_target.inherit_options(self.defaults)
@@ -310,7 +316,6 @@ class Workflow(object):
         basedir, filename, obj = parse_path(path)
         other_workflow = load_workflow(basedir, filename, obj)
         self.include_workflow(other_workflow, namespace=namespace)
-        return other_workflow
 
     def include_workflow(self, other_workflow, namespace=None):
         """Include targets from another :class:`gwf.Workflow` into this workflow.
@@ -325,12 +330,10 @@ class Workflow(object):
             )
         namespace_prefix = namespace or other_workflow.name
         if namespace_prefix == self.name:
-            raise IncludeWorkflowError(
-                'The included workflow has the same name as this workflow.'
-            )
+            raise IncludeWorkflowError('The included workflow has the same name as this workflow.')
 
         for target in other_workflow.targets.values():
-            self._add_target(target, namespace_prefix)
+            self._add_target(copy.deepcopy(target), namespace=namespace_prefix)
 
     def include(self, other_workflow, namespace=None):
         """Include targets from another :class:`gwf.Workflow` into this workflow.
@@ -397,11 +400,9 @@ class Workflow(object):
         elif isinstance(other_workflow, str):
             self.include_path(other_workflow, namespace=namespace)
         elif inspect.ismodule(other_workflow):
-            self.include_workflow(
-                getattr(other_workflow, 'gwf'), namespace=namespace)
+            self.include_workflow(getattr(other_workflow, 'gwf'), namespace=namespace)
         else:
-            raise TypeError('First argument must be either a string or a '
-                            'Workflow object.')
+            raise TypeError('First argument must be either a string or a Workflow object.')
 
     def glob(self, pathname, *args, **kwargs):
         """Return a list of paths matching `pathname`.
@@ -450,18 +451,34 @@ class Workflow(object):
 class Graph(object):
     """Represents a finalized workflow graph.
 
-    :ivar targets: initial value: dict()
-    :ivar provides: initial value: None
-    :ivar dependencies: initial value: None
-    :ivar dependents: initial value: None
+    The represents the targets present in a workflow, but also their dependencies and the files they provide. When a
+    graph is initialized it computes all dependency relations between targets, ensuring that the graph is semantically
+    sane. Therefore, construction of the graph is an expensive operation which may raise a number of exceptions:
 
-    :raises FileProvidedByMultipleTargetsError:
+    :raises gwf.exceptions.FileProvidedByMultipleTargetsError:
         Raised if the same file is provided by multiple targets.
-    :raises FileRequiredButNotProvidedError:
+    :raises gwf.exceptions.FileRequiredButNotProvidedError:
         Raised if a target has an input file that does not exist on the
         file system and that is not provided by another target.
-    :raises CircularDependencyError:
+    :raises gwf.exceptions.InvalidPathError:
+        Raised if a target has declared a directory in either `inputs` or `outputs`.
+    :raises gwf.exceptions.CircularDependencyError:
         Raised if the workflow contains a circular dependency.
+
+    If the graph is constructed successfully, the following instance variables will be available:
+
+    :ivar dict targets:
+        A dictionary mapping target names to instances of :class:`gwf.Target`.
+    :ivar dict provides:
+        A dictionary mapping a file path to the target that provides that path.
+    :ivar dict dependencies:
+        A dictionary mapping a target to a set of its dependencies.
+    :ivar dict dependents:
+        A dictionary mapping a target to a list of all targets which depend on the target.
+
+    The graph can be manipulated in arbitrary, diabolic ways after it has been constructed. Checks are only performed
+    at construction-time, thus introducing e.g. a circular dependency by manipulating *dependencies* will not raise an
+    exception.
     """
 
     def __init__(self, targets):
@@ -496,9 +513,9 @@ class Graph(object):
         dependencies = defaultdict(set)
         for target, path in iter_inputs(self.targets.values()):
             if path not in self.provides:
-                if not os.path.exists(path):  # pragma: no branch
+                if not os.path.exists(path):
                     raise FileRequiredButNotProvidedError(path, target)
-                continue  # pragma: no cover
+                continue
             dependencies[target].add(self.provides[path])
         return dependencies
 
@@ -526,7 +543,7 @@ class Graph(object):
                 cache[path] = None
             else:
                 if stat.S_ISDIR(st.st_mode):
-                    raise GWFError('Path {} used in {} points to a directory.'.format(target.name, path))
+                    raise InvalidPathError('Path {} used in {} points to a directory.'.format(target.name, path))
                 cache[path] = st.st_mtime
         return cache
 
@@ -682,7 +699,7 @@ def schedule_many(graph, backend, targets, **kwargs):
     """Schedule multiple targets and their dependencies.
 
     This is a convenience function for scheduling multiple targets. See
-    :func:`schedule` for a detailed description of the arguments.
+    :func:`schedule` for a detailed description of the arguments and behavior.
 
     :param list targets: A list of targets to be scheduled.
     """

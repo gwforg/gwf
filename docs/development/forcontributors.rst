@@ -1,3 +1,4 @@
+================
 For Contributors
 ================
 
@@ -6,7 +7,7 @@ documentation? Defined useful snippets for your text editor? Add it and submit a
 
 
 Set Up a Development Environment
---------------------------------
+================================
 
 We strongly recommend that you use the `Anaconda Python distribution <https://www.continuum.io/anaconda-overview>`_
 and the conda package manager to set up a development environment (actually, we recommend it for all of your Python
@@ -25,7 +26,7 @@ work).
 
 
 Make Your Changes
------------------
+=================
 
 1. Fork the repository, clone it and create a branch for your changes::
 
@@ -51,7 +52,7 @@ Make Your Changes
 
 
 Show Us Your Contribution!
---------------------------
+==========================
 
 1. Push your committed changes back to your fork on GitHub::
 

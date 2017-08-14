@@ -41,6 +41,7 @@ setup(
             'run = gwf.plugins.run:run',
             'config = gwf.plugins.config:config',
             'status = gwf.plugins.status:status',
+            'info = gwf.plugins.info:info',
             'logs = gwf.plugins.logs:logs',
             'clean = gwf.plugins.clean:clean',
             'workers = gwf.plugins.workers:workers',
@@ -67,6 +68,7 @@ setup(
     long_description=read('README.rst'),
 
     classifiers=[
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Operating System :: OS Independent',
         'Topic :: Utilities',

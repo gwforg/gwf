@@ -3,7 +3,6 @@ language: python
 sudo: false
 
 python:
-  - '3.4'
   - '3.5'
   - '3.6'
 
@@ -39,11 +38,11 @@ deploy:
     skip_upload_docs: true
     on:
       tags: true
-      python: 3.4
+      python: 3.5
   - provider: script
     script: ./deploy_conda.sh
     skip_cleanup: true
     skip_upload_docs: true
     on:
       tags: true
-      python: 3.4
+      python: 3.5
