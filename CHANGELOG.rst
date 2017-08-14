@@ -19,11 +19,13 @@ Changed
 -------
 
 * Documentation in various places, especially the core API.
+* Documentation for maintainers.
 
 Added
 -----
 
 * Topic guide covering templates (b175fe).
+* Added ``info`` command (6dbdbb).
 
 
 Version 1.0b10
