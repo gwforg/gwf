@@ -2,20 +2,18 @@
 
 package:
   name: gwf
-  version: {{ data.get('version') }}
+  version: '1.0'
 
 source:
   path: ../
 
 build:
-  noarch_python: True
-  preserve_egg_dir: True
   entry_points:
     - gwf = gwf.cli:main
 
 requirements:
   build:
-    - python
+    - python {{ python }}
     - setuptools
     - click >=6.6
     - click-plugins >=0.2.2
@@ -23,7 +21,7 @@ requirements:
     - pytest-runner
 
   run:
-    - python
+    - python {{ python }}
     - setuptools
     - click >=6.6
     - click-plugins >=0.2.2
