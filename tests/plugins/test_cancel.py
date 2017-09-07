@@ -30,10 +30,10 @@ class TestCancel(CliTestCase):
     def test_cancel_no_targets_specified_should_ask_for_confirmation_and_cancel_all_if_approved(self):
         result = self.runner.invoke(main, ['-b', 'testing', 'cancel'], input='y')
         lines = result.output.split('\n')
-        self.assertEqual(len(lines), 3)
+        self.assertEqual(len(lines), 4)
         self.assertIn('Cancelling target Target1.', lines)
         self.assertIn('Cancelling target Target2.', lines)
 
-    def test_cancel_no_targets_specified_should_ask_for_confirmation_and_cancel_all_if_approved(self):
+    def test_cancel_no_targets_specified_should_ask_for_confirmation_and_abort_if_not_approved(self):
         result = self.runner.invoke(main, ['-b', 'testing', 'cancel'], input='N')
         self.assertIn('Aborted!\n', result.output)
