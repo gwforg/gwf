@@ -36,11 +36,6 @@ class TestStatus(CliTestCase):
         self.assertIn('Target2', result.output)
         self.assertIn('Target1', result.output)
 
-    def test_status_shows_two_named_targets(self):
-        result = self.runner.invoke(main, ['-b', 'testing', 'status', 'Target1', 'Target2'])
-        self.assertIn('Target2', result.output)
-        self.assertIn('Target1', result.output)
-
     def test_status_only_shows_names_when_only_names_flag_is_used(self):
         result = self.runner.invoke(main, ['-b', 'testing', 'status', '--names-only'])
         self.assertEqual(result.output, 'Target2\n')

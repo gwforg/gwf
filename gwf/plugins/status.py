@@ -1,5 +1,6 @@
 import statusbar
 
+from gwf import Scheduler
 from ..backends.base import Status
 from ..cli import pass_graph, pass_backend
 from ..filtering import Criteria, filter
@@ -9,6 +10,7 @@ import click
 
 
 def _split_target_list(backend, graph, targets):
+    scheduler = Scheduler(graph=graph, backend=backend)
     should_run, submitted, running, completed = [], [], [], []
     for target in targets:
         status = backend.status(target)
@@ -17,7 +19,7 @@ def _split_target_list(backend, graph, targets):
         elif status == Status.SUBMITTED:
             submitted.append(target)
         elif status == Status.UNKNOWN:
-            if graph.should_run(target):
+            if scheduler.should_run(target):
                 should_run.append(target)
             else:
                 completed.append(target)
