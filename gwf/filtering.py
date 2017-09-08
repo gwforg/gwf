@@ -1,4 +1,5 @@
 """Provides easy, dynamic filtering of targets."""
+import fnmatch
 
 from .backends.base import Status
 
@@ -39,6 +40,9 @@ class Filter(metaclass=FilterType):
     def apply(self, targets):
         return (target for target in targets if self.predicate(target))
 
+    def predicate(self, target):
+        raise NotImplementedError('predicate')
+
 
 class StatusFilter(Filter):
 
@@ -61,12 +65,15 @@ class NameFilter(Filter):
         return self.criteria.targets
 
     def predicate(self, target):
-        return target.name in self.criteria.targets
+        for pattern in self.criteria.targets:
+            if fnmatch.fnmatch(target.name, pattern):
+                return True
+        return False
 
 
 class EndpointFilter(Filter):
     def use(self):
-        return not self.criteria.all and not self.criteria.targets
+        return not self.criteria.all
 
     def predicate(self, target):
         return target in self.graph.endpoints()

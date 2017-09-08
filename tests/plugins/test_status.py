@@ -27,19 +27,19 @@ class TestStatus(CliTestCase):
         self.assertIn('Target1', result.output)
 
     def test_status_shows_one_named_target(self):
-        result = self.runner.invoke(main, ['-b', 'testing', 'status', 'Target1'])
+        result = self.runner.invoke(main, ['-b', 'testing', 'status', '--all', 'Target1'])
         self.assertNotIn('Target2', result.output)
         self.assertIn('Target1', result.output)
 
     def test_status_shows_two_named_targets(self):
-        result = self.runner.invoke(main, ['-b', 'testing', 'status', 'Target1', 'Target2'])
+        result = self.runner.invoke(main, ['-b', 'testing', 'status', '--all', 'Target1', 'Target2'])
         self.assertIn('Target2', result.output)
         self.assertIn('Target1', result.output)
 
-    def test_status_shows_two_named_targets(self):
+    def test_status_shows_only_endpoint_target_of_two_targets(self):
         result = self.runner.invoke(main, ['-b', 'testing', 'status', 'Target1', 'Target2'])
         self.assertIn('Target2', result.output)
-        self.assertIn('Target1', result.output)
+        self.assertNotIn('Target1', result.output)
 
     def test_status_only_shows_names_when_only_names_flag_is_used(self):
         result = self.runner.invoke(main, ['-b', 'testing', 'status', '--names-only'])
