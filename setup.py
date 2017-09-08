@@ -51,7 +51,7 @@ setup(
 
     test_suite='tests',
     setup_requires=['pytest-runner'],
-    tests_require=['pytest'],
+    tests_require=['pytest', 'pytest-click'],
     install_requires=[
         'click>=6.6',
         'click-plugins>=0.2.2',
