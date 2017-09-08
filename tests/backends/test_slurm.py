@@ -264,7 +264,7 @@ class TestCallScancel(GWFTestCase):
         _call_scancel('1000')
 
         self.mock_popen.assert_called_once_with(
-            ['/bin/scancel', '-j', '1000'],
+            ['/bin/scancel', '1000'],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             stdin=subprocess.PIPE,
