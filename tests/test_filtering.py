@@ -128,19 +128,14 @@ class TestEndpointFilter(GWFTestCase):
         self.backend = Mock(name='Backend', spec_set=['status'])
         self.graph = Mock(name='Graph', spec_set=['targets', 'endpoints', 'should_run'])
 
-    def test_should_use_filter(self):
-        criteria = Criteria(all=False, targets=[])
-        f = EndpointFilter(self.graph, self.backend, criteria)
-        self.assertTrue(f.use())
-
-    def test_should_not_use_filter(self):
+    def test_use(self):
         criteria = Criteria(all=True, targets=[])
         f = EndpointFilter(self.graph, self.backend, criteria)
         self.assertFalse(f.use())
 
-        criteria = Criteria(all=False, targets=['TestTarget1'])
+        criteria = Criteria(all=False, targets=[])
         f = EndpointFilter(self.graph, self.backend, criteria)
-        self.assertFalse(f.use())
+        self.assertTrue(f.use())
 
     def test_with_endpoint_and_non_endpoint_targets(self):
         self.graph.endpoints.return_value = [self.target1]
