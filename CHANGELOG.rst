@@ -2,6 +2,20 @@
 Change Log
 ==========
 
+Version 1.1
+===========
+
+Fixed
+-----
+
+* Very slow scheduling when using dry run with unsubmitted targets (#184, 93e71a).
+
+Changed
+-------
+
+* Move file cache construction out of ``Graph`` (#186, 93e71a). This change is invisible to end-users, but speeds up the
+  ``logs``, ``cancel``, ``info``, ``logs`` and ``workers`` commands.
+
 Version 1.0
 ===========
 
