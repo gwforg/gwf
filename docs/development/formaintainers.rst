@@ -41,7 +41,8 @@ Rolling a New Release
 
 2. Create a new branch for the release, named ``release-vX.X.X``.
 
-3. In the release branch, increase the version number in ``gwf/__init__.py``.
+3. In the release branch, increase the version number in ``gwf/__init__.py`` and
+   ``conda/meta.yaml``.
 
 4. Make any other release-related changes such as adding new contributors to
    ``CONTRIBUTORS.rst`` or adding missing items to ``CHANGELOG.rst``.
