@@ -1,4 +1,4 @@
-from ..core import schedule_many
+from ..core import Scheduler
 from ..cli import pass_backend, pass_graph
 
 import click
@@ -12,4 +12,6 @@ import click
 def run(graph, backend, targets, dry_run):
     """Run the specified workflow."""
     matched_targets = graph.find(targets) or graph.endpoints()
-    schedule_many(graph, backend, matched_targets, dry_run=dry_run)
+
+    scheduler = Scheduler(graph=graph, backend=backend, dry_run=dry_run)
+    scheduler.schedule_many(matched_targets)

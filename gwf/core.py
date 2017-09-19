@@ -63,6 +63,28 @@ def normalized_paths_property(name):
     return prop
 
 
+@timer('Prepared file cache in %.3fms.', logger=logger)
+def build_file_cache(targets):
+    cache = {}
+
+    input_iter = iter_inputs(targets.values())
+    output_iter = iter_outputs(targets.values())
+    for target, path in itertools.chain(input_iter, output_iter):
+        if path in cache:
+            continue
+        try:
+            st = os.stat(path)
+        except FileNotFoundError:
+            cache[path] = None
+        else:
+            if stat.S_ISDIR(st.st_mode):
+                raise InvalidPathError('Path {} used in {} points to a directory.'.format(target.name, path))
+            cache[path] = st.st_mtime
+
+    logger.debug('Cached %d files.', len(cache))
+    return cache
+
+
 class Target(object):
     """Represents a target.
 
@@ -456,7 +478,7 @@ class Workflow(object):
         )
 
 
-class Graph(object):
+class Graph:
     """Represents a finalized workflow graph.
 
     The represents the targets present in a workflow, but also their dependencies and the files they provide. When a
@@ -489,71 +511,42 @@ class Graph(object):
     exception.
     """
 
-    def __init__(self, targets):
+    def __init__(self, targets, provides, dependencies, dependents):
         self.targets = targets
-
-        logger.debug('Preparing workflow with %s targets defined.', len(self.targets))
-
-        # The order is important here!
-        self.provides = self.prepare_file_providers()
-        self.dependencies = self.prepare_dependencies()
-        self.dependents = self.prepare_dependents()
+        self.provides = provides
+        self.dependencies = dependencies
+        self.dependents = dependents
 
         self._check_for_circular_dependencies()
 
-        self.file_cache = self.prepare_file_cache()
-        logger.debug('Cached %d files.', len(self.file_cache))
-
-    @timer('Prepared file providers in %.3fms.', logger=logger)
-    def prepare_file_providers(self):
+    @classmethod
+    def from_targets(cls, targets):
         provides = {}
-        for target, path in iter_outputs(self.targets.values()):
-            if path in provides:
-                raise FileProvidedByMultipleTargetsError(
-                    path, provides[path].name, target
-                )
-
-            provides[path] = target
-        return provides
-
-    @timer('Prepared dependencies in %.3fms.', logger=logger)
-    def prepare_dependencies(self):
         dependencies = defaultdict(set)
-        for target, path in iter_inputs(self.targets.values()):
-            if path not in self.provides:
+        dependents = defaultdict(list)
+
+        for target, path in iter_outputs(targets.values()):
+            if path in provides:
+                raise FileProvidedByMultipleTargetsError(path, provides[path].name, target)
+            provides[path] = target
+
+        for target, path in iter_inputs(targets.values()):
+            if path not in provides:
                 if not os.path.exists(path):
                     raise FileRequiredButNotProvidedError(path, target)
                 continue
-            dependencies[target].add(self.provides[path])
-        return dependencies
+            dependencies[target].add(provides[path])
 
-    @timer('Prepared dependents in %.3fms.', logger=logger)
-    def prepare_dependents(self):
-        dependents = defaultdict(list)
-        for target, deps in self.dependencies.items():
+        for target, deps in dependencies.items():
             for dep in deps:
                 dependents[dep].append(target)
-        return dependents
 
-    @timer('Prepared file cache in %.3fms.', logger=logger)
-    def prepare_file_cache(self):
-        cache = {}
-
-        input_iter = iter_inputs(self.targets.values())
-        output_iter = iter_outputs(self.targets.values())
-        for target, path in itertools.chain(input_iter, output_iter):
-            if path in cache:
-                continue
-
-            try:
-                st = os.stat(path)
-            except FileNotFoundError:
-                cache[path] = None
-            else:
-                if stat.S_ISDIR(st.st_mode):
-                    raise InvalidPathError('Path {} used in {} points to a directory.'.format(target.name, path))
-                cache[path] = st.st_mtime
-        return cache
+        return cls(
+            targets=targets,
+            provides=provides,
+            dependencies=dependencies,
+            dependents=dependents,
+        )
 
     @timer('Checked for circular dependencies in %.3fms.', logger=logger)
     def _check_for_circular_dependencies(self):
@@ -579,70 +572,6 @@ class Graph(object):
             if state[node] == fresh:
                 visitor(node)
 
-    @cache
-    def should_run(self, target):
-        """Return whether a target should be run or not."""
-        if any(self.should_run(dep) for dep in self.dependencies[target]):
-            logger.debug(
-                '%s should run because one of its dependencies should run.',
-                target.name
-            )
-            return True
-
-        if target.is_sink:
-            logger.debug(
-                '%s should run because it is a sink.',
-                target.name
-            )
-            return True
-
-        if any(self.file_cache[path] is None for path in target.outputs):
-            logger.debug(
-                '%s should run because one of its output files does not exist.',
-                target.name
-            )
-            return True
-
-        if target.is_source:
-            logger.debug(
-                '%s should not run because it is a source.',
-                target.name
-            )
-            return False
-
-        youngest_in_ts, youngest_in_path = max(
-            (self.file_cache[path], path) for path in target.inputs
-        )
-
-        logger.debug(
-            '%s is the youngest input file of %s with timestamp %s.',
-            youngest_in_path,
-            target.name,
-            youngest_in_ts
-        )
-
-        oldest_out_ts, oldest_out_path = min(
-            (self.file_cache[path], path) for path in target.outputs
-        )
-
-        logger.debug(
-            '%s is the oldest output file of %s with timestamp %s.',
-            oldest_out_path,
-            target.name,
-            youngest_in_ts
-        )
-
-        if youngest_in_ts > oldest_out_ts:
-            logger.debug(
-                '%s should run since %s is larger than %s.',
-                target.name,
-                youngest_in_ts,
-                oldest_out_ts
-            )
-            return True
-
-        return False
-
     def endpoints(self):
         """Return a set of all targets that are not depended on by other targets."""
         return set(self.targets.values()) - set(self.dependents.keys())
@@ -655,64 +584,104 @@ class Graph(object):
         return iter(self.targets.values())
 
 
-def schedule(graph, backend, target, dry_run=False):
-    """Schedule a target and its dependencies.
+class Scheduler:
+    """Schedule one or more targets and submit to a backend.
 
-    Scheduling a target will determine whether the target needs to run based on
-    whether it already has been submitted and whether any of its dependencies have
-    been submitted.
+    Scheduling a target will determine whether the target needs to run based on whether it already has been submitted
+    and whether any of its dependencies have been submitted.
 
-    Targets that should run will be submitted to *backend*, unless *dry_run*
-    is set to ``True``.
-
-    Returns ``True`` if *target* was submitted to the backend (even when
-    *dry_run* is ``True``).
-
-    :param gwf.Graph graph:
-        Graph of the workflow.
-    :param gwf.backends.Backend backend:
-        An instance of :class:`gwf.backends.Backend` to which targets will be
-        submitted.
-    :param gwf.Target target:
-        Target to be scheduled.
-    :param bool dry_run:
-        If ``True``, targets will not be submitted to the backend. Defaults
-        to ``False``.
+    Targets that should run will be submitted to *backend*, unless *dry_run* is set to ``True``.
     """
-    logger.info('Scheduling target %s.', target.name)
 
-    if backend.status(target) != Status.UNKNOWN:
-        logger.debug('Target %s has already been submitted.', target.name)
-        return True
+    def __init__(self, graph, backend, dry_run=False):
+        """
+        :param gwf.Graph graph:
+            Graph of the workflow.
+        :param gwf.backends.Backend backend:
+            An instance of :class:`gwf.backends.Backend` to which targets will be submitted.
+        :param bool dry_run:
+            If ``True``, targets will not be submitted to the backend. Defaults to ``False``.
+        """
+        self.graph = graph
+        self.backend = backend
+        self.dry_run = dry_run
 
-    submitted_deps = set()
-    for dependency in sorted(graph.dependencies[target], key=lambda t: t.name):
-        was_submitted = schedule(graph, backend, dependency, dry_run=dry_run)
-        if was_submitted:
-            submitted_deps.add(dependency)
+        self._file_cache = build_file_cache(graph.targets)
+        self._pretend_known = set()
 
-    if submitted_deps or graph.should_run(target):
-        if dry_run:
-            logger.info('Would submit target %s.', target.name)
+    def schedule(self, target):
+        """Schedule a target and its dependencies.
+
+        Returns ``True`` if *target* was submitted to the backend (even when *dry_run* is ``True``).
+
+        :param gwf.Target target:
+            Target to be scheduled.
+        """
+        logger.debug('Scheduling target %s.', target)
+
+        if self.backend.status(target) != Status.UNKNOWN or target in self._pretend_known:
+            logger.debug('Target %s has already been submitted.', target)
+            return True
+
+        submitted_deps = set()
+        for dependency in sorted(self.graph.dependencies[target], key=lambda t: t.name):
+            was_submitted = self.schedule(dependency)
+            if was_submitted:
+                submitted_deps.add(dependency)
+
+        if submitted_deps or self.should_run(target):
+            if self.dry_run:
+                logger.info('Would submit target %s.', target)
+                self._pretend_known.add(target)
+            else:
+                logger.info('Submitting target %s.', target)
+                self.backend.submit(target, dependencies=submitted_deps)
+            return True
         else:
-            logger.info('Submitting target %s.', target.name)
-            backend.submit(target, dependencies=submitted_deps)
-        return True
-    else:
-        logger.debug('Target %s should not run.', target.name)
+            logger.debug('Target %s should not run.', target)
+            return False
+
+    def schedule_many(self, targets):
+        """Schedule multiple targets and their dependencies.
+
+        This is a convenience method for scheduling multiple targets. See :func:`schedule` for a detailed description of
+        the arguments and behavior.
+
+        :param list targets:
+            A list of targets to be scheduled.
+        """
+        schedules = []
+        for target in targets:
+            was_submitted = self.schedule(target)
+            schedules.append(was_submitted)
+        return schedules
+
+    @cache
+    def should_run(self, target):
+        """Return whether a target should be run or not."""
+        if any(self.should_run(dep) for dep in self.graph.dependencies[target]):
+            logger.debug('%s should run because one of its dependencies should run.', target)
+            return True
+
+        if target.is_sink:
+            logger.debug('%s should run because it is a sink.', target)
+            return True
+
+        if any(self._file_cache[path] is None for path in target.outputs):
+            logger.debug('%s should run because one of its output files does not exist.', target)
+            return True
+
+        if target.is_source:
+            logger.debug('%s should not run because it is a source.', target)
+            return False
+
+        youngest_in_ts, youngest_in_path = max((self._file_cache[path], path) for path in target.inputs)
+        logger.debug('%s is the youngest input file of %s with timestamp %s.', youngest_in_path, target, youngest_in_ts)
+
+        oldest_out_ts, oldest_out_path = min((self._file_cache[path], path) for path in target.outputs)
+        logger.debug('%s is the oldest output file of %s with timestamp %s.', oldest_out_path, target, youngest_in_ts)
+
+        if youngest_in_ts > oldest_out_ts:
+            logger.debug('%s should run since %s is larger than %s.', target, youngest_in_ts, oldest_out_ts)
+            return True
         return False
-
-
-def schedule_many(graph, backend, targets, **kwargs):
-    """Schedule multiple targets and their dependencies.
-
-    This is a convenience function for scheduling multiple targets. See
-    :func:`schedule` for a detailed description of the arguments and behavior.
-
-    :param list targets: A list of targets to be scheduled.
-    """
-    schedules = []
-    for target in targets:
-        was_submitted = schedule(graph, backend, target, **kwargs)
-        schedules.append(was_submitted)
-    return schedules

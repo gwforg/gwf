@@ -62,7 +62,7 @@ def pass_graph(f):
     def new_func(ctx, *args, **kwargs):
         basedir, filename, obj = parse_path(ctx.obj['_file'])
         workflow = load_workflow(basedir, filename, obj)
-        graph = Graph(targets=workflow.targets)
+        graph = Graph.from_targets(workflow.targets)
         return ctx.invoke(f, *args, graph=graph, **kwargs)
     return update_wrapper(new_func, f)
 
