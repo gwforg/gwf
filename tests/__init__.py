@@ -3,8 +3,7 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from gwf.exceptions import NoLogFoundError
-from gwf.backends import Backend, Status
+from gwf.backends import Backend, Status, NoLogFoundError
 
 
 def touch_file(path, contents=None):

@@ -1,3 +1,11 @@
-from .base import Backend, Status, PersistableDict, UnknownTargetError, UnknownDependencyError
+from .base import (
+    Backend,
+    Status,
+    PersistableDict,
+    BackendError,
+    NoLogFoundError,
+    UnsupportedOperationError,
+    UnknownTargetError,
+    UnknownDependencyError,
+)
 
-__all__ = ('Backend', 'Status', 'PersistableDict', 'UnknownTargetError', 'UnknownDependencyError')

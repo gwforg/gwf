@@ -1,7 +1,6 @@
 import logging
 
-from .base import Backend, Status
-from ..exceptions import NoLogFoundError
+from . import Backend, Status, NoLogFoundError
 
 logger = logging.getLogger(__name__)
 

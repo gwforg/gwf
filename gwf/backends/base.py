@@ -5,9 +5,32 @@ from collections import UserDict
 from enum import Enum
 from functools import wraps
 
-from ..exceptions import NoLogFoundError, BackendError
+from gwf.exceptions import GWFError
 
 logger = logging.getLogger(__name__)
+
+
+class BackendError(GWFError):
+    """Base class for backend errors."""
+
+
+class UnknownDependencyError(BackendError):
+    pass
+
+
+class UnknownTargetError(BackendError):
+    pass
+
+
+class NoLogFoundError(BackendError):
+    """No log found for target."""
+
+    def __init__(self):
+        super(NoLogFoundError, self).__init__('No log found.')
+
+
+class UnsupportedOperationError(BackendError):
+    """Operation not supported by this backend."""
 
 
 class Status(Enum):
@@ -26,14 +49,6 @@ class Status(Enum):
     UNKNOWN = 0  #: The backend is not aware of the status of this target (it may be completed or failed).
     SUBMITTED = 1  #: The target has been submitted, but is not currently running.
     RUNNING = 2  #: The target is currently running.
-
-
-class UnknownDependencyError(BackendError):
-    pass
-
-
-class UnknownTargetError(BackendError):
-    pass
 
 
 def check_options(func, supported_options, super_options):

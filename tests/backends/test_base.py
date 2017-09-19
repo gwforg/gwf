@@ -1,11 +1,9 @@
 import os.path
 
-from gwf.exceptions import BackendError
 from gwf import Target
-from gwf.backends import Backend, PersistableDict
+from gwf.backends import Backend, PersistableDict, BackendError
 from gwf.backends.testing import TestingBackend
-
-from tests import GWFTestCase
+from .. import GWFTestCase
 
 
 class TestBackendType(GWFTestCase):

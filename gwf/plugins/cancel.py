@@ -1,8 +1,7 @@
-from ..exceptions import UnsupportedOperationError
-from ..backends.base import UnknownTargetError
-from ..cli import pass_backend, pass_graph
-
 import click
+
+from ..backends import UnknownTargetError, UnsupportedOperationError
+from ..cli import pass_backend, pass_graph
 
 
 @click.command()

@@ -101,21 +101,5 @@ class IncludeWorkflowError(GWFError):
     """Workflow could not be included."""
 
 
-class BackendError(GWFError):
-    """Base class for backend errors."""
-
-
-class NoLogFoundError(BackendError):
-    """No log found for target."""
-
-    def __init__(self):
-        message = 'No log found.'
-        super(NoLogFoundError, self).__init__(message)
-
-
-class UnsupportedOperationError(BackendError):
-    """Operation not supported by this backend."""
-
-
 class InvalidPathError(GWFError):
     """Target declared a directory as as input or output."""

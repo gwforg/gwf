@@ -15,8 +15,8 @@ from ..conf import config
 from .base import PersistableDict, UnknownDependencyError
 from .base import Status
 from . import Backend
-from ..exceptions import BackendError, GWFError, UnsupportedOperationError
-
+from ..exceptions import GWFError
+from gwf.backends.base import BackendError, UnsupportedOperationError
 
 __all__ = ('Client', 'Server', 'LocalBackend',)
 

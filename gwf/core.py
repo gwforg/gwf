@@ -107,6 +107,14 @@ class Target(object):
 
         self.spec = spec
 
+    @classmethod
+    def empty(cls, name):
+        """Return a target with no inputs, outputs and options.
+
+        This is mostly useful for testing.
+        """
+        return cls(name=name, inputs=[], outputs=[], options={}, working_dir=os.getcwd())
+
     def qualname(self, namespace):
         if namespace is not None:
             return '{}.{}'.format(namespace, self.name)
