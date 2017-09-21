@@ -39,19 +39,33 @@ def print_progress(backend, graph, targets):
     click.echo('\n'.join(table.format_table()))
 
 
-def print_names(backend, graph, targets):
+def print_table(backend, graph, targets):
+    scheduler = Scheduler(backend=backend, graph=graph)
+
+    name_col_width = max(len(target.name) for target in targets) + 1
+    format_str = '{name:<{name_col_width}}{status:<10}'
+
     for target in targets:
-        click.echo(target.name)
+        status = backend.status(target)
+        if status == Status.UNKNOWN:
+            if scheduler.should_run(target):
+                status = 'SHOULDRUN'
+            else:
+                status = 'COMPLETED'
+        else:
+            status = status.name
+
+        click.echo(format_str.format(name=target.name, status=status, name_col_width=name_col_width))
 
 
 @click.command()
 @click.argument('targets', nargs=-1)
-@click.option('-n', '--names-only', is_flag=True)
+@click.option('--format', type=click.Choice(['progress', 'table']), default='progress')
 @click.option('--all/--endpoints', help='Whether to show all targets or only endpoints if no targets are specified.')
 @click.option('-s', '--status', type=click.Choice(['shouldrun', 'submitted', 'running', 'completed']))
 @pass_graph
 @pass_backend
-def status(backend, graph, names_only, **criteria):
+def status(backend, graph, format, **criteria):
     """
     Show the status of targets.
 
@@ -64,7 +78,12 @@ def status(backend, graph, names_only, **criteria):
     are submitted (yellow, S), are running (blue, R), or are
     completed (green, C).
     """
+    format_funcs = {
+        'progress': print_progress,
+        'table': print_table,
+    }
+
     filtered_targets = filter(graph, backend, Criteria(**criteria))
     filtered_targets = sorted(filtered_targets, key=lambda t: t.name)
-    print_func = print_names if names_only else print_progress
-    print_func(backend, graph, filtered_targets)
+    format_func = format_funcs[format]
+    format_func(backend, graph, filtered_targets)
