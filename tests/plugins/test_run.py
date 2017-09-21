@@ -1,6 +1,5 @@
-from unittest.mock import patch
+import pytest
 
-from tests import CliTestCase, touch_file
 from gwf.cli import main
 
 
@@ -12,25 +11,36 @@ gwf.target('Target2', inputs=[], outputs=[]) << "echo world hello"
 """
 
 
-@patch('gwf.plugins.run.Scheduler.schedule_many')
-class TestRun(CliTestCase):
+@pytest.fixture
+def simple_workflow(tmpdir):
+    workflow_file = tmpdir.join('workflow.py')
+    workflow_file.write(SIMPLE_WORKFLOW)
+    return tmpdir
 
-    def setUp(self):
-        super().setUp()
-        touch_file('workflow.py', SIMPLE_WORKFLOW)
 
-    def test_run_all_targets(self, mock_schedule_many):
-        args = ['-b', 'testing', 'run']
-        self.runner.invoke(main, args)
+@pytest.fixture(autouse=True)
+def setup(simple_workflow):
+    with simple_workflow.as_cwd():
+        yield
 
-        args, kwargs = mock_schedule_many.call_args
-        self.assertEqual(len(args[0]), 2)
-        self.assertEqual({x.name for x in args[0]}, {'Target1', 'Target2'})
 
-    def test_run_specified_target(self, mock_schedule_many):
-        args = ['-b', 'testing', 'run', 'Target1']
-        self.runner.invoke(main, args)
+def test_run_all_targets(cli_runner, mocker):
+    mock_schedule_many = mocker.patch('gwf.plugins.run.Scheduler.schedule_many')
 
-        args, kwargs = mock_schedule_many.call_args
-        self.assertEqual(len(args[0]), 1)
-        self.assertEqual({x.name for x in args[0]}, {'Target1'})
+    args = ['-b', 'testing', 'run']
+    cli_runner.invoke(main, args)
+
+    args, kwargs = mock_schedule_many.call_args
+    assert len(args[0]) == 2
+    assert {x.name for x in args[0]} == {'Target1', 'Target2'}
+
+
+def test_run_specified_target(cli_runner, mocker):
+    mock_schedule_many = mocker.patch('gwf.plugins.run.Scheduler.schedule_many')
+
+    args = ['-b', 'testing', 'run', 'Target1']
+    cli_runner.invoke(main, args)
+
+    args, kwargs = mock_schedule_many.call_args
+    assert len(args[0]) == 1
+    assert {x.name for x in args[0]} == {'Target1'}

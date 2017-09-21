@@ -1,6 +1,7 @@
 import os.path
 
-from tests import CliTestCase, touch_file
+import pytest
+
 from gwf.cli import main
 
 
@@ -12,39 +13,45 @@ gwf.target('Target2', inputs=[], outputs=['b.txt']) << "echo world hello"
 """
 
 
-class TestClean(CliTestCase):
+@pytest.fixture
+def simple_workflow(tmpdir):
+    workflow_file = tmpdir.join('workflow.py')
+    workflow_file.write(SIMPLE_WORKFLOW)
+    return tmpdir
 
-    def setUp(self):
-        super().setUp()
 
-        touch_file('workflow.py', contents=SIMPLE_WORKFLOW)
-        touch_file('a.txt')
-        touch_file('b.txt')
+@pytest.fixture(autouse=True)
+def setup(simple_workflow):
+    simple_workflow.join('a.txt').ensure()
+    simple_workflow.join('b.txt').ensure()
+    with simple_workflow.as_cwd():
+        yield
 
-    def test_clean_output_from_all_targets_by_default(self):
-        args = ['-b', 'testing', 'clean']
-        self.runner.invoke(main, args)
 
-        self.assertFalse(os.path.exists('a.txt'))
-        self.assertFalse(os.path.exists('b.txt'))
+def test_clean_output_from_all_targets_by_default(cli_runner):
+    args = ['-b', 'testing', 'clean']
+    cli_runner.invoke(main, args)
 
-    def test_clean_output_from_single_target(self):
-        args = ['-b', 'testing', 'clean', 'Target1']
-        self.runner.invoke(main, args)
+    assert not os.path.exists('a.txt')
+    assert not os.path.exists('b.txt')
 
-        self.assertFalse(os.path.exists('a.txt'))
-        self.assertTrue(os.path.exists('b.txt'))
+def test_clean_output_from_single_target(cli_runner):
+    args = ['-b', 'testing', 'clean', 'Target1']
+    cli_runner.invoke(main, args)
 
-    def test_clean_output_from_two_targets(self):
-        args = ['-b', 'testing', 'clean', 'Target1', 'Target2']
-        self.runner.invoke(main, args)
+    assert not os.path.exists('a.txt')
+    assert os.path.exists('b.txt')
 
-        self.assertFalse(os.path.exists('a.txt'))
-        self.assertFalse(os.path.exists('b.txt'))
+def test_clean_output_from_two_targets(cli_runner):
+    args = ['-b', 'testing', 'clean', 'Target1', 'Target2']
+    cli_runner.invoke(main, args)
 
-    def test_do_not_clean_outputs_from_endpoints(self):
-        args = ['-b', 'testing', 'clean', '--not-endpoints', 'Target1', 'Target2']
-        self.runner.invoke(main, args)
+    assert not os.path.exists('a.txt')
+    assert not os.path.exists('b.txt')
 
-        self.assertTrue(os.path.exists('a.txt'))
-        self.assertTrue(os.path.exists('b.txt'))
+def test_do_not_clean_outputs_from_endpoints(cli_runner):
+    args = ['-b', 'testing', 'clean', '--not-endpoints', 'Target1', 'Target2']
+    cli_runner.invoke(main, args)
+
+    assert os.path.exists('a.txt')
+    assert os.path.exists('b.txt')
