@@ -144,7 +144,8 @@ class Backend(metaclass=BackendType):
             If the target does not exist in the workflow.
         """
 
-    def logs(self, target, stderr=False):
+    @classmethod
+    def logs(cls, target, stderr=False):
         """Return log files for a target.
 
         If the backend cannot return logs a
@@ -165,17 +166,14 @@ class Backend(metaclass=BackendType):
         """
         try:
             if stderr:
-                return open(self._log_path(target, 'stderr'), 'r')
-            return open(self._log_path(target, 'stdout'), 'r')
+                return open(cls._log_path(target, 'stderr'), 'r')
+            return open(cls._log_path(target, 'stdout'), 'r')
         except OSError:
             raise NoLogFoundError()
 
-    def _log_dir(self):
-        """Path to directory containing logs for `target`."""
-        return os.path.join('.gwf', 'logs')
-
-    def _log_path(self, target, extension):
-        return os.path.join(self._log_dir(), '{}.{}'.format(target.name, extension))
+    @classmethod
+    def _log_path(cls, target, extension):
+        return os.path.join(os.path.join('.gwf', 'logs'), '{}.{}'.format(target.name, extension))
 
     def close(self):
         """Close the backend.
