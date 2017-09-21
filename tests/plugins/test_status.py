@@ -1,7 +1,5 @@
 import pytest
 
-from tests import CliTestCase, touch_file
-
 from gwf.cli import main
 
 
