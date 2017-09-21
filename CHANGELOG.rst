@@ -9,6 +9,8 @@ Fixed
 -----
 
 * Very slow scheduling when using dry run with unsubmitted targets (#184, 93e71a).
+* Fixed cancellation with the Slurm backend (#183, 29445f).
+* Fixed wildcard filtering of targets (#185, 036e3d).
 
 Changed
 -------
