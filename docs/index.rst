@@ -36,6 +36,12 @@ We recommend that you install *gwf* in a project-specific environment::
     conda create -n myproject python=3.5 gwf dep1 dep2 ...
     source activate myproject
 
+If you want to test a development version of *gwf* you can use the `dev` label::
+
+   conda install -c gwforg/label/dev gwf
+
+This will install the most recent alpha/beta version of *gwf*.
+
 You can find the code for *gwf* `here <https://github.com/gwforg/gwf>`_. You are
 encouraged to report any issues through the
 `issue tracker <https://github.com/gwforg/gwf/issues>`_, which is also a good place
