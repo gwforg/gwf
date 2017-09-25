@@ -26,7 +26,7 @@ class NoLogFoundError(BackendError):
     """No log found for target."""
 
     def __init__(self):
-        super(NoLogFoundError, self).__init__('No log found.')
+        super().__init__('No log found.')
 
 
 class UnsupportedOperationError(BackendError):
