@@ -1,7 +1,7 @@
-import copy
 import collections
+import copy
+import functools
 import inspect
-import itertools
 import logging
 import os
 import os.path
@@ -17,8 +17,7 @@ from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
                          InvalidNameError, TargetExistsError, InvalidTypeError, InvalidPathError)
-from .utils import (cache, load_workflow, is_valid_name, iter_inputs, iter_outputs, timer, parse_path,
-                    match_targets)
+from .utils import LazyDict, cache, load_workflow, is_valid_name, timer, parse_path, match_targets
 
 logger = logging.getLogger(__name__)
 
@@ -61,28 +60,6 @@ def normalized_paths_property(name):
     def prop(self, value):
         setattr(self, storage_name, value)
     return prop
-
-
-@timer('Prepared file cache in %.3fms.', logger=logger)
-def build_file_cache(targets):
-    cache = {}
-
-    input_iter = iter_inputs(targets.values())
-    output_iter = iter_outputs(targets.values())
-    for target, path in itertools.chain(input_iter, output_iter):
-        if path in cache:
-            continue
-        try:
-            st = os.stat(path)
-        except FileNotFoundError:
-            cache[path] = None
-        else:
-            if stat.S_ISDIR(st.st_mode):
-                raise InvalidPathError('Path {} used in {} points to a directory.'.format(target.name, path))
-            cache[path] = st.st_mtime
-
-    logger.debug('Cached %d files.', len(cache))
-    return cache
 
 
 class Target(object):
@@ -525,17 +502,19 @@ class Graph:
         dependencies = defaultdict(set)
         dependents = defaultdict(list)
 
-        for target, path in iter_outputs(targets.values()):
-            if path in provides:
-                raise FileProvidedByMultipleTargetsError(path, provides[path].name, target)
-            provides[path] = target
+        for target in targets.values():
+            for path in target.outputs:
+                if path in provides:
+                    raise FileProvidedByMultipleTargetsError(path, provides[path].name, target)
+                provides[path] = target
 
-        for target, path in iter_inputs(targets.values()):
-            if path not in provides:
-                if not os.path.exists(path):
-                    raise FileRequiredButNotProvidedError(path, target)
-                continue
-            dependencies[target].add(provides[path])
+        for target in targets.values():
+            for path in target.inputs:
+                if path not in provides:
+                    if not os.path.exists(path):
+                        raise FileRequiredButNotProvidedError(path, target)
+                    continue
+                dependencies[target].add(provides[path])
 
         for target, deps in dependencies.items():
             for dep in deps:
@@ -584,6 +563,19 @@ class Graph:
         return iter(self.targets.values())
 
 
+def _fileinfo(path):
+    try:
+        st = os.stat(path)
+    except FileNotFoundError:
+        return None
+    else:
+        if stat.S_ISDIR(st.st_mode):
+            raise InvalidPathError('Path {} points to a directory.'.format(path))
+        return st.st_mtime
+
+FileCache = functools.partial(LazyDict, valfunc=_fileinfo)
+
+
 class Scheduler:
     """Schedule one or more targets and submit to a backend.
 
@@ -606,7 +598,7 @@ class Scheduler:
         self.backend = backend
         self.dry_run = dry_run
 
-        self._file_cache = build_file_cache(graph.targets)
+        self._file_cache = FileCache()
         self._pretend_known = set()
 
     def schedule(self, target):
