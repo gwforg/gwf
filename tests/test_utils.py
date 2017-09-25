@@ -1,9 +1,8 @@
 import unittest
-from unittest.mock import patch
 
 from gwf.exceptions import TargetDoesNotExistError
 from gwf import Target
-from gwf.utils import parse_path, cache, get_file_timestamp, match_targets
+from gwf.utils import parse_path, cache, match_targets
 
 
 class TestCache(unittest.TestCase):
@@ -38,19 +37,6 @@ class TestParsePath(unittest.TestCase):
     def test_parse_invalid_path_raises_value_error(self):
         with self.assertRaises(ValueError):
             parse_path('/some/dir/workflow.py::other_obj', 'workflow_obj')
-
-
-class TestGetFileTimestamp(unittest.TestCase):
-
-    @patch('gwf.utils.os.path.getmtime', return_value=42)
-    def test_returns_modified_time_of_file_if_it_exists(self, mock_getmtime):
-        self.assertEqual(get_file_timestamp('/some/file'), 42)
-        mock_getmtime.assert_called_once_with('/some/file')
-
-    @patch('gwf.utils.os.path.getmtime', side_effect=OSError)
-    def test_returns_none_if_file_does_not_exist(self, mock_getmtime):
-        self.assertIsNone(get_file_timestamp('/some/file'))
-        mock_getmtime.assert_called_once_with('/some/file')
 
 
 class TestMatchTargets(unittest.TestCase):

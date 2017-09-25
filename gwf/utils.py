@@ -43,18 +43,6 @@ class timer(ContextDecorator):
         self.logger.debug(self.msg, self.duration * 1000)
 
 
-def iter_inputs(targets):
-    for target in targets:
-        for path in target.inputs:
-            yield target, path
-
-
-def iter_outputs(targets):
-    for target in targets:
-        for path in target.outputs:
-            yield target, path
-
-
 def load_workflow(basedir, filename, objname):
     if not basedir:
         basedir = os.getcwd()
@@ -73,18 +61,6 @@ def load_workflow(basedir, filename, objname):
         return getattr(mod, objname)
     except AttributeError:
         raise GWFError('Module "{}" does not declare attribute "{}".'.format(filename, objname))
-
-
-def get_file_timestamp(filename):
-    """Return the modification time of `filename`.
-
-    :param str filename: Path to a file.
-    :return: Modification time of the file or `None` if the file does not exist.
-    """
-    try:
-        return os.path.getmtime(filename)
-    except OSError:
-        return None
 
 
 def dfs(root, dependencies):
