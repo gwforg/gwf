@@ -18,7 +18,7 @@ work).
 
 2. Create an environment for *gwf* development::
 
-    conda create -n gwfdev python=3.4
+    conda create -n gwfdev python=3.5
 
 3. Activate the environment::
 
