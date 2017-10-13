@@ -3,7 +3,7 @@ from .base import (
     Status,
     PersistableDict,
     BackendError,
-    NoLogFoundError,
+    LogNotFoundError,
     UnsupportedOperationError,
     UnknownTargetError,
     UnknownDependencyError,

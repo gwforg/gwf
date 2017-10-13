@@ -22,7 +22,7 @@ class UnknownTargetError(BackendError):
     pass
 
 
-class NoLogFoundError(BackendError):
+class LogNotFoundError(BackendError):
     """No log found for target."""
 
     def __init__(self):

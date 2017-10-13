@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from gwf.backends import Backend, Status, NoLogFoundError
+from gwf.backends import Backend, Status, LogNotFoundError
 
 
 def touch_file(path, contents=None):
@@ -46,7 +46,7 @@ class MockBackend(Backend):
         return self._tracked.get(target, Status.UNKNOWN)
 
     def logs(self, target, stderr=False):
-        raise NoLogFoundError
+        raise LogNotFoundError
 
     def close(self):
         pass

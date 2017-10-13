@@ -1,6 +1,6 @@
 import logging
 
-from . import Backend, Status, NoLogFoundError
+from . import Backend, Status, LogNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class TestingBackend(Backend):
         return Status.UNKNOWN
 
     def logs(self, target, stderr=False):
-        raise NoLogFoundError
+        raise LogNotFoundError
 
     def close(self):
         pass
