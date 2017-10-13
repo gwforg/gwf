@@ -12,7 +12,7 @@ from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
 from ..conf import config
-from .base import PersistableDict, UnknownDependencyError
+from .base import PersistableDict, UnknownDependencyError, FileLogManager
 from .base import Status
 from . import Backend
 from ..exceptions import GWFError
@@ -136,6 +136,8 @@ class LocalBackend(Backend):
     None available.
     """
 
+    log_manager = FileLogManager()
+
     option_defaults = {}
 
     def __init__(self):
@@ -168,8 +170,8 @@ class LocalBackend(Backend):
         task_id = self.client.submit(
             target,
             deps=dependency_ids,
-            stdout_path=self._log_path(target, 'stdout'),
-            stderr_path=self._log_path(target, 'stderr')
+            stdout_path=self.log_manager.stdout_path(target),
+            stderr_path=self.log_manager.stderr_path(target)
         )
         self._tracked[target.name] = task_id
         self._status[task_id] = LocalStatus.SUBMITTED

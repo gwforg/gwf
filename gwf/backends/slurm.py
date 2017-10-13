@@ -2,6 +2,7 @@ import logging
 import subprocess
 from distutils.spawn import find_executable
 
+from gwf.backends.base import FileLogManager
 from . import Backend, PersistableDict, Status, BackendError, UnknownDependencyError, UnknownTargetError
 from .. import __version__
 from ..utils import cache
@@ -119,6 +120,8 @@ class SlurmBackend(Backend):
       Quality-of-service strring. Equivalent to setting the `--qos` flog
       on `sbatch`.
     """
+
+    log_manager = FileLogManager()
 
     option_defaults = {
         'cores': 1,

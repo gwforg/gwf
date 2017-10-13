@@ -1,3 +1,4 @@
+import io
 import json
 import os.path
 import logging
@@ -119,11 +120,34 @@ class LogManager:
     """
 
     def open_stdout(self, target, mode='r'):
-        """Return a"""
         raise NotImplementedError()
 
     def open_stderr(self, target, mode='r'):
         raise NotImplementedError()
+
+
+class MemoryLogManager(LogManager):
+    """A memory-based log manager."""
+
+    def __init__(self):
+        self._stdout_logs = {}
+        self._stderr_logs = {}
+
+    def open_stdout(self, target, mode='r'):
+        if target not in self._stdout_logs and mode == 'w':
+            self._stdout_logs[target] = io.StringIO()
+        try:
+            return self._stdout_logs[target]
+        except KeyError as e:
+            raise LogNotFoundError() from e
+
+    def open_stderr(self, target, mode='r'):
+        if target not in self._stderr_logs and mode == 'w':
+            self._stderr_logs[target] = io.StringIO()
+        try:
+            return self._stderr_logs[target]
+        except KeyError as e:
+            raise LogNotFoundError() from e
 
 
 class FileLogManager(LogManager):
@@ -158,8 +182,6 @@ class FileLogManager(LogManager):
 
 class Backend(metaclass=BackendType):
     """Base class for backends."""
-
-    log_manager = FileLogManager()
 
     def status(self, target):
         """Return the status of `target`.
@@ -210,12 +232,9 @@ class Backend(metaclass=BackendType):
         :raises gwf.exceptions.NoLogFoundError:
             if the backend could not find a log for the given target.
         """
-        try:
-            if stderr:
-                return cls.log_manager.open_stderr(target)
-            return cls.log_manager.open_stdout(target)
-        except OSError:
-            raise LogNotFoundError()
+        if stderr:
+            return cls.log_manager.open_stderr(target)
+        return cls.log_manager.open_stdout(target)
 
     def close(self):
         """Close the backend.

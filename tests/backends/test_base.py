@@ -1,3 +1,4 @@
+import io
 import logging
 import os.path
 from unittest.mock import mock_open, patch, call
@@ -6,6 +7,7 @@ import pytest
 
 from gwf import Target
 from gwf.backends import Backend, PersistableDict, BackendError
+from gwf.backends.base import LogManager
 from gwf.backends.testing import TestingBackend
 
 
@@ -41,16 +43,12 @@ def test_remove_options_with_none_value(backend):
 def test_backend_logs():
     target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
-    m = mock_open()
-    with patch('gwf.backends.base.open', m, create=True):
-        backend = Backend()
-        backend.logs(target)
-        backend.logs(target, stderr=True)
+    backend = TestingBackend()
+    with patch.object(backend.log_manager, 'open_stdout', return_value=io.StringIO('foo')):
+        assert backend.logs(target).read() == 'foo'
 
-    m.assert_has_calls([
-        call('.gwf/logs/TestTarget.stdout', 'r'),
-        call('.gwf/logs/TestTarget.stderr', 'r'),
-    ])
+    with patch.object(backend.log_manager, 'open_stderr', return_value=io.StringIO('bar')):
+        assert backend.logs(target, stderr=True).read() == 'bar'
 
 
 def test_raise_exception_if_backend_does_not_implement_all_methods():
