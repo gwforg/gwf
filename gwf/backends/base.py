@@ -112,8 +112,54 @@ class BackendType(type):
         return type.__new__(mcs, name, bases, namespace)
 
 
+class LogManager:
+    """Base class for log managers.
+
+    A log manager must as a minimum implement the :func:`open_stdout(target)` and :func:`open_stderr(target)` methods.
+    """
+
+    def open_stdout(self, target, mode='r'):
+        """Return a"""
+        raise NotImplementedError()
+
+    def open_stderr(self, target, mode='r'):
+        raise NotImplementedError()
+
+
+class FileLogManager(LogManager):
+    """A file-based log manager."""
+
+    @staticmethod
+    def _get_log_path(target, extension):
+        """Return path for log file for a given target.
+
+        If `extension` is `stdout`, then the path of the file containing standard output of the target will be returned.
+        If `stderr`, the path of the file containing standard error of the target will be returned.
+
+        :arg target gwf.Target:
+            Target to return log path for.
+        :arg extension str:
+            Must be either `stdout` or `stderr`.
+        """
+        return os.path.join(os.path.join('.gwf', 'logs'), '{}.{}'.format(target.name, extension))
+
+    def stdout_path(self, target):
+        return self._get_log_path(target, 'stdout')
+
+    def stderr_path(self, target):
+        return self._get_log_path(target, 'stderr')
+
+    def open_stdout(self, target, mode='r'):
+        return open(self.stdout_path(target), mode)
+
+    def open_stderr(self, target, mode='r'):
+        return open(self.stderr_path(target), mode)
+
+
 class Backend(metaclass=BackendType):
     """Base class for backends."""
+
+    log_manager = FileLogManager()
 
     def status(self, target):
         """Return the status of `target`.
@@ -166,14 +212,10 @@ class Backend(metaclass=BackendType):
         """
         try:
             if stderr:
-                return open(cls._log_path(target, 'stderr'), 'r')
-            return open(cls._log_path(target, 'stdout'), 'r')
+                return cls.log_manager.open_stderr(target)
+            return cls.log_manager.open_stdout(target)
         except OSError:
-            raise NoLogFoundError()
-
-    @classmethod
-    def _log_path(cls, target, extension):
-        return os.path.join(os.path.join('.gwf', 'logs'), '{}.{}'.format(target.name, extension))
+            raise LogNotFoundError()
 
     def close(self):
         """Close the backend.

@@ -8,4 +8,3 @@ from .base import (
     UnknownTargetError,
     UnknownDependencyError,
 )
-

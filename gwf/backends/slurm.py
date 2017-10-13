@@ -179,8 +179,8 @@ class SlurmBackend(Backend):
         for option_name, option_value in target.options.items():
             out.append(option_str.format(SLURM_OPTIONS[option_name], option_value))
 
-        out.append(option_str.format('--output=', self._log_path(target, 'stdout')))
-        out.append(option_str.format('--error=', self._log_path(target, 'stderr')))
+        out.append(option_str.format('--output=', self.log_manager.stdout_path(target)))
+        out.append(option_str.format('--error=', self.log_manager.stderr_path(target)))
 
         out.append('')
         out.append('cd {}'.format(target.working_dir))
