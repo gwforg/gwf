@@ -1,13 +1,12 @@
 import io
 import logging
 import os.path
-from unittest.mock import mock_open, patch, call
+from unittest.mock import patch
 
 import pytest
 
 from gwf import Target
 from gwf.backends import Backend, PersistableDict, BackendError
-from gwf.backends.base import LogManager
 from gwf.backends.testing import TestingBackend
 
 
