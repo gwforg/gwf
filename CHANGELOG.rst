@@ -17,6 +17,8 @@ Changed
 
 * Move file cache construction out of ``Graph`` (#186, 93e71a). This change is invisible to end-users, but speeds up the
   ``logs``, ``cancel``, ``info``, ``logs`` and ``workers`` commands.
+* Replaced ``--not-endpoints`` flag in ``clean`` command with ``--all`` flag.
+* Made filtering more intuitive in all commands.
 
 Version 1.0
 ===========
