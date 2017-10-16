@@ -1,146 +1,162 @@
-from unittest.mock import Mock
+from unittest.mock import create_autospec, Mock
+
+import pytest
 
 from gwf import Target
+from gwf.core import Graph, Scheduler
 from gwf.backends import Status
-from gwf.filtering import StatusFilter, Criteria, filter, NameFilter, EndpointFilter
-
-from tests import GWFTestCase
-
-
-class TestStatusFilter(GWFTestCase):
-
-    def setUp(self):
-        self.target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
-        self.backend = Mock(name='Backend', spec_set=['status'])
-        self.graph = Mock(name='Graph', spec_set=['targets', 'endpoints', 'should_run'])
-
-    def test_should_not_use_filter(self):
-        criteria = Criteria(status=None)
-        f = StatusFilter(self.graph, self.backend, criteria)
-        self.assertFalse(f.use())
-
-    def test_should_use_filter(self):
-        criteria = Criteria(status='running')
-        f = StatusFilter(self.graph, self.backend, criteria)
-        self.assertTrue(f.use())
-
-    def test_status_is_completed_with_completed_target(self):
-        self.backend.status.return_value = Status.UNKNOWN
-        self.graph.should_run.return_value = False
-
-        criteria = Criteria(status='completed')
-        f = StatusFilter(self.graph, self.backend, criteria)
-        self.assertTrue(f.predicate(self.target))
-
-    def test_status_is_completed_with_running_target(self):
-        self.backend.status.return_value = Status.RUNNING
-        self.graph.should_run.return_value = True
-
-        criteria = Criteria(status='completed')
-        f = StatusFilter(self.graph, self.backend, criteria)
-        self.assertFalse(f.predicate(self.target))
-
-    def test_status_is_shouldrun_with_target_that_should_run(self):
-        self.backend.status.return_value = Status.UNKNOWN
-        self.graph.should_run.return_value = True
-
-        criteria = Criteria(status='shouldrun')
-        f = StatusFilter(self.graph, self.backend, criteria)
-        self.assertTrue(f.predicate(self.target))
-
-    def test_status_is_shouldrun_with_target_that_should_not_run(self):
-        self.backend.status.return_value = Status.RUNNING
-        self.graph.should_run.return_value = False
-
-        criteria = Criteria(status='shouldrun')
-        f = StatusFilter(self.graph, self.backend, criteria)
-        self.assertFalse(f.predicate(self.target))
-
-    def test_status_is_running_with_target_that_is_running(self):
-        self.backend.status.return_value = Status.RUNNING
-
-        criteria = Criteria(status='running')
-        f = StatusFilter(self.graph, self.backend, criteria)
-        self.assertTrue(f.predicate(self.target))
-
-    def test_status_is_running_with_target_that_is_not_running(self):
-        self.backend.status.return_value = Status.UNKNOWN
-
-        criteria = Criteria(status='running')
-        f = StatusFilter(self.graph, self.backend, criteria)
-        self.assertFalse(f.predicate(self.target))
-
-    def test_status_is_submitted_with_target_that_is_submitted(self):
-        self.backend.status.return_value = Status.SUBMITTED
-
-        criteria = Criteria(status='submitted')
-        f = StatusFilter(self.graph, self.backend, criteria)
-        self.assertTrue(f.predicate(self.target))
-
-    def test_status_is_submitted_with_target_that_is_not_submitted(self):
-        self.backend.status.return_value = Status.UNKNOWN
-
-        criteria = Criteria(status='submitted')
-        f = StatusFilter(self.graph, self.backend, criteria)
-        self.assertFalse(f.predicate(self.target))
+from gwf.backends.testing import TestingBackend
+from gwf.filtering import StatusFilter, Criteria, NameFilter, EndpointFilter, filter
 
 
-class TestNameFilter(GWFTestCase):
-
-    def setUp(self):
-        self.target1 = Target('TestTarget1', inputs=[], outputs=[], options={}, working_dir='/some/dir')
-        self.target2 = Target('TestTarget2', inputs=[], outputs=[], options={}, working_dir='/some/dir')
-
-        self.backend = Mock(name='Backend', spec_set=['status'])
-        self.graph = Mock(name='Graph', spec_set=['targets', 'endpoints', 'should_run'])
-
-    def test_should_not_use_filter(self):
-        criteria = Criteria(targets=[])
-        f = NameFilter(self.graph, self.backend, criteria)
-        self.assertFalse(f.use())
-
-    def test_should_use_filter(self):
-        criteria = Criteria(targets=['Target1'])
-        f = NameFilter(self.graph, self.backend, criteria)
-        self.assertTrue(f.use())
-
-    def test_one_name(self):
-        self.graph.targets.values.return_value = [self.target1, self.target2]
-        criteria = Criteria(targets=['TestTarget1'])
-        f = NameFilter(self.graph, self.backend, criteria)
-        self.assertTrue(f.predicate(self.target1))
-        self.assertFalse(f.predicate(self.target2))
-
-    def test_two_names(self):
-        self.graph.targets.values.return_value = [self.target1, self.target2]
-        criteria = Criteria(targets=['TestTarget2', 'TestTarget1'])
-        f = NameFilter(self.graph, self.backend, criteria)
-        self.assertTrue(f.predicate(self.target1))
-        self.assertTrue(f.predicate(self.target2))
+@pytest.fixture
+def backend():
+    return create_autospec(TestingBackend(), spec_set=True)
 
 
-class TestEndpointFilter(GWFTestCase):
+@pytest.fixture
+def graph():
+    return create_autospec(Graph(dependencies={}, dependents={}, provides={}, targets={}), spec_set=True)
 
-    def setUp(self):
-        self.target1 = Target('TestTarget1', inputs=[], outputs=[], options={}, working_dir='/some/dir')
-        self.target2 = Target('TestTarget2', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
-        self.backend = Mock(name='Backend', spec_set=['status'])
-        self.graph = Mock(name='Graph', spec_set=['targets', 'endpoints', 'should_run'])
+@pytest.fixture
+def scheduler(backend, graph):
+    scheduler = Scheduler(backend=backend, graph=graph)
+    scheduler.should_run = create_autospec(scheduler.should_run, spec_set=True)
+    return scheduler
 
-    def test_use(self):
-        criteria = Criteria(all=True, targets=[])
-        f = EndpointFilter(self.graph, self.backend, criteria)
-        self.assertFalse(f.use())
 
-        criteria = Criteria(all=False, targets=[])
-        f = EndpointFilter(self.graph, self.backend, criteria)
-        self.assertTrue(f.use())
+@pytest.fixture
+def status_filter(scheduler):
+    return StatusFilter(scheduler=scheduler)
 
-    def test_with_endpoint_and_non_endpoint_targets(self):
-        self.graph.endpoints.return_value = [self.target1]
 
-        criteria = Criteria(all=False, targets=[])
-        f = EndpointFilter(self.graph, self.backend, criteria)
-        self.assertTrue(f.predicate(self.target1))
-        self.assertFalse(f.predicate(self.target2))
+@pytest.fixture
+def name_filter():
+    return NameFilter()
+
+
+@pytest.fixture
+def endpoint_filter():
+    return EndpointFilter(endpoints=set())
+
+
+def test_filter_status(status_filter):
+    criteria = Criteria(status='completed')
+    assert status_filter.use(criteria)
+
+    criteria = Criteria(status=None)
+    assert not status_filter.use(criteria)
+
+
+def test_filter_status_completed(status_filter):
+    criteria = Criteria(status='completed')
+    target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+
+    status_filter.scheduler.should_run.return_value = False
+    assert list(status_filter.apply([target], criteria)) == [target]
+
+    status_filter.scheduler.should_run.return_value = True
+    assert list(status_filter.apply([target], criteria)) == []
+
+
+def test_filter_status_shouldrun(status_filter):
+    criteria = Criteria(status='shouldrun')
+    target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+
+    status_filter.scheduler.backend.status.return_value = Status.UNKNOWN
+    status_filter.scheduler.should_run.return_value = False
+    assert list(status_filter.apply([target], criteria)) == []
+
+    status_filter.scheduler.backend.status.return_value = Status.UNKNOWN
+    status_filter.scheduler.should_run.return_value = True
+    assert list(status_filter.apply([target], criteria)) == [target]
+
+    status_filter.scheduler.backend.status.return_value = Status.RUNNING
+    status_filter.scheduler.should_run.return_value = False
+    assert list(status_filter.apply([target], criteria)) == []
+
+    status_filter.scheduler.backend.status.return_value = Status.RUNNING
+    status_filter.scheduler.should_run.return_value = True
+    assert list(status_filter.apply([target], criteria)) == []
+
+    status_filter.scheduler.backend.status.return_value = Status.SUBMITTED
+    status_filter.scheduler.should_run.return_value = False
+    assert list(status_filter.apply([target], criteria)) == []
+
+    status_filter.scheduler.backend.status.return_value = Status.SUBMITTED
+    status_filter.scheduler.should_run.return_value = True
+    assert list(status_filter.apply([target], criteria)) == []
+
+
+def test_filter_status_running(status_filter):
+    criteria = Criteria(status='running')
+    target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+
+    status_filter.scheduler.backend.status.return_value = Status.UNKNOWN
+    assert list(status_filter.apply([target], criteria)) == []
+
+    status_filter.scheduler.backend.status.return_value = Status.SUBMITTED
+    assert list(status_filter.apply([target], criteria)) == []
+
+    status_filter.scheduler.backend.status.return_value = Status.RUNNING
+    assert list(status_filter.apply([target], criteria)) == [target]
+
+
+def test_filter_status_submitted(status_filter):
+    criteria = Criteria(status='submitted')
+    target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+
+    status_filter.scheduler.backend.status.return_value = Status.UNKNOWN
+    assert list(status_filter.apply([target], criteria)) == []
+
+    status_filter.scheduler.backend.status.return_value = Status.SUBMITTED
+    assert list(status_filter.apply([target], criteria)) == [target]
+
+    status_filter.scheduler.backend.status.return_value = Status.RUNNING
+    assert list(status_filter.apply([target], criteria)) == []
+
+
+def test_filter_name(name_filter):
+    criteria = Criteria(targets=['TestTarget'])
+    assert name_filter.use(criteria)
+
+    criteria = Criteria(targets=[])
+    assert not name_filter.use(criteria)
+
+    target1 = Target('Foo', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+    target2 = Target('Bar', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+    target3 = Target('FooBar', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+
+    criteria = Criteria(targets=['Foo'])
+    assert set(name_filter.apply([target1, target2, target3], criteria)) == {target1}
+
+    criteria = Criteria(targets=['Foo*'])
+    assert set(name_filter.apply([target1, target2, target3], criteria)) == {target1, target3}
+
+    criteria = Criteria(targets=['Foo', 'Bar'])
+    assert set(name_filter.apply([target1, target2, target3], criteria)) == {target1, target2}
+
+
+def test_filter_endpoint(endpoint_filter):
+    criteria = Criteria(all=True, targets=['Foo'])
+    assert not endpoint_filter.use(criteria)
+
+    criteria = Criteria(all=False, targets=['Foo'])
+    assert not endpoint_filter.use(criteria)
+
+    criteria = Criteria(all=True, targets=[])
+    assert not endpoint_filter.use(criteria)
+
+    criteria = Criteria(all=False, targets=[])
+    assert endpoint_filter.use(criteria)
+
+    target1 = Target('Foo', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+    target2 = Target('Bar', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+    target3 = Target('FooBar', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+
+    endpoint_filter.endpoints = {target1}
+    assert set(endpoint_filter.apply([target1, target2, target3], criteria)) == {target1}
+
+    endpoint_filter.endpoints = {target1, target3}
+    assert set(endpoint_filter.apply([target1, target2, target3], criteria)) == {target1, target3}

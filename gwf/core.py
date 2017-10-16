@@ -17,7 +17,7 @@ from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
                          InvalidNameError, TargetExistsError, InvalidTypeError, InvalidPathError)
-from .utils import LazyDict, cache, load_workflow, is_valid_name, timer, parse_path, match_targets
+from .utils import LazyDict, cache, load_workflow, is_valid_name, timer, parse_path
 
 logger = logging.getLogger(__name__)
 
@@ -554,10 +554,6 @@ class Graph:
     def endpoints(self):
         """Return a set of all targets that are not depended on by other targets."""
         return set(self.targets.values()) - set(self.dependents.keys())
-
-    def find(self, names):
-        """Return a set of targets matching the given names/patterns."""
-        return match_targets(names, self.targets)
 
     def __iter__(self):
         return iter(self.targets.values())

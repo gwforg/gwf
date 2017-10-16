@@ -3,7 +3,7 @@ import statusbar
 from gwf import Scheduler
 from ..backends.base import Status
 from ..cli import pass_graph, pass_backend
-from ..filtering import Criteria, filter
+from ..filtering import Criteria, filter, filter_factory
 from ..utils import dfs
 
 import click
@@ -83,7 +83,14 @@ def status(backend, graph, format, **criteria):
         'table': print_table,
     }
 
-    filtered_targets = filter(graph, backend, Criteria(**criteria))
+    scheduler = Scheduler(graph=graph, backend=backend)
+
+    filtered_targets = filter(
+        targets=graph.targets.values(),
+        criteria=Criteria(**criteria),
+        filters=filter_factory(scheduler=scheduler)
+    )
+
     filtered_targets = sorted(filtered_targets, key=lambda t: t.name)
     format_func = format_funcs[format]
     format_func(backend, graph, filtered_targets)

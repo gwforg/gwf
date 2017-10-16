@@ -1,14 +1,6 @@
-"""Provides easy, dynamic filtering of targets."""
 import fnmatch
 
 from .backends.base import Status
-
-
-FILTERS = []
-
-
-def register_filter(filter_cls):
-    FILTERS.append(filter_cls)
 
 
 class Criteria:
@@ -17,72 +9,95 @@ class Criteria:
         self.__dict__ = kwargs
 
 
-class FilterType(type):
-    """A metaclass for filters.
-
-    The only purpose of this metaclass is to automatically register filters.
-    """
-
-    def __new__(mcs, name, bases, class_dict):
-        cls = type.__new__(mcs, name, bases, class_dict)
-        if bases:
-            register_filter(cls)
-        return cls
-
-
-class Filter(metaclass=FilterType):
+class Filter:
     """A base class for filters."""
-    def __init__(self, graph, backend, criteria):
-        self.graph = graph
-        self.backend = backend
-        self.criteria = criteria
 
-    def apply(self, targets):
-        return (target for target in targets if self.predicate(target))
+    def apply(self, targets, criteria):
+        return (target for target in targets if self.predicate(target, criteria))
 
-    def predicate(self, target):
-        raise NotImplementedError('predicate')
+    def predicate(self, target, criteria):
+        return True
 
 
 class StatusFilter(Filter):
 
-    def use(self):
-        return self.criteria.status
+    def __init__(self, scheduler):
+        self.scheduler = scheduler
 
-    def predicate(self, target):
-        if self.criteria.status == 'completed':
-            return not self.graph.should_run(target)
-        if self.criteria.status == 'shouldrun':
-            return self.graph.should_run(target) and self.backend.status(target) == Status.UNKNOWN
-        if self.criteria.status == 'running':
-            return self.backend.status(target) == Status.RUNNING
-        if self.criteria.status == 'submitted':
-            return self.backend.status(target) == Status.SUBMITTED
+    def use(self, criteria):
+        return criteria.status
+
+    def predicate(self, target, criteria):
+        if criteria.status == 'completed':
+            return not self.scheduler.should_run(target)
+        if criteria.status == 'shouldrun':
+            return (
+                self.scheduler.should_run(target) and
+                self.scheduler.backend.status(target) == Status.UNKNOWN
+            )
+        if criteria.status == 'running':
+            return self.scheduler.backend.status(target) == Status.RUNNING
+        if criteria.status == 'submitted':
+            return self.scheduler.backend.status(target) == Status.SUBMITTED
 
 
 class NameFilter(Filter):
-    def use(self):
-        return self.criteria.targets
 
-    def predicate(self, target):
-        for pattern in self.criteria.targets:
-            if fnmatch.fnmatch(target.name, pattern):
-                return True
-        return False
+    def use(self, criteria):
+        return criteria.targets
+
+    def apply(self, targets, criteria):
+        target_name_map = {target.name: target for target in targets}
+        return {
+            target_name_map[name]
+            for pattern in criteria.targets
+            for name in fnmatch.filter(target_name_map.keys(), pattern)
+        }
 
 
 class EndpointFilter(Filter):
-    def use(self):
-        return not self.criteria.all
 
-    def predicate(self, target):
-        return target in self.graph.endpoints()
+    def __init__(self, endpoints, negate=False):
+        self.endpoints = endpoints
+        self.negate = negate
+
+    def use(self, criteria):
+        return not criteria.all and not criteria.targets
+
+    def predicate(self, target, criteria):
+        if self.negate:
+            return target not in self.endpoints
+        return target in self.endpoints
 
 
-def filter(graph, backend, criteria):
-    targets = iter(graph.targets.values())
-    for filter_cls in FILTERS:
-        filter = filter_cls(graph, backend, criteria)
-        if filter.use():
-            targets = filter.apply(targets)
+class CompositeFilter(Filter):
+
+    def __init__(self, filters=None):
+        self.filters = filters
+
+    def apply(self, targets, criteria):
+        for filter in self.filters:
+            if filter.use(criteria):
+                targets = filter.apply(targets, criteria)
+        return targets
+
+
+def filter_factory(scheduler):
+    return [
+        StatusFilter(scheduler=scheduler),
+        EndpointFilter(endpoints=scheduler.graph.endpoints()),
+        NameFilter(),
+    ]
+
+
+def filter(targets, criteria, filters):
+    filterer = CompositeFilter(filters)
+    return filterer.apply(targets, criteria)
+
+
+def filter_names(targets, patterns):
+    filter = NameFilter()
+    criteria = Criteria(targets=patterns)
+    if filter.use(criteria):
+        return filter.apply(targets, criteria=criteria)
     return targets

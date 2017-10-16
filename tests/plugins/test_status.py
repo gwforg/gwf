@@ -47,12 +47,6 @@ def test_status_shows_two_named_targets(cli_runner):
     assert 'Target1' in result.output
 
 
-def test_status_shows_only_endpoint_target_of_two_targets(cli_runner):
-    result = cli_runner.invoke(main, ['-b', 'testing', 'status', 'Target1', 'Target2'])
-    assert 'Target2' in result.output
-    assert 'Target1' not in result.output
-
-
 def test_format_table(cli_runner):
     result = cli_runner.invoke(main, ['-b', 'testing', 'status', '--format', 'table'])
     assert result.output == 'Target2 SHOULDRUN \n'

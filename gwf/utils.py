@@ -105,19 +105,6 @@ def parse_path(path, default_obj='gwf'):
     return basedir, filename, obj
 
 
-def match_targets(names, targets):
-    matched_targets = set()
-    for name in names:
-        if '*' in name:
-            for match in fnmatch.filter(targets.keys(), name):
-                matched_targets.add(targets[match])
-        elif name not in targets:
-            raise TargetDoesNotExistError(name)
-        else:
-            matched_targets.add(targets[name])
-    return matched_targets
-
-
 class ColorFormatter(logging.Formatter):
     STYLING = {
         'WARNING': dict(fg='yellow'),
