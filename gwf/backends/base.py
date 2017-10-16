@@ -117,6 +117,10 @@ class LogManager:
     """Base class for log managers.
 
     A log manager must as a minimum implement the :func:`open_stdout(target)` and :func:`open_stderr(target)` methods.
+
+    Log managers are used by backends to specify how log files are stored and retrieved. Most backends will want to use
+    the :class:`FileLogManager` which stores log files in the `.gwf/logs` directory. For testing of backends, the
+    :class:`MemoryLogManager` can be useful.
     """
 
     def open_stdout(self, target, mode='r'):
@@ -127,7 +131,10 @@ class LogManager:
 
 
 class MemoryLogManager(LogManager):
-    """A memory-based log manager."""
+    """A memory-based log manager.
+
+    This log manager stores logs in memory.
+    """
 
     def __init__(self):
         self._stdout_logs = {}
@@ -151,7 +158,10 @@ class MemoryLogManager(LogManager):
 
 
 class FileLogManager(LogManager):
-    """A file-based log manager."""
+    """A file-based log manager.
+
+    This log manager stores logs on disk in the `.gwf/logs` directory.
+    """
 
     @staticmethod
     def _get_log_path(target, extension):
@@ -168,20 +178,26 @@ class FileLogManager(LogManager):
         return os.path.join(os.path.join('.gwf', 'logs'), '{}.{}'.format(target.name, extension))
 
     def stdout_path(self, target):
+        """Return path of the log file containing standard output for target."""
         return self._get_log_path(target, 'stdout')
 
     def stderr_path(self, target):
+        """Return path of the log file containing standard error for target."""
         return self._get_log_path(target, 'stderr')
 
     def open_stdout(self, target, mode='r'):
+        """Return a file handle to the log file containing standard output for target."""
         return open(self.stdout_path(target), mode)
 
     def open_stderr(self, target, mode='r'):
+        """Return a file handle to the log file containing standard error for target."""
         return open(self.stderr_path(target), mode)
 
 
 class Backend(metaclass=BackendType):
     """Base class for backends."""
+
+    log_manager = FileLogManager()
 
     def status(self, target):
         """Return the status of `target`.

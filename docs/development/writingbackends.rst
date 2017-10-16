@@ -78,19 +78,50 @@ exists (by its entrypoint) and which options are supported. To get a backend to
 actually work we must implement three methods: :func:`~gwf.backends.Backend.submit`,
 :func:`~gwf.backends.Backend.cancel` and :func:`~gwf.backends.Backend.status`. If needed,
 one may also implement the :func:`~gwf.backends.Backend.close` method, which will be
-called when the backend is no longer needed (right before *gwf* exits). All
-methods must return immediately, that is, calling :func:`~gwf.backends.Backend.submit`
+called when the backend is no longer needed (right before *gwf* exits).
+
+All methods must return immediately, that is, calling :func:`~gwf.backends.Backend.submit`
 should submit the target for execution in some other process, but not run the target
 itself. For example, the local backend connects to a set of workers running in
 a different process, submits jobs to these workers and returns immedicately.
 
-The backend is expected to store the output of a target in two files:
 
-* ``.gwf/logs/TARGETNAME.stdout`` should contain the standard output of the target.
-* ``.gwf/logs/TARGETNAME.stderr`` should contain the standard error of the target.
+Storing Log Files
+=================
 
-If the backend wishes to store log files differently it must override the
-:func:`~gwf.backends.Backend.logs` method to specify how to load log files.
+Backends can store log files in different ways. For example, the Slurm backend stores log
+files as files on disk, while other backends may wish to store log files in an S3 bucket
+or in a database.
+
+To allow for all of these scenarios, *gwf* has the concept of a *log manager*. The log
+manager interface only assumes that log files can be written and accessed through file-like
+objects. Log managers should inherit from :class:`~gwf.backends.base.LogManager`.
+
+.. code-block:: python
+
+    from gwf.backends.base import LogManager
+
+    class MyLogManager(LogManager):
+
+        def open_stdout(self, target, mode='r'):
+            pass
+
+        def open_stderr(self, target, mode='r'):
+            pass
+
+Each method must return a file-like object providing access to the log data for `target`.
+Log managers can also provide other methods. For example, the
+:class:`~gwf.backends.base.FileLogManager` provides methods for retrieving the paths of the
+log files.
+
+Backends should set the :attr:`log_manager` attribute on the class to an instance of a the
+log manager to be used. The log manager must be set as a class attribute to allow access to
+log files without initializing the backend, which may be slow.
+
+At the moment we provide two log managers:
+
+* :class:`~gwf.backends.base.FileLogManager` (default)
+* :class:`~gwf.backends.base.MemoryLogManager`
 
 Handling Configuration
 ======================

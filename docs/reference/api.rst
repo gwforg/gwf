@@ -21,6 +21,9 @@ A target in a :class:`~gwf.Graph` can be scheduled on a
    :inherited-members:
    :undoc-members:
 
+.. automodule:: gwf.filtering
+   :undoc-members:
+
 .. autoclass:: gwf.backends.Status
    :members:
    :undoc-members:
