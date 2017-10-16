@@ -93,8 +93,11 @@ class Backend(metaclass=BackendType):
 
     log_manager = FileLogManager()
 
-    def __init__(self):
-        atexit.register(self.close)
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def status(self, target):
         """Return the status of `target`.

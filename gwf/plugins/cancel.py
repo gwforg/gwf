@@ -26,11 +26,10 @@ def cancel(obj, targets):
     graph = graph_from_config(obj)
 
     backend_cls = backend_from_config(obj)
-    backend = backend_cls()
-
-    matched_targets = filter_names(graph.targets.values(), targets)
-    if not targets:
-        if click.confirm('This will cancel all targets! Do you want to continue?', abort=True):
+    with backend_cls() as backend:
+        matched_targets = filter_names(graph.targets.values(), targets)
+        if not targets:
+            if click.confirm('This will cancel all targets! Do you want to continue?', abort=True):
+                cancel_many(backend, matched_targets)
+        else:
             cancel_many(backend, matched_targets)
-    else:
-        cancel_many(backend, matched_targets)

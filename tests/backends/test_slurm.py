@@ -10,7 +10,7 @@ from gwf.exceptions import UnknownTargetError, UnknownDependencyError, BackendEr
 
 
 @pytest.fixture(autouse=True)
-def setup(monkeypatch):
+def setup(monkeypatch, tmpdir):
     exes = {
         'sbatch': '/bin/sbatch',
         'squeue': '/bin/squeue',
@@ -35,7 +35,7 @@ def test_initialization(tmpdir, popen):
     t3 = Target.empty('Target3')
     t4 = Target.empty('Target4')
 
-    gwf_dir = tmpdir.mkdir('.gwf')
+    gwf_dir = tmpdir.ensure_dir('.gwf')
     tracked_file = gwf_dir.join('slurm-backend-tracked.json')
     tracked_file.write('{"Target1": "1", "Target2": "2", "Target3": "3", "Target4": "4"}')
 
@@ -49,11 +49,11 @@ def test_initialization(tmpdir, popen):
         assert backend.status(t3) == Status.SUBMITTED
         assert backend.status(t4) == Status.UNKNOWN
 
-    popen.return_value.returncode = 1
-    popen.return_value.communicate.return_value = ('', 'This is stderr')
-    with tmpdir.as_cwd():
+        popen.return_value.returncode = 1
+        popen.return_value.communicate.return_value = ('', 'This is stderr')
         with pytest.raises(BackendError):
-            SlurmBackend()
+            with SlurmBackend():
+                pass
 
 
 def test_submit_1(popen):
@@ -172,7 +172,7 @@ def test_cancel(popen):
 
 
 def test_close(tmpdir, popen):
-    tmpdir.mkdir('.gwf')
+    tmpdir.ensure_dir('.gwf')
     with tmpdir.as_cwd():
         popen.return_value.returncode = 0
         popen.return_value.communicate.return_value = ('', '')

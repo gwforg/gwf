@@ -84,20 +84,19 @@ def status(obj, format, **criteria):
     graph = graph_from_config(obj)
 
     backend_cls = backend_from_config(obj)
-    backend = backend_cls()
+    with backend_cls() as backend:
+        scheduler = Scheduler(graph=graph, backend=backend)
 
-    scheduler = Scheduler(graph=graph, backend=backend)
+        matches = filter_generic(
+            targets=graph.targets.values(),
+            criteria=Criteria(**criteria),
+            filters=[
+                StatusFilter(scheduler=scheduler),
+                EndpointFilter(endpoints=graph.endpoints()),
+                NameFilter(),
+            ]
+        )
 
-    matches = filter_generic(
-        targets=graph.targets.values(),
-        criteria=Criteria(**criteria),
-        filters=[
-            StatusFilter(scheduler=scheduler),
-            EndpointFilter(endpoints=graph.endpoints()),
-            NameFilter(),
-        ]
-    )
-
-    matches = sorted(matches, key=lambda t: t.name)
-    format_func = format_funcs[format]
-    format_func(backend, graph, matches)
+        matches = sorted(matches, key=lambda t: t.name)
+        format_func = format_funcs[format]
+        format_func(backend, graph, matches)
