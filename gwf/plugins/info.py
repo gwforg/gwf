@@ -2,8 +2,7 @@ import click
 
 from collections import OrderedDict
 
-from ..core import Target
-from ..cli import pass_graph
+from ..core import Target, graph_from_config
 from ..exceptions import TargetDoesNotExistError
 
 
@@ -40,9 +39,10 @@ def print_yaml_like(obj, indent=0):
 
 @click.command()
 @click.argument('target')
-@pass_graph
-def info(graph, target):
+@click.pass_obj
+def info(obj, target):
     """Display information about a target."""
+    graph = graph_from_config(obj)
 
     if target not in graph.targets:
         raise TargetDoesNotExistError(target)

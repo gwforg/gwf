@@ -12,11 +12,12 @@ from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
 from ..conf import config
-from .base import PersistableDict, UnknownDependencyError, FileLogManager
+from gwf.utils import PersistableDict
+from gwf.backends.logmanager import FileLogManager
 from .base import Status
 from . import Backend
 from ..exceptions import GWFError
-from gwf.backends.base import BackendError, UnsupportedOperationError
+from gwf.exceptions import BackendError, UnknownDependencyError, UnsupportedOperationError
 
 __all__ = ('Client', 'Server', 'LocalBackend',)
 
@@ -141,6 +142,8 @@ class LocalBackend(Backend):
     option_defaults = {}
 
     def __init__(self):
+        super().__init__()
+
         self._tracked = PersistableDict(os.path.join('.gwf/local-backend-tracked.json'))
 
         host = config.get('local.host', 'localhost')

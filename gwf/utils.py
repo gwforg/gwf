@@ -2,11 +2,13 @@ import copy
 import fnmatch
 import functools
 import importlib
+import json
 import logging
 import os.path
 import re
 import sys
 import time
+from collections import UserDict
 from contextlib import ContextDecorator
 
 import click
@@ -147,3 +149,31 @@ class LazyDict(dict):
         if not super().__contains__(item):
             super().__setitem__(item, self.valfunc(item))
         return super().__getitem__(item)
+
+
+class PersistableDict(UserDict):
+    """A dictionary which can persist itself to JSON."""
+
+    def __init__(self, path):
+        super().__init__()
+
+        self.path = path
+        try:
+            with open(self.path) as fileobj:
+                self.data.update(json.load(fileobj))
+        except (OSError, ValueError):
+            # Catch ValueError for compatibility with Python 3.4.2. I haven't been
+            # able to figure out what is different between 3.4.2 and 3.5 that
+            # causes this. Essentially, 3.4.2 raises a ValueError saying that it
+            # cannot parse the empty string instead of raising an OSError
+            # (FileNotFoundError does not exist in 3.4.2) saying that the file does
+            # not exist.
+            pass
+
+    def persist(self):
+        with open(self.path + '.new', 'w') as fileobj:
+            json.dump(self.data, fileobj)
+            fileobj.flush()
+            os.fsync(fileobj.fileno())
+            fileobj.close()
+        os.rename(self.path + '.new', self.path)

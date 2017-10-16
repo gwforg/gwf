@@ -1,37 +1,12 @@
-import io
-import json
-import os.path
+import atexit
 import logging
-from collections import UserDict
 from enum import Enum
 from functools import wraps
 
-from gwf.exceptions import GWFError
+from gwf.backends.logmanager import FileLogManager
+from gwf.exceptions import BackendError
 
 logger = logging.getLogger(__name__)
-
-
-class BackendError(GWFError):
-    """Base class for backend errors."""
-
-
-class UnknownDependencyError(BackendError):
-    pass
-
-
-class UnknownTargetError(BackendError):
-    pass
-
-
-class LogNotFoundError(BackendError):
-    """No log found for target."""
-
-    def __init__(self):
-        super().__init__('No log found.')
-
-
-class UnsupportedOperationError(BackendError):
-    """Operation not supported by this backend."""
 
 
 class Status(Enum):
@@ -113,91 +88,13 @@ class BackendType(type):
         return type.__new__(mcs, name, bases, namespace)
 
 
-class LogManager:
-    """Base class for log managers.
-
-    A log manager must as a minimum implement the :func:`open_stdout(target)` and :func:`open_stderr(target)` methods.
-
-    Log managers are used by backends to specify how log files are stored and retrieved. Most backends will want to use
-    the :class:`FileLogManager` which stores log files in the `.gwf/logs` directory. For testing of backends, the
-    :class:`MemoryLogManager` can be useful.
-    """
-
-    def open_stdout(self, target, mode='r'):
-        raise NotImplementedError()
-
-    def open_stderr(self, target, mode='r'):
-        raise NotImplementedError()
-
-
-class MemoryLogManager(LogManager):
-    """A memory-based log manager.
-
-    This log manager stores logs in memory.
-    """
-
-    def __init__(self):
-        self._stdout_logs = {}
-        self._stderr_logs = {}
-
-    def open_stdout(self, target, mode='r'):
-        if target not in self._stdout_logs and mode == 'w':
-            self._stdout_logs[target] = io.StringIO()
-        try:
-            return self._stdout_logs[target]
-        except KeyError as e:
-            raise LogNotFoundError() from e
-
-    def open_stderr(self, target, mode='r'):
-        if target not in self._stderr_logs and mode == 'w':
-            self._stderr_logs[target] = io.StringIO()
-        try:
-            return self._stderr_logs[target]
-        except KeyError as e:
-            raise LogNotFoundError() from e
-
-
-class FileLogManager(LogManager):
-    """A file-based log manager.
-
-    This log manager stores logs on disk in the `.gwf/logs` directory.
-    """
-
-    @staticmethod
-    def _get_log_path(target, extension):
-        """Return path for log file for a given target.
-
-        If `extension` is `stdout`, then the path of the file containing standard output of the target will be returned.
-        If `stderr`, the path of the file containing standard error of the target will be returned.
-
-        :arg target gwf.Target:
-            Target to return log path for.
-        :arg extension str:
-            Must be either `stdout` or `stderr`.
-        """
-        return os.path.join(os.path.join('.gwf', 'logs'), '{}.{}'.format(target.name, extension))
-
-    def stdout_path(self, target):
-        """Return path of the log file containing standard output for target."""
-        return self._get_log_path(target, 'stdout')
-
-    def stderr_path(self, target):
-        """Return path of the log file containing standard error for target."""
-        return self._get_log_path(target, 'stderr')
-
-    def open_stdout(self, target, mode='r'):
-        """Return a file handle to the log file containing standard output for target."""
-        return open(self.stdout_path(target), mode)
-
-    def open_stderr(self, target, mode='r'):
-        """Return a file handle to the log file containing standard error for target."""
-        return open(self.stderr_path(target), mode)
-
-
 class Backend(metaclass=BackendType):
     """Base class for backends."""
 
     log_manager = FileLogManager()
+
+    def __init__(self):
+        atexit.register(self.close)
 
     def status(self, target):
         """Return the status of `target`.
@@ -258,31 +155,3 @@ class Backend(metaclass=BackendType):
         Called when the backend is no longer needed and should close
         all resources (open files, connections) used by the backend.
         """
-
-
-class PersistableDict(UserDict):
-    """A dictionary which can persist itself to JSON."""
-
-    def __init__(self, path):
-        super().__init__()
-
-        self.path = path
-        try:
-            with open(self.path) as fileobj:
-                self.data.update(json.load(fileobj))
-        except (OSError, ValueError):
-            # Catch ValueError for compatibility with Python 3.4.2. I haven't been
-            # able to figure out what is different between 3.4.2 and 3.5 that
-            # causes this. Essentially, 3.4.2 raises a ValueError saying that it
-            # cannot parse the empty string instead of raising an OSError
-            # (FileNotFoundError does not exist in 3.4.2) saying that the file does
-            # not exist.
-            pass
-
-    def persist(self):
-        with open(self.path + '.new', 'w') as fileobj:
-            json.dump(self.data, fileobj)
-            fileobj.flush()
-            os.fsync(fileobj.fileno())
-            fileobj.close()
-        os.rename(self.path + '.new', self.path)

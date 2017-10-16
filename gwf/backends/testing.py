@@ -1,7 +1,7 @@
 import logging
 
-from gwf.backends.base import MemoryLogManager
-from . import Backend, Status, LogNotFoundError
+from gwf.backends.logmanager import MemoryLogManager
+from gwf.backends import Backend, Status
 
 logger = logging.getLogger(__name__)
 

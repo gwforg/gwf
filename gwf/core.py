@@ -62,6 +62,12 @@ def normalized_paths_property(name):
     return prop
 
 
+def graph_from_config(config):
+    basedir, filename, obj = parse_path(config['file'])
+    workflow = load_workflow(basedir, filename, obj)
+    return Graph.from_targets(workflow.targets)
+
+
 class Target(object):
     """Represents a target.
 

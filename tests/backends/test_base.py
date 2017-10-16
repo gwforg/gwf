@@ -6,8 +6,10 @@ from unittest.mock import patch
 import pytest
 
 from gwf import Target
-from gwf.backends import Backend, PersistableDict, BackendError
+from gwf.backends import Backend
 from gwf.backends.testing import TestingBackend
+from gwf.exceptions import BackendError
+from gwf.utils import PersistableDict
 
 
 @pytest.fixture

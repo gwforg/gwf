@@ -1,9 +1,9 @@
 import click
 import statusbar
 
-from gwf import Scheduler
+from ..core import Scheduler, graph_from_config
+from ..backends import backend_from_config
 from ..backends.base import Status
-from ..cli import pass_graph, pass_backend
 from ..filtering import Criteria, StatusFilter, EndpointFilter, NameFilter, filter_generic
 from ..utils import dfs
 
@@ -62,9 +62,8 @@ def print_table(backend, graph, targets):
 @click.option('--format', type=click.Choice(['progress', 'table']), default='progress')
 @click.option('--all/--endpoints', help='Whether to show all targets or only endpoints if no targets are specified.')
 @click.option('-s', '--status', type=click.Choice(['shouldrun', 'submitted', 'running', 'completed']))
-@pass_graph
-@pass_backend
-def status(backend, graph, format, **criteria):
+@click.pass_obj
+def status(obj, format, **criteria):
     """
     Show the status of targets.
 
@@ -81,6 +80,11 @@ def status(backend, graph, format, **criteria):
         'progress': print_progress,
         'table': print_table,
     }
+
+    graph = graph_from_config(obj)
+
+    backend_cls = backend_from_config(obj)
+    backend = backend_cls()
 
     scheduler = Scheduler(graph=graph, backend=backend)
 

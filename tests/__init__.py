@@ -3,7 +3,8 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from gwf.backends import Backend, Status, LogNotFoundError
+from gwf.backends import Backend, Status
+from gwf.exceptions import LogNotFoundError
 
 
 def touch_file(path, contents=None):
@@ -34,6 +35,7 @@ class CliTestCase(TestCase):
 class MockBackend(Backend):
 
     def __init__(self):
+        super().__init__()
         self._tracked = {}
 
     def submit(self, target, dependencies):

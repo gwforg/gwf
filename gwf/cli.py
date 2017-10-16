@@ -1,17 +1,15 @@
-import atexit
 import logging
 import os
 import os.path
-from functools import update_wrapper
+from pkg_resources import iter_entry_points
 
 import click
 from click_plugins import with_plugins
-from pkg_resources import iter_entry_points
 
 from . import __version__
 from .conf import config
-from .core import Graph
-from .utils import ColorFormatter, parse_path, load_workflow, ensure_dir
+from .backends import BACKENDS
+from .utils import ColorFormatter, ensure_dir
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +25,6 @@ LOGGING_FORMATS = {
     'error': BASIC_FORMAT,
 }
 
-BACKENDS = {ep.name: ep.load() for ep in iter_entry_points('gwf.backends')}
-
 
 def get_level(level):
     return getattr(logging, level.upper())
@@ -43,28 +39,6 @@ def configure_logging(level_name, formatter_cls):
     root = logging.getLogger()
     root.addHandler(handler)
     root.setLevel(get_level(level_name))
-
-
-def pass_backend(f):
-    """Pass the initialized backend to the function."""
-    @click.pass_context
-    def new_func(ctx, *args, **kwargs):
-        backend_cls = BACKENDS[ctx.obj['_backend']]
-        backend = backend_cls()
-        atexit.register(backend.close)
-        return ctx.invoke(f, *args, backend=backend, **kwargs)
-    return update_wrapper(new_func, f)
-
-
-def pass_graph(f):
-    """Pass the complete workflow graph to the function."""
-    @click.pass_context
-    def new_func(ctx, *args, **kwargs):
-        basedir, filename, obj = parse_path(ctx.obj['_file'])
-        workflow = load_workflow(basedir, filename, obj)
-        graph = Graph.from_targets(workflow.targets)
-        return ctx.invoke(f, *args, graph=graph, **kwargs)
-    return update_wrapper(new_func, f)
 
 
 @with_plugins(iter_entry_points('gwf.plugins'))
@@ -104,5 +78,4 @@ def main(ctx, file, backend, verbose, no_color):
     formatter_cls = logging.Formatter if no_color else ColorFormatter
     configure_logging(level_name=verbose, formatter_cls=formatter_cls)
 
-    ctx.obj['_file'] = file
-    ctx.obj['_backend'] = backend
+    ctx.obj = {'file': file, 'backend': backend}
