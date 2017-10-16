@@ -123,6 +123,7 @@ At the moment we provide two log managers:
 * :class:`~gwf.backends.base.FileLogManager` (default)
 * :class:`~gwf.backends.base.MemoryLogManager`
 
+
 Handling Configuration
 ======================
 
