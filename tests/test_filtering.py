@@ -6,7 +6,7 @@ from gwf import Target
 from gwf.core import Graph, Scheduler
 from gwf.backends import Status
 from gwf.backends.testing import TestingBackend
-from gwf.filtering import StatusFilter, Criteria, NameFilter, EndpointFilter, filter
+from gwf.filtering import StatusFilter, Criteria, NameFilter, EndpointFilter, filter_generic
 
 
 @pytest.fixture

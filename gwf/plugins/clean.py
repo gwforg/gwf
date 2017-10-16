@@ -2,7 +2,7 @@ import logging
 import os
 
 from ..cli import pass_graph
-from ..filtering import Criteria, NameFilter, EndpointFilter, filter
+from ..filtering import Criteria, NameFilter, EndpointFilter, filter_generic
 
 import click
 
@@ -26,7 +26,7 @@ def clean(graph, targets, all):
     By default, only targets that are not endpoints will have their output files deleted. If you want to clean up output
     files from endpoints too, use the ``--all`` flag.
     """
-    matches = filter(
+    matches = filter_generic(
         targets=graph.targets.values(),
         criteria=Criteria(targets=targets, all=all),
         filters=[

@@ -1,12 +1,11 @@
+import click
 import statusbar
 
 from gwf import Scheduler
 from ..backends.base import Status
 from ..cli import pass_graph, pass_backend
-from ..filtering import Criteria, filter, filter_factory
+from ..filtering import Criteria, StatusFilter, EndpointFilter, NameFilter, filter_generic
 from ..utils import dfs
-
-import click
 
 
 def _split_target_list(backend, graph, targets):
@@ -85,12 +84,16 @@ def status(backend, graph, format, **criteria):
 
     scheduler = Scheduler(graph=graph, backend=backend)
 
-    filtered_targets = filter(
+    matches = filter_generic(
         targets=graph.targets.values(),
         criteria=Criteria(**criteria),
-        filters=filter_factory(scheduler=scheduler)
+        filters=[
+            StatusFilter(scheduler=scheduler),
+            EndpointFilter(endpoints=graph.endpoints()),
+            NameFilter(),
+        ]
     )
 
-    filtered_targets = sorted(filtered_targets, key=lambda t: t.name)
+    matches = sorted(matches, key=lambda t: t.name)
     format_func = format_funcs[format]
-    format_func(backend, graph, filtered_targets)
+    format_func(backend, graph, matches)

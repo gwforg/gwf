@@ -82,20 +82,20 @@ class CompositeFilter(Filter):
         return targets
 
 
-def filter_factory(scheduler):
-    return [
-        StatusFilter(scheduler=scheduler),
-        EndpointFilter(endpoints=scheduler.graph.endpoints()),
-        NameFilter(),
-    ]
+def filter_generic(targets, criteria, filters):
+    """Filter targets given some criteria`and filters.
 
-
-def filter(targets, criteria, filters):
+    Return all targets from `targets` matching the criteria in `criteria` using `filters`.
+    """
     filterer = CompositeFilter(filters)
     return filterer.apply(targets, criteria)
 
 
 def filter_names(targets, patterns):
+    """Filter targets with a list of patterns.
+
+    Return all targets in `targets` where the target name matches one or more of the patterns in `pattern`.
+    """
     filter = NameFilter()
     criteria = Criteria(targets=patterns)
     if filter.use(criteria):
