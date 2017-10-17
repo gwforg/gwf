@@ -19,6 +19,13 @@ Changed
   ``logs``, ``cancel``, ``info``, ``logs`` and ``workers`` commands.
 * Replaced ``--not-endpoints`` flag in ``clean`` command with ``--all`` flag.
 * Made filtering more intuitive in all commands.
+* The ``info`` command now outputs JSON instead of invalid YAML.
+* The ``info`` command outputs information for all targets in the workflow by default.
+
+Added
+------
+
+* Added filtering of targets by name in the ``info`` command.
 
 Version 1.0
 ===========
