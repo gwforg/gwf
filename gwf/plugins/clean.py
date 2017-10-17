@@ -2,7 +2,7 @@ import logging
 import os
 
 from ..core import graph_from_config
-from ..filtering import Criteria, NameFilter, EndpointFilter, filter_generic
+from ..filtering import NameFilter, EndpointFilter, filter_generic
 
 import click
 
@@ -28,15 +28,13 @@ def clean(obj, targets, all):
     """
     graph = graph_from_config(obj)
 
-    matches = filter_generic(
-        targets=graph.targets.values(),
-        criteria=Criteria(targets=targets, all=all),
-        filters=[
-            NameFilter(),
-            EndpointFilter(endpoints=graph.endpoints(), negate=True),
-        ]
-    )
+    filters = []
+    if targets:
+        filters.append(NameFilter(patterns=targets))
+    if not all:
+        filters.append(EndpointFilter(endpoints=graph.endpoints(), mode='exclude'))
 
+    matches = filter_generic(targets=graph.targets.values(), filters=filters)
     for target in matches:
         logger.info('Deleting %s', target.name)
         for path in target.outputs:

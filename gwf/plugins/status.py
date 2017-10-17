@@ -3,7 +3,7 @@ import statusbar
 
 from ..backends import Status, backend_from_config
 from ..core import Scheduler, graph_from_config
-from ..filtering import Criteria, StatusFilter, EndpointFilter, NameFilter, filter_generic
+from ..filtering import StatusFilter, EndpointFilter, NameFilter, filter_generic
 from ..utils import dfs
 
 
@@ -57,12 +57,26 @@ def print_table(backend, graph, targets):
 
 
 @click.command()
-@click.argument('targets', nargs=-1)
-@click.option('--format', type=click.Choice(['progress', 'table']), default='progress')
-@click.option('--all/--endpoints', help='Whether to show all targets or only endpoints if no targets are specified.')
-@click.option('-s', '--status', type=click.Choice(['shouldrun', 'submitted', 'running', 'completed']))
+@click.argument(
+    'targets', nargs=-1
+)
+@click.option(
+    '--format',
+    type=click.Choice(['progress', 'table']),
+    default='progress'
+)
+@click.option(
+    '--all',
+    is_flag=True,
+    default=False,
+    help='Show all targets, not only endpoints.'
+)
+@click.option(
+    '-s', '--status',
+    type=click.Choice(['shouldrun', 'submitted', 'running', 'completed'])
+)
 @click.pass_obj
-def status(obj, format, **criteria):
+def status(obj, status, all, format, targets):
     """
     Show the status of targets.
 
@@ -86,16 +100,15 @@ def status(obj, format, **criteria):
     with backend_cls() as backend:
         scheduler = Scheduler(graph=graph, backend=backend)
 
-        matches = filter_generic(
-            targets=graph.targets.values(),
-            criteria=Criteria(**criteria),
-            filters=[
-                StatusFilter(scheduler=scheduler),
-                EndpointFilter(endpoints=graph.endpoints()),
-                NameFilter(),
-            ]
-        )
+        filters = []
+        if status:
+            filters.append(StatusFilter(scheduler=scheduler, status=status))
+        if targets:
+            filters.append(NameFilter(patterns=targets))
+        if not all:
+            filters.append(EndpointFilter(endpoints=graph.endpoints()))
 
+        matches = filter_generic(targets=graph.targets.values(), filters=filters)
         matches = sorted(matches, key=lambda t: t.name)
         format_func = format_funcs[format]
         format_func(backend, graph, matches)

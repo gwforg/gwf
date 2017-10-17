@@ -20,16 +20,17 @@ def cancel_many(backend, targets):
 
 @click.command()
 @click.argument('targets', nargs=-1)
+@click.option('-f', '--force', is_flag=True, default=False, help='Do not ask for confirmation.')
 @click.pass_obj
-def cancel(obj, targets):
+def cancel(obj, targets, force):
     """Cancel the specified targets."""
     graph = graph_from_config(obj)
 
     backend_cls = backend_from_config(obj)
     with backend_cls() as backend:
-        matched_targets = filter_names(graph.targets.values(), targets)
-        if not targets:
+        if not targets and not force:
             if click.confirm('This will cancel all targets! Do you want to continue?', abort=True):
-                cancel_many(backend, matched_targets)
+                cancel_many(backend, graph.targets.values())
         else:
+            matched_targets = filter_names(graph.targets.values(), targets)
             cancel_many(backend, matched_targets)

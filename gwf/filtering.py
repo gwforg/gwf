@@ -12,62 +12,60 @@ class Criteria:
 class Filter:
     """A base class for filters."""
 
-    def apply(self, targets, criteria):
-        return (target for target in targets if self.predicate(target, criteria))
+    def apply(self, targets):
+        return (target for target in targets if self.predicate(target))
 
-    def predicate(self, target, criteria):
+    def predicate(self, target):
         return True
 
 
 class StatusFilter(Filter):
 
-    def __init__(self, scheduler):
+    def __init__(self, scheduler, status):
         self.scheduler = scheduler
+        self.status = status
 
-    def use(self, criteria):
-        return criteria.status
-
-    def predicate(self, target, criteria):
-        if criteria.status == 'completed':
+    def predicate(self, target):
+        if self.status == 'completed':
             return not self.scheduler.should_run(target)
-        if criteria.status == 'shouldrun':
+        if self.status == 'shouldrun':
             return (
                 self.scheduler.should_run(target) and
                 self.scheduler.backend.status(target) == Status.UNKNOWN
             )
-        if criteria.status == 'running':
+        if self.status == 'running':
             return self.scheduler.backend.status(target) == Status.RUNNING
-        if criteria.status == 'submitted':
+        if self.status == 'submitted':
             return self.scheduler.backend.status(target) == Status.SUBMITTED
 
 
 class NameFilter(Filter):
 
-    def use(self, criteria):
-        return criteria.targets
+    def __init__(self, patterns):
+        self.patterns = patterns
 
-    def apply(self, targets, criteria):
+    def apply(self, targets):
         target_name_map = {target.name: target for target in targets}
         return {
             target_name_map[name]
-            for pattern in criteria.targets
+            for pattern in self.patterns
             for name in fnmatch.filter(target_name_map.keys(), pattern)
         }
 
 
 class EndpointFilter(Filter):
 
-    def __init__(self, endpoints, negate=False):
+    def __init__(self, endpoints, mode='include'):
         self.endpoints = endpoints
-        self.negate = negate
+        self.mode = mode
 
-    def use(self, criteria):
-        return not criteria.all and not criteria.targets
-
-    def predicate(self, target, criteria):
-        if self.negate:
+    def predicate(self, target):
+        if self.mode == 'exclude':
             return target not in self.endpoints
-        return target in self.endpoints
+        elif self.mode == 'include':
+            return target in self.endpoints
+        else:
+            raise ValueError('Argument mode must be either "include" or "exclude".')
 
 
 class CompositeFilter(Filter):
@@ -75,20 +73,22 @@ class CompositeFilter(Filter):
     def __init__(self, filters=None):
         self.filters = filters
 
-    def apply(self, targets, criteria):
+    def apply(self, targets):
         for filter in self.filters:
-            if filter.use(criteria):
-                targets = filter.apply(targets, criteria)
+            targets = filter.apply(targets)
         return targets
 
 
-def filter_generic(targets, criteria, filters):
-    """Filter targets given some criteria`and filters.
+def filter_generic(targets, filters):
+    """Filter targets given a list of filters.
 
-    Return all targets from `targets` matching the criteria in `criteria` using `filters`.
+    :arg targets:
+        A list of targets to be filtered. This will most often be all of the targets in a graph.
+
+    :arg filters:
+        A list of :class:`Filter` instances.
     """
-    filterer = CompositeFilter(filters)
-    return filterer.apply(targets, criteria)
+    return CompositeFilter(filters).apply(targets)
 
 
 def filter_names(targets, patterns):
@@ -96,8 +96,4 @@ def filter_names(targets, patterns):
 
     Return all targets in `targets` where the target name matches one or more of the patterns in `pattern`.
     """
-    filter = NameFilter()
-    criteria = Criteria(targets=patterns)
-    if filter.use(criteria):
-        return filter.apply(targets, criteria=criteria)
-    return targets
+    return NameFilter(patterns=patterns).apply(targets)

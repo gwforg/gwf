@@ -49,7 +49,7 @@ def test_clean_output_from_all_targets(cli_runner):
 
 
 def test_clean_output_from_single_endpoint_target(cli_runner):
-    args = ['-b', 'testing', 'clean', 'Target2']
+    args = ['-b', 'testing', 'clean', '--all', 'Target2']
     cli_runner.invoke(main, args)
 
     assert os.path.exists('a.txt')
@@ -58,7 +58,7 @@ def test_clean_output_from_single_endpoint_target(cli_runner):
 
 
 def test_clean_output_from_two_targets(cli_runner):
-    args = ['-b', 'testing', 'clean', 'Target1', 'Target2']
+    args = ['-b', 'testing', 'clean', '--all', 'Target1', 'Target2']
     cli_runner.invoke(main, args)
 
     assert not os.path.exists('a.txt')
