@@ -21,11 +21,16 @@ Changed
 * Made filtering more intuitive in all commands.
 * The ``info`` command now outputs JSON instead of invalid YAML.
 * The ``info`` command outputs information for all targets in the workflow by default.
+* Backends must now specify a ``log_manager`` class attribute specifying which log manager to use for accessing
+  target log files.
 
 Added
 ------
 
 * Added filtering of targets by name in the ``info`` command.
+* Added API documentation for the ``gwf.filtering`` module.
+* Added ``gwf.core.graph_from_path`` and ``gwf.core.graph_from_config``.
+* Added ``gwf.backends.list_backends``, ``gwf.backends.backend_from_name`` and ``gwf.backends.backend_from_config``.
 
 Version 1.0
 ===========
