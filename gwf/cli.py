@@ -71,7 +71,14 @@ def configure_logging(level_name, formatter_cls):
 )
 @click.pass_context
 def main(ctx, file, backend, verbose, no_color):
-    """A flexible, pragmatic workflow tool."""
+    """A flexible, pragmatic workflow tool.
+
+    See help for each command using the `--help` flag for that command:
+
+        gwf status --help
+
+    Shows help for the status command.
+    """
     ensure_dir(os.path.join('.gwf'))
     ensure_dir(os.path.join('.gwf', 'logs'))
 
