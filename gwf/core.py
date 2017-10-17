@@ -591,6 +591,7 @@ def _fileinfo(path):
             raise InvalidPathError('Path {} points to a directory.'.format(path))
         return st.st_mtime
 
+
 FileCache = functools.partial(LazyDict, valfunc=_fileinfo)
 
 
