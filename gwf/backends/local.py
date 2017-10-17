@@ -11,16 +11,13 @@ from multiprocessing.connection import Client as Client_
 from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
+from . import Backend, Status
+from .logmanager import FileLogManager
 from ..conf import config
-from gwf.utils import PersistableDict
-from gwf.backends.logmanager import FileLogManager
-from .base import Status
-from . import Backend
-from ..exceptions import GWFError
-from gwf.exceptions import BackendError, UnknownDependencyError, UnsupportedOperationError
+from ..exceptions import GWFError, BackendError, UnknownDependencyError, UnsupportedOperationError
+from ..utils import PersistableDict
 
 __all__ = ('Client', 'Server', 'LocalBackend',)
-
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +197,6 @@ class LocalBackend(Backend):
 
 
 class Worker:
-
     def __init__(self, status, queue, waiting):
         self.status = status
         self.queue = queue
@@ -307,7 +303,6 @@ class Worker:
 
 
 class Server:
-
     def __init__(self, hostname='', port=0, num_workers=None):
         self.hostname = hostname
         self.port = port

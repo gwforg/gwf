@@ -8,7 +8,7 @@ from click_plugins import with_plugins
 
 from . import __version__
 from .conf import config
-from .backends import BACKENDS
+from .backends import list_backends
 from .utils import ColorFormatter, ensure_dir
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ def configure_logging(level_name, formatter_cls):
 @click.option(
     '-b',
     '--backend',
-    type=click.Choice(BACKENDS.keys()),
+    type=click.Choice(list_backends()),
     default=config.get('backend', 'local'),
     help='Backend used to run workflow.'
 )

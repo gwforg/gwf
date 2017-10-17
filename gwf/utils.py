@@ -1,5 +1,4 @@
 import copy
-import fnmatch
 import functools
 import importlib
 import json
@@ -13,7 +12,7 @@ from contextlib import ContextDecorator
 
 import click
 
-from gwf.exceptions import GWFError, TargetDoesNotExistError
+from gwf.exceptions import GWFError
 
 logger = logging.getLogger(__name__)
 

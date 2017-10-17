@@ -31,7 +31,7 @@ def test_warn_user_when_submitting_target_with_unsupported_option(backend, caplo
     target = Target('TestTarget', inputs=[], outputs=[], options={'foo': 'bar'}, working_dir='/some/dir')
     backend.submit(target, dependencies=[])
     assert caplog.record_tuples == [
-        ('gwf.backends.base', logging.WARNING, 'Option "foo" used in "TestTarget" is not supported by backend. Ignored.'),
+        ('gwf.backends', logging.WARNING, 'Option "foo" used in "TestTarget" is not supported by backend. Ignored.'),
     ]
 
 

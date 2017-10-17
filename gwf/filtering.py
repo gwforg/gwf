@@ -1,6 +1,6 @@
 import fnmatch
 
-from .backends.base import Status
+from .backends import Status
 
 
 class Criteria:

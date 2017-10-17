@@ -1,9 +1,8 @@
 import click
 import statusbar
 
+from ..backends import Status, backend_from_config
 from ..core import Scheduler, graph_from_config
-from ..backends import backend_from_config
-from ..backends.base import Status
 from ..filtering import Criteria, StatusFilter, EndpointFilter, NameFilter, filter_generic
 from ..utils import dfs
 

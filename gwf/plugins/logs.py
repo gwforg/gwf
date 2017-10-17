@@ -1,7 +1,7 @@
 import click
 
-from ..core import graph_from_config
 from ..backends import backend_from_config
+from ..core import graph_from_config
 from ..exceptions import TargetDoesNotExistError
 
 

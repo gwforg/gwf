@@ -12,7 +12,7 @@ from collections import defaultdict
 from glob import glob as _glob
 from glob import iglob as _iglob
 
-from .backends.base import Status
+from .backends import Status
 from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
@@ -62,10 +62,26 @@ def normalized_paths_property(name):
     return prop
 
 
-def graph_from_config(config):
-    basedir, filename, obj = parse_path(config['file'])
+def graph_from_path(path):
+    """Return graph for the workflow given by `path`.
+
+    Returns a :class:`~gwf.Graph` object containing the workflow graph of the workflow given by `path`. Note that calling
+    this function computes the complete dependency graph which may take some time for large workflows.
+
+    :arg str path:
+        Path to a workflow file, optionally specifying a workflow object in that file.
+    """
+    basedir, filename, obj = parse_path(path)
     workflow = load_workflow(basedir, filename, obj)
     return Graph.from_targets(workflow.targets)
+
+
+def graph_from_config(config):
+    """Return graph for the workflow specified by `config`.
+
+    See :func:`graph_from_path` for further information.
+    """
+    return graph_from_path(config['file'])
 
 
 class Target(object):
