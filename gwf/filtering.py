@@ -3,12 +3,6 @@ import fnmatch
 from .backends import Status
 
 
-class Criteria:
-    """A container for filtering criteria."""
-    def __init__(self, **kwargs):
-        self.__dict__ = kwargs
-
-
 class Filter:
     """A base class for filters."""
 

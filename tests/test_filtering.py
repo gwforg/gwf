@@ -1,4 +1,4 @@
-from unittest.mock import create_autospec, Mock
+from unittest.mock import create_autospec
 
 import pytest
 
@@ -6,7 +6,7 @@ from gwf import Target
 from gwf.core import Graph, Scheduler
 from gwf.backends import Status
 from gwf.backends.testing import TestingBackend
-from gwf.filtering import StatusFilter, Criteria, NameFilter, EndpointFilter, filter_generic
+from gwf.filtering import StatusFilter, NameFilter, EndpointFilter
 
 
 @pytest.fixture
