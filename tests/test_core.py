@@ -16,7 +16,6 @@ from gwf.exceptions import (CircularDependencyError,
 
 
 class DummyBackend(Backend):
-
     def __init__(self):
         super().__init__()
         self._tracked = {}
@@ -50,7 +49,6 @@ def backend():
 
 
 class TestWorkflow(unittest.TestCase):
-
     def test_workflow_with_invalid_name_raises_error(self):
         with self.assertRaises(InvalidNameError):
             Workflow(name='123abc')
@@ -413,7 +411,7 @@ class TestGraph(unittest.TestCase):
         self.workflow.target(
             'TestTarget', inputs=['test_input.txt'], outputs=[])
         with self.assertRaises(FileRequiredButNotProvidedError):
-            Graph.from_targets(self.workflow.targets,)
+            Graph.from_targets(self.workflow.targets, )
 
     @patch('gwf.core.os.path.exists', return_value=True, autospec=True)
     def test_existing_files_not_provided_by_other_target_has_no_dependencies(self, mock_exists):
@@ -522,7 +520,8 @@ class TestShouldRun(unittest.TestCase):
         self.target1 = workflow.target('TestTarget1', inputs=[], outputs=['test_output1.txt'])
         self.target2 = workflow.target('TestTarget2', inputs=['test_output1.txt'], outputs=['test_output2.txt'])
         self.target3 = workflow.target('TestTarget3', inputs=['test_output1.txt'], outputs=['test_output3.txt'])
-        self.target4 = workflow.target('TestTarget4', inputs=['test_output2.txt', 'test_output3.txt'], outputs=['final_output.txt'])
+        self.target4 = workflow.target('TestTarget4', inputs=['test_output2.txt', 'test_output3.txt'],
+                                       outputs=['final_output.txt'])
 
         self.graph = Graph.from_targets(workflow.targets)
         self.backend = DummyBackend()
@@ -655,9 +654,12 @@ def test_scheduling_target_with_deps_that_are_not_submitted(backend, monkeypatch
 
 def test_scheduling_target_with_deep_deps_that_are_not_submitted(backend, monkeypatch):
     target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
-    target2 = Target('TestTarget2', inputs=['test_output1.txt'], outputs=['test_output2.txt'], options={}, working_dir='/some/dir')
-    target3 = Target('TestTarget3', inputs=['test_output2.txt'], outputs=['test_output3.txt'], options={}, working_dir='/some/dir')
-    target4 = Target('TestTarget4', inputs=['test_output3.txt'], outputs=['final_output.txt'], options={}, working_dir='/some/dir')
+    target2 = Target('TestTarget2', inputs=['test_output1.txt'], outputs=['test_output2.txt'], options={},
+                     working_dir='/some/dir')
+    target3 = Target('TestTarget3', inputs=['test_output2.txt'], outputs=['test_output3.txt'], options={},
+                     working_dir='/some/dir')
+    target4 = Target('TestTarget4', inputs=['test_output3.txt'], outputs=['final_output.txt'], options={},
+                     working_dir='/some/dir')
     graph = Graph.from_targets({'target1': target1, 'target2': target2, 'target3': target3, 'target4': target4})
     scheduler = Scheduler(graph=graph, backend=backend)
     monkeypatch.setattr(scheduler, 'should_run', lambda t: True)
@@ -671,9 +673,12 @@ def test_scheduling_target_with_deep_deps_that_are_not_submitted(backend, monkey
 
 def test_scheduling_branch_and_join_structure(backend, monkeypatch):
     target1 = Target('TestTarget1', inputs=[], outputs=['output1.txt'], options={}, working_dir='/some/dir')
-    target2 = Target('TestTarget2', inputs=['output1.txt'], outputs=['output2.txt'], options={}, working_dir='/some/dir')
-    target3 = Target('TestTarget3', inputs=['output1.txt'], outputs=['output3.txt'], options={}, working_dir='/some/dir')
-    target4 = Target('TestTarget4', inputs=['output2.txt', 'output3.txt'], outputs=['final.txt'], options={}, working_dir='/some/dir')
+    target2 = Target('TestTarget2', inputs=['output1.txt'], outputs=['output2.txt'], options={},
+                     working_dir='/some/dir')
+    target3 = Target('TestTarget3', inputs=['output1.txt'], outputs=['output3.txt'], options={},
+                     working_dir='/some/dir')
+    target4 = Target('TestTarget4', inputs=['output2.txt', 'output3.txt'], outputs=['final.txt'], options={},
+                     working_dir='/some/dir')
     graph = Graph.from_targets({'target1': target1, 'target2': target2, 'target3': target3, 'target4': target4})
     scheduler = Scheduler(graph=graph, backend=backend)
     monkeypatch.setattr(scheduler, 'should_run', lambda t: True)
@@ -687,9 +692,12 @@ def test_scheduling_branch_and_join_structure(backend, monkeypatch):
 
 def test_scheduling_branch_and_join_structure_with_previously_submitted_dependency(backend, monkeypatch):
     target1 = Target('TestTarget1', inputs=[], outputs=['output1.txt'], options={}, working_dir='/some/dir')
-    target2 = Target('TestTarget2', inputs=['output1.txt'], outputs=['output2.txt'], options={}, working_dir='/some/dir')
-    target3 = Target('TestTarget3', inputs=['output1.txt'], outputs=['output3.txt'], options={}, working_dir='/some/dir')
-    target4 = Target('TestTarget4', inputs=['output2.txt', 'output3.txt'], outputs=['final.txt'], options={}, working_dir='/some/dir')
+    target2 = Target('TestTarget2', inputs=['output1.txt'], outputs=['output2.txt'], options={},
+                     working_dir='/some/dir')
+    target3 = Target('TestTarget3', inputs=['output1.txt'], outputs=['output3.txt'], options={},
+                     working_dir='/some/dir')
+    target4 = Target('TestTarget4', inputs=['output2.txt', 'output3.txt'], outputs=['final.txt'], options={},
+                     working_dir='/some/dir')
 
     graph = Graph.from_targets({'target1': target1, 'target2': target2, 'target3': target3, 'target4': target4})
     scheduler = Scheduler(graph=graph, backend=backend)
@@ -707,7 +715,8 @@ def test_scheduling_branch_and_join_structure_with_previously_submitted_dependen
 def test_scheduling_non_submitted_targets_that_should_not_run(backend, monkeypatch):
     target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
     target2 = Target('TestTarget2', inputs=[], outputs=['test_output2.txt'], options={}, working_dir='/some/dir')
-    target3 = Target('TestTarget3', inputs=['test_output1.txt', 'test_output2.txt'], outputs=['test_output3.txt'], options={}, working_dir='/some/dir')
+    target3 = Target('TestTarget3', inputs=['test_output1.txt', 'test_output2.txt'], outputs=['test_output3.txt'],
+                     options={}, working_dir='/some/dir')
     graph = Graph.from_targets({'TestTarget1': target1, 'TestTarget2': target2, 'TestTarget3': target3})
     scheduler = Scheduler(graph=graph, backend=backend)
     monkeypatch.setattr(scheduler, 'should_run', lambda t: False)
@@ -718,9 +727,12 @@ def test_scheduling_non_submitted_targets_that_should_not_run(backend, monkeypat
 def test_scheduling_many_targets_calls_schedule_for_each_target(backend, monkeypatch):
     target1 = Target('TestTarget1', inputs=[], outputs=['test_output1.txt'], options={}, working_dir='/some/dir')
     target2 = Target('TestTarget2', inputs=[], outputs=['test_output2.txt'], options={}, working_dir='/some/dir')
-    target3 = Target('TestTarget3', inputs=['test_output1.txt'], outputs=['test_output3.txt'], options={}, working_dir='/some/dir')
-    target4 = Target('TestTarget4', inputs=['test_output2.txt'], outputs=['test_output4.txt'], options={}, working_dir='/some/dir')
-    graph = Graph.from_targets({'TestTarget1': target1, 'TestTarget2': target2, 'TestTarget3': target3, 'TestTarget4': target4})
+    target3 = Target('TestTarget3', inputs=['test_output1.txt'], outputs=['test_output3.txt'], options={},
+                     working_dir='/some/dir')
+    target4 = Target('TestTarget4', inputs=['test_output2.txt'], outputs=['test_output4.txt'], options={},
+                     working_dir='/some/dir')
+    graph = Graph.from_targets(
+        {'TestTarget1': target1, 'TestTarget2': target2, 'TestTarget3': target3, 'TestTarget4': target4})
     scheduler = Scheduler(graph=graph, backend=backend)
     monkeypatch.setattr(scheduler, 'should_run', lambda t: True)
 
