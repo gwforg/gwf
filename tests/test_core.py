@@ -6,27 +6,51 @@ from unittest.mock import Mock, patch, call
 
 import pytest
 
-from gwf import Graph, Target, Workflow
-from gwf.backends import Status
-from gwf.core import Scheduler
+from gwf import Graph, Target, Scheduler, Workflow
+from gwf.backends import Backend, Status
 from gwf.exceptions import (CircularDependencyError,
                             FileProvidedByMultipleTargetsError,
                             FileRequiredButNotProvidedError,
                             IncludeWorkflowError, InvalidNameError,
-                            TargetExistsError, InvalidTypeError, GWFError)
+                            TargetExistsError, InvalidTypeError, LogNotFoundError)
 
-from . import MockBackend
+
+class DummyBackend(Backend):
+
+    def __init__(self):
+        super().__init__()
+        self._tracked = {}
+
+    def submit(self, target, dependencies):
+        self._tracked[target] = Status.SUBMITTED
+
+    def cancel(self, target):
+        del self._tracked[target]
+
+    def status(self, target):
+        return self._tracked.get(target, Status.UNKNOWN)
+
+    def logs(self, target, stderr=False):
+        raise LogNotFoundError
+
+    def close(self):
+        pass
+
+    def set_status(self, target, status):
+        assert status in (Status.RUNNING, Status.UNKNOWN)
+        self._tracked[target] = status
 
 
 @pytest.fixture
 def backend():
-    backend = MockBackend()
+    backend = DummyBackend()
     backend.submit = Mock(wraps=backend.submit)
     backend.status = Mock(wraps=backend.status)
     return backend
 
 
 class TestWorkflow(unittest.TestCase):
+
     def test_workflow_with_invalid_name_raises_error(self):
         with self.assertRaises(InvalidNameError):
             Workflow(name='123abc')
@@ -329,7 +353,8 @@ class TestTarget(unittest.TestCase):
             inputs=[],
             outputs=[pathlib.PurePath('somefile.txt'), 'otherfile.txt'],
             options={},
-            working_dir='/some/path')
+            working_dir='/some/path'
+        )
         self.assertEqual(target.outputs, ['/some/path/somefile.txt', '/some/path/otherfile.txt'])
 
     def test_inherit_options(self):
@@ -500,7 +525,7 @@ class TestShouldRun(unittest.TestCase):
         self.target4 = workflow.target('TestTarget4', inputs=['test_output2.txt', 'test_output3.txt'], outputs=['final_output.txt'])
 
         self.graph = Graph.from_targets(workflow.targets)
-        self.backend = MockBackend()
+        self.backend = DummyBackend()
         self.scheduler = Scheduler(graph=self.graph, backend=self.backend)
 
     def test_target_should_run_if_one_of_its_dependencies_does_not_exist(self):
@@ -529,7 +554,7 @@ class TestShouldRun(unittest.TestCase):
     def test_target_should_run_if_it_is_a_sink(self):
         target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
         graph = Graph.from_targets({'TestTarget': target})
-        scheduler = Scheduler(graph=graph, backend=MockBackend())
+        scheduler = Scheduler(graph=graph, backend=DummyBackend())
         with self.assertLogs(level='DEBUG') as logs:
             self.assertTrue(scheduler.schedule(target))
             self.assertEqual(logs.output, [
@@ -547,7 +572,7 @@ class TestShouldRun(unittest.TestCase):
         )
 
         graph = Graph.from_targets(workflow.targets)
-        scheduler = Scheduler(graph=graph, backend=MockBackend())
+        scheduler = Scheduler(graph=graph, backend=DummyBackend())
 
         mock_file_cache = {
             '/some/dir/test_output1.txt': 1,
@@ -586,7 +611,7 @@ class TestShouldRun(unittest.TestCase):
 
 
 @patch('gwf.core.os.path.exists', return_value=True, autospec=True)
-def test_two_targets_producing_the_same_file_but_declared_with_rel_and_abs_path( mock_os_path_exists):
+def test_two_targets_producing_the_same_file_but_declared_with_rel_and_abs_path(mock_os_path_exists):
     workflow = Workflow(working_dir='/some/dir')
     workflow.target('TestTarget1', inputs=[], outputs=['/some/dir/test_output.txt'])
     workflow.target('TestTarget2', inputs=[], outputs=['test_output.txt'])
