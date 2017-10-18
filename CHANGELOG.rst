@@ -2,6 +2,7 @@
 Change Log
 ==========
 
+
 Version 1.1
 ===========
 
@@ -31,8 +32,12 @@ Added
 
 * Added filtering of targets by name in the ``info`` command.
 * Added API documentation for the ``gwf.filtering`` module.
-* Added ``gwf.core.graph_from_path`` and ``gwf.core.graph_from_config``.
-* Added ``gwf.backends.list_backends``, ``gwf.backends.backend_from_name`` and ``gwf.backends.backend_from_config``.
+* Added ``gwf.core.graph_from_path()`` and ``gwf.core.graph_from_config()``.
+* Added ``gwf.backends.list_backends()``, ``gwf.backends.backend_from_name()`` and
+  ``gwf.backends.backend_from_config()``.
+* Added ``SlurmBackend.get_job_id()`` and ``SlurmBackend.forget_job()`` to ``SlurmBackend`` to make it easier for
+  plugins to integrate with Slurm.
+
 
 Version 1.0
 ===========
