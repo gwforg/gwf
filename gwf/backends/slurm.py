@@ -136,10 +136,6 @@ class SlurmBackend(Backend):
         self._status = _parse_squeue_output(_call_squeue())
         self._tracked = PersistableDict(path='.gwf/slurm-backend-tracked.json')
 
-        # for job_name, job_id in list(self._tracked.items()):
-        #     if job_id not in self._status:
-        #         del self._tracked[job_name]
-
     def status(self, target):
         try:
             return self._get_status(target)
