@@ -71,12 +71,13 @@ def test_executable_unavailable_after_initialization(popen, monkeypatch):
 
     popen.return_value.returncode = 0
     popen.return_value.communicate.return_value = ('', '')
-    with SlurmBackend() as backend:
-        with pytest.raises(BackendError):
-            backend.cancel(t)
 
-        with pytest.raises(BackendError):
-            backend.submit(t, dependencies=[])
+    backend = SlurmBackend()
+    with pytest.raises(BackendError):
+        backend.cancel(t)
+
+    with pytest.raises(BackendError):
+        backend.submit(t, dependencies=[])
 
 
 def test_submit_1(popen):
