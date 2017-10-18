@@ -5,7 +5,6 @@ import click
 from collections import OrderedDict
 
 from ..core import graph_from_config
-from ..exceptions import TargetDoesNotExistError
 from ..filtering import filter_names
 
 
