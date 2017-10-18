@@ -64,16 +64,12 @@ def _call_generic(executable_name, *args, input=None):
     return stdout
 
 
-# def _call_sacct(job_id):
-#     return _call_generic('sacct', '--noheader', '--long', '--parsable2', '--allocations', '--jobs', job_id)
-
-
 def _call_squeue():
     return _call_generic('squeue', '--noheader', '--format=%i;%t')
 
 
 def _call_scancel(job_id):
-    return _call_generic('scancel', job_id)
+    return _call_generic('scancel', '-t', 'RUNNING', '-t', 'PENDING', '-t', 'SUSPENDED', job_id)
 
 
 def _call_sbatch(script, dependencies):
@@ -137,14 +133,12 @@ class SlurmBackend(Backend):
     }
 
     def __init__(self):
-        super().__init__()
-
         self._status = _parse_squeue_output(_call_squeue())
         self._tracked = PersistableDict(path='.gwf/slurm-backend-tracked.json')
 
-        for job_name, job_id in list(self._tracked.items()):
-            if job_id not in self._status:
-                del self._tracked[job_name]
+        # for job_name, job_id in list(self._tracked.items()):
+        #     if job_id not in self._status:
+        #         del self._tracked[job_name]
 
     def status(self, target):
         try:
@@ -162,15 +156,28 @@ class SlurmBackend(Backend):
     def cancel(self, target):
         """Cancel a target."""
         try:
-            job_id = self._get_job_id(target)
-        except KeyError:
+            job_id = self.get_job_id(target)
+            _call_scancel(job_id)
+        except (KeyError, BackendError):
             raise UnknownTargetError(target.name)
-
-        _call_scancel(job_id)
-        self._forget_job(target)
+        else:
+            self.forget_job(target)
 
     def close(self):
         self._tracked.persist()
+
+    def forget_job(self, target):
+        """Force the backend to forget the job associated with `target`."""
+        job_id = self.get_job_id(target)
+        del self._status[job_id]
+        del self._tracked[target.name]
+
+    def get_job_id(self, target):
+        """Get the Slurm job id for a target.
+
+        :raises KeyError: if the target is not tracked by the backend.
+        """
+        return self._tracked[target.name]
 
     def _compile_script(self, target):
         option_str = "#SBATCH {0}{1}"
@@ -200,23 +207,15 @@ class SlurmBackend(Backend):
         self._set_job_id(target, job_id)
         self._set_status(target, initial_status)
 
-    def _forget_job(self, target):
-        job_id = self._get_job_id(target)
-        del self._status[job_id]
-        del self._tracked[target.name]
-
-    def _get_job_id(self, target):
-        return self._tracked[target.name]
-
     def _set_job_id(self, target, job_id):
         self._tracked[target.name] = job_id
 
     def _get_status(self, target):
-        job_id = self._get_job_id(target)
+        job_id = self.get_job_id(target)
         return self._status[job_id]
 
     def _set_status(self, target, status):
-        job_id = self._get_job_id(target)
+        job_id = self.get_job_id(target)
         self._status[job_id] = status
 
     def _collect_dependency_ids(self, dependencies):

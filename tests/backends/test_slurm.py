@@ -161,7 +161,7 @@ def test_cancel(popen):
     assert backend.status(t) == Status.UNKNOWN
 
     assert call(
-        ['/bin/scancel', '1'],
+        ['/bin/scancel', '-t', 'RUNNING', '-t', 'PENDING', '-t', 'SUSPENDED', '1'],
         stderr=-1, stdin=-1, stdout=-1, universal_newlines=True
     ) in popen.call_args_list
 
