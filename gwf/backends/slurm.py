@@ -154,7 +154,6 @@ class SlurmBackend(Backend):
         self._add_job(target, job_id)
 
     def cancel(self, target):
-        """Cancel a target."""
         try:
             job_id = self.get_job_id(target)
             _call_scancel(job_id)
