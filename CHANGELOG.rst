@@ -23,6 +23,8 @@ Changed
 * The ``info`` command outputs information for all targets in the workflow by default.
 * Backends must now specify a ``log_manager`` class attribute specifying which log manager to use for accessing
   target log files.
+* Backends should now be used as context managers to make sure that ``Backend.close()`` is called when the backend is no
+  longer needed, as it is no longer called automatically on exit.
 
 Added
 ------
