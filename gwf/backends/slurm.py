@@ -44,7 +44,9 @@ SLURM_OPTIONS = {
 def _find_exe(name):
     exe = find_executable(name)
     if exe is None:
-        raise BackendError('Could not find executable "{}".'.format(name))
+        raise BackendError(
+            'Could not find executable "{}". This backend requires Slurm to be installed on this host.'.format(name)
+        )
     return exe
 
 
