@@ -5,7 +5,7 @@ from distutils.spawn import find_executable
 from . import Backend, Status
 from .logmanager import FileLogManager
 from ..exceptions import BackendError, UnknownDependencyError, UnknownTargetError
-from ..utils import cache, PersistableDict
+from ..utils import PersistableDict
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,6 @@ SLURM_OPTIONS = {
 }
 
 
-@cache
 def _find_exe(name):
     exe = find_executable(name)
     if exe is None:
