@@ -4,9 +4,9 @@ from unittest.mock import call
 import pytest
 
 from gwf import Target
-from gwf.backends import Status
+from gwf.backends import Status, BackendError
 from gwf.backends.slurm import SlurmBackend
-from gwf.exceptions import UnknownTargetError, UnknownDependencyError, BackendError
+from gwf.backends.exceptions import UnknownDependencyError, UnknownTargetError
 
 
 @pytest.fixture(autouse=True)

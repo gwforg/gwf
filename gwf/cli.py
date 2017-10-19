@@ -30,6 +30,7 @@ def ensure_dir(path):
     """Create directory unless it already exists."""
     os.makedirs(path, exist_ok=True)
 
+
 def get_level(level):
     return getattr(logging, level.upper())
 

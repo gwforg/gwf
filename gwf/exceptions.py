@@ -26,7 +26,7 @@ class TargetExistsError(GWFError):
         super(TargetExistsError, self).__init__(message)
 
 
-class TargetDoesNotExistError(GWFError):
+class TargetNotFoundError(GWFError):
     """Target does not exist in the workflow."""
 
     def __init__(self, target_name):
@@ -36,10 +36,10 @@ class TargetDoesNotExistError(GWFError):
             'Target "{}" is not found in the workflow.'
         ).format(target_name)
 
-        super(TargetDoesNotExistError, self).__init__(message)
+        super(TargetNotFoundError, self).__init__(message)
 
 
-class FileProvidedByMultipleTargetsError(GWFError):
+class MultipleProvidersError(GWFError):
     """File is provided by multiple targets.
 
     :param str path: path of the file.
@@ -56,10 +56,10 @@ class FileProvidedByMultipleTargetsError(GWFError):
             'File "{}" provided by targets "{}" and "{}".'
         ).format(self.path, self.target, self.other_target)
 
-        super(FileProvidedByMultipleTargetsError, self).__init__(message)
+        super(MultipleProvidersError, self).__init__(message)
 
 
-class FileRequiredButNotProvidedError(GWFError):
+class MissingProviderError(GWFError):
     """File required by a target does not exist and is not provided by a target.
 
     :param str path:
@@ -77,7 +77,7 @@ class FileRequiredButNotProvidedError(GWFError):
             'provided by any target in the workflow.'
         ).format(self.path, self.target)
 
-        super(FileRequiredButNotProvidedError, self).__init__(message)
+        super(MissingProviderError, self).__init__(message)
 
 
 class CircularDependencyError(GWFError):
@@ -103,26 +103,3 @@ class IncludeWorkflowError(GWFError):
 
 class InvalidPathError(GWFError):
     """Target declared a directory as as input or output."""
-
-
-class BackendError(GWFError):
-    """Base class for backend errors."""
-
-
-class UnknownDependencyError(BackendError):
-    pass
-
-
-class UnknownTargetError(BackendError):
-    pass
-
-
-class LogNotFoundError(BackendError):
-    """No log found for target."""
-
-    def __init__(self):
-        super().__init__('No log found.')
-
-
-class UnsupportedOperationError(BackendError):
-    """Operation not supported by this backend."""

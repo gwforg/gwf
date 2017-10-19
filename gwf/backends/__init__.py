@@ -4,8 +4,8 @@ from functools import wraps
 
 from pkg_resources import iter_entry_points
 
+from .exceptions import BackendError
 from .logmanager import FileLogManager
-from ..exceptions import BackendError
 
 logger = logging.getLogger(__name__)
 

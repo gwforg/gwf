@@ -16,7 +16,7 @@ def cast_value(value):
     for type_func in types:
         try:
             return type_func(value)
-        except:
+        except Exception:
             continue
     return value
 

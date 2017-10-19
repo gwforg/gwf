@@ -14,9 +14,7 @@ from glob import glob as _glob
 from glob import iglob as _iglob
 
 from .backends import Status
-from .exceptions import (CircularDependencyError,
-                         FileProvidedByMultipleTargetsError,
-                         FileRequiredButNotProvidedError, IncludeWorkflowError,
+from .exceptions import (CircularDependencyError, MultipleProvidersError, MissingProviderError, IncludeWorkflowError,
                          InvalidNameError, TargetExistsError, InvalidTypeError, InvalidPathError)
 from .utils import LazyDict, cache, load_workflow, timer, parse_path
 
@@ -71,8 +69,8 @@ def normalized_paths_property(name):
 def graph_from_path(path):
     """Return graph for the workflow given by `path`.
 
-    Returns a :class:`~gwf.Graph` object containing the workflow graph of the workflow given by `path`. Note that calling
-    this function computes the complete dependency graph which may take some time for large workflows.
+    Returns a :class:`~gwf.Graph` object containing the workflow graph of the workflow given by `path`. Note that
+    calling this function computes the complete dependency graph which may take some time for large workflows.
 
     :arg str path:
         Path to a workflow file, optionally specifying a workflow object in that file.
@@ -543,14 +541,14 @@ class Graph:
         for target in targets.values():
             for path in target.outputs:
                 if path in provides:
-                    raise FileProvidedByMultipleTargetsError(path, provides[path].name, target)
+                    raise MultipleProvidersError(path, provides[path].name, target)
                 provides[path] = target
 
         for target in targets.values():
             for path in target.inputs:
                 if path not in provides:
                     if not os.path.exists(path):
-                        raise FileRequiredButNotProvidedError(path, target)
+                        raise MissingProviderError(path, target)
                     continue
                 dependencies[target].add(provides[path])
 

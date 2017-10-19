@@ -3,8 +3,8 @@ import subprocess
 from distutils.spawn import find_executable
 
 from . import Backend, Status
+from .exceptions import BackendError, UnknownDependencyError, UnknownTargetError
 from .logmanager import FileLogManager
-from ..exceptions import BackendError, UnknownDependencyError, UnknownTargetError
 from ..utils import PersistableDict
 
 logger = logging.getLogger(__name__)

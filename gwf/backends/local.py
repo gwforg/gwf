@@ -12,9 +12,9 @@ from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
 from . import Backend, Status
+from .exceptions import BackendError, UnsupportedOperationError, UnknownDependencyError
 from .logmanager import FileLogManager
 from ..conf import config
-from ..exceptions import GWFError, BackendError, UnknownDependencyError, UnsupportedOperationError
 from ..utils import PersistableDict
 
 __all__ = ('Client', 'Server', 'LocalBackend',)
@@ -148,7 +148,7 @@ class LocalBackend(Backend):
         try:
             self.client = Client((host, port))
         except ConnectionRefusedError:
-            raise GWFError(
+            raise BackendError(
                 'Local backend could not connect to workers on port {}. '
                 'Workers can be started by running "gwf workers". '
                 'You can read more in the documentation: '

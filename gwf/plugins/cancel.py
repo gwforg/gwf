@@ -1,8 +1,8 @@
 import click
 
 from ..backends import backend_from_config
+from ..backends.exceptions import UnsupportedOperationError, UnknownTargetError
 from ..core import graph_from_config
-from ..exceptions import UnknownTargetError, UnsupportedOperationError
 from ..filtering import filter_names
 
 

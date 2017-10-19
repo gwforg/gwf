@@ -1,7 +1,7 @@
 import io
 import os.path
 
-from ..exceptions import LogNotFoundError
+from .exceptions import LogNotFoundError
 
 
 class LogManager:

@@ -1,10 +1,8 @@
-import copy
 import functools
 import importlib
 import json
 import logging
 import os.path
-import re
 import sys
 import time
 from collections import UserDict

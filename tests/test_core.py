@@ -9,10 +9,11 @@ import pytest
 from gwf import Graph, Target, Scheduler, Workflow
 from gwf.backends import Backend, Status
 from gwf.exceptions import (CircularDependencyError,
-                            FileProvidedByMultipleTargetsError,
-                            FileRequiredButNotProvidedError,
+                            MultipleProvidersError,
+                            MissingProviderError,
                             IncludeWorkflowError, InvalidNameError,
-                            TargetExistsError, InvalidTypeError, LogNotFoundError)
+                            TargetExistsError, InvalidTypeError)
+from gwf.backends.exceptions import LogNotFoundError
 
 
 class DummyBackend(Backend):
@@ -398,7 +399,7 @@ class TestGraph(unittest.TestCase):
         self.workflow.target(
             'TestTarget2', inputs=[], outputs=['/test_output.txt'], working_dir='')
 
-        with self.assertRaises(FileProvidedByMultipleTargetsError):
+        with self.assertRaises(MultipleProvidersError):
             Graph.from_targets(self.workflow.targets)
 
     def test_finds_no_dependencies_for_target_with_no_inputs(self):
@@ -410,7 +411,7 @@ class TestGraph(unittest.TestCase):
     def test_non_existing_files_not_provided_by_other_target_raises_exception(self, mock_os_path_exists):
         self.workflow.target(
             'TestTarget', inputs=['test_input.txt'], outputs=[])
-        with self.assertRaises(FileRequiredButNotProvidedError):
+        with self.assertRaises(MissingProviderError):
             Graph.from_targets(self.workflow.targets, )
 
     @patch('gwf.core.os.path.exists', return_value=True, autospec=True)
@@ -510,7 +511,7 @@ class TestGraph(unittest.TestCase):
         w2.target('SayHi', inputs=[], outputs=['greeting.txt'])
         w2.include(w1)
 
-        with self.assertRaises(FileProvidedByMultipleTargetsError):
+        with self.assertRaises(MultipleProvidersError):
             Graph.from_targets(w2.targets)
 
 
@@ -615,7 +616,7 @@ def test_two_targets_producing_the_same_file_but_declared_with_rel_and_abs_path(
     workflow.target('TestTarget1', inputs=[], outputs=['/some/dir/test_output.txt'])
     workflow.target('TestTarget2', inputs=[], outputs=['test_output.txt'])
 
-    with pytest.raises(FileProvidedByMultipleTargetsError):
+    with pytest.raises(MultipleProvidersError):
         Graph.from_targets(workflow.targets)
 
 
