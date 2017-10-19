@@ -7,3 +7,4 @@ Topic guides cover specific *gwf* features individually, giving an overview of h
 .. toctree::
     configuration
     templates
+    large_workflows
