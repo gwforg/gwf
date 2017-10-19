@@ -9,4 +9,11 @@
 set -eu
 set -o pipefail
 
-anaconda -t $ANACONDA_TOKEN upload --user gwforg $HOME/miniconda/conda-bld/*/*.tar.bz2
+if [[ $TRAVIS_BRANCH = "master" ]]; then
+    LABEL="main"
+else
+    LABEL="dev"
+fi
+
+conda convert --platform all $HOME/miniconda/conda-bld/*/*.tar.bz2 -o $HOME/miniconda/conda-bld/
+anaconda -t $ANACONDA_TOKEN upload --label $LABEL --user gwforg $HOME/miniconda/conda-bld/*/*.tar.bz2

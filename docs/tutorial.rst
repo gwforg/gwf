@@ -316,15 +316,18 @@ Here's a few neat things you should know about the status command:
 * If you want to get an overview of the entire workflow you can use the ``--all`` option,
   which will cause a progress bar to be output for all targets in the workflow.
 
-* You can use wildcards in target names. For example, ``gwf status Foo*`` will list all
+* You can use wildcards in target names. For example, ``gwf status --all 'Foo*'`` will list all
   targets beginning with `Foo`. You can specify multiple targets/patterns by separating
-  them with a space. This also works in the cancel and clean commands!
+  them with a space. This also works in the cancel and clean commands (but remember the quotes
+  around the pattern)!
 
 * Only want to see which targets are running? You can filter targets by their status
-  using e.g. ``gwf status -s running``.
+  using e.g. ``gwf status -s running``. You can also combine filters, i.e.
+  ``gwf status --all --status running 'Align*'`` to show all targets that are running
+  and where the name starts with `Align`.
 
-* The ``--names-only`` option tells *gwf* to just output the names of the targets,
-  without the progress bar. This can be useful for piping to other commands.
+* Use ``--format table`` option tells *gwf* to output status information without the progress bars
+  in a tabular format.
 
 For more details you can always refer to builtin help with ``gwf status --help``.
 

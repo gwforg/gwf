@@ -1,7 +1,8 @@
 import logging
 import os
 
-from ..cli import pass_graph
+from ..core import graph_from_config
+from ..filtering import NameFilter, EndpointFilter, filter_generic
 
 import click
 
@@ -17,20 +18,24 @@ def _delete_file(path):
 
 @click.command()
 @click.argument('targets', nargs=-1)
-@click.option('--not-endpoints', is_flag=True, default=False)
-@pass_graph
-def clean(graph, targets, not_endpoints):
-    """Clean output files of targets."""
-    matched_targets = graph.find(targets) or graph.targets.values()
+@click.option('--all', is_flag=True, default=False)
+@click.pass_obj
+def clean(obj, targets, all):
+    """Clean output files of targets.
 
-    if not_endpoints:
-        matched_targets = [
-            target
-            for target in matched_targets
-            if target not in graph.endpoints()
-        ]
+    By default, only targets that are not endpoints will have their output files deleted. If you want to clean up output
+    files from endpoints too, use the ``--all`` flag.
+    """
+    graph = graph_from_config(obj)
 
-    for target in matched_targets:
+    filters = []
+    if targets:
+        filters.append(NameFilter(patterns=targets))
+    if not all:
+        filters.append(EndpointFilter(endpoints=graph.endpoints(), mode='exclude'))
+
+    matches = filter_generic(targets=graph, filters=filters)
+    for target in matches:
         logger.info('Deleting %s', target.name)
         for path in target.outputs:
             logging.info('Deleting output file "%s" from target "%s".', click.format_filename(path), target.name)

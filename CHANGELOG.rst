@@ -2,6 +2,45 @@
 Change Log
 ==========
 
+
+Version 1.1
+===========
+
+Fixed
+-----
+
+* Very slow scheduling when using dry run with unsubmitted targets (#184, 93e71a).
+* Fixed cancellation with the Slurm backend (#183, 29445f).
+* Fixed wildcard filtering of targets (#185, 036e3d).
+
+Changed
+-------
+
+* Move file cache construction out of ``Graph`` (#186, 93e71a). This change is invisible to end-users, but speeds up the
+  ``logs``, ``cancel``, ``info``, ``logs`` and ``workers`` commands.
+* Replaced ``--not-endpoints`` flag in ``clean`` command with ``--all`` flag.
+* Made filtering more intuitive in all commands.
+* The ``info`` command now outputs JSON instead of invalid YAML.
+* The ``info`` command outputs information for all targets in the workflow by default.
+* Backends must now specify a ``log_manager`` class attribute specifying which log manager to use for accessing
+  target log files.
+* Backends should now be used as context managers to make sure that ``Backend.close()`` is called when the backend is no
+  longer needed, as it is no longer called automatically on exit.
+
+Added
+------
+
+* Added filtering of targets by name in the ``info`` command.
+* Added API documentation for the ``gwf.filtering`` module.
+* Added ``gwf.core.graph_from_path()`` and ``gwf.core.graph_from_config()``.
+* Added ``gwf.backends.list_backends()``, ``gwf.backends.backend_from_name()`` and
+  ``gwf.backends.backend_from_config()``.
+* Added ``SlurmBackend.get_job_id()`` and ``SlurmBackend.forget_job()`` to ``SlurmBackend`` to make it easier for
+  plugins to integrate with Slurm.
+* Documentation for log managers.
+* Documentation on how to handle large workflows.
+
+
 Version 1.0
 ===========
 

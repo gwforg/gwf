@@ -5,3 +5,4 @@ Contributors
 * Dan Søndergaard
 * Anders Halager
 * Michael Knudsen
+* Tobias Madsen

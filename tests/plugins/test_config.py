@@ -1,34 +1,34 @@
-from gwf.cli import main
-from tests import CliTestCase
+import pytest
 
+from gwf.cli import main
 from gwf.plugins.config import humanbool, cast_value
 
 
-class TestConfig(CliTestCase):
+def test_set_get_unset(cli_runner):
+    cli_runner.invoke(main, ['config', 'set', 'backend', 'slurm'])
+    res = cli_runner.invoke(main, ['config', 'get', 'backend'])
+    assert res.output == 'slurm\n'
 
-    def test_set_get_unset(self):
-        self.runner.invoke(main, ['config', 'set', 'backend', 'slurm'])
-        res = self.runner.invoke(main, ['config', 'get', 'backend'])
-        self.assertEqual(res.output, 'slurm\n')
+    cli_runner.invoke(main, ['config', 'unset', 'backend'])
+    res = cli_runner.invoke(main, ['config', 'get', 'backend'])
+    assert res.output == '\n'
 
-        self.runner.invoke(main, ['config', 'unset', 'backend'])
-        res = self.runner.invoke(main, ['config', 'get', 'backend'])
-        self.assertEqual(res.output, '\n')
 
-    def test_humanbool(self):
-        self.assertTrue(humanbool('yes'))
-        self.assertTrue(humanbool('true'))
-        self.assertFalse(humanbool('no'))
-        self.assertFalse(humanbool('false'))
+def test_humanbool():
+    assert humanbool('yes')
+    assert humanbool('true')
+    assert not humanbool('no')
+    assert not humanbool('false')
 
-        with self.assertRaises(TypeError):
-            humanbool('foo')
+    with pytest.raises(TypeError):
+        humanbool('foo')
 
-    def test_cast_value(self):
-        self.assertTrue(cast_value('yes'))
-        self.assertTrue(cast_value('true'))
-        self.assertFalse(cast_value('no'))
-        self.assertFalse(cast_value('false'))
-        self.assertEqual(cast_value('10'), 10)
-        self.assertEqual(cast_value('foo'), 'foo')
+
+def test_cast_value():
+    assert cast_value('yes')
+    assert cast_value('true')
+    assert not cast_value('no')
+    assert not cast_value('false')
+    assert cast_value('10') == 10
+    assert cast_value('foo') == 'foo'
 

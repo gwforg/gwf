@@ -14,10 +14,12 @@ Local
 
 .. autoclass::
     gwf.backends.local.LocalBackend
+    :members:
 
 
 Slurm
 -----
 
 .. autoclass::
-   gwf.backends.slurm.SlurmBackend
+    gwf.backends.slurm.SlurmBackend
+    :members:

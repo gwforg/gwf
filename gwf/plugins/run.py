@@ -1,5 +1,6 @@
-from ..core import schedule_many
-from ..cli import pass_backend, pass_graph
+from ..backends import backend_from_config
+from ..core import Scheduler, graph_from_config
+from ..filtering import filter_names
 
 import click
 
@@ -7,9 +8,17 @@ import click
 @click.command()
 @click.argument('targets', nargs=-1)
 @click.option('-d', '--dry-run', is_flag=True, default=False)
-@pass_backend
-@pass_graph
-def run(graph, backend, targets, dry_run):
+@click.pass_obj
+def run(obj, targets, dry_run):
     """Run the specified workflow."""
-    matched_targets = graph.find(targets) or graph.endpoints()
-    schedule_many(graph, backend, matched_targets, dry_run=dry_run)
+    graph = graph_from_config(obj)
+
+    backend_cls = backend_from_config(obj)
+    with backend_cls() as backend:
+        if targets:
+            matched_targets = filter_names(graph, targets)
+        else:
+            matched_targets = list(graph)
+
+        scheduler = Scheduler(graph=graph, backend=backend, dry_run=dry_run)
+        scheduler.schedule_many(matched_targets)

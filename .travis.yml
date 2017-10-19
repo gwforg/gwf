@@ -1,34 +1,28 @@
 language: python
-
 sudo: false
-
 python:
-  - '3.5'
-  - '3.6'
-
+- '3.5'
+- '3.6'
 before_install:
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - conda update --yes -q conda
-  - conda config --set always_yes true
-  - conda config --set anaconda_upload no
-  - conda config --add channels gwforg
-
+- wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+- chmod +x miniconda.sh
+- "./miniconda.sh -b -p $HOME/miniconda"
+- export PATH="$HOME/miniconda/bin:$PATH"
+- conda update --yes -q conda
+- conda config --set always_yes true
+- conda config --set anaconda_upload no
+- conda config --add channels gwforg
 install:
-  - conda install -q python=$TRAVIS_PYTHON_VERSION pip conda-build anaconda-client
-  - pip install coveralls
-  - conda build conda/
-  - conda install --use-local gwf
-
+- conda install -q python=$TRAVIS_PYTHON_VERSION pip=9.0.1 conda-build=3.0.15 anaconda-client=1.6.0
+- pip install coveralls
+- conda build --python $TRAVIS_PYTHON_VERSION conda/
+- conda install --use-local gwf
 script: make test
-
 after_success:
-  - coveralls
-  - chmod +x ./deploy_conda.sh
-
+- coveralls
+- chmod +x ./deploy_conda.sh
 deploy:
+  matrix:
   - provider: pypi
     username: dansondergaard
     password:
@@ -38,11 +32,11 @@ deploy:
     skip_upload_docs: true
     on:
       tags: true
-      python: 3.5
   - provider: script
-    script: ./deploy_conda.sh
+    script: "./deploy_conda.sh"
     skip_cleanup: true
     skip_upload_docs: true
     on:
       tags: true
-      python: 3.5
+  password:
+    secure: XuSKTx3WoBi8wLSCIX/Y4w0D3K2WqmCLVPYtaSIezvydtKg5wijdTh/iiyXq8GrBqYaOHzk2tJz9YeuHoIgD89eQJu+OJULyM0YlWOzYyu0hNpUjapBh/fSLX6vfNOuTu94vealxhS4veR3MRvssbFKps54EItmFXzV+K+6xnScppiNxz0T/WuKUSM2EF+2eMzrwKb0VaQifX5nwsozulDx/yjvFG30VNNlPsvSjvxt+j/aMtPFyRbq3QGtGs11VPp8nGz87GRbAmN72AeK5BsDi5nTm70zilVXqoZSdSYzX4eIiPWNzISiJfG4XQF3jX7LAyLGQfsytLoT3sPMV+UA+/KoFAvU2o7W41FVszwIPcc4JU2I+sjbKEkRkhOn9GvD2Om9pv0Jp6top7PSmqUM9xSkT0VvS4VvU5IaKFcnlQj8y03nhlmDTuzdNtGQMiwYdgc/i1zObo6CYTDjZZ1SxdNZiqXf3vXxWLg7JDKqRRLoYULBnR4pGHkIVP1x5MPAZOtoUKVK/nWw+JsUsSSC8MEVDem20JlG6nJaXICG0BNCaW91FYkWSLCvvbiTase5lHBBZsA4dAXbbI3dp1T1kcWf5f9AZKOVdC2wxe6ZOMa+609i+FmuU09MbZ39O4UJcNgPECRJcCmumNMkRrZ+LbDYzuAMI5g96IbQk0SE=

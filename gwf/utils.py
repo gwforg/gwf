@@ -1,17 +1,14 @@
-import copy
-import fnmatch
 import functools
 import importlib
+import json
 import logging
 import os.path
-import re
 import sys
 import time
+from collections import UserDict
 from contextlib import ContextDecorator
 
-import click
-
-from gwf.exceptions import GWFError, TargetDoesNotExistError
+from gwf.exceptions import GWFError
 
 logger = logging.getLogger(__name__)
 
@@ -43,16 +40,18 @@ class timer(ContextDecorator):
         self.logger.debug(self.msg, self.duration * 1000)
 
 
-def iter_inputs(targets):
-    for target in targets:
-        for path in target.inputs:
-            yield target, path
+def parse_path(path, default_obj='gwf'):
+    comps = path.rsplit(':')
+    if len(comps) == 2:
+        path, obj = comps
+    elif len(comps) == 1:
+        path, obj = comps[0], default_obj
+    else:
+        raise ValueError('Invalid path: "{}".'.format(path))
 
-
-def iter_outputs(targets):
-    for target in targets:
-        for path in target.outputs:
-            yield target, path
+    basedir, filename = os.path.split(path)
+    filename, _ = os.path.splitext(filename)
+    return basedir, filename, obj
 
 
 def load_workflow(basedir, filename, objname):
@@ -75,87 +74,54 @@ def load_workflow(basedir, filename, objname):
         raise GWFError('Module "{}" does not declare attribute "{}".'.format(filename, objname))
 
 
-def get_file_timestamp(filename):
-    """Return the modification time of `filename`.
+class LazyDict(dict):
+    """A dict which lazily computes values for keys using `valfunc`.
 
-    :param str filename: Path to a file.
-    :return: Modification time of the file or `None` if the file does not exist.
+    When accessing an key in the dict, it will check whether the key exists. If it does, the value is returned
+    immediately. If not, `valfunc` will be called on the key and the return value will be assigned as the value of the
+    key. For example::
+
+        >>> d = LazyDict(valfunc=lambda k: k + 1)
+        >>> 0 in d
+        False
+        >>> d[0]
+        1
+        >>> d[100]
+        101
     """
-    try:
-        return os.path.getmtime(filename)
-    except OSError:
-        return None
+    def __init__(self, valfunc, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.valfunc = valfunc
+
+    def __getitem__(self, item):
+        if not super().__contains__(item):
+            super().__setitem__(item, self.valfunc(item))
+        return super().__getitem__(item)
 
 
-def dfs(root, dependencies):
-    """Return the depth-first traversal path through a graph from `root`."""
-    visited = set()
-    path = []
+class PersistableDict(UserDict):
+    """A dictionary which can persist itself to JSON."""
 
-    def dfs_inner(node):
-        if node in visited:
-            return
+    def __init__(self, path):
+        super().__init__()
 
-        visited.add(node)
-        for dep in dependencies[node]:
-            dfs_inner(dep)
+        self.path = path
+        try:
+            with open(self.path) as fileobj:
+                self.data.update(json.load(fileobj))
+        except (OSError, ValueError):
+            # Catch ValueError for compatibility with Python 3.4.2. I haven't been
+            # able to figure out what is different between 3.4.2 and 3.5 that
+            # causes this. Essentially, 3.4.2 raises a ValueError saying that it
+            # cannot parse the empty string instead of raising an OSError
+            # (FileNotFoundError does not exist in 3.4.2) saying that the file does
+            # not exist.
+            pass
 
-        path.append(node)
-
-    dfs_inner(root)
-    return path
-
-
-def is_valid_name(candidate):
-    return re.match(r'^[a-zA-Z_][a-zA-Z0-9._]*$', candidate) is not None
-
-
-def ensure_dir(path):
-    """Create directory unless it already exists."""
-    os.makedirs(path, exist_ok=True)
-
-
-def parse_path(path, default_obj='gwf'):
-    comps = path.rsplit(':')
-    if len(comps) == 2:
-        path, obj = comps
-    elif len(comps) == 1:
-        path, obj = comps[0], default_obj
-    else:
-        raise ValueError('Invalid path: "{}".'.format(path))
-
-    basedir, filename = os.path.split(path)
-    filename, _ = os.path.splitext(filename)
-    return basedir, filename, obj
-
-
-def match_targets(names, targets):
-    matched_targets = set()
-    for name in names:
-        if '*' in name:
-            for match in fnmatch.filter(targets.keys(), name):
-                matched_targets.add(targets[match])
-        elif name not in targets:
-            raise TargetDoesNotExistError(name)
-        else:
-            matched_targets.add(targets[name])
-    return matched_targets
-
-
-class ColorFormatter(logging.Formatter):
-    STYLING = {
-        'WARNING': dict(fg='yellow'),
-        'INFO': dict(fg='blue'),
-        'DEBUG': dict(fg='white'),
-        'ERROR': dict(fg='red', bold=True),
-        'CRITICAL': dict(fg='magenta', bold=True),
-    }
-
-    def format(self, record):
-        level = record.levelname
-        color_record = copy.copy(record)
-        if record.levelname in self.STYLING:
-            styling = self.STYLING[level]
-            color_record.levelname = click.style(record.levelname, **styling)
-            color_record.msg = click.style(record.msg, **styling)
-        return super().format(color_record)
+    def persist(self):
+        with open(self.path + '.new', 'w') as fileobj:
+            json.dump(self.data, fileobj)
+            fileobj.flush()
+            os.fsync(fileobj.fileno())
+            fileobj.close()
+        os.rename(self.path + '.new', self.path)

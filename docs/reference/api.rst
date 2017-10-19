@@ -11,17 +11,38 @@ into a :class:`~gwf.Graph` which will compute the entire dependency graph of the
 workflow, checking the workflow for inconsistencies and circular dependencies.
 
 A target in a :class:`~gwf.Graph` can be scheduled on a
-:class:`~gwf.backends.Backend` using the :func:`~gwf.schedule`
-function.
+:class:`~gwf.backends.Backend` using the :class:`~gwf.Scheduler`.
 
-.. automodule:: gwf
-   :members: Target, Workflow, Graph, schedule, schedule_many
+Core
+----
 
-.. autoclass:: gwf.backends.Backend
-   :members:
+.. automodule:: gwf.core
+   :members: graph_from_config, graph_from_path, Target, Workflow, Graph, Scheduler
+
+Backends
+--------
+
+.. automodule:: gwf.backends
+   :members: list_backends, backend_from_config, backend_from_name, Backend, Status
    :inherited-members:
    :undoc-members:
 
-.. autoclass:: gwf.backends.Status
-   :members:
+
+Log Managers
+~~~~~~~~~~~~
+
+.. automodule:: gwf.backends.logmanager
+   :members: FileLogManager, MemoryLogManager
+
+Filtering
+---------
+
+.. automodule:: gwf.filtering
+   :members: filter_generic, filter_names
+   :undoc-members:
+
+Helpers for filtering:
+
+.. automodule:: gwf.filtering
+   :members: ApplyMixin
    :undoc-members:

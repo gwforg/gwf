@@ -11,15 +11,13 @@ from multiprocessing.connection import Client as Client_
 from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
+from . import Backend, Status
+from .exceptions import BackendError, UnsupportedOperationError, UnknownDependencyError
+from .logmanager import FileLogManager
 from ..conf import config
-from .base import PersistableDict, UnknownDependencyError
-from .base import Status
-from . import Backend
-from ..exceptions import BackendError, GWFError, UnsupportedOperationError
-
+from ..utils import PersistableDict
 
 __all__ = ('Client', 'Server', 'LocalBackend',)
-
 
 logger = logging.getLogger(__name__)
 
@@ -136,9 +134,13 @@ class LocalBackend(Backend):
     None available.
     """
 
+    log_manager = FileLogManager()
+
     option_defaults = {}
 
     def __init__(self):
+        super().__init__()
+
         self._tracked = PersistableDict(os.path.join('.gwf/local-backend-tracked.json'))
 
         host = config.get('local.host', 'localhost')
@@ -146,7 +148,7 @@ class LocalBackend(Backend):
         try:
             self.client = Client((host, port))
         except ConnectionRefusedError:
-            raise GWFError(
+            raise BackendError(
                 'Local backend could not connect to workers on port {}. '
                 'Workers can be started by running "gwf workers". '
                 'You can read more in the documentation: '
@@ -168,8 +170,8 @@ class LocalBackend(Backend):
         task_id = self.client.submit(
             target,
             deps=dependency_ids,
-            stdout_path=self._log_path(target, 'stdout'),
-            stderr_path=self._log_path(target, 'stderr')
+            stdout_path=self.log_manager.stdout_path(target),
+            stderr_path=self.log_manager.stderr_path(target)
         )
         self._tracked[target.name] = task_id
         self._status[task_id] = LocalStatus.SUBMITTED
@@ -195,7 +197,6 @@ class LocalBackend(Backend):
 
 
 class Worker:
-
     def __init__(self, status, queue, waiting):
         self.status = status
         self.queue = queue
@@ -302,7 +303,6 @@ class Worker:
 
 
 class Server:
-
     def __init__(self, hostname='', port=0, num_workers=None):
         self.hostname = hostname
         self.port = port
