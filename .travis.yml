@@ -22,7 +22,6 @@ after_success:
 - coveralls
 - chmod +x ./deploy_conda.sh
 deploy:
-  matrix:
   - provider: pypi
     username: dansondergaard
     password:
