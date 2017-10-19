@@ -27,6 +27,13 @@ Backends
    :inherited-members:
    :undoc-members:
 
+
+Log Managers
+~~~~~~~~~~~~
+
+.. automodule:: gwf.backends.logmanager
+   :members: FileLogManager, MemoryLogManager
+
 Filtering
 ---------
 
