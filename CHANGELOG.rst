@@ -37,6 +37,8 @@ Added
   ``gwf.backends.backend_from_config()``.
 * Added ``SlurmBackend.get_job_id()`` and ``SlurmBackend.forget_job()`` to ``SlurmBackend`` to make it easier for
   plugins to integrate with Slurm.
+* Documentation for log managers.
+* Documentation on how to handle large workflows.
 
 
 Version 1.0
