@@ -64,25 +64,6 @@ def load_workflow(basedir, filename, objname):
         raise GWFError('Module "{}" does not declare attribute "{}".'.format(filename, objname))
 
 
-def dfs(root, dependencies):
-    """Return the depth-first traversal path through a graph from `root`."""
-    visited = set()
-    path = []
-
-    def dfs_inner(node):
-        if node in visited:
-            return
-
-        visited.add(node)
-        for dep in dependencies[node]:
-            dfs_inner(dep)
-
-        path.append(node)
-
-    dfs_inner(root)
-    return path
-
-
 def is_valid_name(candidate):
     return re.match(r'^[a-zA-Z_][a-zA-Z0-9._]*$', candidate) is not None
 

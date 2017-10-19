@@ -4,10 +4,28 @@ import statusbar
 from ..backends import Status, backend_from_config
 from ..core import Scheduler, graph_from_config
 from ..filtering import StatusFilter, EndpointFilter, NameFilter, filter_generic
-from ..utils import dfs
 
 
-def _split_target_list(backend, graph, targets):
+def dfs(root, dependencies):
+    """Return the depth-first traversal path through a graph from `root`."""
+    visited = set()
+    path = []
+
+    def dfs_inner(node):
+        if node in visited:
+            return
+
+        visited.add(node)
+        for dep in dependencies[node]:
+            dfs_inner(dep)
+
+        path.append(node)
+
+    dfs_inner(root)
+    return path
+
+
+def split_target_list(backend, graph, targets):
     scheduler = Scheduler(graph=graph, backend=backend)
     should_run, submitted, running, completed = [], [], [], []
     for target in targets:
@@ -28,7 +46,7 @@ def print_progress(backend, graph, targets):
     table = statusbar.StatusTable(fill_char=' ')
     for target in targets:
         dependencies = dfs(target, graph.dependencies)
-        should_run, submitted, running, completed = _split_target_list(backend, graph, dependencies)
+        should_run, submitted, running, completed = split_target_list(backend, graph, dependencies)
         status_bar = table.add_status_line(target.name)
         status_bar.add_progress(len(completed), 'C', color='green')
         status_bar.add_progress(len(running), 'R', color='blue')
