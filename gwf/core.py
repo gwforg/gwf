@@ -5,6 +5,7 @@ import inspect
 import logging
 import os
 import os.path
+import re
 import stat
 import subprocess
 import sys
@@ -17,7 +18,7 @@ from .exceptions import (CircularDependencyError,
                          FileProvidedByMultipleTargetsError,
                          FileRequiredButNotProvidedError, IncludeWorkflowError,
                          InvalidNameError, TargetExistsError, InvalidTypeError, InvalidPathError)
-from .utils import LazyDict, cache, load_workflow, is_valid_name, timer, parse_path
+from .utils import LazyDict, cache, load_workflow, timer, parse_path
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,11 @@ def _norm_paths(working_dir, paths):
 
 def _is_valid_list(obj):
     return isinstance(obj, collections.Sequence) and not isinstance(obj, str)
+
+
+def is_valid_name(candidate):
+    """Check whether `candidate` is a valid name for a target or workflow."""
+    return re.match(r'^[a-zA-Z_][a-zA-Z0-9._]*$', candidate) is not None
 
 
 def normalized_paths_property(name):
@@ -478,21 +484,9 @@ class Workflow(object):
 
 
 class Graph:
-    """Represents a finalized workflow graph.
+    """Represents a dependency graph for a set of targets.
 
-    The represents the targets present in a workflow, but also their dependencies and the files they provide. When a
-    graph is initialized it computes all dependency relations between targets, ensuring that the graph is semantically
-    sane. Therefore, construction of the graph is an expensive operation which may raise a number of exceptions:
-
-    :raises gwf.exceptions.FileProvidedByMultipleTargetsError:
-        Raised if the same file is provided by multiple targets.
-    :raises gwf.exceptions.FileRequiredButNotProvidedError:
-        Raised if a target has an input file that does not exist on the
-        file system and that is not provided by another target.
-    :raises gwf.exceptions.InvalidPathError:
-        Raised if a target has declared a directory in either `inputs` or `outputs`.
-    :raises gwf.exceptions.CircularDependencyError:
-        Raised if the workflow contains a circular dependency.
+    The graph represents the targets present in a workflow, but also their dependencies and the files they provide.
 
     If the graph is constructed successfully, the following instance variables will be available:
 
@@ -505,9 +499,12 @@ class Graph:
     :ivar dict dependents:
         A dictionary mapping a target to a list of all targets which depend on the target.
 
-    The graph can be manipulated in arbitrary, diabolic ways after it has been constructed. Checks are only performed
-    at construction-time, thus introducing e.g. a circular dependency by manipulating *dependencies* will not raise an
-    exception.
+    The graph can be manipulated in arbitrary, diabolic ways after it has been constructed. Checks are only
+    performed at construction-time, thus introducing e.g. a circular dependency by manipulating *dependencies* will
+    not raise an exception.
+
+    :raises gwf.exceptions.CircularDependencyError:
+        Raised if the workflow contains a circular dependency.
     """
 
     def __init__(self, targets, provides, dependencies, dependents):
@@ -520,6 +517,25 @@ class Graph:
 
     @classmethod
     def from_targets(cls, targets):
+        """Construct a dependency graph from a set of targets.
+
+        When a graph is initialized it computes all dependency relations between targets, ensuring that the graph is
+        semantically sane. Therefore, construction of the graph is an expensive operation which may raise a number of
+        exceptions:
+
+        :raises gwf.exceptions.FileProvidedByMultipleTargetsError:
+            Raised if the same file is provided by multiple targets.
+        :raises gwf.exceptions.FileRequiredButNotProvidedError:
+            Raised if a target has an input file that does not exist on the
+            file system and that is not provided by another target.
+        :raises gwf.exceptions.InvalidPathError:
+            Raised if a target has declared a directory in either `inputs` or `outputs`.
+
+        Since this method initializes the graph, it may also raise:
+
+        :raises gwf.exceptions.CircularDependencyError:
+            Raised if the workflow contains a circular dependency.
+        """
         provides = {}
         dependencies = defaultdict(set)
         dependents = defaultdict(list)
@@ -580,6 +596,12 @@ class Graph:
     def __iter__(self):
         return iter(self.targets.values())
 
+    def __getitem__(self, target_name):
+        return self.targets[target_name]
+
+    def __contains__(self, target_name):
+        return target_name in self.targets
+
 
 def _fileinfo(path):
     try:
@@ -604,7 +626,7 @@ class Scheduler:
     Targets that should run will be submitted to *backend*, unless *dry_run* is set to ``True``.
     """
 
-    def __init__(self, graph, backend, dry_run=False):
+    def __init__(self, graph, backend, dry_run=False, file_cache=FileCache()):
         """
         :param gwf.Graph graph:
             Graph of the workflow.
@@ -617,7 +639,7 @@ class Scheduler:
         self.backend = backend
         self.dry_run = dry_run
 
-        self._file_cache = FileCache()
+        self._file_cache = file_cache
         self._pretend_known = set()
 
     def schedule(self, target):

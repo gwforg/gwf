@@ -498,9 +498,9 @@ class TestGraph(unittest.TestCase):
         other_target1 = other_workflow.target('TestTarget1', inputs=['test.txt'], outputs=[])
 
         graph = Graph.from_targets(other_workflow.targets)
-        assert 'TestTarget1' in graph.targets
-        assert 'foo.TestTarget2' in graph.targets
-        assert 'foo.TestTarget2' in graph.targets
+        assert 'TestTarget1' in graph
+        assert 'foo.TestTarget2' in graph
+        assert 'foo.TestTarget2' in graph
 
     def test_raise_error_if_two_targets_in_different_namespaces_produce_the_same_file(self):
         w1 = Workflow(name='foo')

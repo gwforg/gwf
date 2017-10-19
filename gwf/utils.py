@@ -10,8 +10,6 @@ import time
 from collections import UserDict
 from contextlib import ContextDecorator
 
-import click
-
 from gwf.exceptions import GWFError
 
 logger = logging.getLogger(__name__)
@@ -44,6 +42,20 @@ class timer(ContextDecorator):
         self.logger.debug(self.msg, self.duration * 1000)
 
 
+def parse_path(path, default_obj='gwf'):
+    comps = path.rsplit(':')
+    if len(comps) == 2:
+        path, obj = comps
+    elif len(comps) == 1:
+        path, obj = comps[0], default_obj
+    else:
+        raise ValueError('Invalid path: "{}".'.format(path))
+
+    basedir, filename = os.path.split(path)
+    filename, _ = os.path.splitext(filename)
+    return basedir, filename, obj
+
+
 def load_workflow(basedir, filename, objname):
     if not basedir:
         basedir = os.getcwd()
@@ -62,48 +74,6 @@ def load_workflow(basedir, filename, objname):
         return getattr(mod, objname)
     except AttributeError:
         raise GWFError('Module "{}" does not declare attribute "{}".'.format(filename, objname))
-
-
-def is_valid_name(candidate):
-    return re.match(r'^[a-zA-Z_][a-zA-Z0-9._]*$', candidate) is not None
-
-
-def ensure_dir(path):
-    """Create directory unless it already exists."""
-    os.makedirs(path, exist_ok=True)
-
-
-def parse_path(path, default_obj='gwf'):
-    comps = path.rsplit(':')
-    if len(comps) == 2:
-        path, obj = comps
-    elif len(comps) == 1:
-        path, obj = comps[0], default_obj
-    else:
-        raise ValueError('Invalid path: "{}".'.format(path))
-
-    basedir, filename = os.path.split(path)
-    filename, _ = os.path.splitext(filename)
-    return basedir, filename, obj
-
-
-class ColorFormatter(logging.Formatter):
-    STYLING = {
-        'WARNING': dict(fg='yellow'),
-        'INFO': dict(fg='blue'),
-        'DEBUG': dict(fg='white'),
-        'ERROR': dict(fg='red', bold=True),
-        'CRITICAL': dict(fg='magenta', bold=True),
-    }
-
-    def format(self, record):
-        level = record.levelname
-        color_record = copy.copy(record)
-        if record.levelname in self.STYLING:
-            styling = self.STYLING[level]
-            color_record.levelname = click.style(record.levelname, **styling)
-            color_record.msg = click.style(record.msg, **styling)
-        return super().format(color_record)
 
 
 class LazyDict(dict):

@@ -18,10 +18,10 @@ def logs(obj, target, stderr, no_pager):
     graph = graph_from_config(obj)
     backend_cls = backend_from_config(obj)
 
-    if target not in graph.targets:
+    if target not in graph:
         raise TargetDoesNotExistError(target)
 
-    log_file = backend_cls.logs(graph.targets[target], stderr=stderr)
+    log_file = backend_cls.logs(graph[target], stderr=stderr)
     log_contents = log_file.read()
     log_file.close()
 

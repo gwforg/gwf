@@ -126,7 +126,7 @@ def status(obj, status, all, format, targets):
         if not all:
             filters.append(EndpointFilter(endpoints=graph.endpoints()))
 
-        matches = filter_generic(targets=graph.targets.values(), filters=filters)
+        matches = filter_generic(targets=graph, filters=filters)
         matches = sorted(matches, key=lambda t: t.name)
         format_func = format_funcs[format]
         format_func(backend, graph, matches)

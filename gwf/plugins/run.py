@@ -16,9 +16,9 @@ def run(obj, targets, dry_run):
     backend_cls = backend_from_config(obj)
     with backend_cls() as backend:
         if targets:
-            matched_targets = filter_names(graph.targets.values(), targets)
+            matched_targets = filter_names(graph, targets)
         else:
-            matched_targets = graph.targets.values()
+            matched_targets = list(graph)
 
         scheduler = Scheduler(graph=graph, backend=backend, dry_run=dry_run)
         scheduler.schedule_many(matched_targets)

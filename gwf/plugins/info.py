@@ -15,7 +15,7 @@ def info(obj, targets):
     """Display information about a target."""
     graph = graph_from_config(obj)
 
-    matches = graph.targets.values()
+    matches = iter(graph)
     if targets:
         matches = filter_names(matches, targets)
 

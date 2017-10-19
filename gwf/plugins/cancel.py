@@ -30,7 +30,7 @@ def cancel(obj, targets, force):
     with backend_cls() as backend:
         if not targets and not force:
             if click.confirm('This will cancel all targets! Do you want to continue?', abort=True):
-                cancel_many(backend, graph.targets.values())
+                cancel_many(backend, graph)
         else:
-            matched_targets = filter_names(graph.targets.values(), targets)
+            matched_targets = filter_names(graph, targets)
             cancel_many(backend, matched_targets)

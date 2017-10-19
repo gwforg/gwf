@@ -34,7 +34,7 @@ def clean(obj, targets, all):
     if not all:
         filters.append(EndpointFilter(endpoints=graph.endpoints(), mode='exclude'))
 
-    matches = filter_generic(targets=graph.targets.values(), filters=filters)
+    matches = filter_generic(targets=graph, filters=filters)
     for target in matches:
         logger.info('Deleting %s', target.name)
         for path in target.outputs:
