@@ -495,8 +495,8 @@ class Graph:
 
     If the file is not provided by another target, the file is *unresolved*:
 
-    :ivar dict unresolved:
-        A dictionary mapping a file path to the target that specified the file as input.
+    :ivar set unresolved:
+        A set containing file paths of all unresolved files.
 
     If the graph is constructed successfully, the following instance variables will be available:
 
