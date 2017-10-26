@@ -486,14 +486,24 @@ class Graph:
 
     The graph represents the targets present in a workflow, but also their dependencies and the files they provide.
 
+    During construction of the graph the dependencies between targets are determined by looking at target inputs and
+    outputs. If a target specifies a file as input, the file must either be provided by another target or already exist
+    on disk. In case that the file is provided by another target, a dependency to that target will be added:
+
+    :ivar dict dependencies:
+        A dictionary mapping a target to a set of its dependencies.
+
+    If the file is not provided by another target, the file is *unresolved*:
+
+    :ivar dict unresolved:
+        A dictionary mapping a file path to the target that specified the file as input.
+
     If the graph is constructed successfully, the following instance variables will be available:
 
     :ivar dict targets:
         A dictionary mapping target names to instances of :class:`gwf.Target`.
     :ivar dict provides:
         A dictionary mapping a file path to the target that provides that path.
-    :ivar dict dependencies:
-        A dictionary mapping a target to a set of its dependencies.
     :ivar dict dependents:
         A dictionary mapping a target to a list of all targets which depend on the target.
 
@@ -505,11 +515,12 @@ class Graph:
         Raised if the workflow contains a circular dependency.
     """
 
-    def __init__(self, targets, provides, dependencies, dependents):
+    def __init__(self, targets, provides, dependencies, dependents, unresolved):
         self.targets = targets
         self.provides = provides
         self.dependencies = dependencies
         self.dependents = dependents
+        self.unresolved = unresolved
 
         self._check_for_circular_dependencies()
 
@@ -523,9 +534,6 @@ class Graph:
 
         :raises gwf.exceptions.FileProvidedByMultipleTargetsError:
             Raised if the same file is provided by multiple targets.
-        :raises gwf.exceptions.FileRequiredButNotProvidedError:
-            Raised if a target has an input file that does not exist on the
-            file system and that is not provided by another target.
         :raises gwf.exceptions.InvalidPathError:
             Raised if a target has declared a directory in either `inputs` or `outputs`.
 
@@ -535,6 +543,7 @@ class Graph:
             Raised if the workflow contains a circular dependency.
         """
         provides = {}
+        unresolved = set()
         dependencies = defaultdict(set)
         dependents = defaultdict(list)
 
@@ -546,11 +555,10 @@ class Graph:
 
         for target in targets.values():
             for path in target.inputs:
-                if path not in provides:
-                    if not os.path.exists(path):
-                        raise MissingProviderError(path, target)
-                    continue
-                dependencies[target].add(provides[path])
+                if path in provides:
+                    dependencies[target].add(provides[path])
+                else:
+                    unresolved.add(path)
 
         for target, deps in dependencies.items():
             for dep in deps:
@@ -561,6 +569,7 @@ class Graph:
             provides=provides,
             dependencies=dependencies,
             dependents=dependents,
+            unresolved=unresolved,
         )
 
     @timer('Checked for circular dependencies in %.3fms.', logger=logger)
@@ -622,6 +631,14 @@ class Scheduler:
     and whether any of its dependencies have been submitted.
 
     Targets that should run will be submitted to *backend*, unless *dry_run* is set to ``True``.
+
+    When scheduling a target, the scheduler checks whether any of its inputs are unresolved, meaning that during
+    construction of the graph, no other target providing the file was found. This means that the file should then exist
+    on disk. If it doesn't the following exception is raised:
+
+    :raises gwf.exceptions.FileRequiredButNotProvidedError:
+        Raised if a target has an input file that does not exist on the file system and that is not provided by another
+        target.
     """
 
     def __init__(self, graph, backend, dry_run=False, file_cache=FileCache()):
@@ -661,6 +678,11 @@ class Scheduler:
                 submitted_deps.add(dependency)
 
         if submitted_deps or self.should_run(target):
+            # The target should be submitted, so we'll check whether all of its inputs are resolved.
+            for path in target.inputs:
+                if path in self.graph.unresolved and self._file_cache[path] is None:
+                    raise MissingProviderError(path, target)
+
             if self.dry_run:
                 logger.info('Would submit target %s.', target)
                 self._pretend_known.add(target)

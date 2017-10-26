@@ -373,6 +373,7 @@ class TestTarget(unittest.TestCase):
 
 
 class TestGraph(unittest.TestCase):
+
     def setUp(self):
         self.workflow = Workflow(working_dir='/some/dir')
         self.supported_options = {}
@@ -406,13 +407,6 @@ class TestGraph(unittest.TestCase):
         target = self.workflow.target('TestTarget', inputs=[], outputs=[])
         graph = Graph.from_targets(self.workflow.targets)
         self.assertEqual(graph.dependencies[target], set())
-
-    @patch('gwf.core.os.path.exists', return_value=False, autospec=True)
-    def test_non_existing_files_not_provided_by_other_target_raises_exception(self, mock_os_path_exists):
-        self.workflow.target(
-            'TestTarget', inputs=['test_input.txt'], outputs=[])
-        with self.assertRaises(MissingProviderError):
-            Graph.from_targets(self.workflow.targets, )
 
     @patch('gwf.core.os.path.exists', return_value=True, autospec=True)
     def test_existing_files_not_provided_by_other_target_has_no_dependencies(self, mock_exists):
@@ -639,6 +633,21 @@ def test_scheduling_unsubmitted_target(backend, monkeypatch):
     assert scheduler.schedule(target) == True
     assert len(backend.submit.call_args_list) == 1
     assert call(target, dependencies=set()) in backend.submit.call_args_list
+
+
+def test_non_existing_files_not_provided_by_other_target(backend):
+    target = Target('TestTarget', inputs=['test_input.txt'], outputs=[], options={}, working_dir='/some/dir')
+    graph = Graph.from_targets({'TestTarget': target})
+    scheduler = Scheduler(graph=graph, backend=backend, file_cache={'/some/dir/test_input.txt': None})
+    with pytest.raises(MissingProviderError):
+        scheduler.schedule(target)
+
+
+def test_existing_files_not_provided_by_other_target(backend):
+    target = Target('TestTarget', inputs=['test_input.txt'], outputs=[], options={}, working_dir='/some/dir')
+    graph = Graph.from_targets({'TestTarget': target})
+    scheduler = Scheduler(graph=graph, backend=backend, file_cache={'/some/dir/test_input.txt': 0})
+    assert scheduler.schedule(target) == True
 
 
 def test_scheduling_target_with_deps_that_are_not_submitted(backend, monkeypatch):
