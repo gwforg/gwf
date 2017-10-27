@@ -534,8 +534,6 @@ class Graph:
 
         :raises gwf.exceptions.FileProvidedByMultipleTargetsError:
             Raised if the same file is provided by multiple targets.
-        :raises gwf.exceptions.InvalidPathError:
-            Raised if a target has declared a directory in either `inputs` or `outputs`.
 
         Since this method initializes the graph, it may also raise:
 
@@ -616,8 +614,6 @@ def _fileinfo(path):
     except FileNotFoundError:
         return None
     else:
-        if stat.S_ISDIR(st.st_mode):
-            raise InvalidPathError('Path {} points to a directory.'.format(path))
         return st.st_mtime
 
 
