@@ -505,7 +505,7 @@ class Graph:
     :ivar dict provides:
         A dictionary mapping a file path to the target that provides that path.
     :ivar dict dependents:
-        A dictionary mapping a target to a list of all targets which depend on the target.
+        A dictionary mapping a target to a set of all targets which depend on the target.
 
     The graph can be manipulated in arbitrary, diabolic ways after it has been constructed. Checks are only
     performed at construction-time, thus introducing e.g. a circular dependency by manipulating *dependencies* will
@@ -545,7 +545,7 @@ class Graph:
         provides = {}
         unresolved = set()
         dependencies = defaultdict(set)
-        dependents = defaultdict(list)
+        dependents = defaultdict(set)
 
         for target in targets.values():
             for path in target.outputs:
@@ -562,7 +562,7 @@ class Graph:
 
         for target, deps in dependencies.items():
             for dep in deps:
-                dependents[dep].append(target)
+                dependents[dep].add(target)
 
         return cls(
             targets=targets,
