@@ -9,7 +9,7 @@
 set -eu
 set -o pipefail
 
-if [[ $TRAVIS_BRANCH = "master" ]]; then
+if [[ "$TRAVIS_BRANCH" = "master" ]]; then
     LABEL="main"
 else
     LABEL="dev"
