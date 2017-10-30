@@ -372,147 +372,101 @@ class TestTarget(unittest.TestCase):
         self.assertEqual(str(target), 'TestTarget')
 
 
-class TestGraph(unittest.TestCase):
-    def setUp(self):
-        self.workflow = Workflow(working_dir='/some/dir')
-        self.supported_options = {}
-        self.config = {}
+def test_build_branch_join_graph():
+    t1 = Target(
+        name='Target1',
+        inputs=['test_input1.txt', 'test_input2.txt'],
+        outputs=['t1_output1.txt', 't1_output2.txt'],
+        options={},
+        working_dir='/some/dir',
+    )
 
-    def test_finds_no_providers_in_empty_workflow(self):
-        graph = Graph.from_targets(self.workflow.targets)
-        self.assertDictEqual(graph.provides, {})
+    t2 = Target(
+        name='Target2',
+        inputs=['t1_output1.txt'],
+        outputs=['t2_output.txt'],
+        options={},
+        working_dir='/some/dir',
+    )
 
-    def test_finds_no_providers_in_workflow_with_no_producers(self):
-        self.workflow.target('TestTarget', inputs=[], outputs=[])
-        graph = Graph.from_targets(self.workflow.targets)
-        self.assertDictEqual(graph.provides, {})
+    t3 = Target(
+        name='Target3',
+        inputs=['t1_output2.txt'],
+        outputs=['t3_output.txt'],
+        options={},
+        working_dir='/some/dir',
+    )
 
-    def test_finds_provider_in_workflow_with_one_producer(self):
-        self.workflow.target('TestTarget', inputs=[], outputs=['/test_output.txt'], working_dir='')
-        graph = Graph.from_targets(self.workflow.targets)
-        self.assertIn('/test_output.txt', graph.provides)
-        self.assertEqual(graph.provides['/test_output.txt'].name, 'TestTarget')
+    t4 = Target(
+        name='Target4',
+        inputs=['t2_output.txt', 't3_output.txt'],
+        outputs=['t4_output.txt'],
+        options={},
+        working_dir='/some/dir',
+    )
 
-    def test_raises_exceptions_if_two_targets_produce_the_same_file(self):
-        self.workflow.target(
-            'TestTarget1', inputs=[], outputs=['/test_output.txt'], working_dir='')
-        self.workflow.target(
-            'TestTarget2', inputs=[], outputs=['/test_output.txt'], working_dir='')
+    targets = {
+        'Target1': t1,
+        'Target2': t2,
+        'Target3': t3,
+        'Target4': t4,
+    }
 
-        with self.assertRaises(MultipleProvidersError):
-            Graph.from_targets(self.workflow.targets)
+    graph = Graph.from_targets(targets)
 
-    def test_finds_no_dependencies_for_target_with_no_inputs(self):
-        target = self.workflow.target('TestTarget', inputs=[], outputs=[])
-        graph = Graph.from_targets(self.workflow.targets)
-        self.assertEqual(graph.dependencies[target], set())
+    assert len(graph.targets) == 4
 
-    @patch('gwf.core.os.path.exists', return_value=False, autospec=True)
-    def test_non_existing_files_not_provided_by_other_target_raises_exception(self, mock_os_path_exists):
-        self.workflow.target(
-            'TestTarget', inputs=['test_input.txt'], outputs=[])
-        with self.assertRaises(MissingProviderError):
-            Graph.from_targets(self.workflow.targets, )
+    assert not graph.dependencies[t1]
+    assert graph.dependents[t1] == {t2, t3}
 
-    @patch('gwf.core.os.path.exists', return_value=True, autospec=True)
-    def test_existing_files_not_provided_by_other_target_has_no_dependencies(self, mock_exists):
-        target = self.workflow.target('TestTarget', inputs=['test_file.txt'], outputs=[])
-        graph = Graph.from_targets(self.workflow.targets)
-        self.assertEqual(graph.dependencies[target], set())
+    assert graph.dependencies[t2] == {t1}
+    assert graph.dependents[t2] == {t4}
 
-    @patch('gwf.core.os.path.exists', return_value=False, auto_spec=True)
-    def test_finds_non_existing_file_provided_by_other_target(self, mock_os_path_exists):
-        target1 = self.workflow.target(
-            'TestTarget1', inputs=[], outputs=['test_file.txt'])
-        target2 = self.workflow.target(
-            'TestTarget2', inputs=['test_file.txt'], outputs=[])
+    assert graph.dependencies[t3] == {t1}
+    assert graph.dependents[t3] == {t4}
 
-        graph = Graph.from_targets(self.workflow.targets)
+    assert graph.dependencies[t4] == {t2, t3}
+    assert graph.dependents[t4] == set()
 
-        self.assertIn(target2, graph.dependencies)
-        self.assertIn(target1, graph.dependencies[target2])
+    assert graph.provides['/some/dir/t1_output1.txt'] == t1
+    assert graph.provides['/some/dir/t1_output2.txt'] == t1
+    assert graph.provides['/some/dir/t2_output.txt'] == t2
+    assert graph.provides['/some/dir/t3_output.txt'] == t3
+    assert graph.provides['/some/dir/t4_output.txt'] == t4
 
-    @patch('gwf.core.os.path.exists', return_value=False, autospec=True)
-    def test_finds_non_existing_files_provided_by_two_other_targets(self, mock_os_path_exists):
-        target1 = self.workflow.target(
-            'TestTarget1', inputs=[], outputs=['test_file1.txt'])
-        target2 = self.workflow.target(
-            'TestTarget2', inputs=[], outputs=['test_file2.txt'])
-        target3 = self.workflow.target(
-            'TestTarget3', inputs=['test_file1.txt', 'test_file2.txt'], outputs=[])
+    assert graph.unresolved == {
+        '/some/dir/test_input1.txt',
+        '/some/dir/test_input2.txt',
+    }
 
-        graph = Graph.from_targets(self.workflow.targets)
 
-        self.assertIn(target3, graph.dependencies)
-        self.assertIn(target1, graph.dependencies[target3])
-        self.assertIn(target2, graph.dependencies[target3])
+def test_graph_raises_multiple_providers_error():
+    t1 = Target(
+        name='Target1',
+        inputs=[],
+        outputs=['t1_output1.txt', 't1_output2.txt'],
+        options={},
+        working_dir='/some/dir'
+    )
 
-    @patch('gwf.core.os.path.exists', return_value=False, autospec=True)
-    def test_finds_non_existing_files_provided_by_other_targets_in_chain(self, mock_os_path_exists):
-        target1 = self.workflow.target(
-            'TestTarget1', inputs=[], outputs=['test_file1.txt'])
-        target2 = self.workflow.target(
-            'TestTarget2', inputs=['test_file1.txt'], outputs=['test_file2.txt'])
-        target3 = self.workflow.target(
-            'TestTarget3', inputs=['test_file2.txt'], outputs=[])
+    t2 = Target(
+        name='Target2',
+        inputs=[],
+        outputs=['t1_output2.txt', 't1_output3.txt'],
+        options={},
+        working_dir='/some/dir',
+    )
 
-        graph = Graph.from_targets(self.workflow.targets)
-        self.assertIn(target2, graph.dependencies)
-        self.assertIn(target3, graph.dependencies)
-        self.assertIn(target1, graph.dependencies[target2])
-        self.assertIn(target2, graph.dependencies[target3])
+    with pytest.raises(MultipleProvidersError):
+        Graph.from_targets({'Target1': t1, 'Target2': t2})
 
-    @patch('gwf.core.os.path.exists', return_value=False, autospec=True)
-    def test_immediate_circular_dependencies_in_workflow_raises_exception(self, mock_os_path_exists):
-        self.workflow.target(
-            'TestTarget1', inputs=['test_file2.txt'], outputs=['test_file1.txt'])
-        self.workflow.target(
-            'TestTarget2', inputs=['test_file1.txt'], outputs=['test_file2.txt'])
 
-        with self.assertRaises(CircularDependencyError):
-            Graph.from_targets(self.workflow.targets)
-
-    @patch('gwf.core.os.path.exists', return_value=False, autospec=True)
-    def test_circular_dependencies_in_workflow_raises_exception(self, mock_os_path_exists):
-        self.workflow.target('TestTarget1', inputs=['test_file3.txt'], outputs=['test_file1.txt'])
-        self.workflow.target('TestTarget2', inputs=['test_file1.txt'], outputs=['test_file2.txt'])
-        self.workflow.target('TestTarget3', inputs=['test_file2.txt'], outputs=['test_file3.txt'])
-
-        # TODO: Rewrite this test to not use from_targets to build the graph.
-        with self.assertRaises(CircularDependencyError):
-            Graph.from_targets(self.workflow.targets)
-
-    def test_endpoints_only_includes_target_with_no_dependents(self):
-        self.workflow.target('TestTarget1', inputs=[], outputs=['test.txt'])
-        target2 = self.workflow.target('TestTarget2', inputs=['test.txt'], outputs=[])
-        target3 = self.workflow.target('TestTarget3', inputs=['test.txt'], outputs=[])
-        graph = Graph.from_targets(self.workflow.targets)
-        self.assertSetEqual(graph.endpoints(), {target2, target3})
-
-    def test_dependencies_correctly_resolved_for_named_workflow(self):
-        workflow = Workflow(name='foo')
-        target1 = workflow.target('TestTarget1', inputs=[], outputs=['test.txt'])
-        target2 = workflow.target('TestTarget2', inputs=['test.txt'], outputs=[])
-
-        other_workflow = Workflow(name='bar')
-        other_workflow.include(workflow)
-        other_target1 = other_workflow.target('TestTarget1', inputs=['test.txt'], outputs=[])
-
-        graph = Graph.from_targets(other_workflow.targets)
-        assert 'TestTarget1' in graph
-        assert 'foo.TestTarget2' in graph
-        assert 'foo.TestTarget2' in graph
-
-    def test_raise_error_if_two_targets_in_different_namespaces_produce_the_same_file(self):
-        w1 = Workflow(name='foo')
-        w1.target('SayHello', inputs=[], outputs=['greeting.txt'])
-
-        w2 = Workflow(name='bar')
-        w2.target('SayHi', inputs=[], outputs=['greeting.txt'])
-        w2.include(w1)
-
-        with self.assertRaises(MultipleProvidersError):
-            Graph.from_targets(w2.targets)
+def test_graph_raises_circular_dependency_error():
+    t1 = Target(name='Target1', inputs=['f1.txt'], outputs=['f2.txt'], options={}, working_dir='/some/dir')
+    t2 = Target(name='Target2', inputs=['f2.txt'], outputs=['f3.txt'], options={}, working_dir='/some/dir')
+    t3 = Target(name='Target3', inputs=['f3.txt'], outputs=['f1.txt'], options={}, working_dir='/some/dir')
+    with pytest.raises(CircularDependencyError):
+        Graph.from_targets({'Target1': t1, 'Target2': t2, 'Target3': t3})
 
 
 class TestShouldRun(unittest.TestCase):
@@ -639,6 +593,21 @@ def test_scheduling_unsubmitted_target(backend, monkeypatch):
     assert scheduler.schedule(target) == True
     assert len(backend.submit.call_args_list) == 1
     assert call(target, dependencies=set()) in backend.submit.call_args_list
+
+
+def test_non_existing_files_not_provided_by_other_target(backend):
+    target = Target('TestTarget', inputs=['test_input.txt'], outputs=[], options={}, working_dir='/some/dir')
+    graph = Graph.from_targets({'TestTarget': target})
+    scheduler = Scheduler(graph=graph, backend=backend, file_cache={'/some/dir/test_input.txt': None})
+    with pytest.raises(MissingProviderError):
+        scheduler.schedule(target)
+
+
+def test_existing_files_not_provided_by_other_target(backend):
+    target = Target('TestTarget', inputs=['test_input.txt'], outputs=[], options={}, working_dir='/some/dir')
+    graph = Graph.from_targets({'TestTarget': target})
+    scheduler = Scheduler(graph=graph, backend=backend, file_cache={'/some/dir/test_input.txt': 0})
+    assert scheduler.schedule(target) == True
 
 
 def test_scheduling_target_with_deps_that_are_not_submitted(backend, monkeypatch):

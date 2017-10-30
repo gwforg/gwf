@@ -16,7 +16,7 @@ def backend():
 
 @pytest.fixture
 def graph():
-    return create_autospec(Graph(dependencies={}, dependents={}, provides={}, targets={}), spec_set=True)
+    return create_autospec(Graph(dependencies={}, dependents={}, provides={}, targets={}, unresolved={}), spec_set=True)
 
 
 @pytest.fixture
