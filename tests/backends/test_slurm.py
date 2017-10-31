@@ -179,13 +179,13 @@ def test_cancel(popen):
 
     popen.return_value.communicate.return_value = ('1\n', '')
     backend.submit(t, [])
-    assert backend.status(t)== Status.SUBMITTED
+    assert backend.status(t) == Status.SUBMITTED
 
     backend.cancel(t)
     assert backend.status(t) == Status.UNKNOWN
 
     assert call(
-        ['/bin/scancel', '-t', 'RUNNING', '-t', 'PENDING', '-t', 'SUSPENDED', '1'],
+        ['/bin/scancel', '--verbose', '1'],
         stderr=-1, stdin=-1, stdout=-1, universal_newlines=True
     ) in popen.call_args_list
 
