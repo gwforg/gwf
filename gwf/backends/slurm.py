@@ -60,7 +60,10 @@ def _call_generic(executable_name, *args, input=None):
         universal_newlines=True,
     )
     stdout, stderr = proc.communicate(input)
-    if proc.returncode != 0:
+
+    # Some commands, like scancel, do not return a non-zero exit code if they fail. The only way to check if they failed
+    # is by checking whether an error message occurred in standard error, so we check both the return code and stderr.
+    if proc.returncode != 0 or 'error:' in stderr:
         raise BackendError(stderr)
     return stdout
 
@@ -70,7 +73,9 @@ def _call_squeue():
 
 
 def _call_scancel(job_id):
-    return _call_generic('scancel', '-t', 'RUNNING', '-t', 'PENDING', '-t', 'SUSPENDED', job_id)
+    # The --verbose flag here is necessary, otherwise we're not able to tell whether the command failed. See the comment
+    # in _call_generic() if you want to know more.
+    return _call_generic('scancel', '--verbose', job_id)
 
 
 def _call_sbatch(script, dependencies):
