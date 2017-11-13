@@ -1,6 +1,7 @@
+import os.path
 import unittest
 
-from gwf.utils import parse_path, cache
+from gwf.utils import parse_path, cache, PersistableDict
 
 
 class TestCache(unittest.TestCase):
@@ -35,3 +36,21 @@ class TestParsePath(unittest.TestCase):
     def test_parse_invalid_path_raises_value_error(self):
         with self.assertRaises(ValueError):
             parse_path('/some/dir/workflow.py::other_obj', 'workflow_obj')
+
+
+def test_dict_is_empty_if_file_does_not_exist(tmpdir):
+    with tmpdir.as_cwd():
+        d = PersistableDict('test.json')
+        assert d == {}
+
+
+def test_dict_write_read(tmpdir):
+    with tmpdir.as_cwd():
+        d1 = PersistableDict('test.json')
+        d1['foo'] = 'bar'
+        d1.persist()
+
+        assert tmpdir.join('test.json').exists()
+
+        d2 = PersistableDict('test.json')
+        assert d2 == {'foo': 'bar'}

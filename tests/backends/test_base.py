@@ -1,6 +1,5 @@
 import io
 import logging
-import os.path
 from unittest.mock import patch
 
 import pytest
@@ -8,7 +7,6 @@ import pytest
 from gwf import Target
 from gwf.backends import Backend, BackendError
 from gwf.backends.testing import TestingBackend
-from gwf.utils import PersistableDict
 
 
 @pytest.fixture
@@ -62,20 +60,3 @@ def test_raise_exception_if_backend_does_not_implement_all_methods():
 
             def status(self, target):
                 pass
-
-
-def test_dict_is_empty_if_file_does_not_exist():
-    d = PersistableDict('test.json')
-    assert d == {}
-
-
-def test_dict_write_read():
-    d1 = PersistableDict('/tmp/test.json')
-    d1['foo'] = 'bar'
-    d1.persist()
-
-    assert os.path.exists('/tmp/test.json')
-
-    d2 = PersistableDict('/tmp/test.json')
-    assert d2 == {'foo': 'bar'}
-
