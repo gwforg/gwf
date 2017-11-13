@@ -25,8 +25,7 @@ def dfs(root, dependencies):
     return path
 
 
-def split_target_list(backend, graph, targets):
-    scheduler = Scheduler(graph=graph, backend=backend)
+def split_target_list(backend, scheduler, targets):
     should_run, submitted, running, completed = [], [], [], []
     for target in targets:
         status = backend.status(target)
@@ -43,10 +42,11 @@ def split_target_list(backend, graph, targets):
 
 
 def print_progress(backend, graph, targets):
+    scheduler = Scheduler(graph=graph, backend=backend)
     table = statusbar.StatusTable(fill_char=' ')
     for target in targets:
         dependencies = dfs(target, graph.dependencies)
-        should_run, submitted, running, completed = split_target_list(backend, graph, dependencies)
+        should_run, submitted, running, completed = split_target_list(backend, scheduler, dependencies)
         status_bar = table.add_status_line(target.name)
         status_bar.add_progress(len(completed), 'C', color='green')
         status_bar.add_progress(len(running), 'R', color='blue')
@@ -57,8 +57,8 @@ def print_progress(backend, graph, targets):
 
 def print_table(backend, graph, targets):
     scheduler = Scheduler(backend=backend, graph=graph)
-
-    name_col_width = max(len(target.name) for target in targets) + 1
+    
+    name_col_width = max((len(target.name) for target in targets), default=0) + 1
     format_str = '{name:<{name_col_width}}{status:<10}'
 
     for target in targets:
