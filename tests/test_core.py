@@ -8,12 +8,16 @@ import pytest
 
 from gwf import Graph, Target, Scheduler, Workflow
 from gwf.backends import Backend, Status
-from gwf.exceptions import (CircularDependencyError,
-                            MultipleProvidersError,
-                            MissingProviderError,
-                            IncludeWorkflowError, InvalidNameError,
-                            TargetExistsError, InvalidTypeError)
 from gwf.backends.exceptions import LogNotFoundError
+from gwf.exceptions import (
+    CircularDependencyError,
+    MultipleProvidersError,
+    MissingProviderError,
+    IncludeWorkflowError,
+    InvalidNameError,
+    TargetExistsError,
+    InvalidTypeError,
+)
 
 
 class DummyBackend(Backend):
