@@ -5,6 +5,7 @@ from distutils.spawn import find_executable
 from . import Backend, Status
 from .exceptions import BackendError, UnknownDependencyError, UnknownTargetError
 from .logmanager import FileLogManager
+from ..conf import config
 from ..utils import PersistableDict
 
 logger = logging.getLogger(__name__)
@@ -192,8 +193,14 @@ class SlurmBackend(Backend):
         for option_name, option_value in target.options.items():
             out.append(option_str.format(SLURM_OPTIONS[option_name], option_value))
 
-        out.append(option_str.format('--output=', self.log_manager.stdout_path(target)))
-        out.append(option_str.format('--error=', self.log_manager.stderr_path(target)))
+        log_mode = config.get('backend.slurm.log_mode', 'full')
+        if log_mode == 'full':
+            out.append(option_str.format('--output=', self.log_manager.stdout_path(target)))
+            out.append(option_str.format('--error=', self.log_manager.stderr_path(target)))
+        elif log_mode == 'merged':
+            out.append(option_str.format('--output=', self.log_manager.stdout_path(target)))
+        elif log_mode == 'none':
+            out.append(option_str.format('--output=', '/dev/null'))
 
         out.append('')
         out.append('cd {}'.format(target.working_dir))
