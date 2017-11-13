@@ -3,8 +3,9 @@
 import os
 import re
 import io
+from glob import glob
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def read(*names, **kwargs):
@@ -26,8 +27,13 @@ def find_version(*file_paths):
 
 setup(
     name='gwf',
-    version=find_version('gwf', '__init__.py'),
-    packages=['gwf', 'gwf.backends', 'gwf.plugins'],
+    version=find_version('src', 'gwf', '__init__.py'),
+    python_version='>=3.5',
+    packages=find_packages('src'),
+    package_dir={'': 'src'},
+    py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
+    include_package_data=True,
+    zip_safe=False,
     entry_points={
         'console_scripts': [
             'gwf = gwf.cli:main',
@@ -50,8 +56,7 @@ setup(
     },
 
     test_suite='tests',
-    setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'pytest-click', 'pytest-catchlog', 'pytest-mock'],
+    tests_require=['pytest', 'pytest-runner', 'pytest-click', 'pytest-catchlog', 'pytest-mock'],
     install_requires=[
         'click>=6.6',
         'click-plugins>=0.2.2',
