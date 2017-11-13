@@ -101,7 +101,9 @@ class SlurmBackend(Backend):
 
     **Backend options:**
 
-    None available.
+    * **backend.slurm.log_mode (str):** Must be either `full`, `merged` or `none`. If `full`, two log files will be
+      stored for each target, one for standard output and one for standard error. If `merged`, only one log file will
+      be written containing the combined streams. If `none`, no logs will be stored. (default: `full`).
 
     **Target options:**
 
