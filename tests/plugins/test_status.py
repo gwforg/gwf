@@ -49,7 +49,13 @@ def test_status_shows_two_named_targets(cli_runner):
 
 def test_format_table(cli_runner):
     result = cli_runner.invoke(main, ['-b', 'testing', 'status', '--format', 'table'])
+    assert result.exit_code == 0
     assert result.output == 'Target2 SHOULDRUN \n'
 
     result = cli_runner.invoke(main, ['-b', 'testing', 'status', '--format', 'table', '--all'])
+    assert result.exit_code == 0
     assert result.output == 'Target1 SHOULDRUN \nTarget2 SHOULDRUN \n'
+
+    result = cli_runner.invoke(main, ['-b', 'testing', 'status', '--format', 'table', 'Unknown'])
+    assert result.exit_code == 0
+    assert result.output == ''
