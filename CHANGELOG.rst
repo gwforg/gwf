@@ -3,6 +3,31 @@ Change Log
 ==========
 
 
+Version 1.2
+===========
+
+Fixed
+-----
+
+* Bug when using ``--format table`` and no targets were found (#203).
+* Bug when cancelling a target running on the Slurm backend (#199).
+* Link to documentation in error message when unable to connect to local workers.
+
+Changed
+-------
+
+* Moved checking of file timestamps to the scheduler. This means that creating a ``Graph`` object will never touch the
+  file system, and thus won't raise an exception if a target depends on a file that doesn't exist and that's not
+  provided a target. Instead, unresolved paths are added to ``Graph.unresolved``. They will then be checked by the
+  scheduler (if necessary).
+
+
+Added
+-----
+
+* Added ``AnonymousTarget`` which represents an unnamed target. ``Target`` now inherits from this class and
+  templates may now return an ``AnonymousTarget`` instead of a tuple.
+
 Version 1.1
 ===========
 
