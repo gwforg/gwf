@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch, call
 
 import pytest
 
-from gwf import Graph, Target, Scheduler, Workflow
+from gwf import AnonymousTarget, Graph, Target, Scheduler, Workflow
 from gwf.backends import Backend, Status
 from gwf.backends.exceptions import LogNotFoundError
 from gwf.exceptions import (
@@ -81,6 +81,33 @@ class TestWorkflow(unittest.TestCase):
 
         with self.assertRaises(TargetExistsError):
             workflow.target('TestTarget', inputs=[], outputs=[])
+
+    def test_target_from_template(self):
+        def template_returning_tuple():
+            return [], [], {}, 'this is the spec'
+
+        def template_returning_anonymous_target():
+            return AnonymousTarget(inputs=[], outputs=[], options={}, working_dir='/some/dir', spec='this is the spec')
+
+        workflow = Workflow()
+
+        workflow.target_from_template('TestTarget1', template_returning_tuple())
+        assert 'TestTarget1' in workflow.targets
+
+        workflow.target_from_template('TestTarget2', template_returning_anonymous_target())
+        assert 'TestTarget2' in workflow.targets
+
+    def test_target_from_invalid_template(self):
+        def invalid_template():
+            return [], []
+
+        workflow = Workflow()
+
+        with pytest.raises(InvalidTypeError):
+            workflow.target_from_template('TestTarget', 50)
+
+        with pytest.raises(InvalidTypeError):
+            workflow.target_from_template('TestTarget', invalid_template())
 
     def test_including_workflow_with_no_name_raises_an_exception(self):
         workflow = Workflow()

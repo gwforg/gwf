@@ -113,7 +113,7 @@ class AnonymousTarget:
     inputs = normalized_paths_property('inputs')
     outputs = normalized_paths_property('outputs')
 
-    def __init__(self, inputs, outputs, options, working_dir, spec=''):
+    def __init__(self, inputs, outputs, options, working_dir=None, spec=''):
         self.options = options
         self.working_dir = working_dir
 
@@ -127,7 +127,23 @@ class AnonymousTarget:
         self.inputs = inputs
         self.outputs = outputs
 
-        self.spec = spec
+        self._spec = spec
+
+    @property
+    def spec(self):
+        return self._spec
+
+    @spec.setter
+    def spec(self, value):
+        if not isinstance(value, str):
+            msg = (
+                'Target spec must be a string, not {}. Did you attempt to assign a template to this target? '
+                'This is no is not allowed since version 1.0. Use the Workflow.target_from_template() method instead. '
+                'See the tutorial for more details.'
+            )
+            raise InvalidTypeError(msg.format(type(value)))
+
+        self._spec = value
 
     @property
     def is_source(self):
@@ -151,15 +167,6 @@ class AnonymousTarget:
         self.options = options
 
     def __lshift__(self, spec):
-        if not isinstance(spec, str):
-            msg = (
-                'Target spec must be a string, not {}. '
-                'Did you attempt to assign a template to this target? '
-                'This is no is not allowed since version 1.0. Use the '
-                'Workflow.target_from_template() method instead. See '
-                'the tutorial for more details.'
-            )
-            raise InvalidTypeError(msg.format(type(spec)))
         self.spec = spec
         return self
 
@@ -362,24 +369,37 @@ class Workflow(object):
         Any further keyword arguments are passed to the backend and will
         override any options provided by the template.
         """
-        try:
-            inputs, outputs, template_options, spec = template
-            if not isinstance(template_options, dict) or not isinstance(spec, str):
-                raise Exception()
-        except Exception:
+        if isinstance(template, AnonymousTarget):
+            new_target = Target(
+                name=name,
+                inputs=template.inputs,
+                outputs=template.outputs,
+                options=options,
+                working_dir=template.working_dir or self.working_dir,
+                spec=template.spec,
+            )
+
+            new_target.inherit_options(template.options)
+        elif isinstance(template, tuple):
+            try:
+                inputs, outputs, template_options, spec = template
+            except:
+                raise InvalidTypeError('Target `{}` received an invalid template.'.format(name))
+
+            new_target = Target(
+                name=name,
+                inputs=inputs,
+                outputs=outputs,
+                options=options,
+                working_dir=self.working_dir,
+                spec=spec,
+            )
+
+            new_target.inherit_options(template_options)
+        else:
             raise InvalidTypeError('Target `{}` received an invalid template.'.format(name))
 
-        new_target = Target(
-            name=name,
-            inputs=inputs,
-            outputs=outputs,
-            options=options,
-            working_dir=self.working_dir,
-            spec=spec,
-        )
-        new_target.inherit_options(template_options)
         new_target.inherit_options(self.defaults)
-
         self._add_target(new_target)
         return new_target
 
