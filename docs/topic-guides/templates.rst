@@ -18,10 +18,13 @@ Templates in *gwf* provide a simple mechanism for constructing a bunch of simila
         """.format(path)
 
 This will generate a target for each photo we've got which is all fine and dandy. However, we can make the code a lot
-clearer using *templates*. In *gwf* a template is a function that returns a tuple containing four things:
+clearer using *templates*. In *gwf* a template is a function that returns either a tuple or an instance of
+:class:`AnonymousTarget`. Using a tuple is simple, but returning an :class:`AnonymousTarget` is safer and clearer.
 
-1. The *input* files, corresponding to the *inputs* argument,
-2. The *output* files, corresponding to the *outputs* argument,
+If the function returns a tuple, the tuple must contain four things:
+
+1. a list of *input* files, corresponding to the *inputs* argument,
+2. a list of  *output* files, corresponding to the *outputs* argument,
 3. a dictionary with options for the target that is to be generated, for example how many
    cores the template needs and which files it depends on,
 4. a string which contains the specification of the target that is to be generated.
@@ -35,7 +38,17 @@ Let's rewrite our workflow from before with a template. First, we'll define the 
         spec = """./transform_photo {}""".format(path)
         return inputs, outputs, options, spec
 
-Next, we tell *gwf* to create a target using the :func:`~gwf.Workflow.target_from_template` method::
+Or if we wanted to return an :class:`AnonymousTarget`::
+
+    def transform_photo(path):
+        inputs = [path]
+        outputs = [path + '.new']
+        options = {}
+        spec = """./transform_photo {}""".format(path)
+        return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
+
+Next, we tell *gwf* to create a target using the :func:`~gwf.Workflow.target_from_template` method. This works the same
+regardless of what your template function returns::
 
     from gwf import Workflow
 
