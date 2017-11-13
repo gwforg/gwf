@@ -7,6 +7,7 @@ from gwf import Target
 from gwf.backends import Status, BackendError
 from gwf.backends.slurm import SlurmBackend
 from gwf.backends.exceptions import UnknownDependencyError, UnknownTargetError
+from gwf.conf import config
 
 
 @pytest.fixture(autouse=True)
@@ -124,7 +125,7 @@ def test_submit_1(popen):
         backend.submit(t4, [])
 
 
-def test_submit_2(popen):
+def test_submit_2(popen, monkeypatch):
     t = Target(
         name='TestTarget',
         inputs=[],
@@ -149,7 +150,6 @@ def test_submit_2(popen):
     backend = SlurmBackend()
 
     backend.submit(t, [])
-
     (script,), _ = popen.return_value.communicate.call_args
 
     assert '#!/bin/bash' in script
@@ -163,9 +163,27 @@ def test_submit_2(popen):
     assert '#SBATCH --mail-type=BEGIN,END,FAIL' in script
     assert '#SBATCH --mail-user=test@domain.com' in script
     assert '#SBATCH --qos=somename' in script
+    assert '#SBATCH --output=.gwf/logs/TestTarget.stdout' in script
+    assert '#SBATCH --error=.gwf/logs/TestTarget.stderr' in script
     assert 'cd /some/dir' in script
     assert 'export GWF_JOBID=$SLURM_JOBID' in script
     assert 'echo hello world' in script
+
+    monkeypatch.setitem(config, 'backend.slurm.log_mode', 'merged')
+
+    backend.submit(t, [])
+    (script,), _ = popen.return_value.communicate.call_args
+
+    assert '#SBATCH --output=.gwf/logs/TestTarget.stdout' in script
+    assert '#SBATCH --error=.gwf/logs/TestTarget.stderr' not in script
+
+    monkeypatch.setitem(config, 'backend.slurm.log_mode', 'none')
+
+    backend.submit(t, [])
+    (script,), _ = popen.return_value.communicate.call_args
+
+    assert '#SBATCH --output=/dev/null' in script
+    assert '#SBATCH --error=' not in script
 
 
 def test_cancel(popen):
