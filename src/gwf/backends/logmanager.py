@@ -1,5 +1,6 @@
 import io
 import os.path
+from functools import wraps
 
 from .exceptions import LogNotFoundError
 
