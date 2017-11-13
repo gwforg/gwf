@@ -27,6 +27,7 @@ Added
 
 * Added ``AnonymousTarget`` which represents an unnamed target. ``Target`` now inherits from this class and
   templates may now return an ``AnonymousTarget`` instead of a tuple.
+* Added *backend.slurm.log_mode* option, see the documentation for the Slurm backend for usage (#202).
 
 Version 1.1
 ===========
