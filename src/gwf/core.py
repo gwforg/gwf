@@ -6,7 +6,6 @@ import logging
 import os
 import os.path
 import re
-import stat
 import subprocess
 import sys
 from collections import defaultdict
@@ -14,8 +13,15 @@ from glob import glob as _glob
 from glob import iglob as _iglob
 
 from .backends import Status
-from .exceptions import (CircularDependencyError, MultipleProvidersError, MissingProviderError, IncludeWorkflowError,
-                         InvalidNameError, TargetExistsError, InvalidTypeError, InvalidPathError)
+from .exceptions import (
+    CircularDependencyError,
+    MultipleProvidersError,
+    MissingProviderError,
+    IncludeWorkflowError,
+    InvalidNameError,
+    TargetExistsError,
+    InvalidTypeError,
+)
 from .utils import LazyDict, cache, load_workflow, timer, parse_path
 
 logger = logging.getLogger(__name__)
@@ -88,14 +94,9 @@ def graph_from_config(config):
     return graph_from_path(config['file'])
 
 
-class Target(object):
-    """Represents a target.
+class AnonymousTarget:
+    """Represents an unnamed target.
 
-    A target is a unit of work that can be tied to other targets through
-    dependencies on files.
-
-    :ivar str name:
-        Name of the target.
     :ivar list inputs:
         A list of input paths for this target.
     :ivar list outputs:
@@ -112,38 +113,21 @@ class Target(object):
     inputs = normalized_paths_property('inputs')
     outputs = normalized_paths_property('outputs')
 
-    def __init__(self, name, inputs, outputs, options, working_dir, spec=''):
-        self.name = name
-        if not is_valid_name(self.name):
-            raise InvalidNameError('Target defined with invalid name: "{}".'.format(self.name))
-
+    def __init__(self, inputs, outputs, options, working_dir, spec=''):
         self.options = options
         self.working_dir = working_dir
 
         if not _is_valid_list(inputs):
             raise InvalidTypeError(
-                'The argument `inputs` to target `{}` must be a list or tuple, not a string.'.format(name))
+                'The argument `inputs` to target `{}` must be a list or tuple, not a string.'.format(self))
         if not _is_valid_list(outputs):
             raise InvalidTypeError(
-                'The argument `outputs` to target `{}` must be a list or tuple, not a string.'.format(name))
+                'The argument `outputs` to target `{}` must be a list or tuple, not a string.'.format(self))
 
         self.inputs = inputs
         self.outputs = outputs
 
         self.spec = spec
-
-    @classmethod
-    def empty(cls, name):
-        """Return a target with no inputs, outputs and options.
-
-        This is mostly useful for testing.
-        """
-        return cls(name=name, inputs=[], outputs=[], options={}, working_dir=os.getcwd())
-
-    def qualname(self, namespace):
-        if namespace is not None:
-            return '{}.{}'.format(namespace, self.name)
-        return self.name
 
     @property
     def is_source(self):
@@ -180,12 +164,70 @@ class Target(object):
         return self
 
     def __repr__(self):
-        format_str = (
-            '{}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, '
-            'working_dir={!r}, spec={!r})'
+        return '{}(inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, spec={!r})'.format(
+            self.__class__.__name__,
+            self.inputs,
+            self.outputs,
+            self.options,
+            self.working_dir,
+            self.spec,
         )
 
-        return format_str.format(
+    def __str__(self):
+        return '{}_{}'.format(self.__class__.__name__, id(self))
+
+
+class Target(AnonymousTarget):
+    """Represents a target.
+
+    This class inherits from :class:`AnonymousTarget`.
+
+    A target is a named unit of work that declare their file *inputs* and *outputs*. Target names must be valid Python
+    identifiers.
+
+    A script (or spec) is associated with the target. The script must be a valid Bash script and should produce the
+    files declared as *outputs* and consume the files declared as *inputs*. Both parameters must be provided explicitly,
+    even if no inputs or outputs are needed. In that case, provide the empty list::
+
+        Target('Foo', inputs=[], outputs=[], options={}, working_dir='/tmp')
+
+    The target can also specify an *options* dictionary specifying the resources needed to run the target. The options
+    are consumed by the backend and may be ignored if the backend doesn't support a given option. For example, we can
+    set the *cores* option to set the number of cores that the target uses::
+
+        Target('Foo', inputs=[], outputs=[], options={'cores': 16}, working_dir='/tmp')
+
+    To see which options are supported by your backend of choice, see the documentation for the backend.
+
+    :ivar str name:
+        Name of the target.
+    """
+
+    def __init__(self, name=None, **kwargs):
+        self.name = kwargs.pop('name', name)
+        if self.name is None:
+            raise InvalidNameError('Target name is missing.')
+
+        if not is_valid_name(self.name):
+            raise InvalidNameError('Target defined with invalid name: "{}".'.format(self.name))
+
+        super().__init__(**kwargs)
+
+    @classmethod
+    def empty(cls, name):
+        """Return a target with no inputs, outputs and options.
+
+        This is mostly useful for testing.
+        """
+        return cls(name=name, inputs=[], outputs=[], options={}, working_dir=os.getcwd())
+
+    def qualname(self, namespace):
+        if namespace is not None:
+            return '{}.{}'.format(namespace, self.name)
+        return self.name
+
+    def __repr__(self):
+        return '{}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, spec={!r})'.format(
             self.__class__.__name__,
             self.name,
             self.inputs,

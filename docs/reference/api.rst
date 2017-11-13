@@ -17,7 +17,7 @@ Core
 ----
 
 .. automodule:: gwf.core
-   :members: graph_from_config, graph_from_path, Target, Workflow, Graph, Scheduler
+   :members: graph_from_config, graph_from_path, AnonymousTarget, Target, Workflow, Graph, Scheduler
 
 Backends
 --------
