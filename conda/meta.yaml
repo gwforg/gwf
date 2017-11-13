@@ -25,8 +25,7 @@ requirements:
     - statusbar >=0.1.4
 
 test:
-  requires:
-    - pytest-runner
+
   imports:
     - gwf
     - gwf.backends

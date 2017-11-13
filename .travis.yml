@@ -14,7 +14,7 @@ before_install:
   - conda config --add channels gwforg
 install:
   - conda install -q python=$TRAVIS_PYTHON_VERSION pip=9.0.1 conda-build=3.0.15 anaconda-client=1.6.0
-  - pip install coveralls==1.2.0
+  - pip install coveralls==1.2.0 pytest-runner==3.0
   - conda build --python $TRAVIS_PYTHON_VERSION conda/
   - conda install --use-local gwf
 script: make test
