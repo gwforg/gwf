@@ -1,7 +1,21 @@
 import io
 import os.path
+from functools import wraps
 
 from .exceptions import LogNotFoundError
+
+
+def redirect_exception(old_exc, new_exc):
+    """Redirect one exception type to another."""
+    def wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except old_exc as e:
+                raise new_exc from e
+        return inner_wrapper
+    return wrapper
 
 
 class LogManager:
@@ -76,10 +90,18 @@ class FileLogManager(LogManager):
         """Return path of the log file containing standard error for target."""
         return self._get_log_path(target, 'stderr')
 
+    @redirect_exception(FileNotFoundError, LogNotFoundError)
     def open_stdout(self, target, mode='r'):
-        """Return a file handle to the log file containing standard output for target."""
+        """Return a file handle to the log file containing standard output for target.
+
+        :raises LogNotFoundError: If the log could not be found.
+        """
         return open(self.stdout_path(target), mode)
 
+    @redirect_exception(FileNotFoundError, LogNotFoundError)
     def open_stderr(self, target, mode='r'):
-        """Return a file handle to the log file containing standard error for target."""
+        """Return a file handle to the log file containing standard error for target.
+
+        :raises LogNotFoundError: If the log could not be found.
+        """
         return open(self.stderr_path(target), mode)
