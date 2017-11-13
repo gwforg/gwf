@@ -4,7 +4,7 @@ python:
 - '3.5'
 - '3.6'
 before_install:
-- wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+- wget -q https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 - chmod +x miniconda.sh
 - "./miniconda.sh -b -p $HOME/miniconda"
 - export PATH="$HOME/miniconda/bin:$PATH"
@@ -13,7 +13,8 @@ before_install:
 - conda config --set anaconda_upload no
 - conda config --add channels gwforg
 install:
-- conda install -q python=$TRAVIS_PYTHON_VERSION pip=9.0.1 conda-build=3.0.15 anaconda-client=1.6.0 coveralls=1.2.0
+- conda install -q python=$TRAVIS_PYTHON_VERSION pip=9.0.1 conda-build=3.0.15 anaconda-client=1.6.0
+- pip install coveralls==1.2.0
 - conda build --python $TRAVIS_PYTHON_VERSION conda/
 - conda install --use-local gwf
 script: make test
