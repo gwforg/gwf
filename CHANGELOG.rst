@@ -12,6 +12,7 @@ Fixed
 * Bug when using ``--format table`` and no targets were found (#203).
 * Bug when cancelling a target running on the Slurm backend (#199).
 * Link to documentation in error message when unable to connect to local workers.
+* Fixed bug in the *FileLogManager* where the wrong exception was raised when no log was found.
 
 Changed
 -------
@@ -20,7 +21,6 @@ Changed
   file system, and thus won't raise an exception if a target depends on a file that doesn't exist and that's not
   provided a target. Instead, unresolved paths are added to ``Graph.unresolved``. They will then be checked by the
   scheduler (if necessary).
-
 
 Added
 -----
