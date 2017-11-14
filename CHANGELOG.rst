@@ -20,7 +20,7 @@ Changed
 * Moved checking of file timestamps to the scheduler. This means that creating a ``Graph`` object will never touch the
   file system, and thus won't raise an exception if a target depends on a file that doesn't exist and that's not
   provided a target. Instead, unresolved paths are added to ``Graph.unresolved``. They will then be checked by the
-  scheduler (if necessary).
+  scheduler (if necessary). For end users, this means that many commands have become substantially faster.
 
 Added
 -----
