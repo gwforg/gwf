@@ -3,6 +3,32 @@ Change Log
 ==========
 
 
+Version 1.2
+===========
+
+Fixed
+-----
+
+* Bug when using ``--format table`` and no targets were found (#203).
+* Bug when cancelling a target running on the Slurm backend (#199).
+* Link to documentation in error message when unable to connect to local workers.
+* Fixed bug in the *FileLogManager* where the wrong exception was raised when no log was found.
+
+Changed
+-------
+
+* Moved checking of file timestamps to the scheduler. This means that creating a ``Graph`` object will never touch the
+  file system, and thus won't raise an exception if a target depends on a file that doesn't exist and that's not
+  provided a target. Instead, unresolved paths are added to ``Graph.unresolved``. They will then be checked by the
+  scheduler (if necessary). For end users, this means that many commands have become substantially faster.
+
+Added
+-----
+
+* Added ``AnonymousTarget`` which represents an unnamed target. ``Target`` now inherits from this class and
+  templates may now return an ``AnonymousTarget`` instead of a tuple.
+* Added *backend.slurm.log_mode* option, see the documentation for the Slurm backend for usage (#202).
+
 Version 1.1
 ===========
 
