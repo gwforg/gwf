@@ -1,8 +1,11 @@
 language: python
+
 sudo: false
+
 python:
   - '3.5'
   - '3.6'
+
 before_install:
   - wget -q https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
@@ -12,15 +15,19 @@ before_install:
   - conda config --set always_yes true
   - conda config --set anaconda_upload no
   - conda config --add channels gwforg
+
 install:
   - conda install -q python=$TRAVIS_PYTHON_VERSION pip=9.0.1 conda-build=3.0.15 anaconda-client=1.6.0
   - pip install coveralls==1.2.0 pytest-runner==3.0
   - conda build --python $TRAVIS_PYTHON_VERSION conda/
   - conda install --use-local gwf
+
 script: make test
+
 after_success:
   - coveralls
   - chmod +x ./deploy_conda.sh
+
 deploy:
   - provider: pypi
     username: dansondergaard
@@ -31,6 +38,7 @@ deploy:
     skip_upload_docs: true
     on:
       tags: true
+
   - provider: script
     script: "./deploy_conda.sh"
     skip_cleanup: true
