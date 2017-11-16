@@ -3,6 +3,15 @@ Change Log
 ==========
 
 
+Version 1.2.1
+=============
+
+Fixed
+-----
+
+* Bug when returning an ``AnonymousTarget`` from a template function without specifying the *working_dir* in the
+  constructor (#212). Thanks to Steffen Møller-Larsen for reporting this.
+
 Version 1.2
 ===========
 
