@@ -97,6 +97,9 @@ def graph_from_config(config):
 class AnonymousTarget:
     """Represents an unnamed target.
 
+    An anonymous target is an unnamed, abstract target much like the tuple returned by function templates. Thus,
+    `AnonymousTarget` can also be used as the return value of a template function.
+
     :ivar list inputs:
         A list of input paths for this target.
     :ivar list outputs:
@@ -110,10 +113,9 @@ class AnonymousTarget:
         The specification of the target.
     """
 
-    inputs = normalized_paths_property('inputs')
-    outputs = normalized_paths_property('outputs')
-
     def __init__(self, inputs, outputs, options, working_dir=None, spec=''):
+        self.inputs = inputs
+        self.outputs = outputs
         self.options = options
         self.working_dir = working_dir
 
@@ -209,6 +211,9 @@ class Target(AnonymousTarget):
     :ivar str name:
         Name of the target.
     """
+
+    inputs = normalized_paths_property('inputs')
+    outputs = normalized_paths_property('outputs')
 
     def __init__(self, name=None, **kwargs):
         self.name = kwargs.pop('name', name)

@@ -82,20 +82,29 @@ class TestWorkflow(unittest.TestCase):
         with self.assertRaises(TargetExistsError):
             workflow.target('TestTarget', inputs=[], outputs=[])
 
-    def test_target_from_template(self):
+    def test_target_from_template_returning_tuple(self):
         def template_returning_tuple():
             return [], [], {}, 'this is the spec'
 
+        workflow = Workflow(working_dir='/some/dir')
+        workflow.target_from_template('TestTarget', template_returning_tuple())
+        assert 'TestTarget' in workflow.targets
+
+    def test_target_from_template_returning_anonymous_target(self):
         def template_returning_anonymous_target():
             return AnonymousTarget(inputs=[], outputs=[], options={}, working_dir='/some/dir', spec='this is the spec')
 
-        workflow = Workflow()
+        workflow = Workflow(working_dir='/some/dir')
+        workflow.target_from_template('TestTarget', template_returning_anonymous_target())
+        assert 'TestTarget' in workflow.targets
 
-        workflow.target_from_template('TestTarget1', template_returning_tuple())
-        assert 'TestTarget1' in workflow.targets
+    def test_target_from_template_returning_anonymous_target_without_working_dir(self):
+        def template_returning_anonymous_target_without_working_dir():
+            return AnonymousTarget(inputs=['hello.txt'], outputs=[], options={}, spec='this is the spec')
 
-        workflow.target_from_template('TestTarget2', template_returning_anonymous_target())
-        assert 'TestTarget2' in workflow.targets
+        workflow = Workflow(working_dir='/some/dir')
+        workflow.target_from_template('TestTarget', template_returning_anonymous_target_without_working_dir())
+        assert 'TestTarget' in workflow.targets
 
     def test_target_from_invalid_template(self):
         def invalid_template():
