@@ -27,6 +27,15 @@ from .utils import LazyDict, cache, load_workflow, timer, parse_path
 logger = logging.getLogger(__name__)
 
 
+def _is_valid_list(obj):
+    return isinstance(obj, collections.Sequence) and not isinstance(obj, str)
+
+
+def is_valid_name(candidate):
+    """Check whether `candidate` is a valid name for a target or workflow."""
+    return re.match(r'^[a-zA-Z_][a-zA-Z0-9._]*$', candidate) is not None
+
+
 def _norm_path(working_dir, path):
     path = str(path)
     if os.path.isabs(path):
@@ -36,15 +45,6 @@ def _norm_path(working_dir, path):
 
 def _norm_paths(working_dir, paths):
     return [_norm_path(working_dir, path) for path in paths]
-
-
-def _is_valid_list(obj):
-    return isinstance(obj, collections.Sequence) and not isinstance(obj, str)
-
-
-def is_valid_name(candidate):
-    """Check whether `candidate` is a valid name for a target or workflow."""
-    return re.match(r'^[a-zA-Z_][a-zA-Z0-9._]*$', candidate) is not None
 
 
 def normalized_paths_property(name):
@@ -97,8 +97,9 @@ def graph_from_config(config):
 class AnonymousTarget:
     """Represents an unnamed target.
 
-    An anonymous target is an unnamed, abstract target much like the tuple returned by function templates. Thus,
-    `AnonymousTarget` can also be used as the return value of a template function.
+    An anonymous target is an unnamed, abstract target much like the tuple 
+    returned by function templates. Thus, `AnonymousTarget` can also be used as
+    the return value of a template function.
 
     :ivar list inputs:
         A list of input paths for this target.
@@ -121,10 +122,16 @@ class AnonymousTarget:
 
         if not _is_valid_list(inputs):
             raise InvalidTypeError(
-                'The argument `inputs` to target `{}` must be a list or tuple, not a string.'.format(self))
+                'Target inputs must be list or tuple, not {}.'.format(
+                    type(inputs)
+                )
+            )
         if not _is_valid_list(outputs):
             raise InvalidTypeError(
-                'The argument `outputs` to target `{}` must be a list or tuple, not a string.'.format(self))
+                'Target outputs must be list or tuple, not {}.'.format(
+                    type(outputs)
+                )
+            )
 
         self.inputs = inputs
         self.outputs = outputs
@@ -139,9 +146,10 @@ class AnonymousTarget:
     def spec(self, value):
         if not isinstance(value, str):
             msg = (
-                'Target spec must be a string, not {}. Did you attempt to assign a template to this target? '
-                'This is no is not allowed since version 1.0. Use the Workflow.target_from_template() method instead. '
-                'See the tutorial for more details.'
+                'Target spec must be a string, not {}. Did you attempt to '
+                'assign a template to this target? This is no is not allowed '
+                'since version 1.0. Use the Workflow.target_from_template() '
+                'method instead. See the tutorial for more details.'
             )
             raise InvalidTypeError(msg.format(type(value)))
 
@@ -191,22 +199,27 @@ class Target(AnonymousTarget):
 
     This class inherits from :class:`AnonymousTarget`.
 
-    A target is a named unit of work that declare their file *inputs* and *outputs*. Target names must be valid Python
-    identifiers.
+    A target is a named unit of work that declare their file *inputs* and 
+    *outputs*. Target names must be valid Python identifiers.
 
-    A script (or spec) is associated with the target. The script must be a valid Bash script and should produce the
-    files declared as *outputs* and consume the files declared as *inputs*. Both parameters must be provided explicitly,
-    even if no inputs or outputs are needed. In that case, provide the empty list::
+    A script (or spec) is associated with the target. The script must be a 
+    valid Bash script and should produce the files declared as *outputs* and 
+    consume the files declared as *inputs*. Both parameters must be provided 
+    explicitly, even if no inputs or outputs are needed. In that case, provide 
+    the empty list::
 
         Target('Foo', inputs=[], outputs=[], options={}, working_dir='/tmp')
 
-    The target can also specify an *options* dictionary specifying the resources needed to run the target. The options
-    are consumed by the backend and may be ignored if the backend doesn't support a given option. For example, we can
-    set the *cores* option to set the number of cores that the target uses::
+    The target can also specify an *options* dictionary specifying the 
+    resources needed to run the target. The options are consumed by the backend
+    and may be ignored if the backend doesn't support a given option. For 
+    example, we can set the *cores* option to set the number of cores that the
+    target uses::
 
         Target('Foo', inputs=[], outputs=[], options={'cores': 16}, working_dir='/tmp')
 
-    To see which options are supported by your backend of choice, see the documentation for the backend.
+    To see which options are supported by your backend of choice, see the 
+    documentation for the backend.
 
     :ivar str name:
         Name of the target.
