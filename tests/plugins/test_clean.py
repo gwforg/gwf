@@ -55,6 +55,17 @@ def test_clean_output_from_all_targets(cli_runner):
     assert not os.path.exists('e.txt')
 
 
+def test_clean_output_from_all_targets_with_force(cli_runner):
+    args = ['-b', 'testing', 'clean', '--all', '--force']
+    cli_runner.invoke(main, args)
+
+    assert not os.path.exists('a.txt')
+    assert not os.path.exists('b.txt')
+    assert not os.path.exists('c.txt')
+    assert not os.path.exists('d.txt')
+    assert not os.path.exists('e.txt')
+
+
 def test_clean_output_from_single_endpoint_target(cli_runner):
     args = ['-b', 'testing', 'clean', '--all', 'Target2']
     cli_runner.invoke(main, args)
