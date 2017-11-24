@@ -17,3 +17,4 @@ examples/minimal-workflow-explicit-options/universe.txt
 examples/minimal-workflow-explicit-options/world.txt
 .cache
 .vscode/
+cov.xml
