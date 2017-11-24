@@ -38,7 +38,9 @@ Let's rewrite our workflow from before with a template. First, we'll define the 
         spec = """./transform_photo {}""".format(path)
         return inputs, outputs, options, spec
 
-Or if we wanted to return an :class:`AnonymousTarget`::
+Or if we wanted to return an :class:`AnonymousTarget` (note that you need to import it first)::
+
+    from gwf import AnonymousTarget
 
     def transform_photo(path):
         inputs = [path]

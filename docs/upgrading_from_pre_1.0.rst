@@ -66,3 +66,11 @@ the workflow ends up like this::
     ...
     """
 
+Old versions of *gwf* provided a ``template()`` function for creating templates
+and doing string substitution, as well as the ability to have functions return 
+templates. The ``template()`` function has been removed, and template functions
+are now the only way to create templates.
+
+Additionally, function templates must now return the inputs and outputs of the
+template separate from the other options. To see how, take a look at
+:ref:`templates`.
