@@ -400,6 +400,37 @@ class TestTarget(unittest.TestCase):
         target = Target('TestTarget', inputs=[], outputs=[], options={'cores': 8}, working_dir='/some/dir')
         target.inherit_options({'cores': 4, 'memory': '4g'})
         self.assertEqual(target.options, {'cores': 8, 'memory': '4g'})
+    
+    def test_optional_outputs(self):
+        target = Target(
+            name='TestTarget', 
+            inputs=[], 
+            outputs=['a', 'b'], 
+            keep_outputs=False, 
+            options={}, 
+            working_dir='/some/dir'
+        )
+        assert target.optional_outputs() == {'/some/dir/a', '/some/dir/b'}
+
+        target = Target(
+            name='TestTarget', 
+            inputs=[], 
+            outputs=['a', 'b'], 
+            keep_outputs=True,
+            options={}, 
+            working_dir='/some/dir'
+        )
+        assert target.optional_outputs() == set()
+
+        target = Target(
+            name='TestTarget', 
+            inputs=[], 
+            outputs=['a', 'b'], 
+            keep_outputs=['a'],
+            options={}, 
+            working_dir='/some/dir'
+        )
+        assert target.optional_outputs() == {'/some/dir/b'}
 
     def test_str_on_target(self):
         target = Target(

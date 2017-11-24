@@ -11,6 +11,7 @@ gwf = Workflow()
 gwf.target('Target1', inputs=[], outputs=['a.txt'])
 gwf.target('Target2', inputs=['a.txt'], outputs=['b.txt'])
 gwf.target('Target3', inputs=['a.txt'], outputs=['c.txt'])
+gwf.target('Target4', inputs=['a.txt'], outputs=['d.txt', 'e.txt'], keep_outputs=['d.txt'])
 """
 
 
@@ -26,6 +27,8 @@ def setup(simple_workflow):
     simple_workflow.join('a.txt').ensure()
     simple_workflow.join('b.txt').ensure()
     simple_workflow.join('c.txt').ensure()
+    simple_workflow.join('d.txt').ensure()
+    simple_workflow.join('e.txt').ensure()
     with simple_workflow.as_cwd():
         yield
 
@@ -37,6 +40,8 @@ def test_clean_output_from_non_endpoints(cli_runner):
     assert not os.path.exists('a.txt')
     assert os.path.exists('b.txt')
     assert os.path.exists('c.txt')
+    assert os.path.exists('d.txt')
+    assert os.path.exists('e.txt')
 
 
 def test_clean_output_from_all_targets(cli_runner):
@@ -46,6 +51,8 @@ def test_clean_output_from_all_targets(cli_runner):
     assert not os.path.exists('a.txt')
     assert not os.path.exists('b.txt')
     assert not os.path.exists('c.txt')
+    assert os.path.exists('d.txt')
+    assert not os.path.exists('e.txt')
 
 
 def test_clean_output_from_single_endpoint_target(cli_runner):
@@ -55,6 +62,8 @@ def test_clean_output_from_single_endpoint_target(cli_runner):
     assert os.path.exists('a.txt')
     assert not os.path.exists('b.txt')
     assert os.path.exists('c.txt')
+    assert os.path.exists('d.txt')
+    assert os.path.exists('e.txt')
 
 
 def test_clean_output_from_two_targets(cli_runner):
@@ -63,3 +72,6 @@ def test_clean_output_from_two_targets(cli_runner):
 
     assert not os.path.exists('a.txt')
     assert not os.path.exists('b.txt')
+    assert os.path.exists('c.txt')
+    assert os.path.exists('d.txt')
+    assert os.path.exists('e.txt')

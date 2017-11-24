@@ -215,15 +215,49 @@ class Target(AnonymousTarget):
     inputs = normalized_paths_property('inputs')
     outputs = normalized_paths_property('outputs')
 
-    def __init__(self, name=None, **kwargs):
-        self.name = kwargs.pop('name', name)
+    def __init__(self, name, inputs, outputs, options, working_dir, 
+            keep_outputs=False, spec=''):
+
+        super().__init__(
+            inputs=inputs, 
+            outputs=outputs, 
+            options=options, 
+            working_dir=working_dir, 
+            spec=spec,
+        )
+
+        self.name = name
         if self.name is None:
             raise InvalidNameError('Target name is missing.')
 
         if not is_valid_name(self.name):
-            raise InvalidNameError('Target defined with invalid name: "{}".'.format(self.name))
+            raise InvalidNameError(
+                'Target defined with invalid name: "{}".'.format(self.name))
+        
+        self.keep_outputs = keep_outputs
+        if hasattr(self.keep_outputs, '__iter__'):
+            self.keep_outputs = set(
+                _norm_paths(self.working_dir, self.keep_outputs))
+    
+    def optional_outputs(self):
+        """Return a set of optional outputs.
+        
+        Optional outputs is the subset of the target outputs which can be
+        cleaned because they are not listed in :attr:`keep_outputs`.
 
-        super().__init__(**kwargs)
+        When :attr:`keep_outputs` is *True*, none of the output files are
+        considered optional, and thus the empty set is returned. Likewise,
+        when :attr:`keep_outputs` is *False* all output files are considered
+        optional, so set set of all output files is returned.
+
+        Otherwise, a set of output files that are not listed in 
+        :attr:`keep_outputs` will be returned.
+        """
+        if self.keep_outputs is True:
+            return set()
+        if self.keep_outputs is False:
+            return set(self.outputs)
+        return set(self.outputs) - set(self.keep_outputs)
 
     @classmethod
     def empty(cls, name):
@@ -317,7 +351,7 @@ class Workflow(object):
             raise TargetExistsError(target)
         self.targets[target.name] = target
 
-    def target(self, name, inputs, outputs, **options):
+    def target(self, name, inputs, outputs, keep_outputs=False, **options):
         """Create a target and add it to the :class:`gwf.Workflow`.
 
         This is syntactic sugar for creating a new :class:`~gwf.Target` and
@@ -346,6 +380,7 @@ class Workflow(object):
             outputs=outputs,
             options=options,
             working_dir=self.working_dir,
+            keep_outputs=keep_outputs,
         )
         new_target.inherit_options(self.defaults)
 
