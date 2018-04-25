@@ -637,7 +637,7 @@ class Graph:
             unresolved=unresolved,
         )
 
-    @timer('Checked for circular dependencies in %.3fms.', logger=logger)
+    @timer('Checked for circular dependencies in %.3fms', logger=logger)
     def _check_for_circular_dependencies(self):
         """Check for circular dependencies in the graph.
 
@@ -728,10 +728,10 @@ class Scheduler:
         :param gwf.Target target:
             Target to be scheduled.
         """
-        logger.debug('Scheduling target %s.', target)
+        logger.debug('Scheduling target %s', target)
 
         if self.backend.status(target) != Status.UNKNOWN or target in self._pretend_known:
-            logger.debug('Target %s has already been submitted.', target)
+            logger.debug('Target %s has already been submitted', target)
             return True
 
         submitted_deps = set()
@@ -747,14 +747,14 @@ class Scheduler:
                     raise MissingProviderError(path, target)
 
             if self.dry_run:
-                logger.info('Would submit target %s.', target)
+                logger.info('Would submit target %s', target)
                 self._pretend_known.add(target)
             else:
-                logger.info('Submitting target %s.', target)
+                logger.info('Submitting target %s', target)
                 self.backend.submit(target, dependencies=submitted_deps)
             return True
         else:
-            logger.debug('Target %s should not run.', target)
+            logger.debug('Target %s should not run', target)
             return False
 
     def schedule_many(self, targets):
@@ -776,28 +776,28 @@ class Scheduler:
     def should_run(self, target):
         """Return whether a target should be run or not."""
         if any(self.should_run(dep) for dep in self.graph.dependencies[target]):
-            logger.debug('%s should run because one of its dependencies should run.', target)
+            logger.debug('%s should run because one of its dependencies should run', target)
             return True
 
         if target.is_sink:
-            logger.debug('%s should run because it is a sink.', target)
+            logger.debug('%s should run because it is a sink', target)
             return True
 
         if any(self._file_cache[path] is None for path in target.outputs):
-            logger.debug('%s should run because one of its output files does not exist.', target)
+            logger.debug('%s should run because one of its output files does not exist', target)
             return True
 
         if target.is_source:
-            logger.debug('%s should not run because it is a source.', target)
+            logger.debug('%s should not run because it is a source', target)
             return False
 
         youngest_in_ts, youngest_in_path = max((self._file_cache[path], path) for path in target.inputs)
-        logger.debug('%s is the youngest input file of %s with timestamp %s.', youngest_in_path, target, youngest_in_ts)
+        logger.debug('%s is the youngest input file of %s with timestamp %s', youngest_in_path, target, youngest_in_ts)
 
         oldest_out_ts, oldest_out_path = min((self._file_cache[path], path) for path in target.outputs)
-        logger.debug('%s is the oldest output file of %s with timestamp %s.', oldest_out_path, target, youngest_in_ts)
+        logger.debug('%s is the oldest output file of %s with timestamp %s', oldest_out_path, target, youngest_in_ts)
 
         if youngest_in_ts > oldest_out_ts:
-            logger.debug('%s should run since %s is larger than %s.', target, youngest_in_ts, oldest_out_ts)
+            logger.debug('%s should run since %s is larger than %s', target, youngest_in_ts, oldest_out_ts)
             return True
         return False

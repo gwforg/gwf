@@ -529,7 +529,7 @@ class TestShouldRun(unittest.TestCase):
         self.assertEqual(
             logs.output,
             [
-                'DEBUG:gwf.core:TestTarget1 should run because one of its output files does not exist.'
+                'DEBUG:gwf.core:TestTarget1 should run because one of its output files does not exist'
             ]
         )
 
@@ -540,8 +540,8 @@ class TestShouldRun(unittest.TestCase):
         self.assertEqual(
             logs.output,
             [
-                'DEBUG:gwf.core:TestTarget1 should run because one of its output files does not exist.',
-                'DEBUG:gwf.core:TestTarget2 should run because one of its dependencies should run.'
+                'DEBUG:gwf.core:TestTarget1 should run because one of its output files does not exist',
+                'DEBUG:gwf.core:TestTarget2 should run because one of its dependencies should run'
             ]
         )
 
@@ -552,9 +552,9 @@ class TestShouldRun(unittest.TestCase):
         with self.assertLogs(level='DEBUG') as logs:
             self.assertTrue(scheduler.schedule(target))
             self.assertEqual(logs.output, [
-                'DEBUG:gwf.core:Scheduling target TestTarget.',
-                'DEBUG:gwf.core:TestTarget should run because it is a sink.',
-                'INFO:gwf.core:Submitting target TestTarget.',
+                'DEBUG:gwf.core:Scheduling target TestTarget',
+                'DEBUG:gwf.core:TestTarget should run because it is a sink',
+                'INFO:gwf.core:Submitting target TestTarget',
             ])
 
     def test_target_should_not_run_if_it_is_a_source_and_all_outputs_exist(self):

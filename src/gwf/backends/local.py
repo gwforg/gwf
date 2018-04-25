@@ -65,7 +65,7 @@ class SubmitRequest(Request):
         task_id = _gen_task_id()
         status_dict[task_id] = LocalStatus.SUBMITTED
         task_queue.put((task_id, self))
-        logger.debug('Task %s was queued with id %s.', self.target.name, task_id)
+        logger.debug('Task %s was queued with id %s', self.target.name, task_id)
         return task_id
 
 
@@ -221,17 +221,17 @@ class Worker:
             self.handle_task(task_id, request)
 
     def handle_task(self, task_id, request):
-        logger.debug('Task %s started target %r.', task_id, request.target)
+        logger.debug('Task %s started target %r', task_id, request.target)
         self.status[task_id] = LocalStatus.RUNNING
 
         try:
             self.execute_target(request.target, stdout_path=request.stdout_path, stderr_path=request.stderr_path)
         except:
             self.status[task_id] = LocalStatus.FAILED
-            logger.error('Task %s failed.', task_id, exc_info=True)
+            logger.error('Task %s failed', task_id, exc_info=True)
         else:
             self.status[task_id] = LocalStatus.COMPLETED
-            logger.debug('Task %s completed target %r.', task_id, request.target)
+            logger.debug('Task %s completed target %r', task_id, request.target)
         finally:
             self.requeue_dependents(task_id)
 
@@ -256,7 +256,7 @@ class Worker:
         has_non_satisfied_dep = False
         for dep_id in request.deps:
             if self.status[dep_id] != LocalStatus.COMPLETED:
-                logger.debug('Task %s set to wait for %s.', task_id, dep_id)
+                logger.debug('Task %s set to wait for %s', task_id, dep_id)
 
                 if dep_id not in self.waiting:
                     self.waiting[dep_id] = []
@@ -278,7 +278,7 @@ class Worker:
         if task_id not in self.waiting:
             return
 
-        logger.debug('Task %s has waiting dependents. Requeueing.', task_id)
+        logger.debug('Task %s has waiting dependents. Requeueing', task_id)
         for dep_task_id, dep_request in self.waiting[task_id]:
             self.queue.put((dep_task_id, dep_request))
 
@@ -315,10 +315,10 @@ class Server:
 
     def handle_request(self, request):
         try:
-            logger.debug('Received request %r.', request)
+            logger.debug('Received request %r', request)
             return request.handle(self.queue, self.status)
         except:
-            logger.error('Invalid request %r.', request, exc_info=True)
+            logger.error('Invalid request %r', request, exc_info=True)
 
     def handle_client(self, conn):
         logger.debug('Accepted client connection.')
@@ -351,7 +351,7 @@ class Server:
                 initargs=(self.status, self.queue, self.waiting),
             )
 
-            logging.info('Started %s workers, listening on port %s.', self.num_workers, serv.address[1])
+            logging.info('Started %s workers, listening on port %s', self.num_workers, serv.address[1])
             self.wait_for_clients(serv)
         except OSError as e:
             if e.errno == 48:
