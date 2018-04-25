@@ -466,17 +466,14 @@ Cleaning Up
 ===========
 
 Now that we have run our workflow we may wish to remove intermediate files to save disk
-space. In *gwf* we can use the ``gwf clean`` command for this. If we wanted to remove all
-files produced by all targets in the workflow, we could just run:
+space. In *gwf* we can use the ``gwf clean`` command for this:
 
 .. code-block:: console
 
     $ gwf clean
 
-However, this would also remove the file with the mapped genome, which we probably want
-to save. This file was produced by an endpoint target (a target which no other
-target depends on), so we can tell *gwf* to only remove files that were not produced
-by an endpoint:
+This command only removes files produced by an endpoint target (a target which no other
+target depends on):
 
 .. code-block:: console
 
@@ -491,6 +488,8 @@ by an endpoint:
     Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.fa" from target "UnzipGenome".
     Deleting MapReads
     Deleting output file "/Users/das/Projects/gwf/examples/readmapping/Masala.bam" from target "MapReads".
+    
+We can tell *gwf* to remove all files by running ``gwf clean --all``.
 
 A Note About Reproducibility
 ============================
