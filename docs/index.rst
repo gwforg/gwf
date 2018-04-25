@@ -36,23 +36,10 @@ We recommend that you install *gwf* in a project-specific environment::
     conda create -n myproject python=3.5 gwf dep1 dep2 ...
     source activate myproject
 
-If you want to test a development version of *gwf* you can use the `dev` label::
-
-   conda install -c gwforg/label/dev gwf
-
-This will install the most recent alpha/beta version of *gwf*.
-
 You can find the code for *gwf* `here <https://github.com/gwforg/gwf>`_. You are
 encouraged to report any issues through the
 `issue tracker <https://github.com/gwforg/gwf/issues>`_, which is also a good place
 to ask questions.
-
-Upgrading From an Older Version
-===============================
-
-If you have been using an older version of *gwf* you will have to
-make a few changes to your workflows to be able to run them with version 1.0
-and above. :doc:`Read more... </upgrading_from_pre_1.0>`
 
 Getting Started
 ===============
