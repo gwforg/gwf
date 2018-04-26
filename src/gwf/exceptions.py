@@ -103,3 +103,7 @@ class IncludeWorkflowError(GWFError):
 
 class InvalidPathError(GWFError):
     """Target declared a directory as as input or output."""
+
+
+class ConfigurationError(GWFError):
+    """An error occurred loading, saving or validating the configuration."""

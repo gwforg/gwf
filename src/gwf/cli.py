@@ -10,6 +10,7 @@ from click_plugins import with_plugins
 from . import __version__
 from .conf import config
 from .backends import list_backends
+from .exceptions import ConfigurationError
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,8 @@ LOGGING_FORMATS = {
     'debug': ADVANCED_FORMAT,
     'error': BASIC_FORMAT,
 }
+
+VERBOSITY_LEVELS = ['warning', 'debug', 'info', 'error']
 
 
 def ensure_dir(path):
@@ -66,6 +69,41 @@ class ColorFormatter(logging.Formatter):
         return super().format(color_record)
 
 
+@config.validator('backend')
+def validate_backend(value):
+    backends = list_backends()
+    if value not in backends:
+        raise ConfigurationError(
+            'Invalid value "{}" for key "backend", must be one of: {}.'.format(
+                value,
+                ', '.join(backends)
+            )
+        )
+
+
+@config.validator('verbose')
+def validate_verbose(value):
+    if value not in VERBOSITY_LEVELS:
+        raise ConfigurationError(
+            'Invalid value "{}" for key "verbose", must be one of: {}.'.format(
+                value,
+                ', '.join(VERBOSITY_LEVELS)
+            )
+        )
+
+
+@config.validator('no_color')
+def validate_no_color(value):
+    choices = ('true', 'yes', 'false', 'no')
+    if value not in (True, False):
+        raise ConfigurationError(
+            'Invalid value "{}" for key "no_color", must be one of: {}.'.format(
+                value,
+                ', '.join(choices)
+            )
+        )
+
+
 @with_plugins(iter_entry_points('gwf.plugins'))
 @click.group(context_settings={'obj': {}})
 @click.version_option(version=__version__)
@@ -79,19 +117,19 @@ class ColorFormatter(logging.Formatter):
     '-b',
     '--backend',
     type=click.Choice(list_backends()),
-    default=config.get('backend', 'local'),
+    default=config['backend'],
     help='Backend used to run workflow.'
 )
 @click.option(
     '-v',
     '--verbose',
-    type=click.Choice(['warning', 'debug', 'info', 'error']),
-    default=config.get('verbose', 'info'),
+    type=click.Choice(VERBOSITY_LEVELS),
+    default=config['verbose'],
     help='Verbosity level.',
 )
 @click.option(
     '--no-color/--use-color',
-    default=config.get('no_color', False),
+    default=config['no_color'],
     help='Enable or disable output colors.'
 )
 @click.pass_context

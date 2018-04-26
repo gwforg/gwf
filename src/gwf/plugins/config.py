@@ -1,6 +1,7 @@
 import click
 
-from ..conf import file_config
+from ..backends import list_backends
+from ..conf import config as _config
 
 
 def humanbool(x):
@@ -30,7 +31,7 @@ def config():
 @click.argument('key')
 def get(key):
     """Get the value of KEY."""
-    click.echo(file_config.get(key))
+    click.echo(_config.get(key))
 
 
 @config.command()
@@ -41,13 +42,13 @@ def set(key, value):
 
     The key will be created if it does not exist.
     """
-    file_config[key] = cast_value(value)
-    file_config.dump()
+    _config[key] = cast_value(value)
+    _config.dump()
 
 
 @config.command()
 @click.argument('key')
 def unset(key):
     """Unset KEY."""
-    del file_config[key]
-    file_config.dump()
+    del _config[key]
+    _config.dump()
