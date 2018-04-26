@@ -1,6 +1,5 @@
 import click
 
-from ..backends import list_backends
 from ..conf import config as _config
 
 

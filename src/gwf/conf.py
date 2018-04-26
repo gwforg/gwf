@@ -1,8 +1,5 @@
 import json
 from collections import ChainMap
-from functools import wraps
-
-from .exceptions import GWFError, ConfigurationError
 
 
 CONFIG_DEFAULTS = {
@@ -19,37 +16,37 @@ class FileConfig:
 
         self._data = ChainMap({}, data)
         self._validators = {}
-    
+
     def validator(self, key):
         """Register a configuration key validator function."""
         def _inner(func):
             self._validators[key] = func
         return _inner
-    
+
     def _validate_value(self, key, value):
         if key in self._validators:
             self._validators[key](value)
-    
+
     def get(self, key, default=None):
         value = self._data.get(key, default)
         self._validate_value(key, value)
         return value
-    
+
     def __getitem__(self, key):
         value = self._data[key]
         self._validate_value(key, value)
         return value
-    
+
     def __setitem__(self, key, value):
         self._validate_value(key, value)
         self._data[key] = value
-    
+
     def __delitem__(self, key):
         del self._data[key]
-    
+
     def __len__(self):
         return len(self._data)
-    
+
     def __iter__(self):
         return iter(self._data)
 

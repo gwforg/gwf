@@ -57,7 +57,7 @@ def print_progress(backend, graph, targets):
 
 def print_table(backend, graph, targets):
     scheduler = Scheduler(backend=backend, graph=graph)
-    
+
     name_col_width = max((len(target.name) for target in targets), default=0) + 1
     format_str = '{name:<{name_col_width}}{status:<10}'
 
