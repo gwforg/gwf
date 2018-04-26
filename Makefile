@@ -15,3 +15,6 @@ coverage:
 
 docs:
 	$(MAKE) -C docs html
+
+clean:
+	rm -rf docs/_build .gwfconf.json
