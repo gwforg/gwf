@@ -47,7 +47,6 @@ Getting Started
 .. toctree::
    :maxdepth: 2
 
-   upgrading_from_pre_1.0
    tutorial
 
 Topic Guides
