@@ -1,4 +1,4 @@
-.PHONY: init test lint coverage docs
+.PHONY: init test lint coverage docs clean
 
 init:
 	pip install pipenv --upgrade
