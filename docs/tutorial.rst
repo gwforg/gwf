@@ -32,10 +32,12 @@ This should show you the commands and options available through *gwf*.
 .. caution::
     You may see an error similar to this when you try running *gwf*::
 
-        UnicodeEncodeError: 'charmap' codec can't encode character '\u2020' in position 477: character maps to <undefined>
+        UnicodeEncodeError: 'charmap' codec can't encode character '\u2020' in 
+        position 477: character maps to <undefined>
 
-    This error occurs because your isn't configured to use UTF-8 as the default encoding.
-    To fix the error insert the following lines in your ``.bashrc`` file::
+    This error occurs because your isn't configured to use UTF-8 as the default 
+    encoding. To fix the error insert the following lines in your ``.bashrc`` 
+    file::
 
         export LANG=en_US.utf8
         export LC_ALL=en_US.utf8
