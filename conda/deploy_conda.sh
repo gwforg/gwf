@@ -19,7 +19,7 @@ conda config --set always_yes true
 conda config --set anaconda_upload no
 conda config --add channels gwforg
 
-conda install -q python=$TRAVIS_PYTHON_VERSION pip=10.0.1 conda-build=3.0.15 anaconda-client=1.6.0
+conda install -q python=$TRAVIS_PYTHON_VERSION pip=10.0.* conda-build=3.0.* anaconda-client=1.6.*
 conda build --python $TRAVIS_PYTHON_VERSION conda/
 conda convert --platform all $HOME/miniconda/conda-bld/*/*.tar.bz2 -o $HOME/miniconda/conda-bld/
 anaconda -t $ANACONDA_TOKEN upload --user gwforg $HOME/miniconda/conda-bld/*/*.tar.bz2
