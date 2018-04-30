@@ -43,13 +43,13 @@ install-conda:
 	wget -q https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 	chmod +x miniconda.sh
 	./miniconda.sh -b -p "${HOME}/miniconda"
-	export PATH="${HOME}/miniconda/bin:${PATH}"
+	rm miniconda.sh
 	
-	conda config --set always_yes true
-	conda config --set anaconda_upload no
-	conda config --add channels gwforg
-	
-	conda update --yes --quiet -n base conda
+	export PATH="${HOME}/miniconda/bin:${PATH}" && \
+	conda config --set always_yes true && \
+	conda config --set anaconda_upload no && \
+	conda config --add channels gwforg && \
+	conda update --yes --quiet -n base conda && \
 	conda install --quiet --yes conda-build=3.0.* anaconda-client=1.6.*
 
 package-conda: install-conda
