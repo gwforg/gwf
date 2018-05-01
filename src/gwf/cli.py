@@ -11,6 +11,7 @@ from . import __version__
 from .conf import config
 from .backends import list_backends
 from .exceptions import ConfigurationError
+from .utils import ColorFormatter, ensure_dir
 
 logger = logging.getLogger(__name__)
 
@@ -29,11 +30,6 @@ LOGGING_FORMATS = {
 VERBOSITY_LEVELS = ['warning', 'debug', 'info', 'error']
 
 
-def ensure_dir(path):
-    """Create directory unless it already exists."""
-    os.makedirs(path, exist_ok=True)
-
-
 def get_level(level):
     return getattr(logging, level.upper())
 
@@ -47,26 +43,6 @@ def configure_logging(level_name, formatter_cls):
     root = logging.getLogger()
     root.addHandler(handler)
     root.setLevel(get_level(level_name))
-
-
-class ColorFormatter(logging.Formatter):
-
-    STYLING = {
-        'WARNING': dict(fg='yellow'),
-        'INFO': dict(fg='blue'),
-        'DEBUG': dict(fg='white'),
-        'ERROR': dict(fg='red', bold=True),
-        'CRITICAL': dict(fg='magenta', bold=True),
-    }
-
-    def format(self, record):
-        level = record.levelname
-        color_record = copy.copy(record)
-        if record.levelname in self.STYLING:
-            styling = self.STYLING[level]
-            color_record.levelname = click.style(record.levelname, **styling)
-            color_record.msg = click.style(record.msg, **styling)
-        return super().format(color_record)
 
 
 def _validate_choice(key, value, choices):

@@ -40,6 +40,11 @@ class timer(ContextDecorator):
         self.logger.debug(self.msg, self.duration * 1000)
 
 
+def ensure_dir(path):
+    """Create directory unless it already exists."""
+    os.makedirs(path, exist_ok=True)
+
+
 def parse_path(path, default_obj='gwf'):
     comps = path.rsplit(':')
     if len(comps) == 2:
@@ -125,3 +130,23 @@ class PersistableDict(UserDict):
             os.fsync(fileobj.fileno())
             fileobj.close()
         os.rename(self.path + '.new', self.path)
+
+
+class ColorFormatter(logging.Formatter):
+
+    STYLING = {
+        'WARNING': dict(fg='yellow'),
+        'INFO': dict(fg='blue'),
+        'DEBUG': dict(fg='white'),
+        'ERROR': dict(fg='red', bold=True),
+        'CRITICAL': dict(fg='magenta', bold=True),
+    }
+
+    def format(self, record):
+        level = record.levelname
+        color_record = copy.copy(record)
+        if record.levelname in self.STYLING:
+            styling = self.STYLING[level]
+            color_record.levelname = click.style(record.levelname, **styling)
+            color_record.msg = click.style(record.msg, **styling)
+        return super().format(color_record)
