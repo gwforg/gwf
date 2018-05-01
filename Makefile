@@ -3,6 +3,7 @@
 	test \
 	lint \
 	coverage \
+	coverage-ci \
 	docs \
 	clean \
 	package-pypi \
@@ -24,6 +25,10 @@ lint:
 
 coverage:
 	pipenv run coverage report
+
+coverage-ci:
+	pipenv install coveralls
+	pipenv run coveralls
 
 docs:
 	pipenv run $(MAKE) -C docs html

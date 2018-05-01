@@ -7,7 +7,7 @@ python:
 install: make init
 script: make test
 after_success:
-  - coveralls
+  - make coverage-ci
 deploy:
   - provider: script
     script: make publish
