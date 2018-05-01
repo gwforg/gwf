@@ -55,9 +55,9 @@ setup(
 
     test_suite='tests',
     tests_require=[
-        'pytest', 
-        'pytest-runner', 
-        'pytest-click', 
+        'pytest',
+        'pytest-runner',
+        'pytest-click',
         'pytest-mock'
     ],
     install_requires=[
