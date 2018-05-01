@@ -69,39 +69,28 @@ class ColorFormatter(logging.Formatter):
         return super().format(color_record)
 
 
+def _validate_choice(key, value, choices):
+    if value not in choices:
+        msg = 'Invalid value "{}" for key "{}", must be one of: {}.'
+        raise ConfigurationError(msg.format(value, key, ', '.join(choices)))
+
+
 @config.validator('backend')
 def validate_backend(value):
-    backends = list_backends()
-    if value not in backends:
-        raise ConfigurationError(
-            'Invalid value "{}" for key "backend", must be one of: {}.'.format(
-                value,
-                ', '.join(backends)
-            )
-        )
+    return _validate_choice('backend', value, list_backends())
 
 
 @config.validator('verbose')
 def validate_verbose(value):
-    if value not in VERBOSITY_LEVELS:
-        raise ConfigurationError(
-            'Invalid value "{}" for key "verbose", must be one of: {}.'.format(
-                value,
-                ', '.join(VERBOSITY_LEVELS)
-            )
-        )
+    return _validate_choice('verbose', value, VERBOSITY_LEVELS)
 
 
 @config.validator('no_color')
 def validate_no_color(value):
     choices = ('true', 'yes', 'false', 'no')
     if value not in (True, False):
-        raise ConfigurationError(
-            'Invalid value "{}" for key "no_color", must be one of: {}.'.format(
-                value,
-                ', '.join(choices)
-            )
-        )
+        msg = 'Invalid value "{}" for key "no_color", must be one of: {}.'
+        raise ConfigurationError(msg.format(value, ', '.join(choices)))
 
 
 @with_plugins(iter_entry_points('gwf.plugins'))
