@@ -1,3 +1,5 @@
+import copy
+import click
 import functools
 import importlib
 import json
@@ -137,7 +139,7 @@ class ColorFormatter(logging.Formatter):
     STYLING = {
         'WARNING': dict(fg='yellow'),
         'INFO': dict(fg='blue'),
-        'DEBUG': dict(fg='white'),
+        'DEBUG': dict(fg='black'),
         'ERROR': dict(fg='red', bold=True),
         'CRITICAL': dict(fg='magenta', bold=True),
     }
@@ -148,5 +150,6 @@ class ColorFormatter(logging.Formatter):
         if record.levelname in self.STYLING:
             styling = self.STYLING[level]
             color_record.levelname = click.style(record.levelname, **styling)
+            color_record.name = click.style(record.name, **styling)
             color_record.msg = click.style(record.msg, **styling)
         return super().format(color_record)
