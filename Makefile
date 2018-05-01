@@ -27,8 +27,8 @@ coverage:
 	pipenv run coverage report
 
 coverage-ci:
-	pipenv install coveralls
-	pipenv run coveralls
+	pip install coveralls
+	coveralls
 
 docs:
 	pipenv run $(MAKE) -C docs html
