@@ -13,23 +13,6 @@ STATUS_COLORS = {
 }
 
 
-def dfs(root, dependencies):
-    """Return the depth-first traversal path through a graph from `root`."""
-    visited = set()
-    path = []
-
-    def dfs_inner(node):
-        if node in visited:
-            return
-
-        visited.add(node)
-        for dep in dependencies[node]:
-            dfs_inner(dep)
-
-        path.append(node)
-
-    dfs_inner(root)
-    return path
 
 
 def print_table(backend, graph, targets):
