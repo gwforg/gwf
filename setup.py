@@ -63,7 +63,6 @@ setup(
     install_requires=[
         'click',
         'click-plugins',
-        'statusbar>=0.1.4',
     ],
 
     # metadata for upload to PyPI
