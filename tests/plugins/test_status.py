@@ -23,25 +23,25 @@ def setup(simple_workflow):
         yield
 
 
-def test_status_only_shows_endpoints_by_default(cli_runner):
+def test_status_shows_all_targets(cli_runner):
     result = cli_runner.invoke(main, ['-b', 'testing', 'status'])
-    assert 'Target2' in result.output
-    assert 'Target1' not in result.output
-
-
-def test_status_shows_all_targets_when_all_flag_is_used(cli_runner):
-    result = cli_runner.invoke(main, ['-b', 'testing', 'status', '--all'])
     assert 'Target2' in result.output
     assert 'Target1' in result.output
 
 
 def test_status_shows_one_named_target(cli_runner):
-    result = cli_runner.invoke(main, ['-b', 'testing', 'status', '--all', 'Target1'])
+    result = cli_runner.invoke(main, ['-b', 'testing', 'status', 'Target1'])
     assert 'Target2' not in result.output
     assert 'Target1' in result.output
 
 
 def test_status_shows_two_named_targets(cli_runner):
-    result = cli_runner.invoke(main, ['-b', 'testing', 'status', '--all', 'Target1', 'Target2'])
+    result = cli_runner.invoke(main, ['-b', 'testing', 'status', 'Target1', 'Target2'])
     assert 'Target2' in result.output
     assert 'Target1' in result.output
+
+
+def test_status_shows_only_endpoint_targets(cli_runner):
+    result = cli_runner.invoke(main, ['-b', 'testing', 'status', '--endpoints'])
+    assert 'Target2' in result.output
+    assert 'Target1' not in result.output
