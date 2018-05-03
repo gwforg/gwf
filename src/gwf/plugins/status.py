@@ -56,17 +56,17 @@ def print_table(backend, graph, targets):
     'targets', nargs=-1
 )
 @click.option(
-    '--all',
+    '--endpoints',
     is_flag=True,
     default=False,
-    help='Show all targets, not only endpoints.'
+    help='Show only endpoints.'
 )
 @click.option(
     '-s', '--status',
     type=click.Choice(['shouldrun', 'submitted', 'running', 'completed'])
 )
 @click.pass_obj
-def status(obj, status, all, targets):
+def status(obj, status, endpoints, targets):
     """
     Show the status of targets.
 
@@ -91,7 +91,7 @@ def status(obj, status, all, targets):
             filters.append(StatusFilter(scheduler=scheduler, status=status))
         if targets:
             filters.append(NameFilter(patterns=targets))
-        if not all:
+        if endpoints:
             filters.append(EndpointFilter(endpoints=graph.endpoints()))
 
         matches = filter_generic(targets=graph, filters=filters)
