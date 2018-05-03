@@ -6,36 +6,46 @@ from ..filtering import StatusFilter, EndpointFilter, NameFilter, filter_generic
 
 
 STATUS_COLORS = {
-    'UNKNOWN': 'red',
-    'SHOULD RUN': 'red',
-    'RUNNING': 'blue',
-    'COMPLETED': 'green',
+    'submitted': 'yellow',
+    'shouldrun': 'magenta',
+    'running': 'blue',
+    'completed': 'green',
 }
 
 
+def _get_status(target, backend, scheduler):
+    status = backend.status(target)
+    if status == Status.UNKNOWN:
+        if scheduler.should_run(target):
+            return 'shouldrun'
+        else:
+            return 'completed'
+    return status.name.lower()
 
 
 def print_table(backend, graph, targets):
     scheduler = Scheduler(backend=backend, graph=graph)
 
-    name_col_width = max((len(target.name) for target in targets), default=0) + 1
-    format_str = '{name:<{name_col_width}}\t{status:<10}'
+    name_col_width = max((len(target.name) for target in targets), default=0) + 4
+    format_str = '{name:<{name_col_width}}{status:<23}{percentage:>7.2%}'
 
     for target in targets:
-        status = backend.status(target)
-        if status == Status.UNKNOWN:
-            if scheduler.should_run(target):
-                status = 'SHOULD RUN'
-            else:
-                status = 'COMPLETED'
-        else:
-            status = status.name
-
+        status = _get_status(target, backend, scheduler)
         color = STATUS_COLORS[status]
+
+        deps = graph.dfs(target)
+        deps_total = len(deps)
+        deps_completed = len([
+            target
+            for target in deps 
+            if _get_status(target, backend, scheduler) == 'completed'
+        ])
+        percentage = deps_completed / deps_total
 
         line = format_str.format(
             name=target.name,
             status=click.style(status, fg=color),
+            percentage=percentage,
             name_col_width=name_col_width
         )
         click.echo(line)
@@ -60,9 +70,10 @@ def status(obj, status, all, targets):
     """
     Show the status of targets.
 
-    By default, shows a progress bar for each endpoint in the workflow.
-    If one or more target names are supplied, progress bars are shown
-    for these targets.
+    One target per line is shown. Each line contains the target name, the status
+    of the target itself, and the percentage of dependencies of the target that
+    are completed (including the target itself). That is, 100% means that the
+    target and all of its dependencies have been completed.
 
     A progress bar represents the target and its dependencies, and
     shows how many of the dependencies either should run (magenta, .),
