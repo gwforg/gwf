@@ -602,6 +602,26 @@ class TestShouldRun(unittest.TestCase):
             self.assertFalse(self.scheduler.should_run(self.target2))
             self.assertFalse(self.scheduler.should_run(self.target3))
             self.assertFalse(self.scheduler.should_run(self.target4))
+    
+
+def test_exception_if_input_file_is_not_provided_and_output_file_exists():
+    workflow = Workflow(working_dir='/some/dir')
+    target = workflow.target('TestTarget', inputs=['in.txt'], outputs=['out.txt'])
+
+    graph = Graph.from_targets(workflow.targets)
+    print(graph.unresolved)
+    backend = DummyBackend()
+    scheduler = Scheduler(
+        graph=graph, 
+        backend=backend, 
+        file_cache={
+            '/some/dir/in.txt': None,
+            '/some/dir/out.txt': 1,
+        }
+    )
+
+    with pytest.raises(MissingProviderError):
+        scheduler.should_run(target)
 
 
 @patch('gwf.core.os.path.exists', return_value=True, autospec=True)

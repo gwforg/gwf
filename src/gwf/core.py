@@ -741,11 +741,6 @@ class Scheduler:
                 submitted_deps.add(dependency)
 
         if submitted_deps or self.should_run(target):
-            # The target should be submitted, so we'll check whether all of its inputs are resolved.
-            for path in target.inputs:
-                if path in self.graph.unresolved and self._file_cache[path] is None:
-                    raise MissingProviderError(path, target)
-
             if self.dry_run:
                 logger.info('Would submit target %s', target)
                 self._pretend_known.add(target)
@@ -778,6 +773,12 @@ class Scheduler:
         if any(self.should_run(dep) for dep in self.graph.dependencies[target]):
             logger.debug('%s should run because one of its dependencies should run', target)
             return True
+        
+        # Check whether all input files actually exists are are being provided
+        # by another target. If not, it's an error.
+        for path in target.inputs:
+            if path in self.graph.unresolved and self._file_cache[path] is None:
+                raise MissingProviderError(path, target)
 
         if target.is_sink:
             logger.debug('%s should run because it is a sink', target)
