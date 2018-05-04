@@ -3,6 +3,7 @@ import os.path
 from functools import wraps
 
 from .exceptions import LogNotFoundError
+from .utils import ensure_dir
 
 
 def redirect_exception(old_exc, new_exc):
@@ -65,8 +66,14 @@ class MemoryLogManager(LogManager):
 class FileLogManager(LogManager):
     """A file-based log manager.
 
-    This log manager stores logs on disk in the `.gwf/logs` directory.
+    This log manager stores logs on disk in the `log_dir` directory (which
+    defaults to `.gwf/logs`).
     """
+
+    def __init__(log_dir='.gwf/logs'):
+        super().__init__()
+        self.log_dir = log_dir
+        ensure_dir(self.log_dir)
 
     @staticmethod
     def _get_log_path(target, extension):
@@ -80,7 +87,8 @@ class FileLogManager(LogManager):
         :arg extension str:
             Must be either `stdout` or `stderr`.
         """
-        return os.path.join(os.path.join('.gwf', 'logs'), '{}.{}'.format(target.name, extension))
+        log_file = '{}.{}'.format(target.name, extension)
+        return os.path.join(self.log_dir, log_file)
 
     def stdout_path(self, target):
         """Return path of the log file containing standard output for target."""

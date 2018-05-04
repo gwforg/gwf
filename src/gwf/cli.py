@@ -108,7 +108,6 @@ def main(ctx, file, backend, verbose, no_color):
     Shows help for the status command.
     """
     ensure_dir(os.path.join('.gwf'))
-    ensure_dir(os.path.join('.gwf', 'logs'))
 
     formatter_cls = logging.Formatter if no_color else ColorFormatter
     configure_logging(level_name=verbose, formatter_cls=formatter_cls)
