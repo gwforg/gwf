@@ -82,10 +82,11 @@ class FileLogManager(LogManager):
     defaults to `.gwf/logs`).
     """
 
-    def __init__(log_dir='.gwf/logs'):
+    log_dir = '.gwf/logs'
+
+    def __init__(self):
         super().__init__()
-        self.log_dir = log_dir
-        ensure_dir(self.log_dir)
+        ensure_dir(FileLogManager.log_dir)
 
     @staticmethod
     def _get_log_path(target, extension):
@@ -101,7 +102,7 @@ class FileLogManager(LogManager):
             Must be either `stdout` or `stderr`.
         """
         log_file = '{}.{}'.format(target.name, extension)
-        return os.path.join(self.log_dir, log_file)
+        return os.path.join(FileLogManager.log_dir, log_file)
 
     def stdout_path(self, target):
         """Return path of the log file containing standard output for target."""
