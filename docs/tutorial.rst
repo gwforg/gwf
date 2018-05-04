@@ -121,7 +121,7 @@ Then run the command:
 .. code-block:: console
 
     $ gwf workers
-    Started 4 workers, listening on port 12345.
+    Started 4 workers, listening on port 12345
 
 This will start a pool of workers that *gwf* can now submit targets to.
 Switch back to the other terminal and then run:
@@ -129,7 +129,7 @@ Switch back to the other terminal and then run:
 .. code-block:: console
 
     $ gwf run
-    Scheduling target MyTarget.
+    Scheduling target MyTarget
     Submitting target MyTarget
 
 *gwf* schedules and then submits ``MyTarget`` to the pool of workers you started in
@@ -147,10 +147,16 @@ Now try the same command again:
 .. code-block:: console
 
     $ gwf run
-    Scheduling target MyTarget.
+    Scheduling target MyTarget
 
 This time, *gwf* considers the target for submission, but decides not to submit it
 since all of the output files (only one in this case) exist.
+
+.. note::
+
+    When you've completed this tutorial, you probably want to close the local
+    workers. To do this simply change to the terminal where you started the
+    workers and press :kbd:`Control-c`.
 
 Setting the Default Verbosity
 =============================
@@ -216,12 +222,12 @@ Let's try to run this workflow:
 .. code-block:: console
 
     $ gwf run
-    Scheduling target TargetC.
-    Scheduling dependency TargetA of TargetC.
-    Submitting target TargetA.
-    Scheduling dependency TargetB of TargetC.
-    Submitting target TargetB.
-    Submitting target TargetC.
+    Scheduling target TargetC
+    Scheduling dependency TargetA of TargetC
+    Submitting target TargetA
+    Scheduling dependency TargetB of TargetC
+    Submitting target TargetB
+    Submitting target TargetC
 
 (You can leave out the `-v info` option if you set it as the default in the
 previous section).
@@ -281,55 +287,69 @@ but with pretty colors.
 
 .. code-block:: console
 
-    TargetC [..............................................................] 0/0/0/3
+    TargetA    shouldrun       0.00%
+    TargetB    shouldrun       0.00%
+    TargetC    shouldrun       0.00%
 
-By default, a single line is shown for each *endpoint* target. An endpoint is a target
-which no other targets depends on. We can therefore see it as a kind of final target.
-The dots mean that all targets in the workflow should run, but have not been submitted.
+Each target in the workflow is shown on a separate line. We can see the status
+of the target (`shouldrun`) and percentage completion. The percentage tells us
+how many dependencies of the target have been completed. If all dependencies of
+the target, and the target itself, have been completed, the percentage will be
+100%.
+
 Let's try to run the workflow and see what happens.
 
 .. code-block:: console
 
     $ gwf run
     $ gwf status
-    TargetC [RRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS] 0/1/2/0
+    TargetA    running         0.00%
+    TargetB    submitted       0.00%
+    TargetC    submitted       0.00%
 
-The ``R`` shows that one third of the targets are running (since I'm only running with one worker,
-only one target can run at a time) and the other two thirds have been submitted. Running the
-status command again after some time should show something like this.
-
-.. code-block:: console
-
-    TargetC [CCCCCCCCCCCCCCCCCCCCCRRRRRRRRRRRRRRRRRRRRSSSSSSSSSSSSSSSSSSSSS] 1/1/1/0
-
-Now the target that was running before has completed, and another target is now running,
-while the final target is still just submitted. After some time, run the status command again.
-All targets should now have completed, so we see this.
+The ``R`` shows that one third of the targets are running (since I'm only 
+running with one worker, only one target can run at a time) and the other two 
+thirds have been submitted. Running the status command again after some time 
+should show something like this.
 
 .. code-block:: console
 
-    TargetC [CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC] 3/0/0/0
+    TargetA    completed     100.00%
+    TargetB    running         0.00%
+    TargetC    submitted      33.33%
 
-As you may have noticed, the numbers to the right show the number of targets that are
-in a specific state in the order: completed, running, submitted, should run.
+Now the target that was running before has completed, and another target is now 
+running, while the final target is still just submitted. After some time, run 
+the status command again. The last target should now be running.
+
+.. code-block:: console
+
+    TargetA    completed     100.00%
+    TargetB    completed     100.00%
+    TargetC    running        66.67%
+
+After a while, all targets should have completed.
+
+.. code-block:: console
+
+    TargetA    completed     100.00%
+    TargetB    completed     100.00%
+    TargetC    completed     100.00%
 
 Here's a few neat things you should know about the status command:
 
-* If you want to get an overview of the entire workflow you can use the ``--all`` option,
-  which will cause a progress bar to be output for all targets in the workflow.
+* If you only want to see endpoints (targets that no other targets depend on),
+  you can use the ``--endpoints`` flag.
 
-* You can use wildcards in target names. For example, ``gwf status --all 'Foo*'`` will list all
-  targets beginning with `Foo`. You can specify multiple targets/patterns by separating
-  them with a space. This also works in the cancel and clean commands (but remember the quotes
-  around the pattern)!
+* You can use wildcards in target names. For example, ``gwf status 'Foo*'`` will
+  list all targets beginning with `Foo`. You can specify multiple 
+  targets/patterns by separating them with a space. This also works in the 
+  cancel and clean commands (but remember the quotes around the pattern)!
 
-* Only want to see which targets are running? You can filter targets by their status
-  using e.g. ``gwf status -s running``. You can also combine filters, i.e.
-  ``gwf status --all --status running 'Align*'`` to show all targets that are running
-  and where the name starts with `Align`.
-
-* Use ``--format table`` option tells *gwf* to output status information without the progress bars
-  in a tabular format.
+* Only want to see which targets are running? You can filter targets by their 
+  status using e.g. ``gwf status -s running``. You can also combine filters, 
+  i.e. ``gwf status --endpoints --status running 'Align*'`` to show all 
+  endpoints that are running and where the name starts with `Align`.
 
 For more details you can always refer to builtin help with ``gwf status --help``.
 
@@ -467,29 +487,28 @@ ones since *gwf* does not archive logs from old runs of targets.
 Cleaning Up
 ===========
 
-Now that we have run our workflow we may wish to remove intermediate files to save disk
-space. In *gwf* we can use the ``gwf clean`` command for this:
+Now that we have run our workflow we may wish to remove intermediate files to 
+save disk space. In *gwf* we can use the ``gwf clean`` command for this:
 
 .. code-block:: console
 
     $ gwf clean
 
-This command only removes files produced by an endpoint target (a target which no other
-target depends on):
+This command only removes files produced by an endpoint target (a target which 
+no other target depends on):
 
 .. code-block:: console
 
-    $ gwf clean --not-endpoints
-    Deleting IndexGenome
-    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.amb" from target "IndexGenome".
-    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.ann" from target "IndexGenome".
-    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.pac" from target "IndexGenome".
-    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.bwt" from target "IndexGenome".
-    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.sa" from target "IndexGenome".
-    Deleting UnzipGenome
-    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/ponAbe2.fa" from target "UnzipGenome".
-    Deleting MapReads
-    Deleting output file "/Users/das/Projects/gwf/examples/readmapping/Masala.bam" from target "MapReads".
+    $ gwf clean
+    Will delete 1.3MiB of files!
+    Deleting output files of IndexGenome
+    Deleting file "/Users/das/Code/gwf/examples/readmapping/ponAbe2.amb" from target "IndexGenome"
+    Deleting file "/Users/das/Code/gwf/examples/readmapping/ponAbe2.ann" from target "IndexGenome"
+    Deleting file "/Users/das/Code/gwf/examples/readmapping/ponAbe2.pac" from target "IndexGenome"
+    Deleting file "/Users/das/Code/gwf/examples/readmapping/ponAbe2.bwt" from target "IndexGenome"
+    Deleting file "/Users/das/Code/gwf/examples/readmapping/ponAbe2.sa" from target "IndexGenome"
+    Deleting output files of UnzipGenome
+    Deleting file "/Users/das/Code/gwf/examples/readmapping/ponAbe2.fa" from target "UnzipGenome"
     
 We can tell *gwf* to remove all files by running ``gwf clean --all``.
 
