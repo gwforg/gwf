@@ -42,6 +42,9 @@ class LogManager:
     
     def remove_stderr(self, target):
         raise NotImplementedError()
+    
+    def list(self):
+        raise NotImplementedError()
 
 
 class MemoryLogManager(LogManager):
@@ -73,6 +76,9 @@ class MemoryLogManager(LogManager):
     @redirect_exception(KeyError, LogNotFoundError)
     def remove_stderr(self, target):
         del self._stderr_logs[target]
+    
+    def list(self):
+        return set(self._stderr_logs.keys()).union(self._stdout_logs.keys())
 
 
 class FileLogManager(LogManager):
@@ -89,8 +95,8 @@ class FileLogManager(LogManager):
         ensure_dir(FileLogManager.log_dir)
 
     @staticmethod
-    def _get_log_path(target, extension):
-        """Return path for log file for a given target.
+    def _get_log_path(target_name, extension):
+        """Return path for log file for a given target name.
 
         If `extension` is `stdout`, then the path of the file containing 
         standard output of the target will be returned. If `stderr`, the path of
@@ -101,16 +107,16 @@ class FileLogManager(LogManager):
         :arg extension str:
             Must be either `stdout` or `stderr`.
         """
-        log_file = '{}.{}'.format(target.name, extension)
+        log_file = '{}.{}'.format(target_name, extension)
         return os.path.join(FileLogManager.log_dir, log_file)
 
-    def stdout_path(self, target):
+    def stdout_path(self, target_name):
         """Return path of the log file containing standard output for target."""
-        return self._get_log_path(target, 'stdout')
+        return self._get_log_path(target_name, 'stdout')
 
-    def stderr_path(self, target):
+    def stderr_path(self, target_name):
         """Return path of the log file containing standard error for target."""
-        return self._get_log_path(target, 'stderr')
+        return self._get_log_path(target_name, 'stderr')
 
     @redirect_exception(FileNotFoundError, LogNotFoundError)
     def open_stdout(self, target, mode='r'):
@@ -118,7 +124,7 @@ class FileLogManager(LogManager):
 
         :raises LogNotFoundError: If the log could not be found.
         """
-        return open(self.stdout_path(target), mode)
+        return open(self.stdout_path(target.name), mode)
 
     @redirect_exception(FileNotFoundError, LogNotFoundError)
     def open_stderr(self, target, mode='r'):
@@ -126,12 +132,18 @@ class FileLogManager(LogManager):
 
         :raises LogNotFoundError: If the log could not be found.
         """
-        return open(self.stderr_path(target), mode)
+        return open(self.stderr_path(target.name), mode)
     
     @redirect_exception(OSError, LogNotFoundError)
-    def remove_stdout(self, target):
-        os.remove(self.stdout_path(target))
+    def remove_stdout(self, target_name):
+        os.remove(self.stdout_path(target_name))
     
     @redirect_exception(OSError, LogNotFoundError)
-    def remove_stderr(self, target):
-        os.remove(self.stderr_path(target))
+    def remove_stderr(self, target_name):
+        os.remove(self.stderr_path(target_name))
+    
+    def list(self):
+        return (
+            os.path.splitext(log_name)[0]
+            for log_name in os.listdir(FileLogManager.log_dir)
+        )
