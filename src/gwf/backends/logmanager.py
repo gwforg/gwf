@@ -2,8 +2,8 @@ import io
 import os.path
 from functools import wraps
 
+from ..utils import ensure_dir
 from .exceptions import LogNotFoundError
-from .utils import ensure_dir
 
 
 def redirect_exception(old_exc, new_exc):
@@ -36,6 +36,12 @@ class LogManager:
 
     def open_stderr(self, target, mode='r'):
         raise NotImplementedError()
+    
+    def remove_stdout(self, target):
+        raise NotImplementedError()
+    
+    def remove_stderr(self, target):
+        raise NotImplementedError()
 
 
 class MemoryLogManager(LogManager):
@@ -48,21 +54,25 @@ class MemoryLogManager(LogManager):
         self._stdout_logs = {}
         self._stderr_logs = {}
 
+    @redirect_exception(KeyError, LogNotFoundError)
     def open_stdout(self, target, mode='r'):
         if target not in self._stdout_logs and mode == 'w':
             self._stdout_logs[target] = io.StringIO()
-        try:
-            return self._stdout_logs[target]
-        except KeyError as e:
-            raise LogNotFoundError() from e
+        return self._stdout_logs[target]
 
+    @redirect_exception(KeyError, LogNotFoundError)
     def open_stderr(self, target, mode='r'):
         if target not in self._stderr_logs and mode == 'w':
             self._stderr_logs[target] = io.StringIO()
-        try:
-            return self._stderr_logs[target]
-        except KeyError as e:
-            raise LogNotFoundError() from e
+        return self._stderr_logs[target]
+    
+    @redirect_exception(KeyError, LogNotFoundError)
+    def remove_stdout(self, target):
+        del self._stdout_logs[target]
+    
+    @redirect_exception(KeyError, LogNotFoundError)
+    def remove_stderr(self, target):
+        del self._stderr_logs[target]
 
 
 class FileLogManager(LogManager):
@@ -116,3 +126,11 @@ class FileLogManager(LogManager):
         :raises LogNotFoundError: If the log could not be found.
         """
         return open(self.stderr_path(target), mode)
+    
+    @redirect_exception(OSError, LogNotFoundError)
+    def remove_stdout(self, target):
+        os.remove(self.stdout_path(target))
+    
+    @redirect_exception(OSError, LogNotFoundError)
+    def remove_stderr(self, target):
+        os.remove(self.stderr_path(target))
