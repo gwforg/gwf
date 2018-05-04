@@ -22,10 +22,12 @@ def redirect_exception(old_exc, new_exc):
 class LogManager:
     """Base class for log managers.
 
-    A log manager must as a minimum implement the :func:`open_stdout(target)` and :func:`open_stderr(target)` methods.
+    A log manager must as a minimum implement the :func:`open_stdout(target)` 
+    and :func:`open_stderr(target)` methods.
 
-    Log managers are used by backends to specify how log files are stored and retrieved. Most backends will want to use
-    the :class:`FileLogManager` which stores log files in the `.gwf/logs` directory. For testing of backends, the
+    Log managers are used by backends to specify how log files are stored and 
+    retrieved. Most backends will want to use the :class:`FileLogManager` which
+    stores log files in the `.gwf/logs` directory. For testing of backends, the
     :class:`MemoryLogManager` can be useful.
     """
 
@@ -79,8 +81,9 @@ class FileLogManager(LogManager):
     def _get_log_path(target, extension):
         """Return path for log file for a given target.
 
-        If `extension` is `stdout`, then the path of the file containing standard output of the target will be returned.
-        If `stderr`, the path of the file containing standard error of the target will be returned.
+        If `extension` is `stdout`, then the path of the file containing 
+        standard output of the target will be returned. If `stderr`, the path of
+        the file containing standard error of the target will be returned.
 
         :arg target gwf.Target:
             Target to return log path for.
@@ -100,7 +103,7 @@ class FileLogManager(LogManager):
 
     @redirect_exception(FileNotFoundError, LogNotFoundError)
     def open_stdout(self, target, mode='r'):
-        """Return a file handle to the log file containing standard output for target.
+        """Return file handle to the standard output log file for target.
 
         :raises LogNotFoundError: If the log could not be found.
         """
@@ -108,7 +111,7 @@ class FileLogManager(LogManager):
 
     @redirect_exception(FileNotFoundError, LogNotFoundError)
     def open_stderr(self, target, mode='r'):
-        """Return a file handle to the log file containing standard error for target.
+        """Return file handle to standard error log file for target.
 
         :raises LogNotFoundError: If the log could not be found.
         """
