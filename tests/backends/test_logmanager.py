@@ -5,28 +5,55 @@ from gwf.backends.exceptions import LogNotFoundError
 from gwf.backends.logmanager import FileLogManager
 
 
-def test_file_log_manager(tmpdir):
-    target = Target.empty('TestTarget')
+@pytest.fixture
+def log_manager(tmpdir):
+    with tmpdir.as_cwd():
+        yield FileLogManager()
 
-    log_manager = FileLogManager()
+
+def test_file_log_manager_creates_logs_dir(log_manager, tmpdir):
+    assert tmpdir.join('.gwf', 'logs').exists()
+
+
+def test_file_log_manager_path(log_manager):
+    target = Target.empty('TestTarget')
     assert log_manager.stderr_path(target) == '.gwf/logs/TestTarget.stderr'
     assert log_manager.stdout_path(target) == '.gwf/logs/TestTarget.stdout'
 
-    log_dir = tmpdir.join('.gwf', 'logs')
-    log_dir.ensure_dir()
 
-    with tmpdir.as_cwd():
-        with pytest.raises(LogNotFoundError):
-            log_manager.open_stdout(target)
+def test_file_log_manager_open(log_manager, tmpdir):
+    target = Target.empty('TestTarget')
 
-        with pytest.raises(LogNotFoundError):
-            log_manager.open_stderr(target)
+    with pytest.raises(LogNotFoundError):
+        log_manager.open_stdout(target)
 
-        stdout_file = log_dir.join('TestTarget.stdout')
-        stdout_file.write('This is standard output...')
+    with pytest.raises(LogNotFoundError):
+        log_manager.open_stderr(target)
 
-        stderr_file = log_dir.join('TestTarget.stderr')
-        stderr_file.write('This is standard error...')
+    stdout_file = tmpdir.join('.gwf', 'logs', 'TestTarget.stdout')
+    stdout_file.write('This is standard output...')
 
-        assert log_manager.open_stdout(target).read() == 'This is standard output...'
-        assert log_manager.open_stderr(target).read() == 'This is standard error...'
+    stderr_file = tmpdir.join('.gwf', 'logs', 'TestTarget.stderr')
+    stderr_file.write('This is standard error...')
+
+    assert log_manager.open_stdout(target).read() == 'This is standard output...'
+    assert log_manager.open_stderr(target).read() == 'This is standard error...'
+
+
+def test_file_log_manager_remove(log_manager, tmpdir):
+    target = Target.empty('TestTarget')
+
+    stdout_file = tmpdir.join('.gwf', 'logs', 'TestTarget.stdout').ensure()
+    stderr_file = tmpdir.join('.gwf', 'logs', 'TestTarget.stderr').ensure()
+
+    log_manager.remove_stdout(target)
+    assert not stdout_file.exists()
+
+    log_manager.remove_stderr(target)
+    assert not stderr_file.exists()
+
+    with pytest.raises(LogNotFoundError):
+        log_manager.remove_stdout(target)
+    
+    with pytest.raises(LogNotFoundError):
+        log_manager.remove_stderr(target)
