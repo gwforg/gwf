@@ -32,20 +32,12 @@ class StatusFilter(ApplyMixin):
 
     def __init__(self, scheduler, status):
         self.scheduler = scheduler
+        if not hasattr(status, '__iter__'):
+            status = [status]
         self.status = status
 
     def predicate(self, target):
-        if self.status == 'completed':
-            return not self.scheduler.should_run(target)
-        if self.status == 'shouldrun':
-            return (
-                self.scheduler.should_run(target) and
-                self.scheduler.backend.status(target) == Status.UNKNOWN
-            )
-        if self.status == 'running':
-            return self.scheduler.backend.status(target) == Status.RUNNING
-        if self.status == 'submitted':
-            return self.scheduler.backend.status(target) == Status.SUBMITTED
+        return self.scheduler.status(target) in self.status
 
 
 class NameFilter:
