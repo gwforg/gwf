@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 from collections import defaultdict
+from enum import Enum
 from glob import glob as _glob
 from glob import iglob as _iglob
 
@@ -92,6 +93,15 @@ def graph_from_config(config):
     See :func:`graph_from_path` for further information.
     """
     return graph_from_path(config['file'])
+
+
+class TargetStatus(Enum):
+    """Status of a target, as reported by the scheduler."""
+
+    SHOULDRUN = 0  #: The target should run.
+    SUBMITTED = 1  #: The target has been submitted, but is not currently running.
+    RUNNING = 2  #: The target is currently running.
+    COMPLETED = 3  #: The target has completed and should not run.
 
 
 class AnonymousTarget:
@@ -820,3 +830,19 @@ class Scheduler:
             logger.debug('%s should run since %s is larger than %s', target, youngest_in_ts, oldest_out_ts)
             return True
         return False
+
+    def status(self, target: Target) -> TargetStatus:
+        """Return the status of a target.
+
+        Returns the status of a target where it is taken into account whether
+        the target should run or not.
+
+        :param Target target:
+            The target to return status for.
+        """
+        status = self.backend.status(target)
+        if status == Status.UNKNOWN:
+            if self.should_run(target):
+                return TargetStatus.SHOULDRUN
+            return TargetStatus.COMPLETED
+        return TargetStatus[status.name]
