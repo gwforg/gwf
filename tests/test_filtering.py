@@ -3,7 +3,7 @@ from unittest.mock import create_autospec
 import pytest
 
 from gwf import Target
-from gwf.core import Graph, Scheduler
+from gwf.core import Graph, Scheduler, TargetStatus
 from gwf.backends import Status
 from gwf.backends.testing import TestingBackend
 from gwf.filtering import StatusFilter, NameFilter, EndpointFilter
@@ -27,7 +27,9 @@ def scheduler(backend, graph):
 
 
 def test_filter_status_completed(scheduler):
-    status_filter = StatusFilter(scheduler=scheduler, status='completed')
+    scheduler.backend.status.return_value = Status.UNKNOWN
+
+    status_filter = StatusFilter(scheduler=scheduler, status=[TargetStatus.COMPLETED])
     target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
     status_filter.scheduler.should_run.return_value = False
@@ -38,7 +40,7 @@ def test_filter_status_completed(scheduler):
 
 
 def test_filter_status_shouldrun(scheduler):
-    status_filter = StatusFilter(scheduler=scheduler, status='shouldrun')
+    status_filter = StatusFilter(scheduler=scheduler, status=[TargetStatus.SHOULDRUN])
     target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
     status_filter.scheduler.backend.status.return_value = Status.UNKNOWN
@@ -67,7 +69,7 @@ def test_filter_status_shouldrun(scheduler):
 
 
 def test_filter_status_running(scheduler):
-    status_filter = StatusFilter(scheduler=scheduler, status='running')
+    status_filter = StatusFilter(scheduler=scheduler, status=[TargetStatus.RUNNING])
     target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
     status_filter.scheduler.backend.status.return_value = Status.UNKNOWN
@@ -81,7 +83,7 @@ def test_filter_status_running(scheduler):
 
 
 def test_filter_status_submitted(scheduler):
-    status_filter = StatusFilter(scheduler=scheduler, status='submitted')
+    status_filter = StatusFilter(scheduler=scheduler, status=[TargetStatus.SUBMITTED])
     target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
 
     status_filter.scheduler.backend.status.return_value = Status.UNKNOWN
