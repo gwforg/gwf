@@ -674,7 +674,7 @@ class Graph:
     def endpoints(self):
         """Return a set of all targets that are not depended on by other targets."""
         return set(self.targets.values()) - set(self.dependents.keys())
-    
+
     @cache
     def dfs(self, root):
         """Return the depth-first traversal path through a graph from `root`."""
@@ -718,18 +718,21 @@ FileCache = functools.partial(LazyDict, valfunc=_fileinfo)
 class Scheduler:
     """Schedule one or more targets and submit to a backend.
 
-    Scheduling a target will determine whether the target needs to run based on whether it already has been submitted
-    and whether any of its dependencies have been submitted.
+    Scheduling a target will determine whether the target needs to run based on
+    whether it already has been submitted and whether any of its dependencies
+    have been submitted.
 
-    Targets that should run will be submitted to *backend*, unless *dry_run* is set to ``True``.
+    Targets that should run will be submitted to *backend*, unless *dry_run* is
+    set to ``True``.
 
-    When scheduling a target, the scheduler checks whether any of its inputs are unresolved, meaning that during
-    construction of the graph, no other target providing the file was found. This means that the file should then exist
-    on disk. If it doesn't the following exception is raised:
+    When scheduling a target, the scheduler checks whether any of its inputs
+    are unresolved, meaning that during construction of the graph, no other
+    target providing the file was found. This means that the file should then
+    exist on disk. If it doesn't the following exception is raised:
 
     :raises gwf.exceptions.FileRequiredButNotProvidedError:
-        Raised if a target has an input file that does not exist on the file system and that is not provided by another
-        target.
+        Raised if a target has an input file that does not exist on the file
+        system and that is not provided by another target.
     """
 
     def __init__(self, graph, backend, dry_run=False, file_cache=FileCache()):
@@ -737,9 +740,11 @@ class Scheduler:
         :param gwf.Graph graph:
             Graph of the workflow.
         :param gwf.backends.Backend backend:
-            An instance of :class:`gwf.backends.Backend` to which targets will be submitted.
+            An instance of :class:`gwf.backends.Backend` to which targets will
+            be submitted.
         :param bool dry_run:
-            If ``True``, targets will not be submitted to the backend. Defaults to ``False``.
+            If ``True``, targets will not be submitted to the backend. Defaults
+            to ``False``.
         """
         self.graph = graph
         self.backend = backend
@@ -751,7 +756,8 @@ class Scheduler:
     def schedule(self, target):
         """Schedule a target and its dependencies.
 
-        Returns ``True`` if *target* was submitted to the backend (even when *dry_run* is ``True``).
+        Returns ``True`` if *target* was submitted to the backend (even when
+        *dry_run* is ``True``).
 
         :param gwf.Target target:
             Target to be scheduled.
@@ -783,8 +789,9 @@ class Scheduler:
     def schedule_many(self, targets):
         """Schedule multiple targets and their dependencies.
 
-        This is a convenience method for scheduling multiple targets. See :func:`schedule` for a detailed description of
-        the arguments and behavior.
+        This is a convenience method for scheduling multiple targets. See
+        :func:`schedule` for a detailed description of the arguments and
+        behavior.
 
         :param list targets:
             A list of targets to be scheduled.
@@ -801,7 +808,7 @@ class Scheduler:
         if any(self.should_run(dep) for dep in self.graph.dependencies[target]):
             logger.debug('%s should run because one of its dependencies should run', target)
             return True
-        
+
         # Check whether all input files actually exists are are being provided
         # by another target. If not, it's an error.
         for path in target.inputs:
