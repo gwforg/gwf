@@ -27,7 +27,6 @@ def find_version(*file_paths):
 setup(
     name='gwf',
     version=find_version('src', 'gwf', '__init__.py'),
-    python_version='>=3.5',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     include_package_data=True,
