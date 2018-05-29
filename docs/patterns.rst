@@ -1,10 +1,10 @@
-.. _advancedtutorial:
+.. _patterns:
 
-=================
-Advanced Tutorial
-=================
+========
+Patterns
+========
 
-This tutorial guides you through some advanced features and patterns that can 
+This guide takes you through some advanced features and patterns that can 
 be utilized in *gwf*. Remember that *gwf* is just a way of generating
 workflows using the Python programming language and thus many of these
 patterns simply use plain Python code to abstract and automate certain

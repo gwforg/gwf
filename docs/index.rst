@@ -48,7 +48,7 @@ Getting Started
    :maxdepth: 2
 
    tutorial
-   advancedtutorial
+   patterns
 
 Topic Guides
 ============
