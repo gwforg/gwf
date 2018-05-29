@@ -48,6 +48,7 @@ Getting Started
    :maxdepth: 2
 
    tutorial
+   advancedtutorial
 
 Topic Guides
 ============
