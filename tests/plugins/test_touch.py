@@ -52,6 +52,6 @@ def test_touch_creates_files(cli_runner, local_backend):
     stat_b = os.stat('b.txt').st_ctime
     stat_c = os.stat('c.txt').st_ctime
 
-    assert stat_a < stat_b 
-    assert stat_b < stat_c
+    assert stat_a <= stat_b
+    assert stat_b <= stat_c
     
