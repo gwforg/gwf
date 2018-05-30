@@ -1,0 +1,27 @@
+import os
+import click
+from ..core import graph_from_config
+
+
+def touchfile(path):
+    with open(path, 'a'):
+        os.utime(path, None)
+
+
+@click.command()
+@click.pass_obj
+def touch(obj):
+    """Touch output files to update timestamps.
+    
+    Running this command touches all output files in the workflow such that
+    their modification timestamp is updated. Touching is performed bottom-up
+    such that, when done, all targets in the workflow will look completed.
+    
+    This is useful if one or more files were accidentially deleted, but you
+    don't want to re-run the workflow to recreate them.
+    """
+    graph = graph_from_config(obj)
+    for endpoint in graph.endpoints():
+        for target in graph.dfs(endpoint):
+            for path in target.outputs:
+                touchfile(path)

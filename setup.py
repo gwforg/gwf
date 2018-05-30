@@ -48,7 +48,8 @@ setup(
             'logs = gwf.plugins.logs:logs',
             'clean = gwf.plugins.clean:clean',
             'workers = gwf.plugins.workers:workers',
-            'cancel = gwf.plugins.cancel:cancel'
+            'cancel = gwf.plugins.cancel:cancel',
+            'touch = gwf.plugins.touch:touch',
         ]
     },
 
