@@ -64,7 +64,7 @@ package-conda: install-conda
 
 publish-conda: package-conda
 	export PATH="${HOME}/miniconda/bin:${PATH}" && \
-	anaconda -t "${ANACONDA_TOKEN}" upload --user gwforg conda-bld/*/*.tar.bz2
+	anaconda -t "${ANACONDA_TOKEN}" upload --force --no-progress --user gwforg conda-bld/*/*.tar.bz2
 	rm -rf conda-bld/
 
 publish: publish-pypi publish-conda
