@@ -3,6 +3,25 @@ Change Log
 ==========
 
 
+Version 1.3.1
+=============
+
+Added
+-----
+
+* The ``gwf status`` command now accepts multiple ``-s/--status`` flags and will show
+  targets matching any of the given states. E.g. ``gwf status -s completed -s running``
+  will show all completed and running targets.
+* A new command ``gwf touch`` has been introduced. The command touches all files in
+  the workflow in order, creating missing files and updating timestamps, such that 
+  *gwf* thinks that the workflow has been run.
+* When specifying the workflow attribute in the workflow path, e.g.
+  ``gwf -f workflow.py:foo``, the filename part can now be left out and will default
+  to `workflow.py`. For example, ``gwf -f :foo`` will access the ``foo`` workflow
+  object in `workflow.py`.
+* Documentation describing advanced patterns for *gwf* workflows.
+
+
 Version 1.3.0
 =============
 
