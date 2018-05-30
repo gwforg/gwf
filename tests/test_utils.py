@@ -1,6 +1,8 @@
 import os.path
 import unittest
 
+import pytest
+
 from gwf.utils import parse_path, cache, PersistableDict
 
 
@@ -21,21 +23,24 @@ class TestCache(unittest.TestCase):
 
 class TestParsePath(unittest.TestCase):
 
-    def test_without_object_specified(self):
-        basedir, filename, obj = parse_path('/some/dir/workflow.py', 'workflow_obj')
-        self.assertEqual(filename, 'workflow')
-        self.assertEqual(basedir, '/some/dir')
-        self.assertEqual(obj, 'workflow_obj')
+@pytest.mark.parametrize("path,parsed_path", [
+    ('/some/dir/workflow.py', ('/some/dir', 'workflow', 'gwf')),
+    ('/some/dir/workflow.py:other', ('/some/dir', 'workflow', 'other')),
+    ('/some/dir/other.py:other', ('/some/dir', 'other', 'other')),
+    (':other', ('', 'workflow', 'other')),
+])
+def test_parse_path(path, parsed_path):
+    assert parse_path(path) == parsed_path
 
-    def test_with_object_specified(self):
-        basedir, filename, obj = parse_path('/some/dir/workflow.py:other_obj', 'workflow_obj')
-        self.assertEqual(filename, 'workflow')
-        self.assertEqual(basedir, '/some/dir')
-        self.assertEqual(obj, 'other_obj')
 
-    def test_parse_invalid_path_raises_value_error(self):
-        with self.assertRaises(ValueError):
-            parse_path('/some/dir/workflow.py::other_obj', 'workflow_obj')
+@pytest.mark.parametrize("default_obj,default_file,parsed_path", [
+    ('wf1', 'file1.py', ('', 'file1', 'wf1')),
+    ('wf1', 'file2.py', ('', 'file2', 'wf1')),
+    ('wf2', 'file1.py', ('', 'file1', 'wf2')),
+    ('wf2', 'file2.py', ('', 'file2', 'wf2')),
+])
+def test_parse_path_defaults(default_obj, default_file, parsed_path):
+    assert parse_path(':', default_obj=default_obj, default_file=default_file) == parsed_path
 
 
 def test_dict_is_empty_if_file_does_not_exist(tmpdir):

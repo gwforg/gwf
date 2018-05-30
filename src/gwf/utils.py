@@ -47,10 +47,10 @@ def ensure_dir(path):
     os.makedirs(path, exist_ok=True)
 
 
-def parse_path(path, default_obj='gwf'):
+def parse_path(path, default_obj='gwf', default_file='workflow.py'):
     comps = path.rsplit(':')
     if len(comps) == 2:
-        path, obj = comps
+        path, obj = comps[0] or default_file, comps[1] or default_obj
     elif len(comps) == 1:
         path, obj = comps[0], default_obj
     else:
