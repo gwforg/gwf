@@ -18,4 +18,4 @@ pytest-runner = "*"
 pytest-click = "*"
 pytest-mock = "*"
 "doc8" = "*"
-black = {version = "*", markers="python_version < '3.6'"}
+black = {version = "*", markers="python_version > '3.6'"}
