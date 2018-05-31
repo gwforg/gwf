@@ -11,16 +11,16 @@ logger = logging.getLogger(__name__)
 
 
 __all__ = (
-    'list_backends',
-    'backend_from_name',
-    'backend_from_config',
-    'Backend',
-    'Status',
+    "list_backends",
+    "backend_from_name",
+    "backend_from_config",
+    "Backend",
+    "Status",
 )
 
 
 def _load_backends():
-    return {ep.name: ep.load() for ep in iter_entry_points('gwf.backends')}
+    return {ep.name: ep.load() for ep in iter_entry_points("gwf.backends")}
 
 
 def list_backends():
@@ -45,7 +45,7 @@ def backend_from_config(config):
     """Return backend class for the backend specified by `config`.
 
     See :func:`backend_from_name` for further information."""
-    return backend_from_name(config['backend'])
+    return backend_from_name(config["backend"])
 
 
 class Status(Enum):
@@ -61,7 +61,9 @@ class Status(Enum):
     A target is running if it is currently being executed by the backend.
     """
 
-    UNKNOWN = 0  #: The backend is not aware of the status of this target (it may be completed or failed).
+    UNKNOWN = (
+        0
+    )  #: The backend is not aware of the status of this target (it may be completed or failed).
     SUBMITTED = 1  #: The target has been submitted, but is not currently running.
     RUNNING = 2  #: The target is currently running.
 
@@ -74,6 +76,7 @@ def check_options(func, supported_options, super_options):
     the backend. Warns the user and removes the option if this is
     not the case.
     """
+
     @wraps(func)
     def inner_wrapper(self, target, *args, **kwargs):
         target.inherit_options(super_options)
@@ -88,6 +91,7 @@ def check_options(func, supported_options, super_options):
             elif option_value is None:
                 del target.options[option_name]
         return func(self, target, *args, **kwargs)
+
     return inner_wrapper
 
 
@@ -112,18 +116,25 @@ class BackendType(type):
     This is not necessary magic, however, it removes a lot of boilerplate code
     from backend implementations and ensures consistency in warnings.
     """
+
     def __new__(mcs, name, bases, namespace, **kwargs):
         if not bases:
             return type.__new__(mcs, name, bases, namespace)
 
         # Check that all required methods exist. The logs() method isn't required,
         # since a default implementation is provided by Backend.
-        for method_name in ('submit', 'cancel', 'status', 'close'):
+        for method_name in ("submit", "cancel", "status", "close"):
             if method_name not in namespace:
-                raise BackendError('Invalid backend implementation. Backend does not implement {}.'.format(method_name))
+                raise BackendError(
+                    "Invalid backend implementation. Backend does not implement {}.".format(
+                        method_name
+                    )
+                )
 
-        option_defaults = namespace.get('option_defaults', {})
-        namespace['submit'] = check_options(namespace['submit'], option_defaults.keys(), option_defaults)
+        option_defaults = namespace.get("option_defaults", {})
+        namespace["submit"] = check_options(
+            namespace["submit"], option_defaults.keys(), option_defaults
+        )
         return type.__new__(mcs, name, bases, namespace)
 
 

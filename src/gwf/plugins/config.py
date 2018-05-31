@@ -4,11 +4,11 @@ from ..conf import config as _config
 
 
 def humanbool(x):
-    if x in ('true', 'yes'):
+    if x in ("true", "yes"):
         return True
-    elif x in ('false', 'no'):
+    elif x in ("false", "no"):
         return False
-    raise TypeError('x is not a boolean.')
+    raise TypeError("x is not a boolean.")
 
 
 def cast_value(value):
@@ -27,15 +27,15 @@ def config():
 
 
 @config.command()
-@click.argument('key')
+@click.argument("key")
 def get(key):
     """Get the value of KEY."""
     click.echo(_config.get(key))
 
 
 @config.command()
-@click.argument('key')
-@click.argument('value')
+@click.argument("key")
+@click.argument("value")
 def set(key, value):
     """Set the value of KEY.
 
@@ -46,7 +46,7 @@ def set(key, value):
 
 
 @config.command()
-@click.argument('key')
+@click.argument("key")
 def unset(key):
     """Unset KEY."""
     del _config[key]

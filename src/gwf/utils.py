@@ -47,8 +47,8 @@ def ensure_dir(path):
     os.makedirs(path, exist_ok=True)
 
 
-def parse_path(path, default_obj='gwf', default_file='workflow.py'):
-    comps = path.rsplit(':')
+def parse_path(path, default_obj="gwf", default_file="workflow.py"):
+    comps = path.rsplit(":")
     if len(comps) == 2:
         path, obj = comps[0] or default_file, comps[1] or default_obj
     elif len(comps) == 1:
@@ -64,7 +64,7 @@ def parse_path(path, default_obj='gwf', default_file='workflow.py'):
 def load_workflow(basedir, filename, objname):
     if not basedir:
         basedir = os.getcwd()
-    fullpath = os.path.join(basedir, filename + '.py')
+    fullpath = os.path.join(basedir, filename + ".py")
 
     if not os.path.exists(fullpath):
         raise GWFError('The file "{}" does not exist.'.format(fullpath))
@@ -78,7 +78,9 @@ def load_workflow(basedir, filename, objname):
     try:
         return getattr(mod, objname)
     except AttributeError:
-        raise GWFError('Module "{}" does not declare attribute "{}".'.format(filename, objname))
+        raise GWFError(
+            'Module "{}" does not declare attribute "{}".'.format(filename, objname)
+        )
 
 
 class LazyDict(dict):
@@ -96,6 +98,7 @@ class LazyDict(dict):
         >>> d[100]
         101
     """
+
     def __init__(self, valfunc, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.valfunc = valfunc
@@ -126,22 +129,22 @@ class PersistableDict(UserDict):
             pass
 
     def persist(self):
-        with open(self.path + '.new', 'w') as fileobj:
+        with open(self.path + ".new", "w") as fileobj:
             json.dump(self.data, fileobj)
             fileobj.flush()
             os.fsync(fileobj.fileno())
             fileobj.close()
-        os.rename(self.path + '.new', self.path)
+        os.rename(self.path + ".new", self.path)
 
 
 class ColorFormatter(logging.Formatter):
 
     STYLING = {
-        'WARNING': dict(fg='yellow'),
-        'INFO': dict(fg='blue'),
-        'DEBUG': dict(fg='black'),
-        'ERROR': dict(fg='red', bold=True),
-        'CRITICAL': dict(fg='magenta', bold=True),
+        "WARNING": dict(fg="yellow"),
+        "INFO": dict(fg="blue"),
+        "DEBUG": dict(fg="black"),
+        "ERROR": dict(fg="red", bold=True),
+        "CRITICAL": dict(fg="magenta", bold=True),
     }
 
     def format(self, record):

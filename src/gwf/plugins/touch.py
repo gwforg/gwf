@@ -4,7 +4,7 @@ from ..core import graph_from_config
 
 
 def touchfile(path):
-    with open(path, 'a'):
+    with open(path, "a"):
         os.utime(path, None)
 
 

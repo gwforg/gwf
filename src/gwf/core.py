@@ -45,7 +45,7 @@ def _is_valid_list(obj):
 
 def is_valid_name(candidate):
     """Check whether `candidate` is a valid name for a target or workflow."""
-    return re.match(r'^[a-zA-Z_][a-zA-Z0-9._]*$', candidate) is not None
+    return re.match(r"^[a-zA-Z_][a-zA-Z0-9._]*$", candidate) is not None
 
 
 def normalized_paths_property(name):
@@ -61,7 +61,7 @@ def normalized_paths_property(name):
 
         http://chimera.labs.oreilly.com/books/1230000000393/ch09.html#_problem_164
     """
-    storage_name = '_' + name
+    storage_name = "_" + name
 
     @property
     def prop(self):
@@ -70,6 +70,7 @@ def normalized_paths_property(name):
     @prop.setter
     def prop(self, value):
         setattr(self, storage_name, value)
+
     return prop
 
 
@@ -92,7 +93,7 @@ def graph_from_config(config):
 
     See :func:`graph_from_path` for further information.
     """
-    return graph_from_path(config['file'])
+    return graph_from_path(config["file"])
 
 
 class TargetStatus(Enum):
@@ -123,7 +124,7 @@ class AnonymousTarget:
         The specification of the target.
     """
 
-    def __init__(self, inputs, outputs, options, working_dir=None, spec=''):
+    def __init__(self, inputs, outputs, options, working_dir=None, spec=""):
         self.inputs = inputs
         self.outputs = outputs
         self.options = options
@@ -131,10 +132,16 @@ class AnonymousTarget:
 
         if not _is_valid_list(inputs):
             raise InvalidTypeError(
-                'The argument `inputs` to target `{}` must be a list or tuple, not a string.'.format(self))
+                "The argument `inputs` to target `{}` must be a list or tuple, not a string.".format(
+                    self
+                )
+            )
         if not _is_valid_list(outputs):
             raise InvalidTypeError(
-                'The argument `outputs` to target `{}` must be a list or tuple, not a string.'.format(self))
+                "The argument `outputs` to target `{}` must be a list or tuple, not a string.".format(
+                    self
+                )
+            )
 
         self.inputs = inputs
         self.outputs = outputs
@@ -149,9 +156,9 @@ class AnonymousTarget:
     def spec(self, value):
         if not isinstance(value, str):
             msg = (
-                'Target spec must be a string, not {}. Did you attempt to assign a template to this target? '
-                'This is no is not allowed since version 1.0. Use the Workflow.target_from_template() method instead. '
-                'See the tutorial for more details.'
+                "Target spec must be a string, not {}. Did you attempt to assign a template to this target? "
+                "This is no is not allowed since version 1.0. Use the Workflow.target_from_template() method instead. "
+                "See the tutorial for more details."
             )
             raise InvalidTypeError(msg.format(type(value)))
 
@@ -183,7 +190,7 @@ class AnonymousTarget:
         return self
 
     def __repr__(self):
-        return '{}(inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, spec={!r})'.format(
+        return "{}(inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, spec={!r})".format(
             self.__class__.__name__,
             self.inputs,
             self.outputs,
@@ -193,7 +200,7 @@ class AnonymousTarget:
         )
 
     def __str__(self):
-        return '{}_{}'.format(self.__class__.__name__, id(self))
+        return "{}_{}".format(self.__class__.__name__, id(self))
 
 
 class Target(AnonymousTarget):
@@ -222,16 +229,18 @@ class Target(AnonymousTarget):
         Name of the target.
     """
 
-    inputs = normalized_paths_property('inputs')
-    outputs = normalized_paths_property('outputs')
+    inputs = normalized_paths_property("inputs")
+    outputs = normalized_paths_property("outputs")
 
     def __init__(self, name=None, **kwargs):
-        self.name = kwargs.pop('name', name)
+        self.name = kwargs.pop("name", name)
         if self.name is None:
-            raise InvalidNameError('Target name is missing.')
+            raise InvalidNameError("Target name is missing.")
 
         if not is_valid_name(self.name):
-            raise InvalidNameError('Target defined with invalid name: "{}".'.format(self.name))
+            raise InvalidNameError(
+                'Target defined with invalid name: "{}".'.format(self.name)
+            )
 
         super().__init__(**kwargs)
 
@@ -241,15 +250,17 @@ class Target(AnonymousTarget):
 
         This is mostly useful for testing.
         """
-        return cls(name=name, inputs=[], outputs=[], options={}, working_dir=os.getcwd())
+        return cls(
+            name=name, inputs=[], outputs=[], options={}, working_dir=os.getcwd()
+        )
 
     def qualname(self, namespace):
         if namespace is not None:
-            return '{}.{}'.format(namespace, self.name)
+            return "{}.{}".format(namespace, self.name)
         return self.name
 
     def __repr__(self):
-        return '{}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, spec={!r})'.format(
+        return "{}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, spec={!r})".format(
             self.__class__.__name__,
             self.name,
             self.inputs,
@@ -307,7 +318,9 @@ class Workflow(object):
     def __init__(self, name=None, working_dir=None, defaults=None):
         self.name = name
         if self.name is not None and not is_valid_name(self.name):
-            raise InvalidNameError('Workflow defined with invalid name: "{}".'.format(self.name))
+            raise InvalidNameError(
+                'Workflow defined with invalid name: "{}".'.format(self.name)
+            )
 
         self.targets = {}
         self.defaults = defaults or {}
@@ -399,7 +412,9 @@ class Workflow(object):
             try:
                 inputs, outputs, template_options, spec = template
             except:
-                raise InvalidTypeError('Target `{}` received an invalid template.'.format(name))
+                raise InvalidTypeError(
+                    "Target `{}` received an invalid template.".format(name)
+                )
 
             new_target = Target(
                 name=name,
@@ -412,7 +427,9 @@ class Workflow(object):
 
             new_target.inherit_options(template_options)
         else:
-            raise InvalidTypeError('Target `{}` received an invalid template.'.format(name))
+            raise InvalidTypeError(
+                "Target `{}` received an invalid template.".format(name)
+            )
 
         new_target.inherit_options(self.defaults)
         self._add_target(new_target)
@@ -434,13 +451,15 @@ class Workflow(object):
         """
         if other_workflow.name is None and namespace is None:
             raise IncludeWorkflowError(
-                'The included workflow has not been assigned a name. To '
-                'include the workflow you must assign a name to the included '
-                'workflow or set the namespace argument.'
+                "The included workflow has not been assigned a name. To "
+                "include the workflow you must assign a name to the included "
+                "workflow or set the namespace argument."
             )
         namespace_prefix = namespace or other_workflow.name
         if namespace_prefix == self.name:
-            raise IncludeWorkflowError('The included workflow has the same name as this workflow.')
+            raise IncludeWorkflowError(
+                "The included workflow has the same name as this workflow."
+            )
 
         for target in other_workflow.targets.values():
             self._add_target(copy.deepcopy(target), namespace=namespace_prefix)
@@ -510,9 +529,11 @@ class Workflow(object):
         elif isinstance(other_workflow, str):
             self.include_path(other_workflow, namespace=namespace)
         elif inspect.ismodule(other_workflow):
-            self.include_workflow(getattr(other_workflow, 'gwf'), namespace=namespace)
+            self.include_workflow(getattr(other_workflow, "gwf"), namespace=namespace)
         else:
-            raise TypeError('First argument must be either a string or a Workflow object.')
+            raise TypeError(
+                "First argument must be either a string or a Workflow object."
+            )
 
     def glob(self, pathname, *args, **kwargs):
         """Return a list of paths matching `pathname`.
@@ -550,10 +571,12 @@ class Workflow(object):
             You may specifically set *universal_newlines* to `True` to get a
             string with the output instead.
         """
-        return subprocess.check_output(*args, shell=True, cwd=self.working_dir, **kwargs)
+        return subprocess.check_output(
+            *args, shell=True, cwd=self.working_dir, **kwargs
+        )
 
     def __repr__(self):
-        return '{}(name={!r}, working_dir={!r})'.format(
+        return "{}(name={!r}, working_dir={!r})".format(
             self.__class__.__name__, self.name, self.working_dir
         )
 
@@ -647,7 +670,7 @@ class Graph:
             unresolved=unresolved,
         )
 
-    @timer('Checked for circular dependencies in %.3fms', logger=logger)
+    @timer("Checked for circular dependencies in %.3fms", logger=logger)
     def _check_for_circular_dependencies(self):
         """Check for circular dependencies in the graph.
 
@@ -762,10 +785,13 @@ class Scheduler:
         :param gwf.Target target:
             Target to be scheduled.
         """
-        logger.debug('Scheduling target %s', target)
+        logger.debug("Scheduling target %s", target)
 
-        if self.backend.status(target) != Status.UNKNOWN or target in self._pretend_known:
-            logger.debug('Target %s has already been submitted', target)
+        if (
+            self.backend.status(target) != Status.UNKNOWN
+            or target in self._pretend_known
+        ):
+            logger.debug("Target %s has already been submitted", target)
             return True
 
         submitted_deps = set()
@@ -776,14 +802,14 @@ class Scheduler:
 
         if submitted_deps or self.should_run(target):
             if self.dry_run:
-                logger.info('Would submit target %s', target)
+                logger.info("Would submit target %s", target)
                 self._pretend_known.add(target)
             else:
-                logger.info('Submitting target %s', target)
+                logger.info("Submitting target %s", target)
                 self.backend.submit(target, dependencies=submitted_deps)
             return True
         else:
-            logger.debug('Target %s should not run', target)
+            logger.debug("Target %s should not run", target)
             return False
 
     def schedule_many(self, targets):
@@ -806,7 +832,9 @@ class Scheduler:
     def should_run(self, target):
         """Return whether a target should be run or not."""
         if any(self.should_run(dep) for dep in self.graph.dependencies[target]):
-            logger.debug('%s should run because one of its dependencies should run', target)
+            logger.debug(
+                "%s should run because one of its dependencies should run", target
+            )
             return True
 
         # Check whether all input files actually exists are are being provided
@@ -816,25 +844,46 @@ class Scheduler:
                 raise MissingProviderError(path, target)
 
         if target.is_sink:
-            logger.debug('%s should run because it is a sink', target)
+            logger.debug("%s should run because it is a sink", target)
             return True
 
         if any(self._file_cache[path] is None for path in target.outputs):
-            logger.debug('%s should run because one of its output files does not exist', target)
+            logger.debug(
+                "%s should run because one of its output files does not exist", target
+            )
             return True
 
         if target.is_source:
-            logger.debug('%s should not run because it is a source', target)
+            logger.debug("%s should not run because it is a source", target)
             return False
 
-        youngest_in_ts, youngest_in_path = max((self._file_cache[path], path) for path in target.inputs)
-        logger.debug('%s is the youngest input file of %s with timestamp %s', youngest_in_path, target, youngest_in_ts)
+        youngest_in_ts, youngest_in_path = max(
+            (self._file_cache[path], path) for path in target.inputs
+        )
+        logger.debug(
+            "%s is the youngest input file of %s with timestamp %s",
+            youngest_in_path,
+            target,
+            youngest_in_ts,
+        )
 
-        oldest_out_ts, oldest_out_path = min((self._file_cache[path], path) for path in target.outputs)
-        logger.debug('%s is the oldest output file of %s with timestamp %s', oldest_out_path, target, youngest_in_ts)
+        oldest_out_ts, oldest_out_path = min(
+            (self._file_cache[path], path) for path in target.outputs
+        )
+        logger.debug(
+            "%s is the oldest output file of %s with timestamp %s",
+            oldest_out_path,
+            target,
+            youngest_in_ts,
+        )
 
         if youngest_in_ts > oldest_out_ts:
-            logger.debug('%s should run since %s is larger than %s', target, youngest_in_ts, oldest_out_ts)
+            logger.debug(
+                "%s should run since %s is larger than %s",
+                target,
+                youngest_in_ts,
+                oldest_out_ts,
+            )
             return True
         return False
 

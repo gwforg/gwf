@@ -16,7 +16,10 @@ def backend():
 
 @pytest.fixture
 def graph():
-    return create_autospec(Graph(dependencies={}, dependents={}, provides={}, targets={}, unresolved={}), spec_set=True)
+    return create_autospec(
+        Graph(dependencies={}, dependents={}, provides={}, targets={}, unresolved={}),
+        spec_set=True,
+    )
 
 
 @pytest.fixture
@@ -30,7 +33,9 @@ def test_filter_status_completed(scheduler):
     scheduler.backend.status.return_value = Status.UNKNOWN
 
     status_filter = StatusFilter(scheduler=scheduler, status=[TargetStatus.COMPLETED])
-    target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+    target = Target(
+        "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
+    )
 
     status_filter.scheduler.should_run.return_value = False
     assert list(status_filter.apply([target])) == [target]
@@ -41,7 +46,9 @@ def test_filter_status_completed(scheduler):
 
 def test_filter_status_shouldrun(scheduler):
     status_filter = StatusFilter(scheduler=scheduler, status=[TargetStatus.SHOULDRUN])
-    target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+    target = Target(
+        "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
+    )
 
     status_filter.scheduler.backend.status.return_value = Status.UNKNOWN
     status_filter.scheduler.should_run.return_value = False
@@ -70,7 +77,9 @@ def test_filter_status_shouldrun(scheduler):
 
 def test_filter_status_running(scheduler):
     status_filter = StatusFilter(scheduler=scheduler, status=[TargetStatus.RUNNING])
-    target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+    target = Target(
+        "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
+    )
 
     status_filter.scheduler.backend.status.return_value = Status.UNKNOWN
     assert list(status_filter.apply([target])) == []
@@ -84,7 +93,9 @@ def test_filter_status_running(scheduler):
 
 def test_filter_status_submitted(scheduler):
     status_filter = StatusFilter(scheduler=scheduler, status=[TargetStatus.SUBMITTED])
-    target = Target('TestTarget', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+    target = Target(
+        "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
+    )
 
     status_filter.scheduler.backend.status.return_value = Status.UNKNOWN
     assert list(status_filter.apply([target])) == []
@@ -97,24 +108,28 @@ def test_filter_status_submitted(scheduler):
 
 
 def test_filter_name():
-    target1 = Target('Foo', inputs=[], outputs=[], options={}, working_dir='/some/dir')
-    target2 = Target('Bar', inputs=[], outputs=[], options={}, working_dir='/some/dir')
-    target3 = Target('FooBar', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+    target1 = Target("Foo", inputs=[], outputs=[], options={}, working_dir="/some/dir")
+    target2 = Target("Bar", inputs=[], outputs=[], options={}, working_dir="/some/dir")
+    target3 = Target(
+        "FooBar", inputs=[], outputs=[], options={}, working_dir="/some/dir"
+    )
 
-    name_filter = NameFilter(patterns=['Foo'])
+    name_filter = NameFilter(patterns=["Foo"])
     assert set(name_filter.apply([target1, target2, target3])) == {target1}
 
-    name_filter = NameFilter(patterns=['Foo*'])
+    name_filter = NameFilter(patterns=["Foo*"])
     assert set(name_filter.apply([target1, target2, target3])) == {target1, target3}
 
-    name_filter = NameFilter(patterns=['Foo', 'Bar'])
+    name_filter = NameFilter(patterns=["Foo", "Bar"])
     assert set(name_filter.apply([target1, target2, target3])) == {target1, target2}
 
 
 def test_filter_endpoint():
-    target1 = Target('Foo', inputs=[], outputs=[], options={}, working_dir='/some/dir')
-    target2 = Target('Bar', inputs=[], outputs=[], options={}, working_dir='/some/dir')
-    target3 = Target('FooBar', inputs=[], outputs=[], options={}, working_dir='/some/dir')
+    target1 = Target("Foo", inputs=[], outputs=[], options={}, working_dir="/some/dir")
+    target2 = Target("Bar", inputs=[], outputs=[], options={}, working_dir="/some/dir")
+    target3 = Target(
+        "FooBar", inputs=[], outputs=[], options={}, working_dir="/some/dir"
+    )
 
     endpoint_filter = EndpointFilter(endpoints={target1})
     assert set(endpoint_filter.apply([target1, target2, target3])) == {target1}
@@ -122,8 +137,8 @@ def test_filter_endpoint():
     endpoint_filter = EndpointFilter(endpoints={target1, target3})
     assert set(endpoint_filter.apply([target1, target2, target3])) == {target1, target3}
 
-    endpoint_filter = EndpointFilter(endpoints={target1}, mode='exclude')
+    endpoint_filter = EndpointFilter(endpoints={target1}, mode="exclude")
     assert set(endpoint_filter.apply([target1, target2, target3])) == {target2, target3}
 
-    endpoint_filter = EndpointFilter(endpoints={target1, target3}, mode='exclude')
+    endpoint_filter = EndpointFilter(endpoints={target1, target3}, mode="exclude")
     assert set(endpoint_filter.apply([target1, target2, target3])) == {target2}

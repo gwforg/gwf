@@ -6,10 +6,10 @@ from ..filtering import StatusFilter, EndpointFilter, NameFilter, filter_generic
 
 
 STATUS_COLORS = {
-    TargetStatus.SHOULDRUN: 'magenta',
-    TargetStatus.SUBMITTED: 'yellow',
-    TargetStatus.RUNNING: 'blue',
-    TargetStatus.COMPLETED: 'green',
+    TargetStatus.SHOULDRUN: "magenta",
+    TargetStatus.SUBMITTED: "yellow",
+    TargetStatus.RUNNING: "blue",
+    TargetStatus.COMPLETED: "green",
 }
 
 
@@ -27,8 +27,8 @@ def print_table(backend, graph, targets):
     name_col_width = max((len(target.name) for target in targets), default=0) + 4
 
     format_str = (
-        '{name:<{name_col_width}}{status:<23}{percentage:>7.2%}'
-        ' [{num_shouldrun}/{num_submitted}/{num_running}/{num_completed}]'
+        "{name:<{name_col_width}}{status:<23}{percentage:>7.2%}"
+        " [{num_shouldrun}/{num_submitted}/{num_running}/{num_completed}]"
     )
 
     for target in targets:
@@ -39,9 +39,7 @@ def print_table(backend, graph, targets):
         deps_total = len(deps)
 
         def num_deps_with_status(status):
-            return sum(
-                1 for target in deps if scheduler.status(target) == status
-            )
+            return sum(1 for target in deps if scheduler.status(target) == status)
 
         num_shouldrun = num_deps_with_status(TargetStatus.SHOULDRUN)
         num_submitted = num_deps_with_status(TargetStatus.SUBMITTED)
@@ -58,24 +56,18 @@ def print_table(backend, graph, targets):
             num_submitted=num_submitted,
             num_running=num_running,
             num_completed=num_completed,
-            name_col_width=name_col_width
+            name_col_width=name_col_width,
         )
         click.echo(line)
 
 
 @click.command()
-@click.argument(
-    'targets', nargs=-1
-)
+@click.argument("targets", nargs=-1)
+@click.option("--endpoints", is_flag=True, default=False, help="Show only endpoints.")
 @click.option(
-    '--endpoints',
-    is_flag=True,
-    default=False,
-    help='Show only endpoints.'
-)
-@click.option(
-    '-s', '--status',
-    type=click.Choice(['shouldrun', 'submitted', 'running', 'completed']),
+    "-s",
+    "--status",
+    type=click.Choice(["shouldrun", "submitted", "running", "completed"]),
     multiple=True,
 )
 @click.pass_obj

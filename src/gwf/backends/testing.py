@@ -10,7 +10,7 @@ class TestingBackend(Backend):
 
     log_manager = MemoryLogManager()
 
-    option_defaults = {'cores': 2, 'memory': '18g', 'nodes': None}
+    option_defaults = {"cores": 2, "memory": "18g", "nodes": None}
 
     def submit(self, target, dependencies):
         pass

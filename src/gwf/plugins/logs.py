@@ -6,9 +6,9 @@ from ..exceptions import TargetNotFoundError
 
 
 @click.command()
-@click.argument('target')
-@click.option('-e', '--stderr', is_flag=True)
-@click.option('--no-pager', is_flag=True)
+@click.argument("target")
+@click.option("-e", "--stderr", is_flag=True)
+@click.option("--no-pager", is_flag=True)
 @click.pass_obj
 def logs(obj, target, stderr, no_pager):
     """Display logs for the latest run of a target.

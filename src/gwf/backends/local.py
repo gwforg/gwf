@@ -17,7 +17,7 @@ from .logmanager import FileLogManager
 from ..conf import config
 from ..utils import PersistableDict
 
-__all__ = ('Client', 'Server', 'LocalBackend',)
+__all__ = ("Client", "Server", "LocalBackend")
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,9 @@ def catch_keyboard_interrupt(func):
         try:
             return func(*args, **kwargs)
         except KeyboardInterrupt:
-            logger.debug('Shutting down worker %s...', multiprocessing.current_process().pid)
+            logger.debug(
+                "Shutting down worker %s...", multiprocessing.current_process().pid
+            )
             sys.exit(0)
 
     return wrapper
@@ -65,7 +67,7 @@ class SubmitRequest(Request):
         task_id = _gen_task_id()
         status_dict[task_id] = LocalStatus.SUBMITTED
         task_queue.put((task_id, self))
-        logger.debug('Task %s was queued with id %s', self.target.name, task_id)
+        logger.debug("Task %s was queued with id %s", self.target.name, task_id)
         return task_id
 
 
@@ -83,7 +85,9 @@ class Client:
     def submit(self, target, stdout_path, stderr_path, deps=None):
         if deps is None:
             deps = []
-        request = SubmitRequest(target=target, deps=deps, stdout_path=stdout_path, stderr_path=stderr_path)
+        request = SubmitRequest(
+            target=target, deps=deps, stdout_path=stdout_path, stderr_path=stderr_path
+        )
         self.client.send(request)
         return self.client.recv()
 
@@ -141,23 +145,28 @@ class LocalBackend(Backend):
     def __init__(self):
         super().__init__()
 
-        self._tracked = PersistableDict(os.path.join('.gwf/local-backend-tracked.json'))
+        self._tracked = PersistableDict(os.path.join(".gwf/local-backend-tracked.json"))
 
-        host = config.get('local.host', 'localhost')
-        port = config.get('local.port', 12345)
+        host = config.get("local.host", "localhost")
+        port = config.get("local.port", 12345)
         try:
             self.client = Client((host, port))
         except ConnectionRefusedError:
             raise BackendError(
-                'Local backend could not connect to workers on port {}. '
+                "Local backend could not connect to workers on port {}. "
                 'Workers can be started by running "gwf workers". '
-                'You can read more in the documentation: '
-                'http://gwf.readthedocs.io/en/latest/reference/backends.html#local'.format(port)
+                "You can read more in the documentation: "
+                "http://gwf.readthedocs.io/en/latest/reference/backends.html#local".format(
+                    port
+                )
             )
 
         self._status = self.client.status()
         for target_name, target_job_id in list(self._tracked.items()):
-            if target_job_id not in self._status or self._status[target_job_id] == LocalStatus.COMPLETED:
+            if (
+                target_job_id not in self._status
+                or self._status[target_job_id] == LocalStatus.COMPLETED
+            ):
                 del self._tracked[target_name]
 
     def submit(self, target, dependencies):
@@ -171,13 +180,13 @@ class LocalBackend(Backend):
             target,
             deps=dependency_ids,
             stdout_path=self.log_manager.stdout_path(target),
-            stderr_path=self.log_manager.stderr_path(target)
+            stderr_path=self.log_manager.stderr_path(target),
         )
         self._tracked[target.name] = task_id
         self._status[task_id] = LocalStatus.SUBMITTED
 
     def cancel(self, target):
-        raise UnsupportedOperationError('cancel')
+        raise UnsupportedOperationError("cancel")
 
     def status(self, target):
         try:
@@ -221,17 +230,21 @@ class Worker:
             self.handle_task(task_id, request)
 
     def handle_task(self, task_id, request):
-        logger.debug('Task %s started target %r', task_id, request.target)
+        logger.debug("Task %s started target %r", task_id, request.target)
         self.status[task_id] = LocalStatus.RUNNING
 
         try:
-            self.execute_target(request.target, stdout_path=request.stdout_path, stderr_path=request.stderr_path)
+            self.execute_target(
+                request.target,
+                stdout_path=request.stdout_path,
+                stderr_path=request.stderr_path,
+            )
         except:
             self.status[task_id] = LocalStatus.FAILED
-            logger.error('Task %s failed', task_id, exc_info=True)
+            logger.error("Task %s failed", task_id, exc_info=True)
         else:
             self.status[task_id] = LocalStatus.COMPLETED
-            logger.debug('Task %s completed target %r', task_id, request.target)
+            logger.debug("Task %s completed target %r", task_id, request.target)
         finally:
             self.requeue_dependents(task_id)
 
@@ -240,23 +253,20 @@ class Worker:
 
         :return: `True` if the task can run, `False` if not."""
         any_dep_failed = any(
-            self.status[dep_id] == LocalStatus.FAILED
-            for dep_id in request.deps
+            self.status[dep_id] == LocalStatus.FAILED for dep_id in request.deps
         )
 
         if any_dep_failed:
             self.status[task_id] = LocalStatus.FAILED
             logger.error(
-                'Task %s failed since a dependency failed.',
-                task_id,
-                exc_info=True
+                "Task %s failed since a dependency failed.", task_id, exc_info=True
             )
             return False
 
         has_non_satisfied_dep = False
         for dep_id in request.deps:
             if self.status[dep_id] != LocalStatus.COMPLETED:
-                logger.debug('Task %s set to wait for %s', task_id, dep_id)
+                logger.debug("Task %s set to wait for %s", task_id, dep_id)
 
                 if dep_id not in self.waiting:
                     self.waiting[dep_id] = []
@@ -278,17 +288,19 @@ class Worker:
         if task_id not in self.waiting:
             return
 
-        logger.debug('Task %s has waiting dependents. Requeueing', task_id)
+        logger.debug("Task %s has waiting dependents. Requeueing", task_id)
         for dep_task_id, dep_request in self.waiting[task_id]:
             self.queue.put((dep_task_id, dep_request))
 
     def execute_target(self, target, stdout_path, stderr_path):
         env = os.environ.copy()
-        env['GWF_TARGET_NAME'] = target.name
+        env["GWF_TARGET_NAME"] = target.name
 
-        with open(stdout_path, mode='w') as stdout_fp, open(stderr_path, mode='w') as stderr_fp:
+        with open(stdout_path, mode="w") as stdout_fp, open(
+            stderr_path, mode="w"
+        ) as stderr_fp:
             process = subprocess.Popen(
-                ['bash'],
+                ["bash"],
                 stdin=subprocess.PIPE,
                 stdout=stdout_fp,
                 stderr=stderr_fp,
@@ -299,11 +311,13 @@ class Worker:
 
             process.communicate(target.spec)
             if process.returncode != 0:
-                raise Exception('Target {} exited with a non-zero return code.'.format(target.name))
+                raise Exception(
+                    "Target {} exited with a non-zero return code.".format(target.name)
+                )
 
 
 class Server:
-    def __init__(self, hostname='', port=0, num_workers=None):
+    def __init__(self, hostname="", port=0, num_workers=None):
         self.hostname = hostname
         self.port = port
         self.num_workers = num_workers
@@ -315,13 +329,13 @@ class Server:
 
     def handle_request(self, request):
         try:
-            logger.debug('Received request %r', request)
+            logger.debug("Received request %r", request)
             return request.handle(self.queue, self.status)
         except:
-            logger.error('Invalid request %r', request, exc_info=True)
+            logger.error("Invalid request %r", request, exc_info=True)
 
     def handle_client(self, conn):
-        logger.debug('Accepted client connection.')
+        logger.debug("Accepted client connection.")
         try:
             while True:
                 request = conn.recv()
@@ -329,7 +343,7 @@ class Server:
                 if response is not None:
                     conn.send(response)
         except EOFError:
-            logger.debug('Client connection closed.')
+            logger.debug("Client connection closed.")
 
     def wait_for_clients(self, serv):
         while True:
@@ -351,16 +365,22 @@ class Server:
                 initargs=(self.status, self.queue, self.waiting),
             )
 
-            logging.info('Started %s workers, listening on port %s', self.num_workers, serv.address[1])
+            logging.info(
+                "Started %s workers, listening on port %s",
+                self.num_workers,
+                serv.address[1],
+            )
             self.wait_for_clients(serv)
         except OSError as e:
             if e.errno == 48:
                 raise ServerError(
-                    ('Could not start workers listening on port {}. '
-                     'The port may already be in use.').format(self.port)
+                    (
+                        "Could not start workers listening on port {}. "
+                        "The port may already be in use."
+                    ).format(self.port)
                 )
         except KeyboardInterrupt:
-            logging.info('Shutting down...')
+            logging.info("Shutting down...")
             workers.close()
             workers.join()
             self.manager.shutdown()

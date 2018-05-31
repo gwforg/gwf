@@ -19,7 +19,7 @@ gwf.target('Target3', inputs=['b.txt'], outputs=['c.txt'])
 
 @pytest.fixture
 def simple_workflow(tmpdir):
-    workflow_file = tmpdir.join('workflow.py')
+    workflow_file = tmpdir.join("workflow.py")
     workflow_file.write(SIMPLE_WORKFLOW)
     return tmpdir
 
@@ -42,16 +42,15 @@ def local_backend():
 
 
 def test_touch_creates_files(cli_runner, local_backend):
-    cli_runner.invoke(main, ['touch'])
+    cli_runner.invoke(main, ["touch"])
 
-    assert os.path.exists('a.txt')
-    assert os.path.exists('b.txt')
-    assert os.path.exists('c.txt')
+    assert os.path.exists("a.txt")
+    assert os.path.exists("b.txt")
+    assert os.path.exists("c.txt")
 
-    stat_a = os.stat('a.txt').st_ctime
-    stat_b = os.stat('b.txt').st_ctime
-    stat_c = os.stat('c.txt').st_ctime
+    stat_a = os.stat("a.txt").st_ctime
+    stat_b = os.stat("b.txt").st_ctime
+    stat_c = os.stat("c.txt").st_ctime
 
     assert stat_a <= stat_b
     assert stat_b <= stat_c
-    

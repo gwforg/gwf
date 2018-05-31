@@ -16,18 +16,18 @@ from .utils import ColorFormatter, ensure_dir
 logger = logging.getLogger(__name__)
 
 
-BASIC_FORMAT = '%(message)s'
+BASIC_FORMAT = "%(message)s"
 
-ADVANCED_FORMAT = '%(levelname)s:%(name)s:%(message)s'
+ADVANCED_FORMAT = "%(levelname)s:%(name)s:%(message)s"
 
 LOGGING_FORMATS = {
-    'warning': BASIC_FORMAT,
-    'info': BASIC_FORMAT,
-    'debug': ADVANCED_FORMAT,
-    'error': BASIC_FORMAT,
+    "warning": BASIC_FORMAT,
+    "info": BASIC_FORMAT,
+    "debug": ADVANCED_FORMAT,
+    "error": BASIC_FORMAT,
 }
 
-VERBOSITY_LEVELS = ['warning', 'debug', 'info', 'error']
+VERBOSITY_LEVELS = ["warning", "debug", "info", "error"]
 
 
 def get_level(level):
@@ -48,54 +48,49 @@ def configure_logging(level_name, formatter_cls):
 def _validate_choice(key, value, choices):
     if value not in choices:
         msg = 'Invalid value "{}" for key "{}", must be one of: {}.'
-        raise ConfigurationError(msg.format(value, key, ', '.join(choices)))
+        raise ConfigurationError(msg.format(value, key, ", ".join(choices)))
 
 
-@config.validator('backend')
+@config.validator("backend")
 def validate_backend(value):
-    return _validate_choice('backend', value, list_backends())
+    return _validate_choice("backend", value, list_backends())
 
 
-@config.validator('verbose')
+@config.validator("verbose")
 def validate_verbose(value):
-    return _validate_choice('verbose', value, VERBOSITY_LEVELS)
+    return _validate_choice("verbose", value, VERBOSITY_LEVELS)
 
 
-@config.validator('no_color')
+@config.validator("no_color")
 def validate_no_color(value):
-    choices = ('true', 'yes', 'false', 'no')
+    choices = ("true", "yes", "false", "no")
     if value not in (True, False):
         msg = 'Invalid value "{}" for key "no_color", must be one of: {}.'
-        raise ConfigurationError(msg.format(value, ', '.join(choices)))
+        raise ConfigurationError(msg.format(value, ", ".join(choices)))
 
 
-@with_plugins(iter_entry_points('gwf.plugins'))
-@click.group(context_settings={'obj': {}})
+@with_plugins(iter_entry_points("gwf.plugins"))
+@click.group(context_settings={"obj": {}})
 @click.version_option(version=__version__)
+@click.option("-f", "--file", default="workflow.py:gwf", help="Workflow/obj to load.")
 @click.option(
-    '-f',
-    '--file',
-    default='workflow.py:gwf',
-    help='Workflow/obj to load.'
-)
-@click.option(
-    '-b',
-    '--backend',
+    "-b",
+    "--backend",
     type=click.Choice(list_backends()),
-    default=config['backend'],
-    help='Backend used to run workflow.'
+    default=config["backend"],
+    help="Backend used to run workflow.",
 )
 @click.option(
-    '-v',
-    '--verbose',
+    "-v",
+    "--verbose",
     type=click.Choice(VERBOSITY_LEVELS),
-    default=config['verbose'],
-    help='Verbosity level.',
+    default=config["verbose"],
+    help="Verbosity level.",
 )
 @click.option(
-    '--no-color/--use-color',
-    default=config['no_color'],
-    help='Enable or disable output colors.'
+    "--no-color/--use-color",
+    default=config["no_color"],
+    help="Enable or disable output colors.",
 )
 @click.pass_context
 def main(ctx, file, backend, verbose, no_color):
@@ -107,9 +102,9 @@ def main(ctx, file, backend, verbose, no_color):
 
     Shows help for the status command.
     """
-    ensure_dir(os.path.join('.gwf'))
+    ensure_dir(os.path.join(".gwf"))
 
     formatter_cls = logging.Formatter if no_color else ColorFormatter
     configure_logging(level_name=verbose, formatter_cls=formatter_cls)
 
-    ctx.obj = {'file': file, 'backend': backend}
+    ctx.obj = {"file": file, "backend": backend}

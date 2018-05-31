@@ -25,14 +25,13 @@ class ApplyMixin:
 
         This method must be overriden by subclasses.
         """
-        raise NotImplementedError('predicate() must be implemented by subclasses.')
+        raise NotImplementedError("predicate() must be implemented by subclasses.")
 
 
 class StatusFilter(ApplyMixin):
-
     def __init__(self, scheduler, status):
         self.scheduler = scheduler
-        if not hasattr(status, '__iter__'):
+        if not hasattr(status, "__iter__"):
             status = [status]
         self.status = status
 
@@ -41,7 +40,6 @@ class StatusFilter(ApplyMixin):
 
 
 class NameFilter:
-
     def __init__(self, patterns):
         self.patterns = patterns
 
@@ -55,22 +53,20 @@ class NameFilter:
 
 
 class EndpointFilter(ApplyMixin):
-
-    def __init__(self, endpoints, mode='include'):
+    def __init__(self, endpoints, mode="include"):
         self.endpoints = endpoints
         self.mode = mode
 
     def predicate(self, target):
-        if self.mode == 'exclude':
+        if self.mode == "exclude":
             return target not in self.endpoints
-        elif self.mode == 'include':
+        elif self.mode == "include":
             return target in self.endpoints
         else:
             raise ValueError('Argument mode must be either "include" or "exclude".')
 
 
 class CompositeFilter:
-
     def __init__(self, filters=None):
         self.filters = filters
 

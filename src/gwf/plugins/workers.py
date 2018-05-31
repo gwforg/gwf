@@ -8,24 +8,24 @@ from ..backends.local import Server
 
 @click.command()
 @click.option(
-    '-n',
-    '--num-workers',
+    "-n",
+    "--num-workers",
     type=int,
-    default=config.get('local.num_workers', multiprocessing.cpu_count()),
-    help='Number of workers to spawn.'
+    default=config.get("local.num_workers", multiprocessing.cpu_count()),
+    help="Number of workers to spawn.",
 )
 @click.option(
-    '-p',
-    '--port',
+    "-p",
+    "--port",
     type=int,
-    default=config.get('local.port', 12345),
-    help='Port that workers will listen on.'
+    default=config.get("local.port", 12345),
+    help="Port that workers will listen on.",
 )
 @click.option(
-    '-h',
-    '--host',
-    default=config.get('local.host', 'localhost'),
-    help='Host that workers will bind to.'
+    "-h",
+    "--host",
+    default=config.get("local.host", "localhost"),
+    help="Host that workers will bind to.",
 )
 def workers(host, port, num_workers):
     """Start workers for the local backend."""

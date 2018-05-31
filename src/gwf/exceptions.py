@@ -19,9 +19,7 @@ class TargetExistsError(GWFError):
     def __init__(self, target):
         self.target = target
 
-        message = (
-            'Target "{}" already exists in workflow.'
-        ).format(target.name)
+        message = ('Target "{}" already exists in workflow.').format(target.name)
 
         super(TargetExistsError, self).__init__(message)
 
@@ -32,9 +30,7 @@ class TargetNotFoundError(GWFError):
     def __init__(self, target_name):
         self.target_name = target_name
 
-        message = (
-            'Target "{}" is not found in the workflow.'
-        ).format(target_name)
+        message = ('Target "{}" is not found in the workflow.').format(target_name)
 
         super(TargetNotFoundError, self).__init__(message)
 
@@ -52,9 +48,9 @@ class MultipleProvidersError(GWFError):
         self.target = target
         self.other_target = other_target
 
-        message = (
-            'File "{}" provided by targets "{}" and "{}".'
-        ).format(self.path, self.target, self.other_target)
+        message = ('File "{}" provided by targets "{}" and "{}".').format(
+            self.path, self.target, self.other_target
+        )
 
         super(MultipleProvidersError, self).__init__(message)
 
@@ -74,7 +70,7 @@ class MissingProviderError(GWFError):
 
         message = (
             'File "{}" is required by "{}", but does not exist and is not '
-            'provided by any target in the workflow.'
+            "provided by any target in the workflow."
         ).format(self.path, self.target)
 
         super(MissingProviderError, self).__init__(message)
@@ -90,9 +86,7 @@ class CircularDependencyError(GWFError):
     def __init__(self, target):
         self.target = target
 
-        message = (
-            'Target {} depends on itself.'
-        ).format(self.target)
+        message = ("Target {} depends on itself.").format(self.target)
 
         super(CircularDependencyError, self).__init__(message)
 

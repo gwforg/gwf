@@ -21,4 +21,4 @@ class LogNotFoundError(BackendError):
     """No log found for target."""
 
     def __init__(self):
-        super().__init__('No log found.')
+        super().__init__("No log found.")

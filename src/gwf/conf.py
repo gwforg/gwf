@@ -2,15 +2,10 @@ import json
 from collections import ChainMap
 
 
-CONFIG_DEFAULTS = {
-    'verbose': 'info',
-    'backend': 'local',
-    'no_color': False,
-}
+CONFIG_DEFAULTS = {"verbose": "info", "backend": "local", "no_color": False}
 
 
 class FileConfig:
-
     def __init__(self, path, data=None):
         self.path = path
 
@@ -19,8 +14,10 @@ class FileConfig:
 
     def validator(self, key):
         """Register a configuration key validator function."""
+
         def _inner(func):
             self._validators[key] = func
+
         return _inner
 
     def _validate_value(self, key, value):
@@ -52,7 +49,7 @@ class FileConfig:
 
     def dump(self):
         """Dump the configuration to disk."""
-        with open(self.path, 'w') as config_file:
+        with open(self.path, "w") as config_file:
             json.dump(dict(self._data), config_file, indent=4, sort_keys=True)
 
     @classmethod
@@ -80,4 +77,4 @@ class FileConfig:
         return cls(path=path, data=data)
 
 
-config = FileConfig.load('.gwfconf.json', data=CONFIG_DEFAULTS)
+config = FileConfig.load(".gwfconf.json", data=CONFIG_DEFAULTS)
