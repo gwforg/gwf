@@ -7,7 +7,7 @@ name = "pypi"
 click = "*"
 click-plugins = "*"
 "e1839a8" = {path = ".", editable = true}
-black = "*"
+black = {version = "*", markers="python_version < '3.6'"}
 
 [dev-packages]
 coverage = "*"
