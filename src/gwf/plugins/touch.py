@@ -21,7 +21,11 @@ def touch(obj):
     don't want to re-run the workflow to recreate them.
     """
     graph = graph_from_config(obj)
+    visited = set()
     for endpoint in graph.endpoints():
         for target in graph.dfs(endpoint):
+            if target in visited:
+                continue
+            visited.add(target)
             for path in target.outputs:
                 touchfile(path)
