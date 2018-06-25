@@ -1,7 +1,5 @@
 import fnmatch
 
-from .backends import Status
-
 
 class ApplyMixin:
     """A mixin for predicate-based filters providing the `apply` method.
