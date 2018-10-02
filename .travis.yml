@@ -1,23 +1,13 @@
 language: python
-sudo: false
-python:
-  - "3.5"
-  - "3.6"
+matrix:
+  include:
+    - python: 3.5
+    - python: 3.6
+    - python: 3.7
+      dist: xenial
+      sudo: true
 install: make init
 script: make test
 after_success:
   - make coverage-ci
-deploy:
-  - provider: script
-    script: make publish-conda
-    skip_cleanup: true
-    on:
-      branch: master
-      tags: true
-  - provider: script
-    script: make publish-pypi
-    skip_cleanup: true
-    on:
-      branch: master
-      tags: true
-      python: "3.5"
+
