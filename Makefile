@@ -10,8 +10,9 @@
 	publish-pypi \
 	install-conda \
 	package-conda \
-	publish-conda \
-	publish
+	publish-conda
+
+export PATH := $(HOME)/.conda/bin:$(PATH)
 
 init:
 	pip install pipenv --upgrade
@@ -40,7 +41,7 @@ package-pypi:
 	pip install twine
 	python setup.py sdist bdist_wheel
 
-publish-pypi: package-pypi
+publish-pypi:
 	twine upload dist/*
 	rm -rf build dist .egg requests.egg-info
 
@@ -50,22 +51,16 @@ install-conda:
 	./miniconda.sh -b -p "${HOME}/miniconda"
 	rm miniconda.sh
 
-	export PATH="${HOME}/miniconda/bin:${PATH}" && \
-	conda config --set always_yes true && \
-	conda config --set anaconda_upload no && \
-	conda config --add channels gwforg && \
-	conda update --yes --quiet -n base conda && \
+	conda config --set always_yes true
+	conda config --set anaconda_upload no
+	conda config --add channels gwforg
+	conda update --yes --quiet -n base conda
 	conda install --quiet --yes conda-build=3.0.* anaconda-client=1.6.*
 
-package-conda: install-conda
-	export PATH="${HOME}/miniconda/bin:${PATH}" && \
-	conda build --python "${TRAVIS_PYTHON_VERSION}" --output-folder conda-bld/ conda/ && \
+package-conda:
+	conda build --python "${TRAVIS_PYTHON_VERSION}" --output-folder conda-bld/ conda/
 	conda convert --platform all conda-bld/*/*.tar.bz2 -o conda-bld/
 
-publish-conda: package-conda
-	export PATH="${HOME}/miniconda/bin:${PATH}" && \
+publish-conda:
 	anaconda -t "${ANACONDA_TOKEN}" --verbose --show-traceback upload --force --no-progress --user gwforg conda-bld/*/*.tar.bz2
 	rm -rf conda-bld/
-
-publish: publish-pypi publish-conda
-	echo success
