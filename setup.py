@@ -34,6 +34,7 @@ setup(
         "console_scripts": ["gwf = gwf.cli:main"],
         "gwf.backends": [
             "slurm = gwf.backends.slurm:SlurmBackend",
+            "sge = gwf.backends.sge:SGEBackend",
             "local = gwf.backends.local:LocalBackend",
             "testing = gwf.backends.testing:TestingBackend",
         ],
