@@ -3,6 +3,25 @@ Change Log
 ==========
 
 
+Version 1.4.0
+=============
+
+Added
+-----
+
+* Backend for Sun Grid Engine (SGE). The backend does not support all target
+  options supported by the Slurm backend, so workflows can not necessarily
+  run with the SGE backend without changes. See the documentation for a list
+  of supported options.
+
+Version 1.3.2
+=============
+
+Fixed
+-----
+
+* Made the ``touch`` command faster.
+
 Version 1.3.1
 =============
 
