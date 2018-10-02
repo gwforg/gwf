@@ -35,7 +35,7 @@ docs:
 	pipenv run $(MAKE) -C docs html
 
 clean:
-	rm -rf docs/_build .gwfconf.json
+	rm -rf docs/_build .gwfconf.json build/ dist/
 
 package-pypi:
 	pip install twine
