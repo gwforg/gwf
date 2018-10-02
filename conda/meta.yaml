@@ -1,31 +1,28 @@
-{% set data = load_setup_py_data() %}
-
 package:
   name: gwf
-  version: {{ data.get('version') }}
+  version: 1.4.0
 
 source:
-  path: ../
+  url: https://github.com/gwforg/gwf/archive/v1.4.0.tar.gz
 
 build:
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
   entry_points:
     - gwf = gwf.cli:main
 
 requirements:
   build:
-    - python {{ python }}
+    - python >=3.5
     - setuptools
-    - click >=6.6
-    - click-plugins >=0.2.2
 
   run:
-    - python {{ python }}
+    - python >=3.5
     - setuptools
     - click >=6.6
     - click-plugins >=0.2.2
 
 test:
-
   imports:
     - gwf
     - gwf.backends
