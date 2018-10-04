@@ -409,6 +409,15 @@ class Workflow(object):
 
             new_target.inherit_options(template.options)
         elif isinstance(template, tuple):
+            warnings.warn(
+                (
+                    "creating a target from a tuple template is deprecated, "
+                    "make your template function return an AnonymousTarget "
+                    "instead."
+                ),
+                DeprecationWarning
+            )
+
             try:
                 inputs, outputs, template_options, spec = template
             except:
