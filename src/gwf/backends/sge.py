@@ -175,7 +175,7 @@ class SGEBackend(Backend):
 
         out.append(option_str.format("-N ", target.name))
         out.append("#$ -V")
-        out.append("#$ -w e")
+        out.append("#$ -w v")
         out.append("#$ -cwd")
 
         for option_name, option_value in target.options.items():
