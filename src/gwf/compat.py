@@ -8,4 +8,4 @@ except ImportError:
         """
         if hasattr(path, '__fspath__'):
             return path.__fspath__()
-            return path
+        return str(path)
