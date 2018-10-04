@@ -15,6 +15,7 @@ from glob import glob as _glob
 from glob import iglob as _iglob
 
 from .backends import Status
+from .compat import fspath
 from .exceptions import (
     CircularDependencyError,
     MultipleProvidersError,
@@ -26,11 +27,12 @@ from .exceptions import (
 )
 from .utils import LazyDict, cache, load_workflow, timer, parse_path
 
+
 logger = logging.getLogger(__name__)
 
 
 def _norm_path(working_dir, path):
-    path = str(path)
+    path = fspath(path)
     if os.path.isabs(path):
         return path
     return os.path.abspath(os.path.join(working_dir, path))
