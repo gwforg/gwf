@@ -420,7 +420,7 @@ class Workflow(object):
 
             try:
                 inputs, outputs, template_options, spec = template
-            except:
+            except ValueError:
                 raise InvalidTypeError(
                     "Target `{}` received an invalid template.".format(name)
                 )
