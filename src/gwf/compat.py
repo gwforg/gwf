@@ -6,9 +6,6 @@ except ImportError:
 
         Can be used instead of os.fspath() which is available in Python 3.6+.
         """
-        if isinstance(path, (str, bytes)):
+        if hasattr(path, '__fspath__'):
+            return path.__fspath__()
             return path
-        path = path.__fspath__()
-        if isinstance(path, (str, bytes)):
-            return path
-        raise TypeError('not a path')
