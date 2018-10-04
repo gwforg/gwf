@@ -414,9 +414,9 @@ class Workflow(object):
         elif isinstance(template, tuple):
             warnings.warn(
                 (
-                    "creating a target from a tuple template is deprecated, "
-                    "make your template function return an AnonymousTarget "
-                    "instead."
+                    "Creating a target from a tuple template is deprecated, "
+                    "and will be removed in gwf 2.0. Make your template "
+                    "function return an AnonymousTarget instead."
                 ),
                 DeprecationWarning
             )
