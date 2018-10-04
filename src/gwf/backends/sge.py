@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 SGE_OPTIONS = {
-    "nodes": "-N ",
     "cores": "-pe smp ",
     "memory": "-l h_vmem=",
     "walltime": "-l h_rt=",
@@ -121,7 +120,6 @@ class SGEBackend(Backend):
         "cores": 1,
         "memory": "1g",
         "walltime": "01:00:00",
-        "nodes": None,
         "queue": None,
         "account": None,
     }
