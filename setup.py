@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os
 import re
 import io
@@ -26,6 +24,7 @@ def find_version(*file_paths):
 setup(
     name="gwf",
     version=find_version("src", "gwf", "__init__.py"),
+    python_requires=">=3.5",
     packages=find_packages("src"),
     package_dir={"": "src"},
     include_package_data=True,
@@ -58,8 +57,10 @@ setup(
     license="GPLv3",
     keywords="grid computing workflow",
     url="http://gwf.readthedocs.io/",
+    
     description="A flexible, pragmatic workflow tool.",
     long_description=read("README.rst"),
+    
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Console",
