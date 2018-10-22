@@ -1,9 +1,9 @@
 .PHONY: \
+	help \
 	init \
 	test \
 	lint \
 	coverage \
-	coverage-ci \
 	docs \
 	clean \
 	package-pypi \
@@ -13,6 +13,17 @@
 	publish-conda
 
 export PATH := $(HOME)/.conda/bin:$(PATH)
+
+help:
+	@echo "Usage:"
+	@echo "    make help        show this message"
+	@echo "    make init        create and setup development environment"
+	@echo "    make test        run unit tests"
+	@echo "    make lint        run lint checks"
+	@echo "    make test        build docs"
+	@echo "    make clean       remove temporary files"
+	@echo "    make package     build source distribution and wheel"
+	@echo "    make publish     publish distributions to pypi"
 
 init:
 	pip install pipenv --upgrade
@@ -27,23 +38,22 @@ lint:
 coverage:
 	pipenv run coverage report
 
-coverage-ci:
-	pip install coveralls
-	coveralls
-
 docs:
 	pipenv run $(MAKE) -C docs html
 
 clean:
 	rm -rf docs/_build .gwfconf.json build/ dist/
 
-package-pypi:
-	pip install twine
-	python setup.py sdist bdist_wheel
+# PyPI
 
-publish-pypi:
-	twine upload dist/*
+package:
 	rm -rf build dist .egg requests.egg-info
+	pipenv run python setup.py sdist bdist_wheel
+
+publish:
+	pipenv run twine upload dist/*
+
+# Conda
 
 install-conda:
 	wget -q https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -62,5 +72,5 @@ package-conda:
 	conda convert --platform all conda-bld/*/*.tar.bz2 -o conda-bld/
 
 publish-conda:
-	anaconda -t "${ANACONDA_TOKEN}" --verbose --show-traceback upload --force --no-progress --user gwforg conda-bld/*/*.tar.bz2
+	anaconda -t "${ANACONDA_TOKEN}" upload --force --no-progress --user gwforg conda-bld/*/*.tar.bz2
 	rm -rf conda-bld/

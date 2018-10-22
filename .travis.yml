@@ -1,4 +1,8 @@
 language: python
+env:
+  global:
+    - PIPENV_VENV_IN_PROJECT=1
+    - PIPENV_IGNORE_VIRTUALENVS=1
 matrix:
   include:
     - python: 3.5
@@ -9,5 +13,6 @@ matrix:
 install: make init
 script: make test
 after_success:
-  - make coverage-ci
+  - pipenv install coveralls
+  - pipenv run coveralls
 
