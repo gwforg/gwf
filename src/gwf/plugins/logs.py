@@ -2,7 +2,7 @@ import click
 
 from ..backends import backend_from_config
 from ..core import graph_from_config
-from ..exceptions import TargetNotFoundError
+from ..exceptions import WorkflowError
 
 
 @click.command()
@@ -19,7 +19,9 @@ def logs(obj, target, stderr, no_pager):
     backend_cls = backend_from_config(obj)
 
     if target not in graph:
-        raise TargetNotFoundError(target)
+        raise WorkflowError(
+            'Target "{}" is not found in the workflow.'.format(target.name)
+        )
 
     log_file = backend_cls.logs(graph[target], stderr=stderr)
     log_contents = log_file.read()

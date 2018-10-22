@@ -16,17 +16,8 @@ from glob import iglob as _iglob
 
 from .backends import Status
 from .compat import fspath
-from .exceptions import (
-    CircularDependencyError,
-    MultipleProvidersError,
-    MissingProviderError,
-    IncludeWorkflowError,
-    InvalidNameError,
-    TargetExistsError,
-    InvalidTypeError,
-)
-from .utils import LazyDict, cache, load_workflow, timer, parse_path
-
+from .exceptions import NameError, TypeError, WorkflowError
+from .utils import LazyDict, cache, load_workflow, parse_path, timer
 
 logger = logging.getLogger(__name__)
 
@@ -134,13 +125,13 @@ class AnonymousTarget:
         self.working_dir = working_dir
 
         if not _is_valid_list(inputs):
-            raise InvalidTypeError(
+            raise TypeError(
                 "The argument `inputs` to target `{}` must be a list or tuple, not a string.".format(
                     self
                 )
             )
         if not _is_valid_list(outputs):
-            raise InvalidTypeError(
+            raise TypeError(
                 "The argument `outputs` to target `{}` must be a list or tuple, not a string.".format(
                     self
                 )
@@ -159,11 +150,12 @@ class AnonymousTarget:
     def spec(self, value):
         if not isinstance(value, str):
             msg = (
-                "Target spec must be a string, not {}. Did you attempt to assign a template to this target? "
-                "This is no is not allowed since version 1.0. Use the Workflow.target_from_template() method instead. "
-                "See the tutorial for more details."
+                "Target spec must be a string, not {}. Did you attempt to "
+                "assign a template to this target? This is no is not allowed "
+                "since version 1.0. Use the Workflow.target_from_template() "
+                "method instead. See the tutorial for more details."
             )
-            raise InvalidTypeError(msg.format(type(value)))
+            raise TypeError(msg.format(type(value)))
 
         self._spec = value
 
@@ -211,22 +203,27 @@ class Target(AnonymousTarget):
 
     This class inherits from :class:`AnonymousTarget`.
 
-    A target is a named unit of work that declare their file *inputs* and *outputs*. Target names must be valid Python
-    identifiers.
+    A target is a named unit of work that declare their file *inputs* and
+    *outputs*. Target names must be valid Python identifiers.
 
-    A script (or spec) is associated with the target. The script must be a valid Bash script and should produce the
-    files declared as *outputs* and consume the files declared as *inputs*. Both parameters must be provided explicitly,
-    even if no inputs or outputs are needed. In that case, provide the empty list::
+    A script (or spec) is associated with the target. The script must be a
+    valid Bash script and should produce the files declared as *outputs* and
+    consume the files declared as *inputs*. Both parameters must be provided
+    explicitly, even if no inputs or outputs are needed. In that case, provide
+    the empty list::
 
         Target('Foo', inputs=[], outputs=[], options={}, working_dir='/tmp')
 
-    The target can also specify an *options* dictionary specifying the resources needed to run the target. The options
-    are consumed by the backend and may be ignored if the backend doesn't support a given option. For example, we can
-    set the *cores* option to set the number of cores that the target uses::
+    The target can also specify an *options* dictionary specifying the
+    resources needed to run the target. The options are consumed by the backend
+    and may be ignored if the backend doesn't support a given option. For
+    example, we can set the *cores* option to set the number of cores that the
+    target uses::
 
         Target('Foo', inputs=[], outputs=[], options={'cores': 16}, working_dir='/tmp')
 
-    To see which options are supported by your backend of choice, see the documentation for the backend.
+    To see which options are supported by your backend of choice, see the
+    documentation for the backend.
 
     :ivar str name:
         Name of the target.
@@ -238,10 +235,10 @@ class Target(AnonymousTarget):
     def __init__(self, name=None, **kwargs):
         self.name = kwargs.pop("name", name)
         if self.name is None:
-            raise InvalidNameError("Target name is missing.")
+            raise NameError("Target name is missing.")
 
         if not is_valid_name(self.name):
-            raise InvalidNameError(
+            raise NameError(
                 'Target defined with invalid name: "{}".'.format(self.name)
             )
 
@@ -321,7 +318,7 @@ class Workflow(object):
     def __init__(self, name=None, working_dir=None, defaults=None):
         self.name = name
         if self.name is not None and not is_valid_name(self.name):
-            raise InvalidNameError(
+            raise NameError(
                 'Workflow defined with invalid name: "{}".'.format(self.name)
             )
 
@@ -340,7 +337,9 @@ class Workflow(object):
         if namespace is not None:
             target.name = target.qualname(namespace)
         if target.name in self.targets:
-            raise TargetExistsError(target)
+            raise WorkflowError(
+                'Target "{}" already exists in workflow.'.format(target.name)
+            )
         self.targets[target.name] = target
 
     def target(self, name, inputs, outputs, **options):
@@ -394,8 +393,10 @@ class Workflow(object):
         on the specification in the template `my_template`, and
         add it to the workflow.
 
-        :param str name: Name of the target.
-        :param tuple template: Target specification of the form (inputs, outputs, options, spec).
+        :param str name:
+            Name of the target.
+        :param tuple template:
+            Target specification of the form (inputs, outputs, options, spec).
 
         Any further keyword arguments are passed to the backend and will
         override any options provided by the template.
@@ -424,7 +425,7 @@ class Workflow(object):
             try:
                 inputs, outputs, template_options, spec = template
             except ValueError:
-                raise InvalidTypeError(
+                raise TypeError(
                     "Target `{}` received an invalid template.".format(name)
                 )
 
@@ -439,7 +440,7 @@ class Workflow(object):
 
             new_target.inherit_options(template_options)
         else:
-            raise InvalidTypeError(
+            raise TypeError(
                 "Target `{}` received an invalid template.".format(name)
             )
 
@@ -462,14 +463,14 @@ class Workflow(object):
         See :func:`~gwf.Workflow.include`.
         """
         if other_workflow.name is None and namespace is None:
-            raise IncludeWorkflowError(
+            raise WorkflowError(
                 "The included workflow has not been assigned a name. To "
                 "include the workflow you must assign a name to the included "
                 "workflow or set the namespace argument."
             )
         namespace_prefix = namespace or other_workflow.name
         if namespace_prefix == self.name:
-            raise IncludeWorkflowError(
+            raise WorkflowError(
                 "The included workflow has the same name as this workflow."
             )
 
@@ -596,11 +597,14 @@ class Workflow(object):
 class Graph:
     """Represents a dependency graph for a set of targets.
 
-    The graph represents the targets present in a workflow, but also their dependencies and the files they provide.
+    The graph represents the targets present in a workflow, but also their
+    dependencies and the files they provide.
 
-    During construction of the graph the dependencies between targets are determined by looking at target inputs and
-    outputs. If a target specifies a file as input, the file must either be provided by another target or already exist
-    on disk. In case that the file is provided by another target, a dependency to that target will be added:
+    During construction of the graph the dependencies between targets are
+    determined by looking at target inputs and outputs. If a target specifies a
+    file as input, the file must either be provided by another target or
+    already exist on disk. In case that the file is provided by another target,
+    a dependency to that target will be added:
 
     :ivar dict dependencies:
         A dictionary mapping a target to a set of its dependencies.
@@ -610,20 +614,23 @@ class Graph:
     :ivar set unresolved:
         A set containing file paths of all unresolved files.
 
-    If the graph is constructed successfully, the following instance variables will be available:
+    If the graph is constructed successfully, the following instance variables
+    will be available:
 
     :ivar dict targets:
         A dictionary mapping target names to instances of :class:`gwf.Target`.
     :ivar dict provides:
         A dictionary mapping a file path to the target that provides that path.
     :ivar dict dependents:
-        A dictionary mapping a target to a set of all targets which depend on the target.
+        A dictionary mapping a target to a set of all targets which depend on
+        the target.
 
-    The graph can be manipulated in arbitrary, diabolic ways after it has been constructed. Checks are only
-    performed at construction-time, thus introducing e.g. a circular dependency by manipulating *dependencies* will
+    The graph can be manipulated in arbitrary, diabolic ways after it has been
+    constructed. Checks are only performed at construction-time, thus
+    introducing e.g. a circular dependency by manipulating *dependencies* will
     not raise an exception.
 
-    :raises gwf.exceptions.CircularDependencyError:
+    :raises gwf.exceptions.WorkflowError:
         Raised if the workflow contains a circular dependency.
     """
 
@@ -640,16 +647,17 @@ class Graph:
     def from_targets(cls, targets):
         """Construct a dependency graph from a set of targets.
 
-        When a graph is initialized it computes all dependency relations between targets, ensuring that the graph is
-        semantically sane. Therefore, construction of the graph is an expensive operation which may raise a number of
-        exceptions:
+        When a graph is initialized it computes all dependency relations
+        between targets, ensuring that the graph is semantically sane.
+        Therefore, construction of the graph is an expensive operation which
+        may raise a number of exceptions:
 
         :raises gwf.exceptions.FileProvidedByMultipleTargetsError:
             Raised if the same file is provided by multiple targets.
 
         Since this method initializes the graph, it may also raise:
 
-        :raises gwf.exceptions.CircularDependencyError:
+        :raises gwf.exceptions.WorkflowError:
             Raised if the workflow contains a circular dependency.
         """
         provides = {}
@@ -660,7 +668,10 @@ class Graph:
         for target in targets.values():
             for path in target.outputs:
                 if path in provides:
-                    raise MultipleProvidersError(path, provides[path].name, target)
+                    msg = 'File "{}" provided by targets "{}" and "{}".'.format(
+                        path, provides[path].name, target
+                    )
+                    raise WorkflowError(msg)
                 provides[path] = target
 
         for target in targets.values():
@@ -686,7 +697,7 @@ class Graph:
     def _check_for_circular_dependencies(self):
         """Check for circular dependencies in the graph.
 
-        Raises :class:`CircularDependencyError` if a circular dependency is found.
+        Raises :class:`WorkflowError` if a circular dependency is found.
         """
         fresh, started, done = 0, 1, 2
 
@@ -697,7 +708,9 @@ class Graph:
             state[node] = started
             for dep in self.dependencies[node]:
                 if state[dep] == started:
-                    raise CircularDependencyError(node)
+                    raise WorkflowError(
+                        "Target {} depends on itself.".format(node)
+                    )
                 elif state[dep] == fresh:
                     visitor(dep)
             state[node] = done
@@ -853,7 +866,11 @@ class Scheduler:
         # by another target. If not, it's an error.
         for path in target.inputs:
             if path in self.graph.unresolved and self._file_cache[path] is None:
-                raise MissingProviderError(path, target)
+                msg = (
+                    'File "{}" is required by "{}", but does not exist and is not '
+                    "provided by any target in the workflow."
+                ).format(path, target)
+                raise WorkflowError(msg)
 
         if target.is_sink:
             logger.debug("%s should run because it is a sink", target)

@@ -2,22 +2,14 @@ import os
 import os.path
 import pathlib
 import unittest
-from unittest.mock import Mock, patch, call
+from unittest.mock import Mock, call, patch
 
 import pytest
 
-from gwf import AnonymousTarget, Graph, Target, Scheduler, Workflow
+from gwf import AnonymousTarget, Graph, Scheduler, Target, Workflow
 from gwf.backends import Backend, Status
 from gwf.backends.exceptions import LogNotFoundError
-from gwf.exceptions import (
-    CircularDependencyError,
-    MultipleProvidersError,
-    MissingProviderError,
-    IncludeWorkflowError,
-    InvalidNameError,
-    TargetExistsError,
-    InvalidTypeError,
-)
+from gwf.exceptions import NameError, TypeError, WorkflowError
 
 
 class DummyBackend(Backend):
@@ -55,7 +47,7 @@ def backend():
 
 class TestWorkflow(unittest.TestCase):
     def test_workflow_with_invalid_name_raises_error(self):
-        with self.assertRaises(InvalidNameError):
+        with self.assertRaises(NameError):
             Workflow(name="123abc")
 
     def test_target_with_no_input_has_empty_inputs_attribute(self):
@@ -79,7 +71,7 @@ class TestWorkflow(unittest.TestCase):
         workflow = Workflow()
         workflow.target("TestTarget", inputs=[], outputs=[])
 
-        with self.assertRaises(TargetExistsError):
+        with self.assertRaises(WorkflowError):
             workflow.target("TestTarget", inputs=[], outputs=[])
 
     def test_target_from_template_returning_tuple(self):
@@ -124,16 +116,16 @@ class TestWorkflow(unittest.TestCase):
 
         workflow = Workflow()
 
-        with pytest.raises(InvalidTypeError):
+        with pytest.raises(TypeError):
             workflow.target_from_template("TestTarget", 50)
 
-        with pytest.raises(InvalidTypeError):
+        with pytest.raises(TypeError):
             workflow.target_from_template("TestTarget", invalid_template())
 
     def test_including_workflow_with_no_name_raises_an_exception(self):
         workflow = Workflow()
         other_workflow = Workflow()
-        with self.assertRaises(IncludeWorkflowError):
+        with self.assertRaises(WorkflowError):
             workflow.include(other_workflow)
 
     def test_including_workflow_object_should_extend_including_workflow(self):
@@ -171,7 +163,7 @@ class TestWorkflow(unittest.TestCase):
     ):
         workflow = Workflow(name="foo")
         other_workflow = Workflow(name="foo")
-        with self.assertRaises(IncludeWorkflowError):
+        with self.assertRaises(WorkflowError):
             workflow.include(other_workflow)
 
     @patch("gwf.core.load_workflow", autospec=True)
@@ -316,7 +308,7 @@ class TestWorkflow(unittest.TestCase):
 
 class TestTarget(unittest.TestCase):
     def test_target_with_invalid_name_raises_exception(self):
-        with self.assertRaises(InvalidNameError):
+        with self.assertRaises(NameError):
             Target(
                 "123abc", inputs=[], outputs=[], options={}, working_dir="/some/path"
             )
@@ -430,7 +422,7 @@ class TestTarget(unittest.TestCase):
         self.assertEqual(target.spec, "this is a spec")
 
     def test_raises_valueerror_if_inputs_is_not_valid(self):
-        with self.assertRaises(InvalidTypeError):
+        with self.assertRaises(TypeError):
             Target(
                 name="TestTarget",
                 inputs="hello.txt",
@@ -440,7 +432,7 @@ class TestTarget(unittest.TestCase):
             )
 
     def test_raises_valueerror_if_outputs_is_not_valid(self):
-        with self.assertRaises(InvalidTypeError):
+        with self.assertRaises(TypeError):
             Target(
                 name="TestTarget",
                 inputs=[],
@@ -571,7 +563,7 @@ def test_graph_raises_multiple_providers_error():
         working_dir="/some/dir",
     )
 
-    with pytest.raises(MultipleProvidersError):
+    with pytest.raises(WorkflowError):
         Graph.from_targets({"Target1": t1, "Target2": t2})
 
 
@@ -597,7 +589,7 @@ def test_graph_raises_circular_dependency_error():
         options={},
         working_dir="/some/dir",
     )
-    with pytest.raises(CircularDependencyError):
+    with pytest.raises(WorkflowError):
         Graph.from_targets({"Target1": t1, "Target2": t2, "Target3": t3})
 
 
@@ -721,7 +713,7 @@ def test_exception_if_input_file_is_not_provided_and_output_file_exists():
         file_cache={"/some/dir/in.txt": None, "/some/dir/out.txt": 1},
     )
 
-    with pytest.raises(MissingProviderError):
+    with pytest.raises(WorkflowError):
         scheduler.should_run(target)
 
 
@@ -733,7 +725,7 @@ def test_two_targets_producing_the_same_file_but_declared_with_rel_and_abs_path(
     workflow.target("TestTarget1", inputs=[], outputs=["/some/dir/test_output.txt"])
     workflow.target("TestTarget2", inputs=[], outputs=["test_output.txt"])
 
-    with pytest.raises(MultipleProvidersError):
+    with pytest.raises(WorkflowError):
         Graph.from_targets(workflow.targets)
 
 
@@ -774,7 +766,7 @@ def test_non_existing_files_not_provided_by_other_target(backend):
     scheduler = Scheduler(
         graph=graph, backend=backend, file_cache={"/some/dir/test_input.txt": None}
     )
-    with pytest.raises(MissingProviderError):
+    with pytest.raises(WorkflowError):
         scheduler.schedule(target)
 
 
