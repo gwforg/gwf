@@ -3,10 +3,10 @@ import subprocess
 from distutils.spawn import find_executable
 
 from . import Backend, Status
-from .exceptions import BackendError, UnknownDependencyError, UnknownTargetError
-from .logmanager import FileLogManager
 from ..conf import config
 from ..utils import PersistableDict
+from .exceptions import BackendError, DependencyError, TargetError
+from .logmanager import FileLogManager
 
 logger = logging.getLogger(__name__)
 
@@ -165,7 +165,7 @@ class SlurmBackend(Backend):
             job_id = self.get_job_id(target)
             _call_scancel(job_id)
         except (KeyError, BackendError):
-            raise UnknownTargetError(target.name)
+            raise TargetError(target.name)
         else:
             self.forget_job(target)
 
@@ -240,4 +240,4 @@ class SlurmBackend(Backend):
         try:
             return [self._tracked[dep.name] for dep in dependencies]
         except KeyError as exc:
-            raise UnknownDependencyError(exc.args[0])
+            raise DependencyError(exc.args[0])

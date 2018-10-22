@@ -1,13 +1,13 @@
-import re
 import logging
+import re
 import subprocess
 from distutils.spawn import find_executable
 from xml.etree import ElementTree
 
 from . import Backend, Status
-from .exceptions import BackendError, UnknownDependencyError, UnknownTargetError
-from .logmanager import FileLogManager
 from ..utils import PersistableDict
+from .exceptions import BackendError, DependencyError, TargetError
+from .logmanager import FileLogManager
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def _find_exe(name):
     if exe is None:
         msg = (
             'Could not find executable "{}". This backend requires Sun Grid '
-            'Engine (SGE) to be installed on this host.'
+            "Engine (SGE) to be installed on this host."
         )
         raise BackendError(msg.format(name))
     return exe
@@ -70,15 +70,15 @@ def _call_qsub(script, dependencies):
 def _parse_qstat_output(stdout):
     job_states = {}
     root = ElementTree.fromstring(stdout)
-    for job in root.iter('job_list'):
-        job_id = job.find('JB_job_number').text
-        state = job.find('state').text
+    for job in root.iter("job_list"):
+        job_id = job.find("JB_job_number").text
+        state = job.find("state").text
 
         # Guessing job state based on
         # https://gist.github.com/cmaureir/4fa2d34bc9a1bd194af1
-        if 'd' in state or 'E' in state:
+        if "d" in state or "E" in state:
             job_state = Status.UNKNOWN
-        elif 'r' in state or 't' in state or 's' in state:
+        elif "r" in state or "t" in state or "s" in state:
             job_state = Status.RUNNING
         else:
             job_state = Status.SUBMITTED
@@ -146,7 +146,7 @@ class SGEBackend(Backend):
             job_id = self.get_job_id(target)
             _call_qdel(job_id)
         except (KeyError, BackendError):
-            raise UnknownTargetError(target.name)
+            raise TargetError(target.name)
         else:
             self.forget_job(target)
 
@@ -180,19 +180,15 @@ class SGEBackend(Backend):
 
         for option_name, option_value in target.options.items():
             # SGE wants per-core memory, but gwf wants total memory.
-            if option_name == 'memory':
-                number = int(re.sub(r'[^0-9]+', '', option_value))
-                unit = re.sub(r'[0-9]+', '', option_value)
-                cores = target.options['cores']
-                option_value = '{}{}'.format(number // cores, unit)
+            if option_name == "memory":
+                number = int(re.sub(r"[^0-9]+", "", option_value))
+                unit = re.sub(r"[0-9]+", "", option_value)
+                cores = target.options["cores"]
+                option_value = "{}{}".format(number // cores, unit)
             out.append(option_str.format(SGE_OPTIONS[option_name], option_value))
 
-        out.append(
-            option_str.format("-o ", self.log_manager.stdout_path(target))
-        )
-        out.append(
-            option_str.format("-e ", self.log_manager.stderr_path(target))
-        )
+        out.append(option_str.format("-o ", self.log_manager.stdout_path(target)))
+        out.append(option_str.format("-e ", self.log_manager.stderr_path(target)))
 
         out.append("")
         out.append("cd {}".format(target.working_dir))
@@ -222,4 +218,4 @@ class SGEBackend(Backend):
         try:
             return [self._tracked[dep.name] for dep in dependencies]
         except KeyError as exc:
-            raise UnknownDependencyError(exc.args[0])
+            raise DependencyError(exc.args[0])

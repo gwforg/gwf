@@ -174,7 +174,7 @@ class Backend(metaclass=BackendType):
 
         :param gwf.Target target:
             The target to cancel.
-        :raises gwf.exception.UnknownTargetError:
+        :raises gwf.exception.TargetError:
             If the target does not exist in the workflow.
         """
 

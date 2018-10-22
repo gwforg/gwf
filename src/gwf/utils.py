@@ -1,5 +1,4 @@
 import copy
-import click
 import functools
 import importlib
 import json
@@ -9,6 +8,9 @@ import sys
 import time
 from collections import UserDict
 from contextlib import ContextDecorator
+from functools import wraps
+
+import click
 
 from gwf.exceptions import GWFError
 
@@ -156,3 +158,19 @@ class ColorFormatter(logging.Formatter):
             color_record.name = click.style(record.name, **styling)
             color_record.msg = click.style(record.msg, **styling)
         return super().format(color_record)
+
+
+def redirect_exception(old_exc, new_exc):
+    """Redirect one exception type to another."""
+
+    def wrapper(func):
+        @wraps(func)
+        def inner_wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except old_exc as e:
+                raise new_exc from e
+
+        return inner_wrapper
+
+    return wrapper

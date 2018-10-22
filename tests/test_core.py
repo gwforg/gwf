@@ -8,7 +8,7 @@ import pytest
 
 from gwf import AnonymousTarget, Graph, Scheduler, Target, Workflow
 from gwf.backends import Backend, Status
-from gwf.backends.exceptions import LogNotFoundError
+from gwf.backends.exceptions import LogError
 from gwf.exceptions import NameError, TypeError, WorkflowError
 
 
@@ -27,7 +27,7 @@ class DummyBackend(Backend):
         return self._tracked.get(target, Status.UNKNOWN)
 
     def logs(self, target, stderr=False):
-        raise LogNotFoundError
+        raise LogError
 
     def close(self):
         pass

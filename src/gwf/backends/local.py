@@ -12,10 +12,10 @@ from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
 from . import Backend, Status
-from .exceptions import BackendError, UnsupportedOperationError, UnknownDependencyError
-from .logmanager import FileLogManager
 from ..conf import config
 from ..utils import PersistableDict
+from .exceptions import BackendError, DependencyError, UnsupportedOperationError
+from .logmanager import FileLogManager
 
 __all__ = ("Client", "Server", "LocalBackend")
 
@@ -174,7 +174,7 @@ class LocalBackend(Backend):
             dependency_ids = [self._tracked[dep.name] for dep in dependencies]
         except KeyError as exc:
             key, = exc.args
-            raise UnknownDependencyError(key)
+            raise DependencyError(key)
 
         task_id = self.client.submit(
             target,
@@ -239,7 +239,7 @@ class Worker:
                 stdout_path=request.stdout_path,
                 stderr_path=request.stderr_path,
             )
-        except:
+        except Exception:
             self.status[task_id] = LocalStatus.FAILED
             logger.error("Task %s failed", task_id, exc_info=True)
         else:
@@ -331,7 +331,7 @@ class Server:
         try:
             logger.debug("Received request %r", request)
             return request.handle(self.queue, self.status)
-        except:
+        except Exception:
             logger.error("Invalid request %r", request, exc_info=True)
 
     def handle_client(self, conn):

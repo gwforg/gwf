@@ -1,7 +1,7 @@
 import click
 
 from ..backends import backend_from_config
-from ..backends.exceptions import UnsupportedOperationError, UnknownTargetError
+from ..backends.exceptions import TargetError, UnsupportedOperationError
 from ..core import graph_from_config
 from ..filtering import filter_names
 
@@ -11,7 +11,7 @@ def cancel_many(backend, targets):
         try:
             click.echo("Cancelling target {}.".format(target.name))
             backend.cancel(target)
-        except UnknownTargetError as exc:
+        except TargetError as exc:
             click.echo(
                 "Target {} could not be cancelled since it is unknown to the backend.".format(
                     exc

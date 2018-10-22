@@ -4,9 +4,9 @@ from unittest.mock import call
 import pytest
 
 from gwf import Target
-from gwf.backends import Status, BackendError
+from gwf.backends import BackendError, Status
+from gwf.backends.exceptions import DependencyError, TargetError
 from gwf.backends.slurm import SlurmBackend
-from gwf.backends.exceptions import UnknownDependencyError, UnknownTargetError
 from gwf.conf import config
 
 
@@ -135,7 +135,7 @@ def test_submit_1(popen):
         in popen.call_args_list
     )
 
-    with pytest.raises(UnknownDependencyError):
+    with pytest.raises(DependencyError):
         backend.submit(t3, [t4])
 
     popen.return_value.returncode = 1
@@ -210,7 +210,7 @@ def test_cancel(popen):
     popen.return_value.returncode = 0
     popen.return_value.communicate.return_value = ("", "")
     backend = SlurmBackend()
-    with pytest.raises(UnknownTargetError):
+    with pytest.raises(TargetError):
         backend.cancel(t)
 
     popen.return_value.communicate.return_value = ("1\n", "")

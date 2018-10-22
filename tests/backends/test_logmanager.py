@@ -1,7 +1,7 @@
 import pytest
 
 from gwf import Target
-from gwf.backends.exceptions import LogNotFoundError
+from gwf.backends.exceptions import LogError
 from gwf.backends.logmanager import FileLogManager
 
 
@@ -24,10 +24,10 @@ def test_file_log_manager_path(log_manager):
 def test_file_log_manager_open(log_manager, tmpdir):
     target = Target.empty("TestTarget")
 
-    with pytest.raises(LogNotFoundError):
+    with pytest.raises(LogError):
         log_manager.open_stdout(target)
 
-    with pytest.raises(LogNotFoundError):
+    with pytest.raises(LogError):
         log_manager.open_stderr(target)
 
     stdout_file = tmpdir.join(".gwf", "logs", "TestTarget.stdout")
@@ -52,8 +52,8 @@ def test_file_log_manager_remove(log_manager, tmpdir):
     log_manager.remove_stderr(target)
     assert not stderr_file.exists()
 
-    with pytest.raises(LogNotFoundError):
+    with pytest.raises(LogError):
         log_manager.remove_stdout(target)
 
-    with pytest.raises(LogNotFoundError):
+    with pytest.raises(LogError):
         log_manager.remove_stderr(target)
