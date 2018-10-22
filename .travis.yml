@@ -1,8 +1,4 @@
 language: python
-env:
-  global:
-    - PIPENV_VENV_IN_PROJECT=1
-    - PIPENV_IGNORE_VIRTUALENVS=1
 matrix:
   include:
     - python: 3.5
