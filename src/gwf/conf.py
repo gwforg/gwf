@@ -77,4 +77,8 @@ class FileConfig:
         return cls(path=path, data=data)
 
 
-config = FileConfig.load(".gwfconf.json", data=CONFIG_DEFAULTS)
+def config_from_path(path):
+    return FileConfig.load(path, data=CONFIG_DEFAULTS)
+
+
+config = config_from_path(".gwfconf.json")

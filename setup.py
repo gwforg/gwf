@@ -27,6 +27,7 @@ entry_points = {
         "testing = gwf.backends.testing:TestingBackend",
     ],
     "gwf.plugins": [
+        "init = gwf.plugins.init:init",
         "run = gwf.plugins.run:run",
         "config = gwf.plugins.config:config",
         "status = gwf.plugins.status:status",
