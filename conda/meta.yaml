@@ -21,6 +21,7 @@ requirements:
     - setuptools
     - click >=6.6
     - click-plugins >=0.2.2
+    - colorama # [win]
 
 test:
   imports:

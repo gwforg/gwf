@@ -66,7 +66,7 @@ setup(
     
     test_suite="tests",
     tests_require=["pytest", "pytest-runner", "pytest-click", "pytest-mock"],
-    
+    extras_require={':sys_platform == "win32"': ["colorama"]},
     keywords="grid computing workflow",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
