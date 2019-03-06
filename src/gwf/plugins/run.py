@@ -1,6 +1,8 @@
 import logging
+from contextlib import suppress
 
 from ..backends import backend_from_config
+from ..backends.exceptions import LogError
 from ..core import Scheduler, graph_from_config
 from ..filtering import filter_names
 
@@ -14,10 +16,10 @@ def clean_logs(graph, backend):
     target_set = set(graph.targets.keys())
     log_files = set(backend.log_manager.list())
 
-    for target_name in log_files:
-        if target_name not in target_set:
-            logger.debug("Target %s does not exist, deleting log files...", target_name)
+    for target_name in log_files.difference(target_set):
+        logger.debug("Target %s does not exist, deleting log files...", target_name)
 
+        with suppress(LogError):
             backend.log_manager.remove_stdout(target_name)
             backend.log_manager.remove_stderr(target_name)
 
