@@ -1,6 +1,6 @@
 import pytest
 
-from gwf.utils import parse_path, cache, PersistableDict
+from gwf.utils import parse_path, cache, PersistableDict, ensure_trailing_newline
 
 
 def test_cache_returns_same_object_when_called_twice_with_same_args():
@@ -62,3 +62,9 @@ def test_dict_write_read(tmpdir):
 
         d2 = PersistableDict("test.json")
         assert d2 == {"foo": "bar"}
+
+
+def test_ensure_trailing_newline():
+    assert ensure_trailing_newline('') == '\n'
+    assert ensure_trailing_newline('foo\nbar\n') == 'foo\nbar\n'
+    assert ensure_trailing_newline('foo\nbar') == 'foo\nbar\n'

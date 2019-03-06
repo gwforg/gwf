@@ -5,7 +5,7 @@ from distutils.spawn import find_executable
 from xml.etree import ElementTree
 
 from . import Backend, Status
-from ..utils import PersistableDict
+from ..utils import PersistableDict, ensure_trailing_newline
 from .exceptions import BackendError, DependencyError, TargetError
 from .logmanager import FileLogManager
 
@@ -196,7 +196,7 @@ class SGEBackend(Backend):
         out.append('export GWF_TARGET_NAME="{}"'.format(target.name))
         out.append("set -e")
         out.append("")
-        out.append(target.spec)
+        out.append(ensure_trailing_newline(target.spec))
         return "\n".join(out)
 
     def _add_job(self, target, job_id, initial_status=Status.SUBMITTED):

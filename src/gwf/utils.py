@@ -3,6 +3,7 @@ import functools
 import importlib
 import json
 import logging
+import os
 import os.path
 import sys
 import time
@@ -174,3 +175,9 @@ def redirect_exception(old_exc, new_exc):
         return inner_wrapper
 
     return wrapper
+
+
+def ensure_trailing_newline(s):
+    if not s:
+        return '\n'
+    return s if s[-1] == "\n" else s + "\n"
