@@ -9,6 +9,6 @@ matrix:
 install: make init
 script: make test
 after_success:
-  - pipenv install coveralls
-  - pipenv run coveralls
+  - pip install coveralls
+  - coveralls
 

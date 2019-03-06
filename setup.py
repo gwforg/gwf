@@ -18,48 +18,56 @@ def find_version(*file_paths):
     raise RuntimeError("Unable to find version string.")
 
 
-entry_points = {
-    "console_scripts": ["gwf = gwf.cli:main"],
-    "gwf.backends": [
-        "slurm = gwf.backends.slurm:SlurmBackend",
-        "sge = gwf.backends.sge:SGEBackend",
-        "local = gwf.backends.local:LocalBackend",
-        "testing = gwf.backends.testing:TestingBackend",
-    ],
-    "gwf.plugins": [
-        "init = gwf.plugins.init:init",
-        "run = gwf.plugins.run:run",
-        "config = gwf.plugins.config:config",
-        "status = gwf.plugins.status:status",
-        "info = gwf.plugins.info:info",
-        "logs = gwf.plugins.logs:logs",
-        "clean = gwf.plugins.clean:clean",
-        "workers = gwf.plugins.workers:workers",
-        "cancel = gwf.plugins.cancel:cancel",
-        "touch = gwf.plugins.touch:touch",
-    ],
-}
-
-
 setup(
     name="gwf",
     version=find_version("src", "gwf", "__init__.py"),
-    url="http://gwf.readthedocs.io/",
-    license="GPLv3",
+
     author="Thomas Mailund, Dan Søndergaard",
     author_email="mailund@birc.au.dk, das@birc.au.dk",
+
+    license="GPLv3",
+    keywords="grid computing workflow",
+    url="http://gwf.readthedocs.io/",
+
     description="A flexible, pragmatic workflow tool.",
     long_description=read("README.rst"),
+    long_description_content_type='text/x-rst',
+
     packages=find_packages("src"),
     package_dir={"": "src"},
-    entry_points=entry_points,
-    python_requires=">=3.5",
-    setup_requires=[],
+    include_package_data=False,
+    zip_safe=False,
+
+    python_requires="~=3.5",
+    setup_requires=["pytest-runner"],
     install_requires=["click", "click-plugins"],
-    test_suite="tests",
-    tests_require=["pytest", "pytest-runner", "pytest-click", "pytest-mock"],
     extras_require={':sys_platform == "win32"': ["colorama"]},
-    keywords="grid computing workflow",
+
+    test_suite="tests",
+    tests_require=["pytest", "pytest-click", "pytest-mock"],
+
+    entry_points={
+        "console_scripts": ["gwf = gwf.cli:main"],
+        "gwf.backends": [
+            "slurm = gwf.backends.slurm:SlurmBackend",
+            "sge = gwf.backends.sge:SGEBackend",
+            "local = gwf.backends.local:LocalBackend",
+            "testing = gwf.backends.testing:TestingBackend",
+        ],
+        "gwf.plugins": [
+            "init = gwf.plugins.init:init",
+            "run = gwf.plugins.run:run",
+            "config = gwf.plugins.config:config",
+            "status = gwf.plugins.status:status",
+            "info = gwf.plugins.info:info",
+            "logs = gwf.plugins.logs:logs",
+            "clean = gwf.plugins.clean:clean",
+            "workers = gwf.plugins.workers:workers",
+            "cancel = gwf.plugins.cancel:cancel",
+            "touch = gwf.plugins.touch:touch",
+        ],
+    },
+
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Console",
@@ -72,4 +80,10 @@ setup(
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     ],
+
+    project_urls={
+        'Documentation': 'https://docs.gwf.app/',
+        'Source': 'https://github.com/gwforg/gwf',
+        'Tracker': 'https://github.com/gwforg/gwf/issues',
+    },
 )

@@ -26,20 +26,20 @@ help:
 	@echo "    make publish     publish distributions to pypi"
 
 init:
-	pip install pipenv --upgrade
-	pipenv install --dev --skip-lock
+	pip install -r requirements.txt
+	pip install -e . --no-deps
 
 test:
-	pipenv run coverage run --source gwf setup.py test
+	coverage run --source gwf setup.py test
 
 lint:
-	pipenv run flake8 src/gwf
+	flake8 src/gwf
 
 coverage:
-	pipenv run coverage report
+	coverage report
 
 docs:
-	pipenv run $(MAKE) -C docs html
+	$(MAKE) -C docs html
 
 clean:
 	rm -rf docs/_build .gwfconf.json build/ dist/
@@ -48,10 +48,10 @@ clean:
 
 package:
 	rm -rf build dist .egg requests.egg-info
-	pipenv run python setup.py sdist bdist_wheel
+	python setup.py sdist bdist_wheel
 
 publish:
-	pipenv run twine upload dist/*
+	twine upload dist/*
 
 # Conda
 

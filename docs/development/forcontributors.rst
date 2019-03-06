@@ -9,9 +9,11 @@ documentation? Defined useful snippets for your text editor? Add it and submit a
 Set Up a Development Environment
 ================================
 
-We strongly recommend that you use the `Anaconda Python distribution <https://www.continuum.io/anaconda-overview>`_
-and the conda package manager to set up a development environment (actually, we recommend it for all of your Python
-work).
+We strongly recommend that you use the
+`Anaconda Python distribution <https://www.continuum.io/anaconda-overview>`_
+and the conda package manager to set up a development environment (actually, we
+recommend it for all of your Python work). However, feel free to use
+virtualenvs instead.
 
 1. Download and install the Anaconda Python distribution following the instructions
    `here <https://www.continuum.io/downloads>`_.
@@ -34,8 +36,8 @@ Make Your Changes
 
 2. Make the necessary changes and add unit tests if necessary.
 
-3. Add a description of the changes to ``CHANGELOG.rst`` and add yourself to ``CONTRIBUTORS.rst`` (if you're not
-   already there).
+3. Add a description of the changes to ``CHANGELOG.rst`` and add yourself to
+   ``CONTRIBUTORS.rst`` (if you're not already there).
 
 4. Test your changes and check for style violations::
 
