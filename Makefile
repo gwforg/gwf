@@ -42,7 +42,7 @@ docs:
 	$(MAKE) -C docs html
 
 clean:
-	rm -rf docs/_build .gwfconf.json build/ dist/
+	rm -rf docs/_build .gwfconf.json build/ dist/ .gwf .pytest_cache
 
 # PyPI
 
