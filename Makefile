@@ -42,12 +42,11 @@ docs:
 	$(MAKE) -C docs html
 
 clean:
-	rm -rf docs/_build .gwfconf.json build/ dist/ .gwf .pytest_cache
+	rm -rf docs/_build .gwfconf.json build/ dist/ .gwf .pytest_cache .egg *.egg-info
 
 # PyPI
 
-package:
-	rm -rf build dist .egg requests.egg-info
+package: clean
 	python setup.py sdist bdist_wheel
 
 publish:
