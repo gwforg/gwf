@@ -2,6 +2,21 @@
 Change Log
 ==========
 
+Version 1.5.0
+=============
+
+Added
+-----
+
+* Users can now run ``gwf init`` to bootstrap a new *gwf* project (c78193).
+* Add option to protect output files in a target from being removed when
+  ``gwf clean`` is being run (2f51ed).
+
+Fixed
+-----
+
+* Ensure job script end with a newline (#239).
+* Ignore missing log files when cleaning on run (#237).
 
 Version 1.4.0
 =============
@@ -32,7 +47,7 @@ Added
   targets matching any of the given states. E.g. ``gwf status -s completed -s running``
   will show all completed and running targets.
 * A new command ``gwf touch`` has been introduced. The command touches all files in
-  the workflow in order, creating missing files and updating timestamps, such that 
+  the workflow in order, creating missing files and updating timestamps, such that
   *gwf* thinks that the workflow has been run.
 * When specifying the workflow attribute in the workflow path, e.g.
   ``gwf -f workflow.py:foo``, the filename part can now be left out and will default
@@ -44,7 +59,7 @@ Added
 Version 1.3.0
 =============
 
-This release contains a bunch of new features and plenty of bug fixes. Most 
+This release contains a bunch of new features and plenty of bug fixes. Most
 noteworthy is the removal of the progress bars in the status command. The status
 bars were often confusing and didn't communicate much more than a simple
 "percentage completion". The status command now outputs a table with target
@@ -82,7 +97,7 @@ Added
 * Added undocumented API which allows core and plugins to register validation
   functions for configuration keys. This fixes issues like #226 (c8c57d7c7).
 * The ``gwf clean`` command now shows how much data will be removed (d81f143f1).
-* Remove log files for targets that are no longer defined in the workflow 
+* Remove log files for targets that are no longer defined in the workflow
   (beb912bd).
 * Note in tutorial on how to terminate the local workers (a long with other
   updates to the tutorial) (34421498).
@@ -93,8 +108,8 @@ Version 1.2.1
 Fixed
 -----
 
-* Bug when returning an ``AnonymousTarget`` from a template function without 
-  specifying the *working_dir* in the constructor (#212). Thanks to Steffen 
+* Bug when returning an ``AnonymousTarget`` from a template function without
+  specifying the *working_dir* in the constructor (#212). Thanks to Steffen
   Møller-Larsen for reporting this.
 
 Version 1.2
@@ -105,7 +120,7 @@ Fixed
 
 * Bug when using ``--format table`` and no targets were found (#203).
 * Bug when cancelling a target running on the Slurm backend (#199).
-* Link to documentation in error message when unable to connect to local 
+* Link to documentation in error message when unable to connect to local
   workers.
 * Fixed bug in the *FileLogManager* where the wrong exception was raised when no
   log was found.
@@ -114,20 +129,20 @@ Changed
 -------
 
 * Moved checking of file timestamps to the scheduler. This means that creating a
-  ``Graph`` object will never touch the file system, and thus won't raise an 
+  ``Graph`` object will never touch the file system, and thus won't raise an
   exception if a target depends on a file that doesn't exist and that's not
-  provided a target. Instead, unresolved paths are added to 
-  ``Graph.unresolved``. They will then be checked by the scheduler (if 
-  necessary). For end users, this means that many commands have become 
+  provided a target. Instead, unresolved paths are added to
+  ``Graph.unresolved``. They will then be checked by the scheduler (if
+  necessary). For end users, this means that many commands have become
   substantially faster.
 
 Added
 -----
 
-* Added ``AnonymousTarget`` which represents an unnamed target. ``Target`` now 
-  inherits from this class and templates may now return an ``AnonymousTarget`` 
+* Added ``AnonymousTarget`` which represents an unnamed target. ``Target`` now
+  inherits from this class and templates may now return an ``AnonymousTarget``
   instead of a tuple.
-* Added *backend.slurm.log_mode* option, see the documentation for the Slurm 
+* Added *backend.slurm.log_mode* option, see the documentation for the Slurm
   backend for usage (#202).
 
 Version 1.1
@@ -143,18 +158,18 @@ Fixed
 Changed
 -------
 
-* Move file cache construction out of ``Graph`` (#186, 93e71a). This change is 
-  invisible to end-users, but speeds up the ``logs``, ``cancel``, ``info``, 
+* Move file cache construction out of ``Graph`` (#186, 93e71a). This change is
+  invisible to end-users, but speeds up the ``logs``, ``cancel``, ``info``,
   ``logs`` and ``workers`` commands.
 * Replaced ``--not-endpoints`` flag in ``clean`` command with ``--all`` flag.
 * Made filtering more intuitive in all commands.
 * The ``info`` command now outputs JSON instead of invalid YAML.
-* The ``info`` command outputs information for all targets in the workflow by 
+* The ``info`` command outputs information for all targets in the workflow by
   default.
-* Backends must now specify a ``log_manager`` class attribute specifying which 
+* Backends must now specify a ``log_manager`` class attribute specifying which
   log manager to use for accessing target log files.
-* Backends should now be used as context managers to make sure that 
-  ``Backend.close()`` is called when the backend is no longer needed, as it is 
+* Backends should now be used as context managers to make sure that
+  ``Backend.close()`` is called when the backend is no longer needed, as it is
   no longer called automatically on exit.
 
 Added
@@ -163,9 +178,9 @@ Added
 * Added filtering of targets by name in the ``info`` command.
 * Added API documentation for the ``gwf.filtering`` module.
 * Added ``gwf.core.graph_from_path()`` and ``gwf.core.graph_from_config()``.
-* Added ``gwf.backends.list_backends()``, ``gwf.backends.backend_from_name()`` 
+* Added ``gwf.backends.list_backends()``, ``gwf.backends.backend_from_name()``
   and ``gwf.backends.backend_from_config()``.
-* Added ``SlurmBackend.get_job_id()`` and ``SlurmBackend.forget_job()`` to 
+* Added ``SlurmBackend.get_job_id()`` and ``SlurmBackend.forget_job()`` to
   ``SlurmBackend`` to make it easier for plugins to integrate with Slurm.
 * Documentation for log managers.
 * Documentation on how to handle large workflows.
@@ -174,16 +189,16 @@ Added
 Version 1.0
 ===========
 
-First stable release of *gwf*! We strongly encourage users of pre-1.0 users to 
-read the tutorial, since quite a lot of things have changed. We also recommend 
-reading the guide for converting pre-1.0 workflows to version 1.0. However, 
+First stable release of *gwf*! We strongly encourage users of pre-1.0 users to
+read the tutorial, since quite a lot of things have changed. We also recommend
+reading the guide for converting pre-1.0 workflows to version 1.0. However,
 users attempting to do this should be aware that the the template mechanism in
 1.0 is slightly different and thus requires rewriting template functions.
 
 Fixed
 -----
 
-* Fixed a bug which caused *gwf* to fail when cancelling jobs when using the 
+* Fixed a bug which caused *gwf* to fail when cancelling jobs when using the
   Slurm backend (8c1717).
 
 Changed
@@ -205,9 +220,9 @@ Version 1.0b10
 Fixed
 -----
 
-* Fixed a subtle bug in scheduling which caused problems when resubmitting a 
+* Fixed a subtle bug in scheduling which caused problems when resubmitting a
   workflow where some targets were already running (a5d884).
-* Fixed a bug in the ``SlurmBackend`` which caused *gwf* to crash if the Slurm 
+* Fixed a bug in the ``SlurmBackend`` which caused *gwf* to crash if the Slurm
   queue contained a job with many dependencies (eb4446).
 * Added back the `-e` flag in the ``logs`` command.
 
@@ -218,13 +233,13 @@ Version 1.0b9
 Fixed
 -----
 
-* Fixed a bug in the ``SlurmBackend`` which caused running targets as unknown 
+* Fixed a bug in the ``SlurmBackend`` which caused running targets as unknown
   (33a6bd).
 
 Changed
 -------
 
-* The Slurm backend's database of tracked jobs is now cleaned on initialization 
+* The Slurm backend's database of tracked jobs is now cleaned on initialization
   to keep it from growing indefinitely (bd3f95).
 
 Version 1.0b8
@@ -233,10 +248,10 @@ Version 1.0b8
 Fixed
 -----
 
-* Fixed a bug which caused the *gwf logs* command to always show stderr 
+* Fixed a bug which caused the *gwf logs* command to always show stderr
   (01b267).
 
-* Fixed a bug which caused dependencies to be set incorrectly when two targets 
+* Fixed a bug which caused dependencies to be set incorrectly when two targets
   depended on the same target (4d9e07).
 
 Changed
@@ -265,7 +280,7 @@ Fixed
 -----
 
 * Fixed bug in scheduling which was actually the cause of the incorrect
-  scheduling that was "fixed" in 1.0b6. Also added documentation for 
+  scheduling that was "fixed" in 1.0b6. Also added documentation for
   ``gwf.core.schedule`` (7c47cb).
 
 Changed
@@ -279,7 +294,7 @@ Version 1.0b6
 Fixed
 -----
 
-* A bug in ``SlurmBackend`` which caused dependencies between targets to not be 
+* A bug in ``SlurmBackend`` which caused dependencies between targets to not be
   set correctly (6b71d2).
 
 Changed
@@ -292,7 +307,7 @@ Changed
 Added
 -----
 
-* Documentation for maintainers on how to merge in contributions and rolling a 
+* Documentation for maintainers on how to merge in contributions and rolling a
   new release (fe1ee3).
 
 Version 1.0b5
@@ -307,5 +322,5 @@ Fixed
 Changed
 -------
 
-* Vastly improved build and deploy process. We're now actually building and 
+* Vastly improved build and deploy process. We're now actually building and
   testing with conda.

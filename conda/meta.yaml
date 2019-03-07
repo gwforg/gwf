@@ -1,9 +1,9 @@
 package:
   name: gwf
-  version: 1.4.0
+  version: 1.5.0
 
 source:
-  url: https://github.com/gwforg/gwf/archive/v1.4.0.tar.gz
+  url: https://github.com/gwforg/gwf/archive/v1.5.0.tar.gz
 
 build:
   noarch: python
