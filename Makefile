@@ -30,7 +30,7 @@ init:
 	pip install -e . --no-deps
 
 test:
-	coverage run --source gwf setup.py test
+	coverage run --source gwf -m pytest
 
 lint:
 	flake8 src/gwf
