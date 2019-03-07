@@ -42,7 +42,7 @@ def is_valid_name(candidate):
     return re.match(r"^[a-zA-Z_][a-zA-Z0-9._]*$", candidate) is not None
 
 
-def normalized_paths_property(name):
+def normalized_paths_property(name, return_type=list):
     """Define a normalized paths property.
 
     This function can be used to define a property on an object which expects
@@ -59,7 +59,7 @@ def normalized_paths_property(name):
 
     @property
     def prop(self):
-        return _norm_paths(self.working_dir, getattr(self, storage_name))
+        return return_type(_norm_paths(self.working_dir, getattr(self, storage_name)))
 
     @prop.setter
     def prop(self, value):
@@ -102,8 +102,9 @@ class TargetStatus(Enum):
 class AnonymousTarget:
     """Represents an unnamed target.
 
-    An anonymous target is an unnamed, abstract target much like the tuple returned by function templates. Thus,
-    `AnonymousTarget` can also be used as the return value of a template function.
+    An anonymous target is an unnamed, abstract target much like the tuple
+    returned by function templates. Thus, `AnonymousTarget` can also be used as
+    the return value of a template function.
 
     :ivar list inputs:
         A list of input paths for this target.
@@ -116,9 +117,12 @@ class AnonymousTarget:
         Working directory of this target.
     :ivar str spec:
         The specification of the target.
+    :ivar set protect:
+        An iterable of protected files which will not be removed during
+        cleaning, even if this target is not an endpoint.
     """
 
-    def __init__(self, inputs, outputs, options, working_dir=None, spec=""):
+    def __init__(self, inputs, outputs, options, working_dir=None, spec="", protect=None):
         self.inputs = inputs
         self.outputs = outputs
         self.options = options
@@ -141,6 +145,10 @@ class AnonymousTarget:
         self.outputs = outputs
 
         self._spec = spec
+        if protect is None:
+            self.protected = set()
+        else:
+            self.protected = set(protect)
 
     @property
     def spec(self):
@@ -231,6 +239,7 @@ class Target(AnonymousTarget):
 
     inputs = normalized_paths_property("inputs")
     outputs = normalized_paths_property("outputs")
+    protected = normalized_paths_property("protected", return_type=set)
 
     def __init__(self, name=None, **kwargs):
         self.name = kwargs.pop("name", name)

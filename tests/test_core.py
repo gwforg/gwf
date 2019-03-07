@@ -1022,3 +1022,24 @@ def test_scheduling_many_targets_calls_schedule_for_each_target(backend, monkeyp
     assert call(target3, dependencies=set([target1])) in backend.submit.call_args_list
     assert call(target2, dependencies=set()) in backend.submit.call_args_list
     assert call(target1, dependencies=set()) in backend.submit.call_args_list
+
+
+def test_target_protected():
+    target1 = Target(
+        "TestTarget1",
+        inputs=[],
+        outputs=["test_output1.txt"],
+        options={},
+        working_dir="/some/dir",
+        protect={"test_output1.txt"}
+    )
+    target2 = Target(
+        "TestTarget2",
+        inputs=[],
+        outputs=["test_output2.txt"],
+        options={},
+        working_dir="/some/dir",
+    )
+
+    assert target1.protected == {"/some/dir/test_output1.txt"}
+    assert target2.protected == set()

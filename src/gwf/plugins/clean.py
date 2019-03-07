@@ -35,8 +35,8 @@ def _delete_file(path):
 def clean(obj, targets, all):
     """Clean output files of targets.
 
-    By default, only targets that are not endpoints will have their output files 
-    deleted. If you want to clean up output files from endpoints too, use the 
+    By default, only targets that are not endpoints will have their output files
+    deleted. If you want to clean up output files from endpoints too, use the
     ``--all`` flag.
     """
     graph = graph_from_config(obj)
@@ -50,7 +50,8 @@ def clean(obj, targets, all):
     matches = list(filter_generic(targets=graph, filters=filters))
 
     total_size = sum(
-        os.path.getsize(path) if os.path.exists(path) else 0
+        os.path.getsize(path)
+        if os.path.exists(path) and path not in target.protected else 0
         for target in matches
         for path in target.outputs
     )
@@ -60,6 +61,13 @@ def clean(obj, targets, all):
     for target in matches:
         logger.info("Deleting output files of %s", target.name)
         for path in target.outputs:
+            if path in target.protected:
+                logging.debug(
+                    'Skpping deleting file "%s" from target "%s" because it is protected',
+                    click.format_filename(path),
+                    target.name,
+                )
+
             logging.info(
                 'Deleting file "%s" from target "%s"',
                 click.format_filename(path),
