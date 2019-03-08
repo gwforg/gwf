@@ -8,7 +8,6 @@
 	clean \
 	package-pypi \
 	publish-pypi \
-	install-conda \
 	package-conda \
 	publish-conda
 
@@ -42,7 +41,9 @@ docs:
 	$(MAKE) -C docs html
 
 clean:
-	rm -rf docs/_build .gwfconf.json build/ dist/ .gwf .pytest_cache .egg *.egg-info
+	find . -name "*.egg-info" -type d -exec rm -r {} ';'
+	find . -name ".gwf" -type d -exec rm -r {} ';'
+	rm -rf docs/_build .gwfconf.json build/ dist/ .gwf .pytest_cache .egg
 
 # PyPI
 
@@ -54,22 +55,9 @@ publish:
 
 # Conda
 
-install-conda:
-	wget -q https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-	chmod +x miniconda.sh
-	./miniconda.sh -b -p "${HOME}/miniconda"
-	rm miniconda.sh
-
-	conda config --set always_yes true
-	conda config --set anaconda_upload no
-	conda config --add channels gwforg
-	conda update --yes --quiet -n base conda
-	conda install --quiet --yes conda-build=3.0.* anaconda-client=1.6.*
-
 package-conda:
-	conda build --python "${TRAVIS_PYTHON_VERSION}" --output-folder conda-bld/ conda/
-	conda convert --platform all conda-bld/*/*.tar.bz2 -o conda-bld/
+	rm -rf conda-bld/
+	conda build --output-folder conda-bld/ conda/
 
 publish-conda:
 	anaconda -t "${ANACONDA_TOKEN}" upload --force --no-progress --user gwforg conda-bld/*/*.tar.bz2
-	rm -rf conda-bld/

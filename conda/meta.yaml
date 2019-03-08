@@ -1,39 +1,50 @@
+{% set name = "gwf" %}
+{% set version = "1.5.0" %}
+
 package:
-  name: gwf
-  version: 1.5.0
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
 
 source:
-  url: https://github.com/gwforg/gwf/archive/v1.5.0.tar.gz
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: b36d7f37be2a2d81cb849d7556feb21e75d0ff1ba1d8b2cabaecc77ac2b38b99
 
 build:
+  number: 0
   noarch: python
-  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
   entry_points:
     - gwf = gwf.cli:main
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
 
 requirements:
-  build:
-    - python >=3.5
+  host:
+    - click
+    - click-plugins
+    - pip
+    - python
     - setuptools
-
+    - pytest-runner
   run:
-    - python >=3.5
+    - click
+    - click-plugins
+    - python
     - setuptools
-    - click >=6.6
-    - click-plugins >=0.2.2
-    - colorama # [win]
 
 test:
   imports:
     - gwf
     - gwf.backends
     - gwf.plugins
-
   commands:
     - gwf --help
 
 about:
   home: http://gwf.readthedocs.io/
-  license: GNU General Public License v3 (GPLv3)
-  summary: A flexible, pragmatic workflow tool.
+  license: GNU General Public v3 (GPLv3)
   license_family: GPL3
+  license_file:
+  summary: A flexible, pragmatic workflow tool.
+
+extra:
+  recipe-maintainers:
+    - dansondergaard
