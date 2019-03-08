@@ -25,6 +25,10 @@ Contributing
 Installation
 ============
 
+To install *gwf* via pip::
+
+    pip install gwf
+
 To install *gwf* via conda::
 
     conda config --add channels gwforg
