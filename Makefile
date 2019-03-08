@@ -11,8 +11,6 @@
 	package-conda \
 	publish-conda
 
-export PATH := $(HOME)/.conda/bin:$(PATH)
-
 help:
 	@echo "Usage:"
 	@echo "    make help        show this message"
