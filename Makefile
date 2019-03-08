@@ -43,7 +43,7 @@ docs:
 clean:
 	find . -name "*.egg-info" -type d -exec rm -r {} ';'
 	find . -name ".gwf" -type d -exec rm -r {} ';'
-	rm -rf docs/_build .gwfconf.json build/ dist/ .gwf .pytest_cache .egg
+	rm -rf docs/_build .gwfconf.json build/ dist/ .gwf .pytest_cache .egg conda-bld
 
 # PyPI
 
@@ -55,8 +55,7 @@ publish:
 
 # Conda
 
-package-conda:
-	rm -rf conda-bld/
+package-conda: clean
 	conda build --output-folder conda-bld/ conda/
 
 publish-conda:
