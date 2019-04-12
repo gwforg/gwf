@@ -2,7 +2,7 @@ import pytest
 
 from gwf.conf import FileConfig
 
-from gwf.exceptions import GWFError, ConfigurationError
+from gwf.exceptions import ConfigurationError
 
 
 def test_load_config_from_file(tmpdir):
