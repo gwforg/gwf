@@ -6,4 +6,3 @@ gwf.target('World', inputs=['other_workflow/a.txt'], outputs=['b.txt']) << """
 cat other_workflow/a.txt > b.txt
 echo world >> b.txt
 """
-
