@@ -7,3 +7,4 @@ pytest-click
 pytest-mock
 sphinx
 sphinx-rtd-theme
+wheel
