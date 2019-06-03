@@ -21,31 +21,24 @@ def find_version(*file_paths):
 setup(
     name="gwf",
     version=find_version("src", "gwf", "__init__.py"),
-
     author="Thomas Mailund, Dan Søndergaard",
     author_email="mailund@birc.au.dk, das@birc.au.dk",
-
     license="GPLv3",
     keywords="grid computing workflow",
     url="http://gwf.readthedocs.io/",
-
     description="A flexible, pragmatic workflow tool.",
     long_description=read("README.rst"),
-    long_description_content_type='text/x-rst',
-
+    long_description_content_type="text/x-rst",
     packages=find_packages("src"),
     package_dir={"": "src"},
     include_package_data=False,
     zip_safe=False,
-
     python_requires="~=3.5",
     setup_requires=["pytest-runner"],
     install_requires=["click", "click-plugins"],
     extras_require={':sys_platform == "win32"': ["colorama"]},
-
     test_suite="tests",
     tests_require=["pytest", "pytest-click", "pytest-mock"],
-
     entry_points={
         "console_scripts": ["gwf = gwf.cli:main"],
         "gwf.backends": [
@@ -67,7 +60,6 @@ setup(
             "touch = gwf.plugins.touch:touch",
         ],
     },
-
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Console",
@@ -80,10 +72,9 @@ setup(
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     ],
-
     project_urls={
-        'Documentation': 'https://docs.gwf.app/',
-        'Source': 'https://github.com/gwforg/gwf',
-        'Tracker': 'https://github.com/gwforg/gwf/issues',
+        "Documentation": "https://docs.gwf.app/",
+        "Source": "https://github.com/gwforg/gwf",
+        "Tracker": "https://github.com/gwforg/gwf/issues",
     },
 )
