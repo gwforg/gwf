@@ -37,16 +37,12 @@ test:
     - gwf.plugins
   commands:
     - gwf --help
-  requires:
-    - pytest
-    - pytest-click
-    - pytest-mock
 
 about:
   home: http://gwf.readthedocs.io/
   license: GNU General Public v3 (GPLv3)
   license_family: GPL3
-  license_file: LICENSE
+  license_file: ../LICENSE
   summary: A flexible, pragmatic workflow tool.
   doc_url: https://gwf.readthedocs.io
   dev_url: https://github.com/gwforg/gwf
