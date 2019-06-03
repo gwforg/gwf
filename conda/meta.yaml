@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: b36d7f37be2a2d81cb849d7556feb21e75d0ff1ba1d8b2cabaecc77ac2b38b99
+  sha256: 216c5ca0fea5172d6d2a483a871d670757c254dea9d6099a8d8e24d062b0d485
 
 build:
   number: 0
@@ -37,13 +37,19 @@ test:
     - gwf.plugins
   commands:
     - gwf --help
+  requires:
+    - pytest
+    - pytest-click
+    - pytest-mock
 
 about:
   home: http://gwf.readthedocs.io/
   license: GNU General Public v3 (GPLv3)
   license_family: GPL3
-  license_file:
+  license_file: LICENSE
   summary: A flexible, pragmatic workflow tool.
+  doc_url: https://gwf.readthedocs.io
+  dev_url: https://github.com/gwforg/gwf
 
 extra:
   recipe-maintainers:
