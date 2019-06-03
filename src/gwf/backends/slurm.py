@@ -1,5 +1,6 @@
 import logging
 import subprocess
+from collections import defaultdict
 from distutils.spawn import find_executable
 
 from . import Backend, Status
@@ -11,21 +12,17 @@ from .logmanager import FileLogManager
 logger = logging.getLogger(__name__)
 
 
-SLURM_JOB_STATES = {
-    "BF": Status.UNKNOWN,  # BOOT_FAIL
-    "CA": Status.UNKNOWN,  # CANCELLED
-    "CD": Status.UNKNOWN,  # COMPLETED
-    "CF": Status.RUNNING,  # CONFIGURING
-    "CG": Status.RUNNING,  # COMPLETING
-    "F": Status.UNKNOWN,  # FAILED
-    "NF": Status.UNKNOWN,  # NODE_FAIL
-    "PD": Status.SUBMITTED,  # PENDING
-    "PR": Status.UNKNOWN,  # PREEMPTED
-    "R": Status.RUNNING,  # RUNNING
-    "S": Status.RUNNING,  # SUSPENDED
-    "TO": Status.UNKNOWN,  # TIMEOUT
-    "SE": Status.SUBMITTED,  # SPECIAL_EXIT
-}
+SLURM_JOB_STATES = defaultdict(
+    lambda: Status.UNKNOWN,
+    {
+        "CF": Status.RUNNING,  # CONFIGURING
+        "CG": Status.RUNNING,  # COMPLETING
+        "R": Status.RUNNING,  # RUNNING
+        "S": Status.RUNNING,  # SUSPENDED
+        "PD": Status.SUBMITTED,  # PENDING
+        "SE": Status.SUBMITTED,  # SPECIAL_EXIT
+    },
+)
 
 
 SLURM_OPTIONS = {

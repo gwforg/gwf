@@ -2,6 +2,15 @@
 Change Log
 ==========
 
+
+Version 1.5.1
+=============
+
+Fixed
+-----
+
+* Crash when Slurm returns unknown job state (#244).
+
 Version 1.5.0
 =============
 
