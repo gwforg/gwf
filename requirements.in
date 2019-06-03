@@ -1,8 +1,8 @@
+click
+click-plugins
 flake8
 pytest
 pytest-click
 pytest-mock
 sphinx
 sphinx-rtd-theme
-click
-click-plugins
