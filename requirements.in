@@ -1,5 +1,6 @@
 click
 click-plugins
+coverage
 flake8
 pytest
 pytest-click

@@ -3,10 +3,12 @@ appdirs==1.4.3
 atomicwrites==1.3.0
 attrs==19.1.0
 Babel==2.7.0
+black==19.3b0
 certifi==2019.3.9
 chardet==3.0.4
 Click==7.0
 click-plugins==1.1.1
+coverage==4.5.3
 docutils==0.14
 entrypoints==0.3
 flake8==3.7.7
@@ -18,6 +20,7 @@ MarkupSafe==1.1.1
 mccabe==0.6.1
 more-itertools==7.0.0
 packaging==19.0
+pipx==0.13.1.1
 pluggy==0.12.0
 py==1.8.0
 pycodestyle==2.5.0
