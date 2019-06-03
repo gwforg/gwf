@@ -26,7 +26,7 @@ Rolling a New Release
 =====================
 
 1. Make sure that all changes for the new release have been merged into ``master``
-   and that tests pass. Check `Travis <https://travis-ci.org/mailund/gwf>`_.
+   and that tests pass. Check `Travis <https://travis-ci.org/gwforg/gwf>`_.
 
 2. Make any other release-related changes such as adding new contributors to
    ``CONTRIBUTORS.rst`` or adding missing items to ``CHANGELOG.rst``.
@@ -38,9 +38,9 @@ Rolling a New Release
 5. Make a new release by tagging the merge commit with the version number, e.g.
    ``vX.X.X``. Push the tag and wait for Travis to catch up.
 
-6. Pop a bottle of champagne!
+6. Run ``make package``, then ``make publish`` to publish the source
+   distribution and wheel to PyPI.
 
-Creating the release on GitHub will automatically run all tests (again),
-build a source and wheel package and deploy them to PyPI, and build a Conda
-package and deploy it to the `gwforg` channel on `Anaconda.org`. The documentation
-will be automatically be built by `ReadTheDocs`.
+7. Run ``make package-conda``, then ``make publish-conda
+
+The documentation will be automatically be built by `ReadTheDocs`.

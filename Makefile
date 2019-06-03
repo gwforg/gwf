@@ -13,14 +13,16 @@
 
 help:
 	@echo "Usage:"
-	@echo "    make help        show this message"
-	@echo "    make init        create and setup development environment"
-	@echo "    make test        run unit tests"
-	@echo "    make lint        run lint checks"
-	@echo "    make test        build docs"
-	@echo "    make clean       remove temporary files"
-	@echo "    make package     build source distribution and wheel"
-	@echo "    make publish     publish distributions to pypi"
+	@echo "    make help              show this message"
+	@echo "    make init              create and setup development environment"
+	@echo "    make test              run unit tests"
+	@echo "    make lint              run lint checks"
+	@echo "    make test              build docs"
+	@echo "    make clean             remove temporary files"
+	@echo "    make package           build source distribution and wheel"
+	@echo "    make publish           publish distributions to pypi"
+	@echo "    make package-conda     build source distribution and wheel"
+	@echo "    make publish-conda     publish distributions to pypi"
 
 init:
 	pip install -r requirements.txt
