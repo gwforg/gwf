@@ -49,7 +49,7 @@ class FileConfig:
 
     def dump(self):
         """Dump the configuration to disk."""
-        with open(self.path, "w") as config_file:
+        with open(self.path, "w+") as config_file:
             json.dump(dict(self._data), config_file, indent=4, sort_keys=True)
 
     @classmethod
