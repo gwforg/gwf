@@ -366,6 +366,41 @@ Here's a few neat things you should know about the status command:
 
 For more details you can always refer to builtin help with ``gwf status --help``.
 
+What Happens When a Target Fails?
+=================================
+
+We all make mistakes. Sometimes there's a mistake on your target specification
+which causes the target execution to fail. The target could also fail because
+the target exceeded the allocated resource limits or took too long to run and
+thus exceeded the defined walltime.
+
+When a target fails there's two different outcomes:
+
+* the target did not create all of its output files, or
+* the target created all of its output files, but the output is incomplete.
+
+In the first case *gwf* will notice that the output files do still not exist
+and show the target status *shouldrun*. The second case is harder since *gwf*
+will actually think that the target completed successfully (because all of the
+output files exist and are newer than the input files). In this case you will
+need to remove the incomplete output files and re-run the workflow.
+
+You may also prevent the second outcome from ever happening by only creating
+your output files at the end of your targets. For example:
+
+.. code-block: console
+
+    gwf.target("Example", inputs=["a.txt"], outputs=["b.txt"]) << """
+    python filter_data.py a.txt > b.txt.tmp && \
+        mv b.txt.tmp b.txt
+    """
+
+We write the output to a temporary file. If the script ``filter_data.py`` fails
+to run our the target is killed, *b.txt* will not exist and *gwf* will
+correctly show that `Example` should run again. If the script succeeds and the
+target is not killed, the temporary file will be renamed to *b.txt* and *gwf*
+will show the target as completed.
+
 .. _function_templates:
 
 Reusable Targets with Templates
