@@ -2,6 +2,7 @@ import collections
 import copy
 import functools
 import inspect
+import itertools
 import logging
 import os
 import os.path
@@ -41,33 +42,6 @@ def is_valid_name(candidate):
     """Check whether `candidate` is a valid name for a target or workflow."""
     return re.match(r"^[a-zA-Z_][a-zA-Z0-9._]*$", candidate) is not None
 
-
-def normalized_paths_property(name, return_type=list):
-    """Define a normalized paths property.
-
-    This function can be used to define a property on an object which expects
-    the value to be a list of paths. When the attribute is used, this function
-    ensures that the paths will always be normalized and absolute.
-
-    For an example of its usage, see the `inputs` and `outputs` attributes
-    on :class:`~gwf.Target`. For a more general description of this approach
-    to reusable attributes, see:
-
-        http://chimera.labs.oreilly.com/books/1230000000393/ch09.html#_problem_164
-    """
-    storage_name = "_" + name
-
-    @property
-    def prop(self):
-        return return_type(_norm_paths(self.working_dir, getattr(self, storage_name)))
-
-    @prop.setter
-    def prop(self, value):
-        setattr(self, storage_name, value)
-
-    return prop
-
-
 def graph_from_path(path):
     """Return graph for the workflow given by `path`.
 
@@ -88,6 +62,18 @@ def graph_from_config(config):
     See :func:`graph_from_path` for further information.
     """
     return graph_from_path(config["file"])
+
+
+def _flatten(t, base_dir):
+    def flatten_rec(g):
+        if isinstance(g, (list, tuple)):
+            yield from map(flatten_rec, g)
+        elif isinstance(g, dict):
+            for k, v in g.items():
+                yield from flatten_rec(v)
+        else:
+            yield str(g)
+    return list(itertools.chain(*flatten_rec(t)))
 
 
 class TargetStatus(Enum):
@@ -122,29 +108,15 @@ class AnonymousTarget:
         cleaning, even if this target is not an endpoint.
     """
 
-    def __init__(self, inputs, outputs, options, working_dir=None, spec="", protect=None):
-        self.inputs = inputs
-        self.outputs = outputs
+    def __init__(
+        self, inputs, outputs, options, working_dir=None, spec="", protect=None
+    ):
         self.options = options
         self.working_dir = working_dir
-
-        if not _is_valid_list(inputs):
-            raise TypeError(
-                "The argument `inputs` to target `{}` must be a list or tuple, not a string.".format(
-                    self
-                )
-            )
-        if not _is_valid_list(outputs):
-            raise TypeError(
-                "The argument `outputs` to target `{}` must be a list or tuple, not a string.".format(
-                    self
-                )
-            )
-
         self.inputs = inputs
         self.outputs = outputs
-
         self._spec = spec
+
         if protect is None:
             self.protected = set()
         else:
@@ -237,21 +209,21 @@ class Target(AnonymousTarget):
         Name of the target.
     """
 
-    inputs = normalized_paths_property("inputs")
-    outputs = normalized_paths_property("outputs")
-    protected = normalized_paths_property("protected", return_type=set)
-
     def __init__(self, name=None, **kwargs):
         self.name = kwargs.pop("name", name)
         if self.name is None:
             raise NameError("Target name is missing.")
 
         if not is_valid_name(self.name):
-            raise NameError(
-                'Target defined with invalid name: "{}".'.format(self.name)
-            )
+            raise NameError('Target defined with invalid name: "{}".'.format(self.name))
 
         super().__init__(**kwargs)
+
+    def flattened_inputs(self):
+        return _norm_paths(self.working_dir, _flatten(self.inputs, self.working_dir))
+
+    def flattened_outputs(self):
+        return _norm_paths(self.working_dir, _flatten(self.outputs, self.working_dir))
 
     @classmethod
     def empty(cls, name):
@@ -428,7 +400,7 @@ class Workflow(object):
                     "and will be removed in gwf 2.0. Make your template "
                     "function return an AnonymousTarget instead."
                 ),
-                DeprecationWarning
+                DeprecationWarning,
             )
 
             try:
@@ -449,9 +421,7 @@ class Workflow(object):
 
             new_target.inherit_options(template_options)
         else:
-            raise TypeError(
-                "Target `{}` received an invalid template.".format(name)
-            )
+            raise TypeError("Target `{}` received an invalid template.".format(name))
 
         new_target.inherit_options(self.defaults)
         self._add_target(new_target)
@@ -675,7 +645,7 @@ class Graph:
         dependents = defaultdict(set)
 
         for target in targets.values():
-            for path in target.outputs:
+            for path in target.flattened_outputs():
                 if path in provides:
                     msg = 'File "{}" provided by targets "{}" and "{}".'.format(
                         path, provides[path].name, target
@@ -684,7 +654,7 @@ class Graph:
                 provides[path] = target
 
         for target in targets.values():
-            for path in target.inputs:
+            for path in target.flattened_inputs():
                 if path in provides:
                     dependencies[target].add(provides[path])
                 else:
@@ -717,9 +687,7 @@ class Graph:
             state[node] = started
             for dep in self.dependencies[node]:
                 if state[dep] == started:
-                    raise WorkflowError(
-                        "Target {} depends on itself.".format(node)
-                    )
+                    raise WorkflowError("Target {} depends on itself.".format(node))
                 elif state[dep] == fresh:
                     visitor(dep)
             state[node] = done
@@ -873,7 +841,7 @@ class Scheduler:
 
         # Check whether all input files actually exists are are being provided
         # by another target. If not, it's an error.
-        for path in target.inputs:
+        for path in target.flattened_inputs():
             if path in self.graph.unresolved and self._file_cache[path] is None:
                 msg = (
                     'File "{}" is required by "{}", but does not exist and is not '
@@ -885,7 +853,7 @@ class Scheduler:
             logger.debug("%s should run because it is a sink", target)
             return True
 
-        if any(self._file_cache[path] is None for path in target.outputs):
+        if any(self._file_cache[path] is None for path in target.flattened_outputs()):
             logger.debug(
                 "%s should run because one of its output files does not exist", target
             )
@@ -896,7 +864,7 @@ class Scheduler:
             return False
 
         youngest_in_ts, youngest_in_path = max(
-            (self._file_cache[path], path) for path in target.inputs
+            (self._file_cache[path], path) for path in target.flattened_inputs()
         )
         logger.debug(
             "%s is the youngest input file of %s with timestamp %s",
@@ -906,7 +874,7 @@ class Scheduler:
         )
 
         oldest_out_ts, oldest_out_path = min(
-            (self._file_cache[path], path) for path in target.outputs
+            (self._file_cache[path], path) for path in target.flattened_outputs()
         )
         logger.debug(
             "%s is the oldest output file of %s with timestamp %s",

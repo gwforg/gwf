@@ -313,60 +313,6 @@ class TestTarget(unittest.TestCase):
                 "123abc", inputs=[], outputs=[], options={}, working_dir="/some/path"
             )
 
-    def test_relative_input_paths_are_normalized(self):
-        target = Target(
-            name="TestTarget",
-            inputs=["test_input1.txt", "test_input2.txt"],
-            outputs=[],
-            options={},
-            working_dir="/some/path",
-        )
-
-        self.assertTrue(os.path.isabs(target.inputs[0]))
-        self.assertTrue(os.path.isabs(target.inputs[1]))
-
-        self.assertTrue(target.inputs[0].startswith("/some/path"))
-        self.assertTrue(target.inputs[1].startswith("/some/path"))
-
-    def test_relative_output_paths_are_normalized(self):
-        target = Target(
-            name="TestTarget",
-            inputs=[],
-            outputs=["test_output1.txt", "test_output2.txt"],
-            options={},
-            working_dir="/some/path",
-        )
-
-        self.assertTrue(os.path.isabs(target.outputs[0]))
-        self.assertTrue(os.path.isabs(target.outputs[1]))
-
-        self.assertTrue(target.outputs[0].startswith("/some/path"))
-        self.assertTrue(target.outputs[1].startswith("/some/path"))
-
-    def test_absolute_input_paths_are_not_normalized(self):
-        target = Target(
-            name="TestTarget",
-            inputs=["test_input1.txt", "/other/path/test_input2.txt"],
-            outputs=[],
-            options={},
-            working_dir="/some/path",
-        )
-
-        self.assertTrue(target.inputs[0].startswith("/some/path"))
-        self.assertTrue(target.inputs[1].startswith("/other/path"))
-
-    def test_absolute_output_paths_are_not_normalized(self):
-        target = Target(
-            name="TestTarget",
-            inputs=["test_output1.txt", "/other/path/test_output2.txt"],
-            outputs=[],
-            options={},
-            working_dir="/some/path",
-        )
-
-        self.assertTrue(target.inputs[0].startswith("/some/path"))
-        self.assertTrue(target.inputs[1].startswith("/other/path"))
-
     def test_target_without_outputs_is_a_sink(self):
         target = Target(
             name="TestTarget",
@@ -420,50 +366,6 @@ class TestTarget(unittest.TestCase):
         )
         self.assertIsNotNone(target.spec)
         self.assertEqual(target.spec, "this is a spec")
-
-    def test_raises_valueerror_if_inputs_is_not_valid(self):
-        with self.assertRaises(TypeError):
-            Target(
-                name="TestTarget",
-                inputs="hello.txt",
-                outputs=[],
-                options={},
-                working_dir="/some/path",
-            )
-
-    def test_raises_valueerror_if_outputs_is_not_valid(self):
-        with self.assertRaises(TypeError):
-            Target(
-                name="TestTarget",
-                inputs=[],
-                outputs="hello.txt",
-                options={},
-                working_dir="/some/path",
-            )
-
-    def test_should_stringify_input_paths(self):
-        target = Target(
-            name="TestTarget",
-            inputs=[pathlib.PurePath("somefile.txt"), "otherfile.txt"],
-            outputs=[],
-            options={},
-            working_dir="/some/path",
-        )
-        self.assertEqual(
-            target.inputs, ["/some/path/somefile.txt", "/some/path/otherfile.txt"]
-        )
-
-    def test_should_stringify_output_paths(self):
-        target = Target(
-            name="TestTarget",
-            inputs=[],
-            outputs=[pathlib.PurePath("somefile.txt"), "otherfile.txt"],
-            options={},
-            working_dir="/some/path",
-        )
-        self.assertEqual(
-            target.outputs, ["/some/path/somefile.txt", "/some/path/otherfile.txt"]
-        )
 
     def test_inherit_options(self):
         target = Target(
@@ -1041,5 +943,5 @@ def test_target_protected():
         working_dir="/some/dir",
     )
 
-    assert target1.protected == {"/some/dir/test_output1.txt"}
+    assert target1.protected == {"test_output1.txt"}
     assert target2.protected == set()
