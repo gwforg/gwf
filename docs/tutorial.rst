@@ -32,11 +32,11 @@ This should show you the commands and options available through *gwf*.
 .. caution::
     You may see an error similar to this when you try running *gwf*::
 
-        UnicodeEncodeError: 'charmap' codec can't encode character '\u2020' in 
+        UnicodeEncodeError: 'charmap' codec can't encode character '\u2020' in
         position 477: character maps to <undefined>
 
-    This error occurs because your isn't configured to use UTF-8 as the default 
-    encoding. To fix the error insert the following lines in your ``.bashrc`` 
+    This error occurs because your isn't configured to use UTF-8 as the default
+    encoding. To fix the error insert the following lines in your ``.bashrc``
     file::
 
         export LANG=en_US.utf8
@@ -114,6 +114,19 @@ For this tutorial we just want to run our workflows locally. To do this we can
 use the built-in ``local`` backend. Essentially this backend allows you to run
 workflows utilizing all cores of your computer and thus it can be very useful
 for small workflows that don't require a lot of resources.
+
+.. note::
+
+    If you're running *gwf* on a cluster you may want to use a backend that can
+    submit targets to your clusters' queueing system/workload manager like
+    Slurm. For example, to use the Slurm backend, run the command:
+
+    .. code-block:: console
+
+        $ gwf config set backend slurm
+
+    Now that you're using the Slurm backend you don't have to start any
+    workers. That is, just skip the step below.
 
 First, open another terminal window and navigate to the ``myproject`` directory.
 Then run the command:
@@ -307,9 +320,9 @@ Let's try to run the workflow and see what happens.
     TargetB    submitted       0.00%
     TargetC    submitted       0.00%
 
-The ``R`` shows that one third of the targets are running (since I'm only 
-running with one worker, only one target can run at a time) and the other two 
-thirds have been submitted. Running the status command again after some time 
+The ``R`` shows that one third of the targets are running (since I'm only
+running with one worker, only one target can run at a time) and the other two
+thirds have been submitted. Running the status command again after some time
 should show something like this.
 
 .. code-block:: console
@@ -318,8 +331,8 @@ should show something like this.
     TargetB    running         0.00%
     TargetC    submitted      33.33%
 
-Now the target that was running before has completed, and another target is now 
-running, while the final target is still just submitted. After some time, run 
+Now the target that was running before has completed, and another target is now
+running, while the final target is still just submitted. After some time, run
 the status command again. The last target should now be running.
 
 .. code-block:: console
@@ -342,13 +355,13 @@ Here's a few neat things you should know about the status command:
   you can use the ``--endpoints`` flag.
 
 * You can use wildcards in target names. For example, ``gwf status 'Foo*'`` will
-  list all targets beginning with `Foo`. You can specify multiple 
-  targets/patterns by separating them with a space. This also works in the 
+  list all targets beginning with `Foo`. You can specify multiple
+  targets/patterns by separating them with a space. This also works in the
   cancel and clean commands (but remember the quotes around the pattern)!
 
-* Only want to see which targets are running? You can filter targets by their 
-  status using e.g. ``gwf status -s running``. You can also combine filters, 
-  i.e. ``gwf status --endpoints --status running 'Align*'`` to show all 
+* Only want to see which targets are running? You can filter targets by their
+  status using e.g. ``gwf status -s running``. You can also combine filters,
+  i.e. ``gwf status --endpoints --status running 'Align*'`` to show all
   endpoints that are running and where the name starts with `Align`.
 
 For more details you can always refer to builtin help with ``gwf status --help``.
@@ -487,14 +500,14 @@ ones since *gwf* does not archive logs from old runs of targets.
 Cleaning Up
 ===========
 
-Now that we have run our workflow we may wish to remove intermediate files to 
+Now that we have run our workflow we may wish to remove intermediate files to
 save disk space. In *gwf* we can use the ``gwf clean`` command for this:
 
 .. code-block:: console
 
     $ gwf clean
 
-This command only removes files produced by an endpoint target (a target which 
+This command only removes files produced by an endpoint target (a target which
 no other target depends on):
 
 .. code-block:: console
@@ -509,7 +522,7 @@ no other target depends on):
     Deleting file "/Users/das/Code/gwf/examples/readmapping/ponAbe2.sa" from target "IndexGenome"
     Deleting output files of UnzipGenome
     Deleting file "/Users/das/Code/gwf/examples/readmapping/ponAbe2.fa" from target "UnzipGenome"
-    
+
 We can tell *gwf* to remove all files by running ``gwf clean --all``.
 
 A Note About Reproducibility
