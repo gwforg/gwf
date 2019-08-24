@@ -4,7 +4,7 @@
 Patterns
 ========
 
-This guide takes you through some advanced features and patterns that can 
+This guide takes you through some advanced features and patterns that can
 be utilized in *gwf*. Remember that *gwf* is just a way of generating
 workflows using the Python programming language and thus many of these
 patterns simply use plain Python code to abstract and automate certain
@@ -74,7 +74,7 @@ builds the workflow and returns it:
 
         # Add targets to the workflow object, respecting the value of `output_dir`.
         foo_output = os.path.join(output_dir, 'output1.txt')
-        gwf.target(
+        w.target(
             name='Foo',
             inputs=['input.txt'],
             outputs=[foo_output],
@@ -83,7 +83,7 @@ builds the workflow and returns it:
         """.format(foo_output)
 
         bar_output = os.path.join(output_dir, 'output2.txt')
-        gwf.target(
+        w.target(
             name='Bar',
             inputs=[foo_output],
             outputs=[bar_output]
@@ -134,7 +134,7 @@ now always be needed. In this case, we can let the user choose to leave it out:
 
         # Add targets to the workflow object, respecting the value of `output_dir`.
         foo_output = os.path.join(output_dir, 'output1.txt')
-        gwf.target(
+        w.target(
             name='Foo',
             inputs=['input.txt'],
             outputs=[foo_output],
@@ -145,7 +145,7 @@ now always be needed. In this case, we can let the user choose to leave it out:
         # Only create target `Bar` if we want to summarize the data.
         if summarize:
             bar_output = os.path.join(output_dir, 'output2.txt')
-            gwf.target(
+            w.target(
                 name='Bar',
                 inputs=[foo_output],
                 outputs=[bar_output]
