@@ -53,6 +53,7 @@ Getting Started
 
    tutorial
    patterns
+   plugins
 
 Topic Guides
 ============
