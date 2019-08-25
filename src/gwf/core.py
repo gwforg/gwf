@@ -42,6 +42,7 @@ def is_valid_name(candidate):
     """Check whether `candidate` is a valid name for a target or workflow."""
     return re.match(r"^[a-zA-Z_][a-zA-Z0-9._]*$", candidate) is not None
 
+
 def graph_from_path(path):
     """Return graph for the workflow given by `path`.
 
@@ -93,9 +94,9 @@ class AnonymousTarget:
     the return value of a template function.
 
     :ivar list inputs:
-        A list of input paths for this target.
+        A string, list or dictionary containing inputs to the target.
     :ivar list outputs:
-        A list of output paths for this target.
+        A string, list or dictionary containing outputs to the target.
     :ivar dict options:
         Options such as number of cores, memory requirements etc. Options are
         backend-dependent. Backends will ignore unsupported options.
@@ -194,6 +195,24 @@ class Target(AnonymousTarget):
 
         Target('Foo', inputs=[], outputs=[], options={}, working_dir='/tmp')
 
+    The *inputs* and *outputs* arguments can either be a string, a list or
+    a dictionary. If a dictionary is given, the keys act as names for the
+    files. The values may be either strings or a list of strings::
+
+        foo = Target(
+            name='foo',
+            inputs={'A': ['a1', 'a2'], 'B': 'b'},
+            outputs={'C': ['a1b', 'a2b], 'D': 'd},
+        )
+
+    This is useful for referring the outputs of a target::
+
+        bar = Target(
+            name='bar',
+            inputs=foo.outputs['C'],
+            outputs='result',
+        )
+
     The target can also specify an *options* dictionary specifying the
     resources needed to run the target. The options are consumed by the backend
     and may be ignored if the backend doesn't support a given option. For
@@ -207,6 +226,10 @@ class Target(AnonymousTarget):
 
     :ivar str name:
         Name of the target.
+
+    .. versionchanged:: 1.6.0
+        Named inputs and outputs were added. Prior versions require *inputs*
+        and *outputs* to be lists.
     """
 
     def __init__(self, name=None, **kwargs):
