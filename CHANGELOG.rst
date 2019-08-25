@@ -2,6 +2,23 @@
 Change Log
 ==========
 
+Version 1.6.0
+=============
+
+Added
+-----
+
+* Named inputs and outputs. The ``inputs`` and ``outputs`` arguments to
+  ``Workflow.target`` can now be either a string, list or dictionary. See the
+  documentation for more details.
+* Tutorial now explains what happens if a target fails.
+* Documentation now has an official list of *gwf* plugins.
+
+Fixed
+-----
+
+* Crash when running ``gwf init`` without an existing configuration file.
+
 
 Version 1.5.1
 =============
