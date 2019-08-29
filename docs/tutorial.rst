@@ -191,12 +191,35 @@ verbosity level.
     $ gwf config set verbose warning
     $ gwf run
 
-As we'd expect, *gwf* outputs the same as before, but this time we didn't have to
-set the ``-v warning`` flag!
+As we'd expect, *gwf* outputs the same as before, but this time we didn't have
+to set the ``-v warning`` flag!
 
 We can configure other aspects of *gwf* through the `config` command. For more
 details, refer to the :ref:`configuration` page.
 
+Debugging a Workflow
+====================
+
+If your workflow doesn't look right or you find that e.g. ``gwf status``
+doesn't show the right thing, you may need to debug your workflow. The first
+thing to try is to increase the verbosity level:
+
+.. code-block:: console
+
+    $ gwf -v debug status
+
+This will show you exactly what *gwf* is thinking about each target in your
+workflow. Why should it run? Why should it not run?
+
+To investigate further you can always use ``print()`` in your code and run
+your :file:`workflow.py` as a normal Python script:
+
+.. code-block:: console
+
+    $ python workflow.py
+
+In the end, there's not a big difference between debugging a *gwf* workflow
+and normal Python code.
 
 Defining Targets with Dependencies
 ==================================
