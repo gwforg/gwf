@@ -18,7 +18,7 @@ from glob import iglob as _iglob
 from .backends import Status
 from .compat import fspath
 from .exceptions import NameError, TypeError, WorkflowError
-from .utils import LazyDict, cache, load_workflow, parse_path, timer
+from .utils import LazyDict, cache, load_workflow, parse_path, timer, check_path
 
 logger = logging.getLogger(__name__)
 
@@ -239,6 +239,11 @@ class Target(AnonymousTarget):
 
         if not is_valid_name(self.name):
             raise NameError('Target defined with invalid name: "{}".'.format(self.name))
+
+        for path in kwargs.get("inputs", []):
+            check_path(path, target_name=self.name, mode="input")
+        for path in kwargs.get("outputs", []):
+            check_path(path, target_name=self.name, mode="output")
 
         super().__init__(**kwargs)
 

@@ -384,6 +384,46 @@ class TestTarget(unittest.TestCase):
         )
         self.assertEqual(str(target), "TestTarget")
 
+    def test_input_is_empty_string(self):
+        with self.assertRaises(WorkflowError):
+            Target(
+                name="TestTarget",
+                inputs=["ab", ""],
+                outputs=[],
+                options={},
+                working_dir="/some/path"
+            )
+
+    def test_output_is_empty_string(self):
+        with self.assertRaises(WorkflowError):
+            Target(
+                name="TestTarget",
+                inputs=[],
+                outputs=["ab", ""],
+                options={},
+                working_dir="/some/path"
+            )
+
+    def test_input_contains_nonprintable(self):
+        with self.assertRaises(WorkflowError):
+            Target(
+                name="TestTarget",
+                inputs=["a\nb", "ac"],
+                outputs=[],
+                options={},
+                working_dir="/some/path"
+            )
+
+    def test_output_contains_nonprintable(self):
+        with self.assertRaises(WorkflowError):
+            Target(
+                name="TestTarget",
+                inputs=[],
+                outputs=["a\nb", "ac"],
+                options={},
+                working_dir="/some/path"
+            )
+
 
 def test_build_branch_join_graph():
     t1 = Target(
