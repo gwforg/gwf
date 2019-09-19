@@ -74,7 +74,6 @@ def init():
     config["backend"] = backend
     config.dump()
 
-    if project_dir != Path.cwd():
-        click.echo()
-        click.secho("Success!", fg="green")
-        click.echo("Now go to {} and run 'gwf status' :-)".format(project_dir))
+    click.echo()
+    click.secho("Success!", fg="green")
+    click.echo("Now go to {} and run 'gwf status' :-)".format(project_dir.resolve()))
