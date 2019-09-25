@@ -4,9 +4,24 @@ from unittest.mock import Mock, call, patch
 import pytest
 
 from gwf import AnonymousTarget, Graph, Scheduler, Target, Workflow
+from gwf.core import _flatten
 from gwf.backends import Backend, Status
 from gwf.backends.exceptions import LogError
 from gwf.exceptions import NameError, TypeError, WorkflowError
+
+
+FLATTEN_TESTS = [
+    (['a', 'b'], ['a', 'b']),
+    ({'A': ['a1', 'a2']}, ['a1', 'a2']),
+    ({'A': ['a1', 'a2'], 'B': ['b1', 'b2']}, ['a1', 'a2', 'b1', 'b2']),
+    ([{'A': 'a1', 'B': 'b1'}, {'A': 'a2', 'B': 'b2'}], ['a1', 'a2', 'b1', 'b2']),
+    ([{'A': ['a1', 'A1'], 'B': 'b1'}, {'A': ['a2', 'A2'], 'B': 'b2'}], ['a1', 'a2', 'b1', 'b2', 'A1', 'A2']),
+]
+
+
+@pytest.mark.parametrize("value,expected", FLATTEN_TESTS)
+def test_flatten(value, expected):
+    assert set(_flatten(value)) == set(expected)
 
 
 class DummyBackend(Backend):
