@@ -279,14 +279,9 @@ class Target(AnonymousTarget):
         return self.name
 
     def __repr__(self):
-        return "{}(name={!r}, inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, spec={!r})".format(
+        return "{}(name={!r}, ...)".format(
             self.__class__.__name__,
             self.name,
-            self.inputs,
-            self.outputs,
-            self.options,
-            self.working_dir,
-            self.spec,
         )
 
     def __str__(self):
