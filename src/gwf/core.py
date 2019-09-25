@@ -65,16 +65,21 @@ def graph_from_config(config):
     return graph_from_path(config["file"])
 
 
-def _flatten(t, base_dir):
+def _flatten(t):
+    res = []
+
     def flatten_rec(g):
-        if isinstance(g, (list, tuple)):
-            yield from map(flatten_rec, g)
-        elif isinstance(g, dict):
+        if isinstance(g, str) or hasattr(g, '__fspath__'):
+            res.append(g)
+        elif isinstance(g, collections.Mapping):
             for k, v in g.items():
-                yield from flatten_rec(v)
+                flatten_rec(v)
         else:
-            yield str(g)
-    return list(itertools.chain(*flatten_rec(t)))
+            for v in g:
+                flatten_rec(v)
+
+    flatten_rec(t)
+    return res
 
 
 class TargetStatus(Enum):
@@ -248,10 +253,10 @@ class Target(AnonymousTarget):
         super().__init__(**kwargs)
 
     def flattened_inputs(self):
-        return _norm_paths(self.working_dir, _flatten(self.inputs, self.working_dir))
+        return _norm_paths(self.working_dir, _flatten(self.inputs))
 
     def flattened_outputs(self):
-        return _norm_paths(self.working_dir, _flatten(self.outputs, self.working_dir))
+        return _norm_paths(self.working_dir, _flatten(self.outputs))
 
     @classmethod
     def empty(cls, name):
