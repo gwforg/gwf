@@ -237,20 +237,25 @@ class Target(AnonymousTarget):
         and *outputs* to be lists.
     """
 
-    def __init__(self, name=None, **kwargs):
-        self.name = kwargs.pop("name", name)
-        if self.name is None:
-            raise NameError("Target name is missing.")
-
+    def __init__(self, name, inputs, outputs, options, working_dir=None, spec="", protect=None):
+        self.name = name
         if not is_valid_name(self.name):
             raise NameError('Target defined with invalid name: "{}".'.format(self.name))
 
-        for path in kwargs.get("inputs", []):
+        check_path(working_dir, target_name=self.name, mode="working_dir")
+        for path in inputs:
             check_path(path, target_name=self.name, mode="input")
-        for path in kwargs.get("outputs", []):
+        for path in outputs:
             check_path(path, target_name=self.name, mode="output")
 
-        super().__init__(**kwargs)
+        super().__init__(
+            inputs=inputs,
+            outputs=outputs,
+            options=options,
+            working_dir=working_dir,
+            spec=spec,
+            protect=protect,
+        )
 
     def flattened_inputs(self):
         return _norm_paths(self.working_dir, _flatten(self.inputs))
