@@ -409,8 +409,8 @@ class Workflow(object):
 
         :param str name:
             Name of the target.
-        :param tuple template:
-            Target specification of the form (inputs, outputs, options, spec).
+        :param AnonymousTarget template:
+            The anonymous target which describes the template.
 
         Any further keyword arguments are passed to the backend and will
         override any options provided by the template.
