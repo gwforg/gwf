@@ -181,11 +181,11 @@ class TestWorkflow(unittest.TestCase):
     @patch("gwf.core.load_workflow", autospec=True)
     def test_including_workflow_from_path(self, mock_load_workflow):
         workflow = Workflow()
-        target1 = workflow.target("TestTarget1", inputs=[], outputs=[])
+        workflow.target("TestTarget1", inputs=[], outputs=[])
 
         other_workflow = Workflow()
-        target2 = other_workflow.target("TestTarget2", inputs=[], outputs=[])
-        target3 = other_workflow.target("TestTarget3", inputs=[], outputs=[])
+        other_workflow.target("TestTarget2", inputs=[], outputs=[])
+        other_workflow.target("TestTarget3", inputs=[], outputs=[])
 
         mock_load_workflow.return_value = other_workflow
 
