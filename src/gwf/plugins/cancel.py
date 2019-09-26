@@ -39,6 +39,8 @@ def cancel(obj, targets, force):
                 "This will cancel all targets! Do you want to continue?", abort=True
             ):
                 cancel_many(backend, graph)
+        elif not targets and force:
+            cancel_many(backend, graph)
         else:
             matched_targets = filter_names(graph, targets)
             cancel_many(backend, matched_targets)

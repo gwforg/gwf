@@ -24,6 +24,7 @@ Fixed
 -----
 
 * Crash when running ``gwf init`` without an existing configuration file.
+* The ``--force`` flag for the ``cancel`` command now actually forces cancellation.
 
 
 Version 1.5.1
