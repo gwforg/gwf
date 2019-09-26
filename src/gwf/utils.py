@@ -206,7 +206,9 @@ def check_path(path, target_name, mode):
         clean_path, char, pos = result
         msg = (
             'Path "{}" in target "{}" {}s contains a '
-            'non-printable character "{}" on position {}.'
+            'non-printable character "{}" on position {}. '
+            'This is always unintentional and can cause '
+            'strange behaviour.'
         ).format(clean_path, target_name, mode, char, pos)
         raise WorkflowError(msg)
     return path
