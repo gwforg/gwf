@@ -27,6 +27,8 @@ Fixed
 
 * Crash when running ``gwf init`` without an existing configuration file.
 * The ``--force`` flag for the ``cancel`` command now actually forces cancellation.
+* We now respect the ``--no-color`` flag completely and implement the ``NO_COLOR``
+  environment variable standard described `here <https://no-color.org/>`_.
 
 
 Version 1.5.1

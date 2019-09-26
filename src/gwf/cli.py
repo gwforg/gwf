@@ -63,7 +63,7 @@ def validate_verbose(value):
 @config.validator("no_color")
 def validate_no_color(value):
     choices = ("true", "yes", "false", "no")
-    if value not in (True, False):
+    if value not in (True, False, None):
         msg = 'Invalid value "{}" for key "no_color", must be one of: {}.'
         raise ConfigurationError(msg.format(value, ", ".join(choices)))
 
@@ -88,7 +88,7 @@ def validate_no_color(value):
 )
 @click.option(
     "--no-color/--use-color",
-    default=config["no_color"],
+    default=None,
     help="Enable or disable output colors.",
 )
 @click.pass_context
@@ -103,7 +103,22 @@ def main(ctx, file, backend, verbose, no_color):
     """
     ensure_dir(os.path.join(".gwf"))
 
-    formatter_cls = logging.Formatter if no_color else ColorFormatter
+    # If the --use-color/--no-color argument is not set, get a value
+    # from the configuration file. If nothing has been configured,
+    # check if the NO_COLOR environment variable has been set.
+    if no_color is None:
+        if config['no_color'] is None:
+            no_color = bool(os.getenv('NO_COLOR', False))
+        else:
+            no_color = config['no_color']
+
+    if no_color:
+        formatter_cls = logging.Formatter
+        # Hack for disabling all click colors. We basically lie to
+        # click and pretend that the shell is never a TTY.
+        click._compat.isatty = lambda s: False
+    else:
+        formatter_cls = ColorFormatter
     configure_logging(level_name=verbose, formatter_cls=formatter_cls)
 
     ctx.obj = {"file": file, "backend": backend}
