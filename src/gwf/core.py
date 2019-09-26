@@ -43,6 +43,15 @@ def is_valid_name(candidate):
     return re.match(r"^[a-zA-Z_][a-zA-Z0-9._]*$", candidate) is not None
 
 
+def workflow_from_path(path):
+    basedir, filename, obj = parse_path(path)
+    return load_workflow(basedir, filename, obj)
+
+
+def workflow_from_config(config):
+    return workflow_from_path(config["file"])
+
+
 def graph_from_path(path):
     """Return graph for the workflow given by `path`.
 
@@ -52,8 +61,7 @@ def graph_from_path(path):
     :arg str path:
         Path to a workflow file, optionally specifying a workflow object in that file.
     """
-    basedir, filename, obj = parse_path(path)
-    workflow = load_workflow(basedir, filename, obj)
+    workflow = workflow_from_path(path)
     return Graph.from_targets(workflow.targets)
 
 

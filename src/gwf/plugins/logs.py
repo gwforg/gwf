@@ -1,7 +1,7 @@
 import click
 
 from ..backends import backend_from_config
-from ..core import graph_from_config
+from ..core import workflow_from_config
 from ..exceptions import WorkflowError
 
 
@@ -15,15 +15,15 @@ def logs(obj, target, stderr, no_pager):
 
     By default only standard output is shown. Supply the --stderr flag to show standard error instead.
     """
-    graph = graph_from_config(obj)
+    workflow = workflow_from_config(obj)
     backend_cls = backend_from_config(obj)
 
-    if target not in graph:
+    if target not in workflow.targets:
         raise WorkflowError(
             'Target "{}" is not found in the workflow.'.format(target.name)
         )
 
-    log_file = backend_cls.logs(graph[target], stderr=stderr)
+    log_file = backend_cls.logs(workflow.targets[target], stderr=stderr)
     log_contents = log_file.read()
     log_file.close()
 

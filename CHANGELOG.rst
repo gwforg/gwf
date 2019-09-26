@@ -14,6 +14,12 @@ Added
 * Tutorial now explains what happens if a target fails.
 * Documentation now has an official list of *gwf* plugins.
 
+Changed
+-------
+
+* The ``logs`` command is now much faster since it no longer builds the entire
+  graph.
+
 Fixed
 -----
 
