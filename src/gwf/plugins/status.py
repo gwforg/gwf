@@ -22,6 +22,8 @@ def _status_strs_to_enums(iterable):
 
 
 def print_table(backend, graph, targets):
+    targets = list(targets)
+
     scheduler = Scheduler(backend=backend, graph=graph)
 
     name_col_width = max((len(target.name) for target in targets), default=0) + 4
@@ -31,7 +33,7 @@ def print_table(backend, graph, targets):
         " [{num_shouldrun}/{num_submitted}/{num_running}/{num_completed}]"
     )
 
-    for target in targets:
+    for target in sorted(targets, key=lambda t: t.order):
         status = scheduler.status(target)
         color = STATUS_COLORS[status]
 
@@ -86,6 +88,8 @@ def status(obj, status, endpoints, targets):
     The `-s/--status` flag can be applied multiple times to show targets that
     match either of the queries, e.g. `gwf status -s shouldrun -s completed`
     will show all targets that should run and all targets that are completed.
+
+    The targets are shown in creation-order.
     """
     graph = graph_from_config(obj)
     backend_cls = backend_from_config(obj)
@@ -103,5 +107,4 @@ def status(obj, status, endpoints, targets):
             filters.append(EndpointFilter(endpoints=graph.endpoints()))
 
         matches = filter_generic(targets=graph, filters=filters)
-        matches = sorted(matches, key=lambda t: t.name)
         print_table(backend, graph, matches)

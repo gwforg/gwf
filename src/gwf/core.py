@@ -122,6 +122,8 @@ class AnonymousTarget:
         cleaning, even if this target is not an endpoint.
     """
 
+    _creation_order = 0
+
     def __init__(
         self, inputs, outputs, options, working_dir=None, spec="", protect=None
     ):
@@ -130,6 +132,9 @@ class AnonymousTarget:
         self.inputs = inputs
         self.outputs = outputs
         self._spec = spec
+
+        self.order = AnonymousTarget._creation_order
+        AnonymousTarget._creation_order += 1
 
         if protect is None:
             self.protected = set()

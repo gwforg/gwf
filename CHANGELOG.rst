@@ -19,6 +19,8 @@ Changed
 
 * The ``logs`` command is now much faster since it no longer builds the entire
   graph.
+* The target in the ``status`` output is now sorted in creation order, instead
+  of alphabetically.
 
 Fixed
 -----
