@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 BASIC_FORMAT = "%(message)s"
 
-ADVANCED_FORMAT = "%(levelname)s:%(name)s:%(message)s"
+ADVANCED_FORMAT = "[%(levelname)s] %(message)s"
 
 LOGGING_FORMATS = {
     "warning": BASIC_FORMAT,
