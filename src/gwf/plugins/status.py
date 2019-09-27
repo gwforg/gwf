@@ -12,6 +12,13 @@ STATUS_COLORS = {
     TargetStatus.COMPLETED: "green",
 }
 
+STATUS_ORDER = (
+    TargetStatus.SHOULDRUN,
+    TargetStatus.SUBMITTED,
+    TargetStatus.RUNNING,
+    TargetStatus.COMPLETED
+)
+
 
 def _status_str_to_enum(s):
     return TargetStatus[s.upper()]
@@ -21,13 +28,10 @@ def _status_strs_to_enums(iterable):
     return list(map(_status_str_to_enum, iterable))
 
 
-def print_table(backend, graph, targets):
+def print_table(scheduler, graph, targets):
     targets = list(targets)
 
-    scheduler = Scheduler(backend=backend, graph=graph)
-
     name_col_width = max((len(target.name) for target in targets), default=0) + 4
-
     format_str = (
         "{name:<{name_col_width}}{status:<23}{percentage:>7.2%}"
         " [{num_shouldrun}/{num_submitted}/{num_running}/{num_completed}]"
@@ -63,9 +67,21 @@ def print_table(backend, graph, targets):
         click.echo(line)
 
 
+def print_summary(backend, graph, targets):
+    from collections import Counter
+    scheduler = Scheduler(backend=backend, graph=graph)
+    status_counts = Counter(scheduler.status(target) for target in targets)
+    click.echo('{:<15}{:>10}'.format('total', len(targets)))
+    for status in STATUS_ORDER:
+        color = STATUS_COLORS[status]
+        padded_name = '{:<15}'.format(status.name.lower())
+        click.echo('{}{:>10}'.format(click.style(padded_name, fg=color), status_counts[status]))
+
+
 @click.command()
 @click.argument("targets", nargs=-1)
 @click.option("--endpoints", is_flag=True, default=False, help="Show only endpoints.")
+@click.option("--summary", is_flag=True, default=False, help="Only show summary statistics.")
 @click.option(
     "-s",
     "--status",
@@ -73,7 +89,7 @@ def print_table(backend, graph, targets):
     multiple=True,
 )
 @click.pass_obj
-def status(obj, status, endpoints, targets):
+def status(obj, status, summary, endpoints, targets):
     """
     Show the status of targets.
 
@@ -107,4 +123,8 @@ def status(obj, status, endpoints, targets):
             filters.append(EndpointFilter(endpoints=graph.endpoints()))
 
         matches = filter_generic(targets=graph, filters=filters)
-        print_table(backend, graph, matches)
+
+        if not summary:
+            print_table(scheduler, graph, matches)
+        else:
+            print_summary(scheduler, graph, matches)
