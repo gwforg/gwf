@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 BASIC_FORMAT = "%(message)s"
 
-ADVANCED_FORMAT = "[%(levelname)s] %(message)s"
+ADVANCED_FORMAT = "%(levelname)s%(message)s"
 
 LOGGING_FORMATS = {
     "warning": BASIC_FORMAT,
@@ -33,11 +33,11 @@ def get_level(level):
     return getattr(logging, level.upper())
 
 
-def configure_logging(level_name, formatter_cls):
+def configure_logging(level_name):
     fmt = LOGGING_FORMATS[level_name]
 
     handler = logging.StreamHandler()
-    handler.setFormatter(formatter_cls(fmt=fmt))
+    handler.setFormatter(ColorFormatter(fmt=fmt))
 
     root = logging.getLogger()
     root.addHandler(handler)
@@ -113,12 +113,10 @@ def main(ctx, file, backend, verbose, no_color):
             no_color = config['no_color']
 
     if no_color:
-        formatter_cls = logging.Formatter
         # Hack for disabling all click colors. We basically lie to
         # click and pretend that the shell is never a TTY.
         click._compat.isatty = lambda s: False
-    else:
-        formatter_cls = ColorFormatter
-    configure_logging(level_name=verbose, formatter_cls=formatter_cls)
+
+    configure_logging(level_name=verbose)
 
     ctx.obj = {"file": file, "backend": backend}

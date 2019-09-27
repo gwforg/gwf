@@ -146,7 +146,7 @@ class ColorFormatter(logging.Formatter):
     STYLING = {
         "WARNING": dict(fg="yellow"),
         "INFO": dict(fg="blue"),
-        "DEBUG": dict(fg="black"),
+        "DEBUG": dict(fg="cyan"),
         "ERROR": dict(fg="red", bold=True),
         "CRITICAL": dict(fg="magenta", bold=True),
     }
@@ -156,9 +156,10 @@ class ColorFormatter(logging.Formatter):
         color_record = copy.copy(record)
         if record.levelname in self.STYLING:
             styling = self.STYLING[level]
-            color_record.levelname = click.style(record.levelname, **styling)
+            padded_level_name = '{:<7}'.format(record.levelname.lower())
+            color_record.levelname = click.style(padded_level_name, **styling)
             color_record.name = click.style(record.name, **styling)
-            color_record.msg = click.style(record.msg, **styling)
+            color_record.msg = record.msg
         return super().format(color_record)
 
 
