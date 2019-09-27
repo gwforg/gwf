@@ -13,6 +13,8 @@ Added
   documentation for more details.
 * Tutorial now explains what happens if a target fails.
 * Documentation now has an official list of *gwf* plugins.
+* The ``status`` command now has a ``--summary`` option the summarizes the
+  status of  an entire workflow.
 
 Changed
 -------
