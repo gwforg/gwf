@@ -53,20 +53,21 @@ def clean(obj, targets, all):
         os.path.getsize(path)
         if os.path.exists(path) and path not in target.protected else 0
         for target in matches
-        for path in target.outputs
+        for path in target.flattened_outputs()
     )
 
     logger.info("Will delete %s of files!", _format_size(total_size))
 
     for target in matches:
         logger.info("Deleting output files of %s", target.name)
-        for path in target.outputs:
+        for path in target.flattened_outputs():
             if path in target.protected:
                 logging.debug(
                     'Skpping deleting file "%s" from target "%s" because it is protected',
                     click.format_filename(path),
                     target.name,
                 )
+                continue
 
             logging.info(
                 'Deleting file "%s" from target "%s"',
