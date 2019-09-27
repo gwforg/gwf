@@ -576,7 +576,7 @@ class TestShouldRun(unittest.TestCase):
         self.assertEqual(
             logs.output,
             [
-                "DEBUG:gwf.core:TestTarget1 should run because one of its output files does not exist"
+                "DEBUG:gwf.core:TestTarget1 should run because its output file /some/dir/test_output1.txt does not exist"
             ],
         )
 
@@ -587,8 +587,8 @@ class TestShouldRun(unittest.TestCase):
         self.assertEqual(
             logs.output,
             [
-                "DEBUG:gwf.core:TestTarget1 should run because one of its output files does not exist",
-                "DEBUG:gwf.core:TestTarget2 should run because one of its dependencies should run",
+                "DEBUG:gwf.core:TestTarget1 should run because its output file /some/dir/test_output1.txt does not exist",
+                "DEBUG:gwf.core:TestTarget2 should run because its dependency TestTarget1 should run",
             ],
         )
 

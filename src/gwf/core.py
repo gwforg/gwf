@@ -689,6 +689,9 @@ class Graph:
         dependencies = defaultdict(set)
         dependents = defaultdict(set)
 
+        logger.debug('Building dependency graph from %d targets', len(targets))
+
+        with timer("Built dependency graph in %.3fms...", logger=logger):
         for target in targets.values():
             for path in target.flattened_outputs():
                 if path in provides:
@@ -723,6 +726,8 @@ class Graph:
 
         Raises :class:`WorkflowError` if a circular dependency is found.
         """
+        logger.debug('Checking for circular dependencies')
+
         fresh, started, done = 0, 1, 2
 
         nodes = self.targets.values()
@@ -872,18 +877,29 @@ class Scheduler:
         :param list targets:
             A list of targets to be scheduled.
         """
+        logger.debug('Scheduling %d targets', len(targets))
+
         schedules = []
+        submitted_targets = 0
+        with timer('Scheduled targets in %.3fms', logger=logger):
         for target in targets:
             was_submitted = self.schedule(target)
+                if was_submitted:
+                    submitted_targets += 1
             schedules.append(was_submitted)
+        logger.debug('Submitted %d targets', submitted_targets)
         return schedules
 
     @cache
     def should_run(self, target):
         """Return whether a target should be run or not."""
-        if any(self.should_run(dep) for dep in self.graph.dependencies[target]):
+
+        for dep in self.graph.dependencies[target]:
+            if self.should_run(dep):
             logger.debug(
-                "%s should run because one of its dependencies should run", target
+                    "%s should run because its dependency %s should run",
+                    target,
+                    dep,
             )
             return True
 
@@ -901,9 +917,12 @@ class Scheduler:
             logger.debug("%s should run because it is a sink", target)
             return True
 
-        if any(self._file_cache[path] is None for path in target.flattened_outputs()):
+        for path in target.flattened_outputs():
+            if self._file_cache[path] is None:
             logger.debug(
-                "%s should run because one of its output files does not exist", target
+                    "%s should run because its output file %s does not exist",
+                    target,
+                    path,
             )
             return True
 
@@ -933,10 +952,10 @@ class Scheduler:
 
         if youngest_in_ts > oldest_out_ts:
             logger.debug(
-                "%s should run since %s is larger than %s",
+                "%s should run because input file %s is newer than output file %s",
                 target,
-                youngest_in_ts,
-                oldest_out_ts,
+                youngest_in_path,
+                oldest_out_path,
             )
             return True
         return False
