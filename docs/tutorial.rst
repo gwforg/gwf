@@ -297,22 +297,26 @@ Run this workflow. You should see the following:
 Named Inputs and Outputs
 ========================
 
-.. versionchanged:: 1.6.0
+.. versionadded:: 1.6.0
     Prior versions only allow lists of inputs and outputs.
 
 The *inputs* and *outputs* arguments can either be a string, a list or a
 dictionary. If a dictionary is given, the keys act as names for the files. The
-values may be either strings or a list of strings::
+values may be either strings or a list of strings:
 
-    foo = Target(
+.. code-block:: python
+
+    foo = gwf.target(
         name='foo',
         inputs={'A': ['a1', 'a2'], 'B': 'b'},
         outputs={'C': ['a1b', 'a2b], 'D': 'd},
     )
 
-This is especially useful for referring the outputs of a target::
+This is especially useful for referring the outputs of a target:
 
-    bar = Target(
+.. code-block:: python
+
+    bar = gwf.target(
         name='bar',
         inputs=foo.outputs['C'],
         outputs='result',
