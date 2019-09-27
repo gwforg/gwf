@@ -766,6 +766,9 @@ class Graph:
     def __iter__(self):
         return iter(self.targets.values())
 
+    def __len__(self):
+        return len(self.targets)
+
     def __getitem__(self, target_name):
         return self.targets[target_name]
 
