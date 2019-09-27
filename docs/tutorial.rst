@@ -325,6 +325,52 @@ This is especially useful for referring the outputs of a target:
 Using named inputs and outputs also makes the workflow more readable since
 associated files can be grouped and named.
 
+Specifying Target Resources
+===========================
+
+It's a good idea to specify the resources required by your target. Backends like
+Slurm will use these resource limits to allocate a suitable node for you,
+prioritize work, and cancel your targets if they exceed the given limits.
+
+The resources you can specify depend on the backend. For example, the `local`
+backend does not support any target options and will ignore them completely.
+The `slurm` backend supports a number of target options which are listed
+:ref:`here <slurm_backend>` under the **Target options** header.
+
+For example, if you are using the *slurm* backend you can specify that you need
+8 cores and 64 GB of memory like this:
+
+.. code-block:: python
+
+    foo = gwf.target(
+        name='foo',
+        inputs={'A': ['a1', 'a2'], 'B': 'b'},
+        outputs={'C': ['a1b', 'a2b'], 'D': 'd'},
+        cores=8,
+        memory='64gb',
+    )
+
+    print(foo.options)
+    # => {'cores': 8, 'memory': '64gb'}
+
+Some target options are global to the workflow. To request 8 cores for all
+targets in your workflow, you can give the `defaults` argument when initializing
+your workflow:
+
+.. code-block:: python
+
+    gwf = Workflow(defaults={'cores': 8})
+
+    foo = gwf.target(
+        name='foo',
+        inputs={'A': ['a1', 'a2'], 'B': 'b'},
+        outputs={'C': ['a1b', 'a2b'], 'D': 'd'},
+    )
+
+    print(foo.options)
+    # => {'cores': 8}
+
+
 Observing Target Execution
 ==========================
 

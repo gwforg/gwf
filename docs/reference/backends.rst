@@ -16,6 +16,8 @@ Local
     gwf.backends.local.LocalBackend
 
 
+.. _slurm_backend:
+
 Slurm
 -----
 
