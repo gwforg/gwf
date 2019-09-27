@@ -19,15 +19,10 @@ def test_set_get(cli_runner):
 
 def test_unset(cli_runner):
     with cli_runner.isolated_filesystem():
-        import os
-
-        print(os.getcwd())
         res = cli_runner.invoke(main, ["config", "unset", "backend"])
-        print(res.output)
         assert res.exit_code == 0
 
         res = cli_runner.invoke(main, ["config", "get", "backend"])
-        print(res.exception)
         assert res.exit_code == 0
         assert res.output == "local\n"
 

@@ -2,7 +2,7 @@ import pytest
 
 from gwf.conf import FileConfig
 
-from gwf.exceptions import GWFError, ConfigurationError
+from gwf.exceptions import ConfigurationError
 
 
 def test_load_config_from_file(tmpdir):
@@ -36,7 +36,7 @@ def test_dump_config_to_file(tmpdir):
 
 def test_validator(tmpdir):
     config_path = tmpdir.join(".gwfconf.json")
-    c = FileConfig(".gwfconf.json")
+    c = FileConfig(config_path, data={})
 
     @c.validator("foo")
     def validate_foo(value):

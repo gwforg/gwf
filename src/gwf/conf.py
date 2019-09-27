@@ -2,14 +2,16 @@ import json
 from collections import ChainMap
 
 
-CONFIG_DEFAULTS = {"verbose": "info", "backend": "local", "no_color": None}
+CONFIG_DEFAULTS = {"verbose": "info", "backend": "local"}
 
 
 class FileConfig:
-    def __init__(self, path, data=None):
-        self.path = path
 
-        self._data = ChainMap({}, data)
+    def __init__(self, path, data, defaults=None):
+        self.path = path
+        if defaults is None:
+            defaults = {}
+        self._data = ChainMap(data, defaults)
         self._validators = {}
 
     def validator(self, key):
@@ -25,7 +27,9 @@ class FileConfig:
             self._validators[key](value)
 
     def get(self, key, default=None):
-        value = self._data.get(key, default)
+        value = self._data.get(key)
+        if value is None:
+            return default
         self._validate_value(key, value)
         return value
 
@@ -39,7 +43,8 @@ class FileConfig:
         self._data[key] = value
 
     def __delitem__(self, key):
-        del self._data[key]
+        if key in self._data:
+            del self._data[key]
 
     def __len__(self):
         return len(self._data)
@@ -50,10 +55,10 @@ class FileConfig:
     def dump(self):
         """Dump the configuration to disk."""
         with open(str(self.path), "w+") as config_file:
-            json.dump(dict(self._data), config_file, indent=4, sort_keys=True)
+            json.dump(dict(self._data.maps[0]), config_file, indent=4, sort_keys=True)
 
     @classmethod
-    def load(cls, path, data=None):
+    def load(cls, path, defaults=None):
         """Load configuration from a file.
 
         Reads configuration from `file` and returns a :class:`Config` instance
@@ -65,20 +70,14 @@ class FileConfig:
         """
         try:
             with open(str(path)) as config_file:
-                file_config = json.load(config_file)
+                data = json.load(config_file)
         except FileNotFoundError:
-            file_config = {}
-
-        if data is None:
             data = {}
-        else:
-            data = dict(data)
-        data.update(file_config)
-        return cls(path=path, data=data)
+        return cls(path=path, data=data, defaults=defaults)
 
 
 def config_from_path(path):
-    return FileConfig.load(path, data=CONFIG_DEFAULTS)
+    return FileConfig.load(path, defaults=CONFIG_DEFAULTS)
 
 
 config = config_from_path(".gwfconf.json")

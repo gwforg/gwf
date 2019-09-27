@@ -103,11 +103,11 @@ def main(ctx, file, backend, verbose, no_color):
     """
     ensure_dir(os.path.join(".gwf"))
 
-    # If the --use-color/--no-color argument is not set, get a value
-    # from the configuration file. If nothing has been configured,
-    # check if the NO_COLOR environment variable has been set.
+    # If the --use-color/--no-color argument is not set, get a value from the
+    # configuration file. If nothing has been configured, check if the NO_COLOR
+    # environment variable has been set.
     if no_color is None:
-        if config['no_color'] is None:
+        if config.get('no_color') is None:
             no_color = bool(os.getenv('NO_COLOR', False))
         else:
             no_color = config['no_color']
