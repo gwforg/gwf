@@ -39,11 +39,24 @@ def is_valid_name(candidate):
 
 
 def workflow_from_path(path):
+    """Return workflow object for the workflow given by `path`.
+
+    Returns a :class:`~gwf.Workflow` object containing the workflow object of
+    the workflow given by `path`.
+
+    :arg str path:
+        Path to a workflow file, optionally specifying a workflow object in that
+        file.
+    """
     basedir, filename, obj = parse_path(path)
     return load_workflow(basedir, filename, obj)
 
 
 def workflow_from_config(config):
+    """Return workflow object for the workflow specified by `config`.
+
+    See :func:`workflow_from_path` for further information.
+    """
     return workflow_from_path(config["file"])
 
 
