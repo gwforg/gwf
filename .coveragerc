@@ -1,5 +1,8 @@
 [run]
 branch = True
+omit = 
+    src/gwf/backends/sge.py
+    src/gwf/backends/local.py
 
 [report]
 sort = Cover
@@ -11,6 +14,7 @@ exclude_lines =
 
     # Don't complain about missing debug-only code:
     def __repr__
+    def __str__
     if self\.debug
 
     # Don't complain if tests don't hit defensive assertion code:
