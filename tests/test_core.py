@@ -997,3 +997,34 @@ def test_target_protected():
 
     assert target1.protected == {"test_output1.txt"}
     assert target2.protected == set()
+
+
+
+def test_target_list():
+    def my_template(path):
+        return AnonymousTarget(
+            inputs={'path': path},
+            outputs={'path': path + '.new'},
+            options={},
+        )
+
+    files = ['a', 'b', 'c']
+
+    workflow = Workflow(working_dir="/some/dir")
+    target_list = workflow.map(my_template, files)
+
+    assert len(target_list) == 3
+
+    assert len(target_list.outputs) == 3
+    assert target_list.outputs == [
+        {'path': 'a.new'},
+        {'path': 'b.new'},
+        {'path': 'c.new'},
+    ]
+
+    assert len(target_list.inputs) == 3
+    assert target_list.inputs == [
+        {'path': 'a'},
+        {'path': 'b'},
+        {'path': 'c'},
+    ]

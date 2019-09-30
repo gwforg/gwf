@@ -311,6 +311,42 @@ class Target(AnonymousTarget):
         return self.name
 
 
+class TargetList(list):
+    """A list of target objects with access to all inputs and outputs.
+
+    This is a thin wrapper around a normal list and thus provides all normal
+    ``list`` methods. However, it provides access to the collective
+    inputs and outputs of the targets contained in the list.
+    """
+
+    @property
+    def outputs(self):
+        """Return a list of the outputs of all targets.
+
+        The returned list may be a list of strings, lists or dictionaries
+        depending on the form of the outputs of the contained targets.
+        """
+        return [target.outputs for target in self]
+
+    @property
+    def inputs(self):
+        """Return a list of the inputs of all targets.
+
+        The returned list may be a list of strings, lists or dictionaries
+        depending on the form of the inputs of the contained targets.
+        """
+        return [target.inputs for target in self]
+
+    def __str__(self):
+        class_name = self.__class__.__name__
+        if not self:
+            return '{}(targets=[])'.format(class_name)
+        return '{}(targets=[{!r}, ...])'.format(class_name, self[0])
+
+    def __repr__(self):
+        return str(self)
+
+
 class Workflow(object):
     """Represents a workflow.
 
