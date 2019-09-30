@@ -33,10 +33,6 @@ def _norm_paths(working_dir, paths):
     return [_norm_path(working_dir, path) for path in paths]
 
 
-def _is_valid_list(obj):
-    return isinstance(obj, collections.Sequence) and not isinstance(obj, str)
-
-
 def is_valid_name(candidate):
     """Check whether `candidate` is a valid name for a target or workflow."""
     return re.match(r"^[a-zA-Z_][a-zA-Z0-9._]*$", candidate) is not None
