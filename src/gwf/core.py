@@ -519,6 +519,120 @@ class Workflow(object):
         self._add_target(new_target)
         return new_target
 
+    def map(self, template_func, inputs, extra=None, name=None, **kwargs):
+        """Add targets to the workflow given a template and a list of inputs.
+
+        This method accepts a template function and an iterable of inputs. For
+        each item in `inputs` it produces a target using the template function
+        and adds the target to this workflow.
+
+        For example, given this template:
+
+        .. code-block::
+
+            def copy_file(from_file):
+                inputs = {'from_file': from_file}
+                outputs = {'to_file': to_file + '.copy'}
+                options = {}
+                spec = "cp {from_file} {to_file}".format(from_file, to_file)
+                return AnonymousTarget(
+                    inputs=inputs,
+                    outputs=outputs,
+                    options=options,
+                    spec=spec
+                )
+
+        and this list of files:
+
+        .. code-block::
+
+            files = ['file1', 'file2', 'file3']
+
+        we can generate targets to copy all three files:
+
+        .. code-block::
+
+            gwf = Workflow()
+            res = gwf.map(copy_file, files)
+
+        The :func:`map` method returns a :class:`TargetList` which contains the
+        generated targets.
+
+        :param template_func:
+            A function or callable class instance that returns an
+            :class:`AnonymousTarget`. Essentially a *template function*.
+        :param iterable inputs:
+            An iterable of inputs for the generated targets. This can be an
+            iterable of strings, tuples or dictionaries.
+        :param mapping extra:
+            A mapping of extra keyword arguments to be passed to the template.
+        :param name: Must be either `None`, a string or a function.
+
+            If `None` is given, the name of each target will be generated from
+            the name of the template and an index.
+
+            If a string is given, e.g. `foo`, the generated names will be
+            `foo_0`, `foo_1`, etc.
+
+            If a function is given, it must have the signature
+            `f(idx, target)` where `idx` is the index and `target` is the
+            :class:`AnonymousTarget` returned by the template. The function
+            must return the name to assign to the target as a string.
+
+        Any remaining keyword arguments will be passed directly to
+        :func:`target_from_template` and thus override template-specified
+        target options.
+        """
+
+        if extra is None:
+            extra = {}
+
+        if not (
+            callable(template_func)
+            and (
+                hasattr(template_func, '__name__')
+                or hasattr(template_func, '__class__')
+            )
+        ):
+            raise ValueError(
+                "Argument `template_func` must be a function or a callable class instance."
+            )
+
+        def template_namer(idx, target):
+            if hasattr(template_func, '__name__'):
+                name = template_func.__name__
+            else:
+                name = template_func.__class__.__name__
+            return '{name}_{idx}'.format(name=name, idx=idx)
+
+        def string_namer(idx, target):
+            return '{name}_{idx}'.format(name=name, idx=idx)
+
+        if name is None:
+            name_func = template_namer
+        elif isinstance(name, str):
+            name_func = string_namer
+        else:
+            name_func = name
+
+        targets = TargetList()
+        for idx, args in enumerate(inputs):
+            if isinstance(args, collections.Mapping):
+                template = template_func(**args, **extra)
+            elif isinstance(args, collections.Iterable) and not isinstance(args, str):
+                template = template_func(*args, **extra)
+            else:
+                template = template_func(args, **extra)
+
+            target_name = name_func(idx, template)
+            target = self.target_from_template(
+                name=target_name,
+                template=template,
+                **kwargs
+            )
+            targets.append(target)
+        return targets
+
     def include_path(self, path, namespace=None):
         """Include targets from another :class:`gwf.Workflow` into this workflow.
 
