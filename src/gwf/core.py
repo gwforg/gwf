@@ -50,11 +50,13 @@ def workflow_from_config(config):
 def graph_from_path(path):
     """Return graph for the workflow given by `path`.
 
-    Returns a :class:`~gwf.Graph` object containing the workflow graph of the workflow given by `path`. Note that
-    calling this function computes the complete dependency graph which may take some time for large workflows.
+    Returns a :class:`~gwf.Graph` object containing the workflow graph of the
+    workflow given by `path`. Note that calling this function computes the
+    complete dependency graph which may take some time for large workflows.
 
     :arg str path:
-        Path to a workflow file, optionally specifying a workflow object in that file.
+        Path to a workflow file, optionally specifying a workflow object in that
+        file.
     """
     workflow = workflow_from_path(path)
     return Graph.from_targets(workflow.targets)
