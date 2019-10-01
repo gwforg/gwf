@@ -1,5 +1,5 @@
-from .core import AnonymousTarget, Graph, Scheduler, Target
-from .workflow import TargetList, Workflow
+from .core import Graph, Scheduler
+from .workflow import AnonymousTarget, Target, TargetList, Workflow
 
 __version__ = "1.6.0"
 

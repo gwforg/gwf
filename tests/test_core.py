@@ -4,7 +4,7 @@ from unittest.mock import Mock, call, patch
 import pytest
 
 from gwf import AnonymousTarget, Graph, Scheduler, Target, Workflow
-from gwf.core import _flatten
+from gwf.workflow import _flatten
 from gwf.backends import Backend, Status
 from gwf.backends.exceptions import LogError
 from gwf.exceptions import NameError, WorkflowError

@@ -1,8 +1,7 @@
 import pytest
 from unittest.mock import Mock, patch
 
-from gwf.core import AnonymousTarget
-from gwf.workflow import Workflow
+from gwf.workflow import AnonymousTarget, Workflow
 from gwf.exceptions import NameError, TypeError, WorkflowError
 
 

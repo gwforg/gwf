@@ -189,33 +189,3 @@ def ensure_trailing_newline(s):
     if not s:
         return "\n"
     return s if s[-1] == "\n" else s + "\n"
-
-
-def has_nonprintable_char(s):
-    chars = enumerate((unicodedata.category(char) == "Cc", char) for char in s)
-    for pos, (unprintable, char) in chars:
-        if unprintable:
-            return (
-                s.encode("unicode_escape").decode("utf-8"),
-                char.encode("unicode_escape").decode("utf-8"),
-                pos,
-            )
-    return None
-
-
-def check_path(path, target_name, mode):
-    if not path:
-        msg = 'Target "{}" has an empty {} path.'.format(target_name, mode)
-        raise WorkflowError(msg)
-
-    result = has_nonprintable_char(path)
-    if result is not None:
-        clean_path, char, pos = result
-        msg = (
-            'Path "{}" in target "{}" {}s contains a '
-            'non-printable character "{}" on position {}. '
-            "This is always unintentional and can cause "
-            "strange behaviour."
-        ).format(clean_path, target_name, mode, char, pos)
-        raise WorkflowError(msg)
-    return path
