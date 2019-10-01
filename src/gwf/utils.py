@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import os.path
+import re
 import sys
 import time
 import unicodedata
@@ -17,6 +18,11 @@ import click
 from gwf.exceptions import GWFError, WorkflowError
 
 logger = logging.getLogger(__name__)
+
+
+def is_valid_name(candidate):
+    """Check whether `candidate` is a valid name for a target or workflow."""
+    return re.match(r"^[a-zA-Z_][a-zA-Z0-9._]*$", candidate) is not None
 
 
 def cache(obj):
@@ -156,7 +162,7 @@ class ColorFormatter(logging.Formatter):
         color_record = copy.copy(record)
         if record.levelname in self.STYLING:
             styling = self.STYLING[level]
-            padded_level_name = '{:<7}'.format(record.levelname.lower())
+            padded_level_name = "{:<7}".format(record.levelname.lower())
             color_record.levelname = click.style(padded_level_name, **styling)
             color_record.name = click.style(record.name, **styling)
             color_record.msg = record.msg
@@ -181,18 +187,18 @@ def redirect_exception(old_exc, new_exc):
 
 def ensure_trailing_newline(s):
     if not s:
-        return '\n'
+        return "\n"
     return s if s[-1] == "\n" else s + "\n"
 
 
 def has_nonprintable_char(s):
-    chars = enumerate((unicodedata.category(char) == 'Cc', char) for char in s)
+    chars = enumerate((unicodedata.category(char) == "Cc", char) for char in s)
     for pos, (unprintable, char) in chars:
         if unprintable:
             return (
                 s.encode("unicode_escape").decode("utf-8"),
                 char.encode("unicode_escape").decode("utf-8"),
-                pos
+                pos,
             )
     return None
 
@@ -208,8 +214,8 @@ def check_path(path, target_name, mode):
         msg = (
             'Path "{}" in target "{}" {}s contains a '
             'non-printable character "{}" on position {}. '
-            'This is always unintentional and can cause '
-            'strange behaviour.'
+            "This is always unintentional and can cause "
+            "strange behaviour."
         ).format(clean_path, target_name, mode, char, pos)
         raise WorkflowError(msg)
     return path
