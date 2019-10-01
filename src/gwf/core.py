@@ -852,15 +852,15 @@ class Graph:
 
         logger.debug('Building dependency graph from %d targets', len(targets))
 
-        with timer("Built dependency graph in %.3fms...", logger=logger):
-        for target in targets.values():
-            for path in target.flattened_outputs():
-                if path in provides:
-                    msg = 'File "{}" provided by targets "{}" and "{}".'.format(
-                        path, provides[path].name, target
-                    )
-                    raise WorkflowError(msg)
-                provides[path] = target
+        with timer("Built dependency graph in %.3fms", logger=logger):
+            for target in targets.values():
+                for path in target.flattened_outputs():
+                    if path in provides:
+                        msg = 'File "{}" provided by targets "{}" and "{}".'.format(
+                            path, provides[path].name, target
+                        )
+                        raise WorkflowError(msg)
+                    provides[path] = target
 
         for target in targets.values():
             for path in target.flattened_inputs():
@@ -1043,11 +1043,11 @@ class Scheduler:
         schedules = []
         submitted_targets = 0
         with timer('Scheduled targets in %.3fms', logger=logger):
-        for target in targets:
-            was_submitted = self.schedule(target)
+            for target in targets:
+                was_submitted = self.schedule(target)
                 if was_submitted:
                     submitted_targets += 1
-            schedules.append(was_submitted)
+                schedules.append(was_submitted)
         logger.debug('Submitted %d targets', submitted_targets)
         return schedules
 
@@ -1057,12 +1057,12 @@ class Scheduler:
 
         for dep in self.graph.dependencies[target]:
             if self.should_run(dep):
-            logger.debug(
-                    "%s should run because its dependency %s should run",
-                    target,
-                    dep,
-            )
-            return True
+                logger.debug(
+                        "%s should run because its dependency %s should run",
+                        target,
+                        dep,
+                )
+                return True
 
         # Check whether all input files actually exists are are being provided
         # by another target. If not, it's an error.
@@ -1080,12 +1080,12 @@ class Scheduler:
 
         for path in target.flattened_outputs():
             if self._file_cache[path] is None:
-            logger.debug(
-                    "%s should run because its output file %s does not exist",
-                    target,
-                    path,
-            )
-            return True
+                logger.debug(
+                        "%s should run because its output file %s does not exist",
+                        target,
+                        path,
+                )
+                return True
 
         if target.is_source:
             logger.debug("%s should not run because it is a source", target)
