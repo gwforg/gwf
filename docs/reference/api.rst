@@ -13,40 +13,44 @@ workflow, checking the workflow for inconsistencies and circular dependencies.
 A target in a :class:`~gwf.Graph` can be scheduled on a
 :class:`~gwf.backends.Backend` using the :class:`~gwf.Scheduler`.
 
+Workflow
+--------
+
+.. automodule:: gwf
+    :members: Workflow, Target, AnonymousTarget, TargetList
+
 Core
 ----
 
 .. automodule:: gwf.core
-   :members:
-     workflow_from_config, workflow_from_path,
-     graph_from_config, graph_from_path,
-     AnonymousTarget, Target, TargetList,
-     Workflow, Graph, Scheduler
+    :members:
+        workflow_from_config, workflow_from_path,
+        graph_from_config, graph_from_path, Graph, Scheduler
 
 Backends
 --------
 
 .. automodule:: gwf.backends
-   :members: list_backends, backend_from_config, backend_from_name, Backend, Status
-   :inherited-members:
-   :undoc-members:
+    :members: list_backends, backend_from_config, backend_from_name, Backend, Status
+    :inherited-members:
+    :undoc-members:
 
 
 Log Managers
 ~~~~~~~~~~~~
 
 .. automodule:: gwf.backends.logmanager
-   :members: FileLogManager, MemoryLogManager
+    :members: FileLogManager, MemoryLogManager
 
 Filtering
 ---------
 
 .. automodule:: gwf.filtering
-   :members: filter_generic, filter_names
-   :undoc-members:
+    :members: filter_generic, filter_names
+    :undoc-members:
 
 Helpers for filtering:
 
 .. automodule:: gwf.filtering
-   :members: ApplyMixin
-   :undoc-members:
+    :members: ApplyMixin
+    :undoc-members:
