@@ -29,7 +29,7 @@ init:
 	pip install -e . --no-deps
 
 test:
-	coverage run --source gwf -m pytest
+	coverage run --source gwf -m pytest --doctest-modules --ignore=examples/
 
 lint:
 	flake8 src/gwf
