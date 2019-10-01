@@ -30,7 +30,7 @@ def config():
 @click.argument("key")
 def get(key):
     """Get the value of KEY."""
-    click.echo(_config.get(key, '<not set>'))
+    click.echo(_config.get(key, "<not set>"))
 
 
 @config.command()

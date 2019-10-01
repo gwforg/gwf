@@ -16,7 +16,7 @@ STATUS_ORDER = (
     TargetStatus.SHOULDRUN,
     TargetStatus.SUBMITTED,
     TargetStatus.RUNNING,
-    TargetStatus.COMPLETED
+    TargetStatus.COMPLETED,
 )
 
 
@@ -69,19 +69,24 @@ def print_table(scheduler, graph, targets):
 
 def print_summary(backend, graph, targets):
     from collections import Counter
+
     scheduler = Scheduler(backend=backend, graph=graph)
     status_counts = Counter(scheduler.status(target) for target in targets)
-    click.echo('{:<15}{:>10}'.format('total', len(targets)))
+    click.echo("{:<15}{:>10}".format("total", len(targets)))
     for status in STATUS_ORDER:
         color = STATUS_COLORS[status]
-        padded_name = '{:<15}'.format(status.name.lower())
-        click.echo('{}{:>10}'.format(click.style(padded_name, fg=color), status_counts[status]))
+        padded_name = "{:<15}".format(status.name.lower())
+        click.echo(
+            "{}{:>10}".format(click.style(padded_name, fg=color), status_counts[status])
+        )
 
 
 @click.command()
 @click.argument("targets", nargs=-1)
 @click.option("--endpoints", is_flag=True, default=False, help="Show only endpoints.")
-@click.option("--summary", is_flag=True, default=False, help="Only show summary statistics.")
+@click.option(
+    "--summary", is_flag=True, default=False, help="Only show summary statistics."
+)
 @click.option(
     "-s",
     "--status",

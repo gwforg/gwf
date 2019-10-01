@@ -51,7 +51,8 @@ def clean(obj, targets, all):
 
     total_size = sum(
         os.path.getsize(path)
-        if os.path.exists(path) and path not in target.protected else 0
+        if os.path.exists(path) and path not in target.protected
+        else 0
         for target in matches
         for path in target.flattened_outputs()
     )

@@ -906,4 +906,3 @@ def test_target_list():
 
     assert len(target_list.inputs) == 3
     assert target_list.inputs == [{"path": "a"}, {"path": "b"}, {"path": "c"}]
-

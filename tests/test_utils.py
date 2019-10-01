@@ -65,6 +65,6 @@ def test_dict_write_read(tmpdir):
 
 
 def test_ensure_trailing_newline():
-    assert ensure_trailing_newline('') == '\n'
-    assert ensure_trailing_newline('foo\nbar\n') == 'foo\nbar\n'
-    assert ensure_trailing_newline('foo\nbar') == 'foo\nbar\n'
+    assert ensure_trailing_newline("") == "\n"
+    assert ensure_trailing_newline("foo\nbar\n") == "foo\nbar\n"
+    assert ensure_trailing_newline("foo\nbar") == "foo\nbar\n"

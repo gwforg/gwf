@@ -87,9 +87,7 @@ def validate_no_color(value):
     help="Verbosity level.",
 )
 @click.option(
-    "--no-color/--use-color",
-    default=None,
-    help="Enable or disable output colors.",
+    "--no-color/--use-color", default=None, help="Enable or disable output colors."
 )
 @click.pass_context
 def main(ctx, file, backend, verbose, no_color):
@@ -107,10 +105,10 @@ def main(ctx, file, backend, verbose, no_color):
     # configuration file. If nothing has been configured, check if the NO_COLOR
     # environment variable has been set.
     if no_color is None:
-        if config.get('no_color') is None:
-            no_color = bool(os.getenv('NO_COLOR', False))
+        if config.get("no_color") is None:
+            no_color = bool(os.getenv("NO_COLOR", False))
         else:
-            no_color = config['no_color']
+            no_color = config["no_color"]
 
     if no_color:
         # Hack for disabling all click colors. We basically lie to

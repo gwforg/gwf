@@ -6,7 +6,6 @@ CONFIG_DEFAULTS = {"verbose": "info", "backend": "local"}
 
 
 class FileConfig:
-
     def __init__(self, path, data, defaults=None):
         self.path = path
         if defaults is None:
