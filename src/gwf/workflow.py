@@ -13,6 +13,75 @@ from .exceptions import WorkflowError, NameError, TypeError
 from .utils import is_valid_name, parse_path, load_workflow
 
 
+def select(lst, fields):
+    """Select fields from an iterable of dictionaries.
+
+    Given an iterable of dictionaries and an iterable of key names, selects the
+    given key names from the dictionaries and returns an iterable of
+    dictionaries containing only those keys.
+
+    For example, given the list::
+
+        >>> lst = [
+        ...     {'A': 'a1', 'B': 'b1'},
+        ...     {'A': 'a2', 'B': 'b2'},
+        ...     {'A': 'a3', 'B': 'b3'},
+        ... ]
+
+    We can select only the `A` keys from the dictionaries with::
+
+        >>> list(select(lst, ['A']))
+        [{'A': 'a1'}, {'A': 'a2'}, {'A': 'a3'}]
+
+    :param iterable lst:
+        An iterable of dictionaries.
+    :param iterable fields:
+        An iterable of key names.
+    """
+    fields = tuple(fields)
+    for item in lst:
+        dct = {}
+        for name in fields:
+            dct[name] = item[name]
+        yield dct
+
+
+def collect(lst, fields, rename=None):
+    """Collect values from an iterable of dictionaries into a dictionary.
+
+    Given an iterable of dictionaries and an iterable of key names, collect the
+    value of each field name in `fields` and return a dictionary of lists for
+    each field.
+
+    For example, given the list:
+
+        >>> lst = [
+        ...     {'A': 'a1', 'B': 'b1'},
+        ...     {'A': 'a2', 'B': 'b2'},
+        ...     {'A': 'a3', 'B': 'b3'},
+        ... ]
+
+    We can collect the values into a dictionary of lists with::
+
+        >>> collect(lst, ['A'])
+        {'As': ['a1', 'a2', 'a3']}
+
+    :param iterable lst:
+        An iterable of dictionaries.
+    :param iterable fields:
+        An iterable of key names.
+    """
+    fields = tuple(fields)
+    if rename is None:
+        rename = {}
+    selected = collections.defaultdict(list)
+    for item in lst:
+        for name in fields:
+            selected_name = rename.get(name, name + "s")
+            selected[selected_name].append(item[name])
+    return dict(selected)
+
+
 class TargetList(list):
     """A list of target objects with access to all inputs and outputs.
 
