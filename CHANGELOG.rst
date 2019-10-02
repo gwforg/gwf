@@ -5,6 +5,16 @@ Change Log
 Version 1.6.0
 =============
 
+This release contains a few large features such as named inputs and outputs
+and the introduction of the :class:`Workflow.map` method for easily generating
+multiple targets from a template and improving readability.
+
+There are also several minor improvements that contribute to the overall
+user experience ranging from speed improvements for the ``logs`` command to
+improved debugging output.
+
+The documentation has also been restructured and improved.
+
 Added
 -----
 
