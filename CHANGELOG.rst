@@ -23,6 +23,9 @@ Changed
   graph.
 * The target in the ``status`` output is now sorted in creation order, instead
   of alphabetically.
+* Cleaner output formatting, especially when running with ``-v debug``.
+* Improved log messages from scheduler when running with ``-v debug``. The
+  messages are now more specific and helpful.
 
 Fixed
 -----
