@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: 216c5ca0fea5172d6d2a483a871d670757c254dea9d6099a8d8e24d062b0d485
+  sha256: 28e17099b0219d047a63a37f78f861fff847947fa40101eb2764b4daeb36ead9
 
 build:
   number: 0
@@ -42,7 +42,6 @@ about:
   home: http://gwf.readthedocs.io/
   license: GNU General Public v3 (GPLv3)
   license_family: GPL3
-  license_file: ../LICENSE
   summary: A flexible, pragmatic workflow tool.
   doc_url: https://gwf.readthedocs.io
   dev_url: https://github.com/gwforg/gwf
