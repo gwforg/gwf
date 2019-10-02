@@ -12,7 +12,8 @@ Merging Changes
 1. Make sure that the changes have proper test coverage, e.g. by checking the branch
    on `Coveralls <https://coveralls.io/github/gwforg/gwf>`_.
 
-2. Check that the PR includes necessary updates of ``CHANGELOG.rst`` and ``CONTRIBUTORS.rst``.
+2. Check that the PR includes necessary updates of :file:`CHANGELOG.rst` and
+   :file:`CONTRIBUTORS.rst`.
 
 3. Always make a merge commit (don't rebase/fast-forward). The merge commit will be
    referenced in the change log.
@@ -41,6 +42,6 @@ Rolling a New Release
 6. Run ``make package``, then ``make publish`` to publish the source
    distribution and wheel to PyPI.
 
-7. Run ``make package-conda``, then ``make publish-conda
+7. Run ``make package-conda``, then ``make publish-conda``
 
 The documentation will be automatically be built by `ReadTheDocs`.

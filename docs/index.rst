@@ -22,64 +22,30 @@ Contributing
   We aim to make *gwf* a community developed project. Learn how to
   :doc:`contribute </development/forcontributors>`.
 
-Installation
-============
-
-To install *gwf* via pip::
-
-    pip install gwf
-
-To install *gwf* via conda::
-
-    conda config --add channels gwforg
-    conda install gwf
-
-We recommend that you install *gwf* in a project-specific environment::
-
-    conda config --add channels gwforg
-    conda create -n myproject python=3.5 gwf dep1 dep2 ...
-    source activate myproject
-
-You can find the code for *gwf* `here <https://github.com/gwforg/gwf>`_. You are
-encouraged to report any issues through the
-`issue tracker <https://github.com/gwforg/gwf/issues>`_, which is also a good place
-to ask questions.
-
-Getting Started
-===============
-
-.. toctree::
-   :maxdepth: 2
-
-   tutorial
-   patterns
-   plugins
-
-Topic Guides
+User's Guide
 ============
 
 .. toctree::
-   :maxdepth: 2
+  :maxdepth: 3
 
-   topic-guides/index
+  guide/index
 
 Development
 ===========
 
 .. toctree::
-   :maxdepth: 2
+  :maxdepth: 2
 
-   development/index
+  development/index
+  changelog
 
-Reference
-=========
+API Reference
+=============
 
 .. toctree::
-   :maxdepth: 2
+  :maxdepth: 3
 
-   reference/settings
-   reference/backends
-   reference/api
+  reference/index
 
-.. include:: ../CHANGELOG.rst
+
 .. include:: ../CONTRIBUTORS.rst
