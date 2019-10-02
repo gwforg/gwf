@@ -15,6 +15,10 @@ Added
 * Documentation now has an official list of *gwf* plugins.
 * The ``status`` command now has a ``--summary`` option the summarizes the
   status of  an entire workflow.
+* All input and output paths are now checked for non-printable characters such
+  as newlines and tabs. This can cause problems that are very hard to find and
+  fix (e.g. *gwf* reporting that a file is missing even though it seems to be
+  there). Paths containing such characters now result in an error.
 
 Changed
 -------
