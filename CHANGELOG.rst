@@ -30,6 +30,8 @@ Changed
 * Cleaner output formatting, especially when running with ``-v debug``.
 * Improved log messages from scheduler when running with ``-v debug``. The
   messages are now more specific and helpful.
+* Documentation has been restructured to be more readable and have less
+  redundant information.
 
 Fixed
 -----
