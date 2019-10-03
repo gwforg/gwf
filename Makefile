@@ -41,8 +41,10 @@ docs:
 	$(MAKE) -C docs html
 
 clean:
-	find . -name "*.egg-info" -type d -exec rm -rf {} ';'
-	find . -name ".gwf" -type d -exec rm -rf {} ';'
+	find . -prune -name "*.egg-info" -type d -exec rm -rf {} ';'
+	find . -prune -name ".gwf" -type d -exec rm -rf {} ';'
+	find . -prune -name ".eggs" -type d -exec rm -rf {} ';'
+	find . -prune -name "__pycache__" -type d -exec rm -rf {} ';'
 	rm -rf docs/_build .gwfconf.json build/ dist/ .gwf .pytest_cache .egg conda-bld
 
 # PyPI
