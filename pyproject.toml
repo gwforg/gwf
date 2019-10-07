@@ -27,6 +27,9 @@ packages = [
 
 include = ["CHANGELOG.rst", "CONTRIBUTORS.rst", "LICENSE"]
 
+[tool.poetry.scripts]
+gwf = "gwf.cli:main"
+
 [tool.poetry.plugins]
 
 [tool.poetry.plugins."gwf.backends"]
