@@ -1,11 +1,7 @@
 import os
 import click
 from ..core import graph_from_config
-
-
-def touchfile(path):
-    with open(path, "a"):
-        os.utime(path, None)
+from ..utils import touchfile
 
 
 @click.command()

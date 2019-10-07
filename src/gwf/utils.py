@@ -188,3 +188,8 @@ def ensure_trailing_newline(s):
     if not s:
         return "\n"
     return s if s[-1] == "\n" else s + "\n"
+
+
+def touchfile(path):
+    with open(path, "a"):
+        os.utime(path, None)
