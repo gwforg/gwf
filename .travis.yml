@@ -4,9 +4,12 @@ python:
   - "3.6"
   - "3.7"
   - "pypy3"
-install: make init
-script: make test
+before_install:
+  - pip install poetry
+install:
+  - make init
+script:
+  - make test
 after_success:
-  - pip install coveralls
-  - coveralls
+  - poetry run coveralls
 

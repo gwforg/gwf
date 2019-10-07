@@ -25,35 +25,34 @@ help:
 	@echo "    make publish-conda     publish distributions to pypi"
 
 init:
-	pip install -r requirements.txt
-	pip install -e . --no-deps
+	poetry install
 
 test:
-	coverage run --source gwf -m pytest --doctest-modules --ignore=examples/
+	poetry run coverage run --source gwf -m pytest --doctest-modules --ignore=examples/
 
 lint:
-	flake8 src/gwf
+	poetry run flake8 src/gwf
 
 coverage:
-	coverage report
+	poetry run coverage report
 
 docs:
-	$(MAKE) -C docs html
+	poetry run $(MAKE) -C docs html
 
 clean:
 	find . -prune -name "*.egg-info" -type d -exec rm -rf {} ';'
 	find . -prune -name ".gwf" -type d -exec rm -rf {} ';'
 	find . -prune -name ".eggs" -type d -exec rm -rf {} ';'
 	find . -prune -name "__pycache__" -type d -exec rm -rf {} ';'
-	rm -rf docs/_build .gwfconf.json build/ dist/ .gwf .pytest_cache .egg conda-bld
+	rm -rf docs/_build .gwfconf.json build/ dist/ .gwf .pytest_cache .egg conda-bld .coverage
 
 # PyPI
 
 package: clean
-	python setup.py sdist bdist_wheel
+	poetry build
 
 publish:
-	twine upload dist/*
+	poetry publish
 
 # Conda
 
