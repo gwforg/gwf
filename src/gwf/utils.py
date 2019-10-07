@@ -8,14 +8,13 @@ import os.path
 import re
 import sys
 import time
-import unicodedata
 from collections import UserDict
 from contextlib import ContextDecorator
 from functools import wraps
 
 import click
 
-from gwf.exceptions import GWFError, WorkflowError
+from gwf.exceptions import GWFError
 
 logger = logging.getLogger(__name__)
 
