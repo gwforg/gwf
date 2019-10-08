@@ -401,7 +401,6 @@ def test_exception_if_input_file_is_not_provided_and_output_file_exists():
     target = workflow.target("TestTarget", inputs=["in.txt"], outputs=["out.txt"])
 
     graph = Graph.from_targets(workflow.targets)
-    print(graph.unresolved)
     backend = DummyBackend()
     scheduler = Scheduler(
         graph=graph,
