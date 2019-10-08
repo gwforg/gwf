@@ -44,10 +44,16 @@ def configure_logging(level_name):
     root.setLevel(get_level(level_name))
 
 
-def _validate_choice(key, value, choices):
-    if value not in choices:
+def _validate_choice(key, value, valid_values, human_values=None):
+    if value not in valid_values:
         msg = 'Invalid value "{}" for key "{}", must be one of: {}.'
-        raise ConfigurationError(msg.format(value, key, ", ".join(choices)))
+        values = valid_values if human_values is None else human_values
+        raise ConfigurationError(msg.format(value, key, ", ".join(values)))
+
+
+def _validate_bool(key, value):
+    human_values = ("true", "yes", "false", "no")
+    return _validate_choice(key, value, (True, False), human_values)
 
 
 @config.validator("backend")
@@ -62,10 +68,8 @@ def validate_verbose(value):
 
 @config.validator("no_color")
 def validate_no_color(value):
-    choices = ("true", "yes", "false", "no")
-    if value not in (True, False, None):
-        msg = 'Invalid value "{}" for key "no_color", must be one of: {}.'
-        raise ConfigurationError(msg.format(value, ", ".join(choices)))
+    return _validate_bool("no_color", value)
+
 
 
 @with_plugins(iter_entry_points("gwf.plugins"))
