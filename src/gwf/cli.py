@@ -1,6 +1,5 @@
 import logging
 import os
-import os.path
 from pkg_resources import iter_entry_points
 
 import click
@@ -103,7 +102,7 @@ def main(ctx, file, backend, verbose, no_color):
 
     Shows help for the status command.
     """
-    ensure_dir(os.path.join(".gwf"))
+    ensure_dir(".gwf")
 
     # If the --use-color/--no-color argument is not set, get a value from the
     # configuration file. If nothing has been configured, check if the NO_COLOR
