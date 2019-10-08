@@ -70,6 +70,10 @@ def validate_no_color(value):
     return _validate_bool("no_color", value)
 
 
+@config.validator("check_updates")
+def validate_check_updates(value):
+    return _validate_bool("check_updates", value)
+
 
 @with_plugins(iter_entry_points("gwf.plugins"))
 @click.group(context_settings={"obj": {}})
