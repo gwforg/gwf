@@ -1,4 +1,3 @@
-import os
 import click
 from ..core import graph_from_config
 from ..utils import touchfile
