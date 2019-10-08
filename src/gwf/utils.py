@@ -161,7 +161,7 @@ class ColorFormatter(logging.Formatter):
         color_record = copy.copy(record)
         if record.levelname in self.STYLING:
             styling = self.STYLING[level]
-            padded_level_name = "{:<7}".format(record.levelname.lower())
+            padded_level_name = "{:<10}".format(record.levelname.lower())
             color_record.levelname = click.style(padded_level_name, **styling)
             color_record.name = click.style(record.name, **styling)
             color_record.msg = record.msg
