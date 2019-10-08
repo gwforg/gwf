@@ -2,6 +2,18 @@
 Change Log
 ==========
 
+
+Version 1.7.0
+=============
+
+Added
+-----
+
+* Automatically checks for updates on a regular basis. A warning will be shown
+  when a new version is available. This feature can be disabled with
+  ``gwf config set check_updates no``.
+
+
 Version 1.6.0
 =============
 
