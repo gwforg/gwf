@@ -7,8 +7,8 @@ import click
 from click_plugins import with_plugins
 
 from . import __version__
-from .conf import config
 from .backends import list_backends
+from .conf import config
 from .exceptions import ConfigurationError
 from .utils import ColorFormatter, ensure_dir
 
