@@ -252,7 +252,7 @@ def retry(on_exc, max_retries=10, callback=None):
     """
 
     def retry_decorator(func):
-        def wrapper(*args, **kwargs):
+        @wraps(func)
             for retries in itertools.count():  # pragma: no cover
                 if retries >= max_retries:
                     raise RetryError(func.__name__)
