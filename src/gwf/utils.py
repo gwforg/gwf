@@ -253,6 +253,7 @@ def retry(on_exc, max_retries=10, callback=None):
 
     def retry_decorator(func):
         @wraps(func)
+        def func_wrapper(*args, **kwargs):
             for retries in itertools.count():  # pragma: no cover
                 if retries >= max_retries:
                     raise RetryError(func.__name__)
@@ -272,7 +273,7 @@ def retry(on_exc, max_retries=10, callback=None):
                     )
                     time.sleep(delay)
 
-        return wrapper
+        return func_wrapper
 
     return retry_decorator
 
