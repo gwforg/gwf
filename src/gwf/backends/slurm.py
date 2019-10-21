@@ -61,8 +61,10 @@ def _call_generic(executable_name, *args, input=None):
     )
     stdout, stderr = proc.communicate(input)
 
-    # Some commands, like scancel, do not return a non-zero exit code if they fail. The only way to check if they failed
-    # is by checking whether an error message occurred in standard error, so we check both the return code and stderr.
+    # Some commands, like scancel, do not return a non-zero exit code if they
+    # fail. The only way to check if they failed is by checking whether an
+    # error message occurred in standard error, so we check both the return
+    # code and stderr.
     if proc.returncode != 0 or "error:" in stderr:
         raise BackendError(stderr)
     return stdout
@@ -73,8 +75,9 @@ def _call_squeue():
 
 
 def _call_scancel(job_id):
-    # The --verbose flag here is necessary, otherwise we're not able to tell whether the command failed. See the comment
-    # in _call_generic() if you want to know more.
+    # The --verbose flag here is necessary, otherwise we're not able to tell
+    # whether the command failed. See the comment in _call_generic() if you
+    # want to know more.
     return _call_generic("scancel", "--verbose", job_id)
 
 
@@ -100,9 +103,11 @@ class SlurmBackend(Backend):
 
     **Backend options:**
 
-    * **backend.slurm.log_mode (str):** Must be either `full`, `merged` or `none`. If `full`, two log files will be
-      stored for each target, one for standard output and one for standard error. If `merged`, only one log file will
-      be written containing the combined streams. If `none`, no logs will be stored. (default: `full`).
+    * **backend.slurm.log_mode (str):** Must be either `full`, `merged` or
+      `none`. If `full`, two log files will be stored for each target, one for
+      standard output and one for standard error. If `merged`, only one log
+      file will be written containing the combined streams. If `none`, no logs
+      will be stored. (default: `full`).
 
     **Target options:**
 
