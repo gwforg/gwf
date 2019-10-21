@@ -1,6 +1,7 @@
 import copy
 import functools
 import importlib
+import itertools
 import json
 import logging
 import os
@@ -17,7 +18,6 @@ from urllib.request import urlopen
 import click
 
 from gwf.exceptions import GWFError
-
 
 UPDATE_CHECK_URL = "https://pypi.org/pypi/gwf/json"
 UPDATE_CHECK_FILE = ".gwf/update"
@@ -233,3 +233,48 @@ def get_latest_version():
     except socket.timeout:
         logger.debug("Connect to version server timed out.")
         return None
+
+
+class RetryError(Exception):
+    """Raised when max_retries has been exceeded."""
+
+
+def retry(on_exc, max_retries=10, callback=None):
+    """Retry a function with exponentially increasing delay.
+
+    This will retry the decorated function up to `max_retries` times. A retry
+    will only be attempted if the exception raised by the wrapped function is
+    in `on_exc`.
+
+    If `callback(retries, delay)` is given, it must be a callable the number of
+    retries so far as the first argument and the current delay as the second
+    argument. Its return value is ignored.
+    """
+
+    def retry_decorator(func):
+        def wrapper(*args, **kwargs):
+            for retries in itertools.count():  # pragma: no cover
+                if retries >= max_retries:
+                    raise RetryError(func.__name__)
+
+                try:
+                    return func(*args, **kwargs)
+                except on_exc as exc:
+                    delay = (2 ** retries) // 2
+                    if callback is not None:
+                        callback(retries, delay)
+
+                    logger.exception(exc)
+                    logger.warning(
+                        "Call to %s failed, retrying in %d seconds.",
+                        func.__name__,
+                        delay,
+                    )
+                    time.sleep(delay)
+
+        return wrapper
+
+    return retry_decorator
+
+
+retry.RetryError = RetryError
