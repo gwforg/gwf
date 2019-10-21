@@ -28,13 +28,10 @@ init:
 	poetry install
 
 test:
-	poetry run coverage run --source gwf -m pytest --doctest-modules --ignore=examples/
+	poetry run pytest --doctest-modules --cov-config=.coveragerc --cov=src/gwf tests/
 
 lint:
 	poetry run flake8 src/gwf
-
-coverage:
-	poetry run coverage report
 
 docs:
 	poetry run $(MAKE) -C docs html
