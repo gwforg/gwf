@@ -239,7 +239,7 @@ class RetryError(Exception):
     """Raised when max_retries has been exceeded."""
 
 
-def retry(on_exc, max_retries=10, callback=None):
+def retry(on_exc, max_retries=3, callback=None):
     """Retry a function with exponentially increasing delay.
 
     This will retry the decorated function up to `max_retries` times. A retry
