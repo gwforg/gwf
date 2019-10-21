@@ -254,13 +254,16 @@ def retry(on_exc, max_retries=10, callback=None):
     def retry_decorator(func):
         @wraps(func)
         def func_wrapper(*args, **kwargs):
+            last_exc = None
             for retries in itertools.count():  # pragma: no cover
                 if retries >= max_retries:
-                    raise RetryError(func.__name__)
+                    raise RetryError(func.__name__) from last_exc
 
                 try:
                     return func(*args, **kwargs)
                 except on_exc as exc:
+                    last_exc = exc
+
                     delay = (2 ** retries) // 2
                     if callback is not None:
                         callback(retries, delay)
