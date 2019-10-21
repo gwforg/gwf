@@ -149,7 +149,11 @@ class SlurmBackend(Backend):
     }
 
     def __init__(self):
-        self._status = _parse_squeue_output(_call_squeue())
+        try:
+            self._status = _parse_squeue_output(_call_squeue())
+        except retry.RetryError as exc:
+            raise BackendError("Could not get queue state") from exc
+
         self._tracked = PersistableDict(path=".gwf/slurm-backend-tracked.json")
 
     def status(self, target):
@@ -161,16 +165,22 @@ class SlurmBackend(Backend):
     def submit(self, target, dependencies):
         script = self._compile_script(target)
         dependency_ids = self._collect_dependency_ids(dependencies)
-        stdout = _call_sbatch(script, dependency_ids)
-        job_id = stdout.strip()
-        self._add_job(target, job_id)
+        try:
+            stdout = _call_sbatch(script, dependency_ids)
+        except retry.RetryError as exc:
+            raise BackendError("Could not submit target") from exc
+        else:
+            job_id = stdout.strip()
+            self._add_job(target, job_id)
 
     def cancel(self, target):
         try:
             job_id = self.get_job_id(target)
             _call_scancel(job_id)
-        except (KeyError, BackendError):
-            raise TargetError(target.name)
+        except KeyError as exc:
+            raise TargetError(target.name) from exc
+        except retry.RetryError as exc:
+            raise BackendError("Could not cancel target") from exc
         else:
             self.forget_job(target)
 

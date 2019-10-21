@@ -139,6 +139,11 @@ def test_submit_1(popen):
         backend.submit(t3, [t4])
 
     popen.return_value.returncode = 1
+    popen.return_value.communicate.side_effect = [
+        ("", "This is stderr\n"),
+        ("", "This is stderr\n"),
+        ("", "This is stderr\n"),
+    ]
     with pytest.raises(BackendError):
         backend.submit(t4, [])
 
