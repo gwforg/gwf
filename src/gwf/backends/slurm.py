@@ -5,7 +5,7 @@ from distutils.spawn import find_executable
 
 from . import Backend, Status
 from ..conf import config
-from ..utils import PersistableDict, ensure_trailing_newline
+from ..utils import PersistableDict, ensure_trailing_newline, retry
 from .exceptions import BackendError, DependencyError, TargetError
 from .logmanager import FileLogManager
 
@@ -70,10 +70,12 @@ def _call_generic(executable_name, *args, input=None):
     return stdout
 
 
+@retry(on_exc=BackendError)
 def _call_squeue():
     return _call_generic("squeue", "--noheader", "--format=%i;%t")
 
 
+@retry(on_exc=BackendError)
 def _call_scancel(job_id):
     # The --verbose flag here is necessary, otherwise we're not able to tell
     # whether the command failed. See the comment in _call_generic() if you
@@ -81,6 +83,7 @@ def _call_scancel(job_id):
     return _call_generic("scancel", "--verbose", job_id)
 
 
+@retry(on_exc=BackendError)
 def _call_sbatch(script, dependencies):
     args = ["--parsable"]
     if dependencies:
