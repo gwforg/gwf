@@ -1,14 +1,14 @@
+import logging
 import unittest
 from unittest.mock import Mock, call, patch
 
 import pytest
 
 from gwf import AnonymousTarget, Graph, Scheduler, Target, Workflow
-from gwf.workflow import _flatten
 from gwf.backends import Backend, Status
 from gwf.backends.exceptions import LogError
 from gwf.exceptions import NameError, WorkflowError
-
+from gwf.workflow import _flatten
 
 FLATTEN_TESTS = [
     (["a", "b"], ["a", "b"]),
@@ -905,9 +905,6 @@ def test_target_list():
 
     assert len(target_list.inputs) == 3
     assert target_list.inputs == [{"path": "a"}, {"path": "b"}, {"path": "c"}]
-
-
-import logging
 
 
 class FakeBackend(Backend):
