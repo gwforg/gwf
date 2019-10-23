@@ -7,8 +7,8 @@ A flexible, pragmatic workflow tool.
 |docs| |anacondaversion| |anacondadownloads| |cistatus| |coveralls|
 
 *gwf* is a flexible, pragmatic workflow tool for building and running large,
-scientific workflows. It runs on Python 3.5+ and is developed at the Bioinformatics
-Research Centre (BiRC), Aarhus University.
+scientific workflows. It runs on Python 3.5+ and is developed at the
+Bioinformatics Research Centre (BiRC), Aarhus University.
 
 Examples
   To get a feeling for what a *gwf* workflow looks like, have a look at a few
@@ -16,7 +16,7 @@ Examples
 
 Getting started
   To quickly get started writing workflows in *gwf* you can read the
-  `tutorial`_.
+  `User's Guide <usersguide>`_.
 
 Extending
   We don't have the backend you need to run your workflow on your cluster?
@@ -26,9 +26,11 @@ Contributing
   We aim to make *gwf* a community developed project. Learn how to
   `contribute`_.
 
-.. _tutorial: https://docs.gwf.app/en/stable/guide/index.html
+.. _usersguide: https://docs.gwf.app/en/stable/guide/index.html
 .. _writingbackends: https://docs.gwf.app/en/stable/development/writingbackends.html
 .. _contribute: https://docs.gwf.app/en/stable/development/forcontributors.html
+
+..
 
 
 .. |cistatus| image:: https://img.shields.io/travis/gwforg/gwf.svg
