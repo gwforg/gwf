@@ -12,25 +12,24 @@ Bioinformatics Research Centre (BiRC), Aarhus University.
 
 Examples
   To get a feeling for what a *gwf* workflow looks like, have a look at a few
-  `examples <https://github.com/mailund/gwf/tree/master/examples>`_.
+  `examples`_.
 
 Getting started
   To quickly get started writing workflows in *gwf* you can read the
-  `User's Guide <usersguide>`_.
+  `User's Guide`_.
 
 Extending
   We don't have the backend you need to run your workflow on your cluster?
-  See the `Writing Backends <writingbackends>`_ section to roll your own.
+  See the `Writing Backends`_ section to roll your own.
 
 Contributing
   We aim to make *gwf* a community developed project. Learn how to
   `contribute`_.
 
-.. _usersguide: https://docs.gwf.app/en/stable/guide/index.html
-.. _writingbackends: https://docs.gwf.app/en/stable/development/writingbackends.html
+.. _examples: https://github.com/mailund/gwf/tree/master/examples
+.. _User's Guide: https://docs.gwf.app/en/stable/guide/index.html
+.. _Writing Backends: https://docs.gwf.app/en/stable/development/writingbackends.html
 .. _contribute: https://docs.gwf.app/en/stable/development/forcontributors.html
-
-..
 
 
 .. |cistatus| image:: https://img.shields.io/travis/gwforg/gwf.svg
