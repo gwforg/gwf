@@ -20,7 +20,7 @@ Getting started
 
 Extending
   We don't have the backend you need to run your workflow on your cluster?
-  See the `writingbackends`_ section to roll your own.
+  See the `Writing Backends <writingbackends>`_ section to roll your own.
 
 Contributing
   We aim to make *gwf* a community developed project. Learn how to
@@ -28,7 +28,7 @@ Contributing
 
 .. _tutorial: https://docs.gwf.app/en/stable/guide/index.html
 .. _writingbackends: https://docs.gwf.app/en/stable/development/writingbackends.html
-.. _contributing: https://docs.gwf.app/en/stable/development/forcontributors.html
+.. _contribute: https://docs.gwf.app/en/stable/development/forcontributors.html
 
 
 .. |cistatus| image:: https://img.shields.io/travis/gwforg/gwf.svg
