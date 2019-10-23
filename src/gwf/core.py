@@ -7,13 +7,7 @@ from enum import Enum
 
 from .backends import Status
 from .exceptions import WorkflowError
-from .utils import (
-    LazyDict,
-    cache,
-    load_workflow,
-    parse_path,
-    timer,
-)
+from .utils import LazyDict, cache, load_workflow, parse_path, timer
 
 logger = logging.getLogger(__name__)
 
@@ -285,6 +279,28 @@ class Scheduler:
         self._file_cache = file_cache
         self._pretend_known = set()
 
+    def prepare_target_options(self, target):
+        """Apply backend-specific option defaults to a target.
+
+        Injects backend target defaults into the target options and checks
+        whether the option in the given target are supported by the backend.
+        Warns the user and removes the option if this is not the case.
+        """
+        new_options = dict(self.backend.option_defaults)
+        new_options.update(target.options)
+
+        for option_name, option_value in list(new_options.items()):
+            if option_name not in self.backend.option_defaults.keys():
+                logger.warning(
+                    'Option "{}" used in "{}" is not supported by backend. Ignored.'.format(
+                        option_name, target.name
+                    )
+                )
+                del new_options[option_name]
+            elif option_value is None:
+                del new_options[option_name]
+        target.options = new_options
+
     def schedule(self, target):
         """Schedule a target and its dependencies.
 
@@ -310,6 +326,7 @@ class Scheduler:
                 submitted_deps.add(dependency)
 
         if submitted_deps or self.should_run(target):
+            self.prepare_target_options(target)
             if self.dry_run:
                 logger.info("Would submit target %s", target)
                 self._pretend_known.add(target)

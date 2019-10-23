@@ -905,3 +905,88 @@ def test_target_list():
 
     assert len(target_list.inputs) == 3
     assert target_list.inputs == [{"path": "a"}, {"path": "b"}, {"path": "c"}]
+
+
+import logging
+
+
+class FakeBackend(Backend):
+    option_defaults = {
+        "cores": 1,
+        "memory": "1g",
+    }
+
+    def submit(self, target, dependencies):
+        pass
+
+    def status(self, target):
+        return Status.UNKNOWN
+
+
+def test_scheduler_injects_target_defaults_into_target_options_on_submit(mocker):
+    target1 = Target(
+        "TestTarget1", inputs=[], outputs=[], options={}, working_dir="/some/dir"
+    )
+
+    target2 = Target(
+        "TestTarget2",
+        inputs=[],
+        outputs=[],
+        options={"cores": 32},
+        working_dir="/some/dir",
+    )
+
+    backend = FakeBackend()
+    mocker.patch.object(backend, "submit", autospec=True)
+
+    graph = Graph.from_targets({"TestTarget1": target1, "TestTarget2": target2})
+    scheduler = Scheduler(graph=graph, backend=backend, file_cache={})
+
+    scheduler.schedule(target1)
+    assert target1.options == {"cores": 1, "memory": "1g"}
+
+    scheduler.schedule(target2)
+    assert target2.options == {"cores": 32, "memory": "1g"}
+
+
+def test_scheduler_warns_user_when_submitting_target_with_unsupported_option(mocker, caplog):
+    target = Target(
+        "TestTarget",
+        inputs=[],
+        outputs=[],
+        options={"foo": "bar"},
+        working_dir="/some/dir",
+    )
+
+    backend = FakeBackend()
+    mocker.patch.object(backend, "submit", autospec=True)
+
+    graph = Graph.from_targets({"TestTarget": target})
+
+    scheduler = Scheduler(graph=graph, backend=backend, file_cache={})
+    scheduler.schedule(target)
+
+    assert target.options == {"cores": 1, "memory": "1g"}
+    assert caplog.record_tuples == [
+        (
+            "gwf.core",
+            logging.WARNING,
+            'Option "foo" used in "TestTarget" is not supported by backend. Ignored.',
+        )
+    ]
+
+
+def test_scheduler_removes_options_with_none_value(mocker):
+    target = Target(
+        "TestTarget", inputs=[], outputs=[], options={"cores": None}, working_dir="/some/dir"
+    )
+
+    backend = FakeBackend()
+    mocker.patch.object(backend, "submit", autospec=True)
+
+    graph = Graph.from_targets({"TestTarget": target})
+
+    scheduler = Scheduler(graph=graph, backend=backend, file_cache={})
+    scheduler.schedule(target)
+
+    assert target.options == {"memory": "1g"}

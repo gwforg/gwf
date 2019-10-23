@@ -4,8 +4,8 @@ from unittest.mock import call
 import pytest
 
 from gwf import Target
-from gwf.backends import BackendError, Status
-from gwf.backends.exceptions import DependencyError, TargetError
+from gwf.backends import Status
+from gwf.backends.exceptions import BackendError, DependencyError, TargetError
 from gwf.backends.slurm import SlurmBackend
 from gwf.conf import config
 
@@ -13,12 +13,12 @@ from gwf.conf import config
 @pytest.fixture(autouse=True)
 def setup(monkeypatch, tmpdir):
     exes = {"sbatch": "/bin/sbatch", "squeue": "/bin/squeue", "scancel": "/bin/scancel"}
-    monkeypatch.setattr("gwf.backends.slurm.find_executable", lambda e: exes[e])
+    monkeypatch.setattr("gwf.backends.utils.find_executable", lambda e: exes[e])
 
 
 @pytest.fixture
 def popen(request):
-    patched = mock.patch("gwf.backends.slurm.subprocess.Popen")
+    patched = mock.patch("gwf.backends.utils.subprocess.Popen")
     mocked = patched.__enter__()
 
     @request.addfinalizer
@@ -58,7 +58,7 @@ def test_initialization(tmpdir, popen):
 
 
 def test_executable_unavailable_initialization(monkeypatch):
-    monkeypatch.setattr("gwf.backends.slurm.find_executable", lambda e: None)
+    monkeypatch.setattr("gwf.backends.utils.find_executable", lambda e: None)
     with pytest.raises(BackendError):
         with SlurmBackend():
             pass
@@ -66,7 +66,7 @@ def test_executable_unavailable_initialization(monkeypatch):
 
 def test_executable_unavailable_after_initialization(popen, monkeypatch):
     exes = {"squeue": "/bin/squeue"}
-    monkeypatch.setattr("gwf.backends.slurm.find_executable", lambda e: exes.get(e))
+    monkeypatch.setattr("gwf.backends.utils.find_executable", lambda e: exes.get(e))
 
     t = Target.empty("TestTarget")
 

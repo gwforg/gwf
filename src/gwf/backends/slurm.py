@@ -1,13 +1,11 @@
 import logging
-import subprocess
 from collections import defaultdict
-from distutils.spawn import find_executable
 
-from . import Backend, Status
 from ..conf import config
-from ..utils import PersistableDict, ensure_trailing_newline, retry
-from .exceptions import BackendError, DependencyError, TargetError
-from .logmanager import FileLogManager
+from ..utils import ensure_trailing_newline, retry
+from .base import PbsLikeBackendBase, Status
+from .exceptions import BackendError
+from .utils import call
 
 logger = logging.getLogger(__name__)
 
@@ -25,81 +23,7 @@ SLURM_JOB_STATES = defaultdict(
 )
 
 
-SLURM_OPTIONS = {
-    "nodes": "-N ",
-    "cores": "-c ",
-    "memory": "--mem=",
-    "walltime": "-t ",
-    "queue": "-p ",
-    "account": "-A ",
-    "constraint": "-C ",
-    "mail_type": "--mail-type=",
-    "mail_user": "--mail-user=",
-    "qos": "--qos=",
-}
-
-
-def _find_exe(name):
-    exe = find_executable(name)
-    if exe is None:
-        raise BackendError(
-            'Could not find executable "{}". This backend requires Slurm to be installed on this host.'.format(
-                name
-            )
-        )
-    return exe
-
-
-def _call_generic(executable_name, *args, input=None):
-    executable_path = _find_exe(executable_name)
-    proc = subprocess.Popen(
-        [executable_path] + list(args),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        stdin=subprocess.PIPE,
-        universal_newlines=True,
-    )
-    stdout, stderr = proc.communicate(input)
-
-    # Some commands, like scancel, do not return a non-zero exit code if they
-    # fail. The only way to check if they failed is by checking whether an
-    # error message occurred in standard error, so we check both the return
-    # code and stderr.
-    if proc.returncode != 0 or "error:" in stderr:
-        raise BackendError(stderr)
-    return stdout
-
-
-@retry(on_exc=BackendError)
-def _call_squeue():
-    return _call_generic("squeue", "--noheader", "--format=%i;%t")
-
-
-@retry(on_exc=BackendError)
-def _call_scancel(job_id):
-    # The --verbose flag here is necessary, otherwise we're not able to tell
-    # whether the command failed. See the comment in _call_generic() if you
-    # want to know more.
-    return _call_generic("scancel", "--verbose", job_id)
-
-
-@retry(on_exc=BackendError)
-def _call_sbatch(script, dependencies):
-    args = ["--parsable"]
-    if dependencies:
-        args.append("--dependency=afterok:{}".format(":".join(dependencies)))
-    return _call_generic("sbatch", *args, input=script)
-
-
-def _parse_squeue_output(stdout):
-    job_states = {}
-    for line in stdout.splitlines():
-        job_id, state = line.split(";")
-        job_states[job_id] = SLURM_JOB_STATES[state]
-    return job_states
-
-
-class SlurmBackend(Backend):
+class SlurmBackend(PbsLikeBackendBase):
     """Backend for the Slurm workload manager.
 
     To use this backend you must activate the `slurm` backend.
@@ -133,8 +57,6 @@ class SlurmBackend(Backend):
       on `sbatch`.
     """
 
-    log_manager = FileLogManager()
-
     option_defaults = {
         "cores": 1,
         "memory": "1g",
@@ -148,84 +70,76 @@ class SlurmBackend(Backend):
         "qos": None,
     }
 
-    def __init__(self):
-        try:
-            self._status = _parse_squeue_output(_call_squeue())
-        except retry.RetryError as exc:
-            raise BackendError("Could not get queue state") from exc
+    option_flags = {
+        "nodes": "-N ",
+        "cores": "-c ",
+        "memory": "--mem=",
+        "walltime": "-t ",
+        "queue": "-p ",
+        "account": "-A ",
+        "constraint": "-C ",
+        "mail_type": "--mail-type=",
+        "mail_user": "--mail-user=",
+        "qos": "--qos=",
+    }
 
-        self._tracked = PersistableDict(path=".gwf/slurm-backend-tracked.json")
+    option_str = "#SBATCH {0}{1}"
 
-    def status(self, target):
-        try:
-            return self._get_status(target)
-        except KeyError:
-            return Status.UNKNOWN
+    @retry(on_exc=BackendError)
+    def call_queue_command(self):
+        return call("squeue", "--noheader", "--format=%i;%t")
 
-    def submit(self, target, dependencies):
-        script = self._compile_script(target)
-        dependency_ids = self._collect_dependency_ids(dependencies)
-        try:
-            stdout = _call_sbatch(script, dependency_ids)
-        except retry.RetryError as exc:
-            raise BackendError("Could not submit target") from exc
-        else:
-            job_id = stdout.strip()
-            self._add_job(target, job_id)
+    @retry(on_exc=BackendError)
+    def call_cancel_command(self, job_id):
+        # The --verbose flag here is necessary, otherwise we're not able to tell
+        # whether the command failed. See the comment in call() if you
+        # want to know more.
+        return call("scancel", "--verbose", job_id)
 
-    def cancel(self, target):
-        try:
-            job_id = self.get_job_id(target)
-            _call_scancel(job_id)
-        except KeyError as exc:
-            raise TargetError(target.name) from exc
-        except retry.RetryError as exc:
-            raise BackendError("Could not cancel target") from exc
-        else:
-            self.forget_job(target)
+    @retry(on_exc=BackendError)
+    def call_submit_command(self, script, dependencies):
+        args = ["--parsable"]
+        if dependencies:
+            args.append("--dependency=afterok:{}".format(":".join(dependencies)))
+        return call("sbatch", *args, input=script)
 
-    def close(self):
-        self._tracked.persist()
+    def parse_queue_output(self, stdout):
+        job_states = {}
+        for line in stdout.splitlines():
+            job_id, state = line.split(";")
+            job_states[job_id] = SLURM_JOB_STATES[state]
+        return job_states
 
-    def forget_job(self, target):
-        """Force the backend to forget the job associated with `target`."""
-        job_id = self.get_job_id(target)
-        del self._status[job_id]
-        del self._tracked[target.name]
-
-    def get_job_id(self, target):
-        """Get the Slurm job id for a target.
-
-        :raises KeyError: if the target is not tracked by the backend.
-        """
-        return self._tracked[target.name]
-
-    def _compile_script(self, target):
-        option_str = "#SBATCH {0}{1}"
-
+    def compile_script(self, target):
         out = []
         out.append("#!/bin/bash")
         out.append("# Generated by: gwf")
 
-        out.append(option_str.format("--job-name=", target.name))
+        out.append(self.option_str.format("--job-name=", target.name))
 
         for option_name, option_value in target.options.items():
-            out.append(option_str.format(SLURM_OPTIONS[option_name], option_value))
+            out.append(
+                self.option_str.format(self.option_flags[option_name], option_value)
+            )
 
         log_mode = config.get("backend.slurm.log_mode", "full")
         if log_mode == "full":
             out.append(
-                option_str.format("--output=", self.log_manager.stdout_path(target))
+                self.option_str.format(
+                    "--output=", self.log_manager.stdout_path(target)
+                )
             )
             out.append(
-                option_str.format("--error=", self.log_manager.stderr_path(target))
+                self.option_str.format("--error=", self.log_manager.stderr_path(target))
             )
         elif log_mode == "merged":
             out.append(
-                option_str.format("--output=", self.log_manager.stdout_path(target))
+                self.option_str.format(
+                    "--output=", self.log_manager.stdout_path(target)
+                )
             )
         elif log_mode == "none":
-            out.append(option_str.format("--output=", "/dev/null"))
+            out.append(self.option_str.format("--output=", "/dev/null"))
 
         out.append("")
         out.append("cd {}".format(target.working_dir))
@@ -235,24 +149,3 @@ class SlurmBackend(Backend):
         out.append("")
         out.append(ensure_trailing_newline(target.spec))
         return "\n".join(out)
-
-    def _add_job(self, target, job_id, initial_status=Status.SUBMITTED):
-        self._set_job_id(target, job_id)
-        self._set_status(target, initial_status)
-
-    def _set_job_id(self, target, job_id):
-        self._tracked[target.name] = job_id
-
-    def _get_status(self, target):
-        job_id = self.get_job_id(target)
-        return self._status[job_id]
-
-    def _set_status(self, target, status):
-        job_id = self.get_job_id(target)
-        self._status[job_id] = status
-
-    def _collect_dependency_ids(self, dependencies):
-        try:
-            return [self._tracked[dep.name] for dep in dependencies]
-        except KeyError as exc:
-            raise DependencyError(exc.args[0])
