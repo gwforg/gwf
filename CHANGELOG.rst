@@ -15,6 +15,11 @@ Added
 * The Slurm backend will now retry failed operations, e.g. if it fails to get
   the state of the queue from Slurm or if submitting a job failed.
 
+Fixed
+-----
+
+* Fixed a deadlock in the local backend which caused the workers to freeze.
+
 
 Version 1.6.0
 =============

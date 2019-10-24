@@ -206,10 +206,11 @@ class LocalBackend(Backend):
 
 
 class Worker:
-    def __init__(self, status, queue, waiting):
+    def __init__(self, status, queue, waiting, lock):
         self.status = status
         self.queue = queue
         self.waiting = waiting
+        self.lock = lock
 
         self.run()
 
@@ -268,14 +269,15 @@ class Worker:
             if self.status[dep_id] != LocalStatus.COMPLETED:
                 logger.debug("Task %s set to wait for %s", task_id, dep_id)
 
-                if dep_id not in self.waiting:
-                    self.waiting[dep_id] = []
+                with self.lock:
+                    if dep_id not in self.waiting:
+                        self.waiting[dep_id] = []
 
-                # Do this weird thing to sync the dictionary. Using
-                # deps_dict[dep_id].append(...) doesn't work.
-                tmp = self.waiting[dep_id]
-                tmp.append((task_id, request))
-                self.waiting[dep_id] = tmp
+                    # Do this weird thing to sync the dictionary. Using
+                    # deps_dict[dep_id].append(...) doesn't work.
+                    tmp = self.waiting[dep_id]
+                    tmp.append((task_id, request))
+                    self.waiting[dep_id] = tmp
 
                 has_non_satisfied_dep = True
 
@@ -285,12 +287,15 @@ class Worker:
 
     def requeue_dependents(self, task_id):
         """Requeue targets that waiting on a specific task."""
-        if task_id not in self.waiting:
-            return
+        with self.lock:
+            if task_id not in self.waiting:
+                return
 
-        logger.debug("Task %s has waiting dependents. Requeueing", task_id)
-        for dep_task_id, dep_request in self.waiting[task_id]:
-            self.queue.put((dep_task_id, dep_request))
+            logger.debug("Task %s has waiting dependents. Requeueing", task_id)
+
+            for dep_task_id, dep_request in self.waiting[task_id]:
+                self.queue.put((dep_task_id, dep_request))
+            self.waiting[task_id] = []
 
     def execute_target(self, target, stdout_path, stderr_path):
         env = os.environ.copy()
@@ -326,6 +331,7 @@ class Server:
         self.status = self.manager.dict()
         self.queue = self.manager.Queue()
         self.waiting = self.manager.dict()
+        self.lock = self.manager.Lock()
 
     def handle_request(self, request):
         try:
@@ -362,7 +368,7 @@ class Server:
             workers = Pool(
                 processes=self.num_workers,
                 initializer=Worker,
-                initargs=(self.status, self.queue, self.waiting),
+                initargs=(self.status, self.queue, self.waiting, self.lock),
             )
 
             logging.info(
