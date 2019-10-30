@@ -70,7 +70,7 @@ def test_ensure_trailing_newline():
     assert ensure_trailing_newline("foo\nbar") == "foo\nbar\n"
 
 
-def test_retry_1(mocker):
+def test_retry_1(mocker, no_sleep):
     failing_func = mocker.Mock(side_effect=[Exception, Exception, 42])
     failing_func.__name__ = "failing_func"
 
@@ -81,7 +81,7 @@ def test_retry_1(mocker):
     assert len(failing_func.call_args_list) == 3
 
 
-def test_retry_2(mocker):
+def test_retry_2(mocker, no_sleep):
     failing_func = mocker.Mock(side_effect=[Exception, Exception, Exception])
     failing_func.__name__ = "failing_func"
 
@@ -94,7 +94,7 @@ def test_retry_2(mocker):
     assert len(failing_func.call_args_list) == 3
 
 
-def test_retry_3(mocker):
+def test_retry_3(mocker, no_sleep):
     failing_func = mocker.Mock(side_effect=[Exception, Exception, 42])
     failing_func.__name__ = "failing_func"
 
@@ -108,7 +108,7 @@ def test_retry_3(mocker):
     assert len(callback_func.call_args_list) == 2
 
 
-def test_retry_4(mocker):
+def test_retry_4(mocker, no_sleep):
     succeeding_func = mocker.Mock(side_effect=[42])
     succeeding_func.__name__ = "succeeding_func"
 

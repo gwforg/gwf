@@ -28,7 +28,7 @@ def popen(request):
     return mocked
 
 
-def test_initialization(tmpdir, popen):
+def test_initialization(tmpdir, popen, no_sleep):
     t1 = Target.empty("Target1")
     t2 = Target.empty("Target2")
     t3 = Target.empty("Target3")
@@ -57,14 +57,14 @@ def test_initialization(tmpdir, popen):
                 pass
 
 
-def test_executable_unavailable_initialization(monkeypatch):
+def test_executable_unavailable_initialization(monkeypatch, no_sleep):
     monkeypatch.setattr("gwf.backends.utils.find_executable", lambda e: None)
     with pytest.raises(BackendError):
         with SlurmBackend():
             pass
 
 
-def test_executable_unavailable_after_initialization(popen, monkeypatch):
+def test_executable_unavailable_after_initialization(popen, monkeypatch, no_sleep):
     exes = {"squeue": "/bin/squeue"}
     monkeypatch.setattr("gwf.backends.utils.find_executable", lambda e: exes.get(e))
 
@@ -81,7 +81,7 @@ def test_executable_unavailable_after_initialization(popen, monkeypatch):
         backend.submit(t, dependencies=[])
 
 
-def test_submit_1(popen):
+def test_submit_1(popen, no_sleep):
     t1 = Target.empty("Target1")
     t2 = Target.empty("Target2")
     t3 = Target.empty("Target3")
@@ -148,7 +148,7 @@ def test_submit_1(popen):
         backend.submit(t4, [])
 
 
-def test_submit_2(popen, monkeypatch):
+def test_submit_2(popen, monkeypatch, no_sleep):
     t = Target(
         name="TestTarget",
         inputs=[],
@@ -209,7 +209,7 @@ def test_submit_2(popen, monkeypatch):
     assert "#SBATCH --error=" not in script
 
 
-def test_cancel(popen):
+def test_cancel(popen, no_sleep):
     t = Target.empty("Target")
 
     popen.return_value.returncode = 0
@@ -242,7 +242,7 @@ def test_cancel(popen):
         backend.cancel(t)
 
 
-def test_close(tmpdir, popen):
+def test_close(tmpdir, popen, no_sleep):
     tmpdir.ensure_dir(".gwf")
     with tmpdir.as_cwd():
         popen.return_value.returncode = 0
