@@ -1,47 +1,36 @@
-import copy
 import collections
 import inspect
-import subprocess
-import sys
-import warnings
 import os.path
+import sys
 import unicodedata
-from glob import glob as _glob
-from glob import iglob as _iglob
 
 from .compat import fspath
-from .exceptions import WorkflowError, NameError, TypeError
-from .utils import is_valid_name, parse_path, load_workflow
+from .exceptions import NameError, TypeError, WorkflowError
+from .utils import is_valid_name
 
 
-def _has_nonprintable_char(s):
-    chars = enumerate((unicodedata.category(char) == "Cc", char) for char in s)
-    for pos, (unprintable, char) in chars:
-        if unprintable:
-            return (
-                s.encode("unicode_escape").decode("utf-8"),
+class PathError(WorkflowError):
+    def __init__(self, path, char, position):
+        self.path = path
+        self.char = char
+        self.position = position
+
+
+class EmptyPathError(WorkflowError):
+    pass
+
+
+def _check_path(path):
+    if not path:
+        raise EmptyPathError("Empty paths are not allowed")
+
+    for pos, char in enumerate(path):
+        if unicodedata.category(char) == "Cc":
+            raise PathError(
+                path.encode("unicode_escape").decode("utf-8"),
                 char.encode("unicode_escape").decode("utf-8"),
                 pos,
             )
-    return None
-
-
-def _check_path(path, target_name, mode):
-    if not path:
-        msg = 'Target "{}" has an empty {} path.'.format(target_name, mode)
-        raise WorkflowError(msg)
-
-    result = _has_nonprintable_char(path)
-    if result is not None:
-        clean_path, char, pos = result
-        msg = (
-            'Path "{}" in target "{}" {}s contains a '
-            'non-printable character "{}" on position {}. '
-            "This is always unintentional and can cause "
-            "strange behaviour."
-        ).format(clean_path, target_name, mode, char, pos)
-        raise WorkflowError(msg)
-    return path
 
 
 def _norm_path(working_dir, path):
@@ -335,11 +324,10 @@ class Target(AnonymousTarget):
         if not is_valid_name(self.name):
             raise NameError('Target defined with invalid name: "{}".'.format(self.name))
 
-        _check_path(working_dir, target_name=self.name, mode="working_dir")
         for path in inputs:
-            _check_path(path, target_name=self.name, mode="input")
+            _check_path(path)
         for path in outputs:
-            _check_path(path, target_name=self.name, mode="output")
+            _check_path(path)
 
         super().__init__(
             inputs=inputs,
@@ -365,11 +353,6 @@ class Target(AnonymousTarget):
         return cls(
             name=name, inputs=[], outputs=[], options={}, working_dir=os.getcwd()
         )
-
-    def qualname(self, namespace):
-        if namespace is not None:
-            return "{}.{}".format(namespace, self.name)
-        return self.name
 
     def __repr__(self):
         return "{}(name={!r}, ...)".format(self.__class__.__name__, self.name)
@@ -437,9 +420,7 @@ class Workflow(object):
             filename = inspect.getfile(sys._getframe(1))
             self.working_dir = os.path.dirname(os.path.realpath(filename))
 
-    def _add_target(self, target, namespace=None):
-        if namespace is not None:
-            target.name = target.qualname(namespace)
+    def _add_target(self, target):
         if target.name in self.targets:
             raise WorkflowError(
                 'Target "{}" already exists in workflow.'.format(target.name)
@@ -505,47 +486,16 @@ class Workflow(object):
         Any further keyword arguments are passed to the backend and will
         override any options provided by the template.
         """
-        if isinstance(template, AnonymousTarget):
-            new_target = Target(
-                name=name,
-                inputs=template.inputs,
-                outputs=template.outputs,
-                options=options,
-                working_dir=template.working_dir or self.working_dir,
-                spec=template.spec,
-            )
+        new_target = Target(
+            name=name,
+            inputs=template.inputs,
+            outputs=template.outputs,
+            options=options,
+            working_dir=template.working_dir or self.working_dir,
+            spec=template.spec,
+        )
 
-            new_target.inherit_options(template.options)
-        elif isinstance(template, tuple):
-            warnings.warn(
-                (
-                    "Creating a target from a tuple template is deprecated, "
-                    "and will be removed in gwf 2.0. Make your template "
-                    "function return an AnonymousTarget instead."
-                ),
-                DeprecationWarning,
-            )
-
-            try:
-                inputs, outputs, template_options, spec = template
-            except ValueError:
-                raise TypeError(
-                    "Target `{}` received an invalid template.".format(name)
-                )
-
-            new_target = Target(
-                name=name,
-                inputs=inputs,
-                outputs=outputs,
-                options=options,
-                working_dir=self.working_dir,
-                spec=spec,
-            )
-
-            new_target.inherit_options(template_options)
-        else:
-            raise TypeError("Target `{}` received an invalid template.".format(name))
-
+        new_target.inherit_options(template.options)
         new_target.inherit_options(self.defaults)
         self._add_target(new_target)
         return new_target
@@ -661,146 +611,6 @@ class Workflow(object):
             )
             targets.append(target)
         return targets
-
-    def include_path(self, path, namespace=None):
-        """Include targets from another :class:`gwf.Workflow` into this workflow.
-
-        See :func:`~gwf.Workflow.include`.
-        """
-        basedir, filename, obj = parse_path(path)
-        other_workflow = load_workflow(basedir, filename, obj)
-        self.include_workflow(other_workflow, namespace=namespace)
-
-    def include_workflow(self, other_workflow, namespace=None):
-        """Include targets from another :class:`gwf.Workflow` into this workflow.
-
-        See :func:`~gwf.Workflow.include`.
-        """
-        if other_workflow.name is None and namespace is None:
-            raise WorkflowError(
-                "The included workflow has not been assigned a name. To "
-                "include the workflow you must assign a name to the included "
-                "workflow or set the namespace argument."
-            )
-        namespace_prefix = namespace or other_workflow.name
-        if namespace_prefix == self.name:
-            raise WorkflowError(
-                "The included workflow has the same name as this workflow."
-            )
-
-        for target in other_workflow.targets.values():
-            self._add_target(copy.deepcopy(target), namespace=namespace_prefix)
-
-    def include(self, other_workflow, namespace=None):
-        """Include targets from another :class:`gwf.Workflow` into this workflow.
-
-        This method can be given either an :class:`gwf.Workflow` instance,
-        a module or a path to a workflow file.
-
-        If a module or path the workflow object to include will be determined
-        according to the following rules:
-
-        1. If a module object is given, the module must define an attribute
-           named `gwf` containing a :class:`gwf.Workflow` object.
-        2. If a path is given it must point to a file defining a module with an
-           attribute named `gwf` containing a :class:`gwf.Workflow`
-           object. If you want to include a workflow with another name you can
-           specify the attribute name with a colon, e.g.::
-
-                /some/path/workflow.py:myworkflow
-
-           This will include all targets from the workflow `myworkflow`
-           declared in the file `/some/path/workflow.py`.
-
-        When a :class:`gwf.Workflow` instance has been obtained, all
-        targets will be included directly into this workflow. To avoid name
-        clashes the `namespace` argument must be provided. For example::
-
-            workflow1 = Workflow()
-            workflow1.target('TestTarget')
-
-            workflow2 = Workflow()
-            workflow2.target('TestTarget')
-
-            workflow1.include(workflow2, namespace='wf1')
-
-        The workflow now contains two targets named `TestTarget` (defined in
-        `workflow2`) and `wf1.TestTarget` (defined in `workflow1`). The
-        `namespace` parameter can be left out if the workflow to be included
-        has been named::
-
-            workflow1 = Workflow(name='wf1')
-            workflow1.target('TestTarget')
-
-            workflow2 = Workflow()
-            workflow2.target('TestTarget')
-
-            workflow1.include(workflow2)
-
-        This yields the same result as before. The `namespace` argument can be
-        used to override the specified name::
-
-            workflow1 = Workflow(name='wf1')
-            workflow1.target('TestTarget')
-
-            workflow2 = Workflow()
-            workflow2.target('TestTarget')
-
-            workflow1.include(workflow2, namespace='foo')
-
-        The workflow will now contain targets named `TestTarget` and
-        `foo.TestTarget`.
-        """
-        if isinstance(other_workflow, Workflow):
-            self.include_workflow(other_workflow, namespace=namespace)
-        elif isinstance(other_workflow, str):
-            self.include_path(other_workflow, namespace=namespace)
-        elif inspect.ismodule(other_workflow):
-            self.include_workflow(getattr(other_workflow, "gwf"), namespace=namespace)
-        else:
-            raise TypeError(
-                "First argument must be either a string or a Workflow object."
-            )
-
-    def glob(self, pathname, *args, **kwargs):
-        """Return a list of paths matching `pathname`.
-
-        This method is equivalent to :func:`python:glob.glob`, but searches with
-        relative paths will be performed relative to the working directory
-        of the workflow.
-        """
-        if not os.path.isabs(pathname):
-            pathname = os.path.join(self.working_dir, pathname)
-        return _glob(pathname, *args, **kwargs)
-
-    def iglob(self, pathname, *args, **kwargs):
-        """Return an iterator which yields paths matching `pathname`.
-
-        This method is equivalent to :func:`python:glob.iglob`, but searches with
-        relative paths will be performed relative to the working directory
-        of the workflow.
-        """
-        if not os.path.isabs(pathname):
-            pathname = os.path.join(self.working_dir, pathname)
-        return _iglob(pathname, *args, **kwargs)
-
-    def shell(self, *args, **kwargs):
-        """Return the output of a shell command.
-
-        This method is equivalent to :func:`python:subprocess.check_output`, but
-        automatically runs the command in a shell with the current working
-        directory set to the working directory of the workflow.
-
-        .. versionchanged:: 1.0
-
-            This function no longer return a list of lines in the output, but a
-            byte array with the output, exactly like :func:`python:subprocess.check_output`.
-            You may specifically set *universal_newlines* to `True` to get a
-            string with the output instead.
-        """
-        return subprocess.check_output(
-            *args, shell=True, cwd=self.working_dir, **kwargs
-        )
 
     def __repr__(self):
         return "{}(name={!r}, working_dir={!r})".format(
