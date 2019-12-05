@@ -4,7 +4,7 @@ gwf
 
 A flexible, pragmatic workflow tool.
 
-|docs| |anacondaversion| |anacondadownloads| |cistatus| |coveralls|
+|anacondaversion| |anacondadownloads| |cistatus| |coveralls|
 
 *gwf* is a flexible, pragmatic workflow tool for building and running large,
 scientific workflows. It runs on Python 3.5+ and is developed at the
@@ -26,7 +26,7 @@ Contributing
   We aim to make *gwf* a community developed project. Learn how to
   `contribute`_.
 
-.. _examples: https://github.com/mailund/gwf/tree/master/examples
+.. _examples: https://github.com/gwforg/gwf/tree/master/examples
 .. _User's Guide: https://docs.gwf.app/en/stable/guide/index.html
 .. _Writing Backends: https://docs.gwf.app/en/stable/development/writingbackends.html
 .. _contribute: https://docs.gwf.app/en/stable/development/forcontributors.html
@@ -35,9 +35,6 @@ Contributing
 .. |cistatus| image:: https://img.shields.io/travis/gwforg/gwf.svg
     :target: https://travis-ci.org/gwforg/gwf
     :alt: Build status
-.. |docs| image:: https://readthedocs.org/projects/gwf/badge/?version=latest&style=flat
-    :target: http://gwf.readthedocs.io
-    :alt: Documentation
 .. |coveralls| image:: https://img.shields.io/coveralls/gwforg/gwf.svg
     :target: https://coveralls.io/github/gwforg/gwf
     :alt: Coverage
