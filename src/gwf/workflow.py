@@ -1,4 +1,5 @@
 import collections
+import collections.abc
 import inspect
 import os.path
 import sys
@@ -50,7 +51,7 @@ def _flatten(t):
     def flatten_rec(g):
         if isinstance(g, str) or hasattr(g, "__fspath__"):
             res.append(g)
-        elif isinstance(g, collections.Mapping):
+        elif isinstance(g, collections.abc.Mapping):
             for k, v in g.items():
                 flatten_rec(v)
         else:
@@ -598,9 +599,11 @@ class Workflow(object):
 
         targets = TargetList()
         for idx, args in enumerate(inputs):
-            if isinstance(args, collections.Mapping):
+            if isinstance(args, collections.abc.Mapping):
                 template = template_func(**args, **extra)
-            elif isinstance(args, collections.Iterable) and not isinstance(args, str):
+            elif isinstance(args, collections.abc.Iterable) and not isinstance(
+                args, str
+            ):
                 template = template_func(*args, **extra)
             else:
                 template = template_func(args, **extra)
