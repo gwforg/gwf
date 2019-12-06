@@ -530,7 +530,7 @@ encapsulate target creation logic. Let's walk through the example above.
 .. note::
 
     Code and data files for this example is available
-    `here <https://github.com/mailund/gwf/blob/master/examples/readmapping/>`_.
+    `here <https://github.com/gwforg/gwf/blob/master/examples/readmapping/>`_.
     To get started, follow these steps:
 
     #. Change your working directory to the ``readmapping`` directory.

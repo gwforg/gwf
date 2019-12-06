@@ -5,7 +5,7 @@ description = "A flexible, pragmatic workflow tool."
 authors = ["Dan Søndergaard <das@birc.au.dk>", "Thomas Mailund <mailund@birc.au.dk>"]
 license = "GPL-3.0"
 readme = "README.rst"
-documentation = "https://gwf.readthedocs.io/en/stable/"
+documentation = "https://gwf.app/"
 repository = "https://github.com/gwforg/gwf"
 
 classifiers = [

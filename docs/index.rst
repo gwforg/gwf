@@ -8,7 +8,7 @@ Research Centre (BiRC), Aarhus University.
 
 Examples
   To get a feeling for what a *gwf* workflow looks like, have a look at a few
-  `examples <https://github.com/mailund/gwf/tree/master/examples>`_.
+  `examples <https://github.com/gwforg/gwf/tree/master/examples>`_.
 
 Getting started
   To quickly get started writing workflows in *gwf* you can read the

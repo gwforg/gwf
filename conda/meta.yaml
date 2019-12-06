@@ -39,11 +39,11 @@ test:
     - gwf --help
 
 about:
-  home: http://gwf.readthedocs.io/
+  home: http://gwf.app/
   license: GNU General Public v3 (GPLv3)
   license_family: GPL3
   summary: A flexible, pragmatic workflow tool.
-  doc_url: https://gwf.readthedocs.io
+  doc_url: https://gwf.app/
   dev_url: https://github.com/gwforg/gwf
 
 extra:

@@ -156,7 +156,7 @@ class LocalBackend(Backend):
                 "Local backend could not connect to workers on port {}. "
                 'Workers can be started by running "gwf workers". '
                 "You can read more in the documentation: "
-                "http://gwf.readthedocs.io/en/latest/reference/backends.html#local".format(
+                "https://gwf.app/reference/backends/#gwf.backends.local.LocalBackend".format(
                     port
                 )
             )

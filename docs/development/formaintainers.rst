@@ -44,4 +44,4 @@ Rolling a New Release
 
 7. Run ``make package-conda``, then ``make publish-conda``
 
-The documentation will be automatically be built by `ReadTheDocs`.
+The documentation will be automatically be built.
