@@ -6,12 +6,15 @@ from ..core import graph_from_config
 from ..filtering import filter_names
 
 
-def cancel_many(backend, targets):
+def cancel_many(backend, targets, ignore_unknown=False):
     for target in targets:
         try:
             click.echo("Cancelling target {}.".format(target.name))
             backend.cancel(target)
         except TargetError as exc:
+            if ignore_unknown:
+                continue
+
             click.echo(
                 "Target {} could not be cancelled since it is unknown to the backend.".format(
                     exc
@@ -38,9 +41,9 @@ def cancel(obj, targets, force):
             if click.confirm(
                 "This will cancel all targets! Do you want to continue?", abort=True
             ):
-                cancel_many(backend, graph)
+                cancel_many(backend, graph, ignore_unknown=True)
         elif not targets and force:
-            cancel_many(backend, graph)
+            cancel_many(backend, graph, ignore_unknown=True)
         else:
             matched_targets = filter_names(graph, targets)
             cancel_many(backend, matched_targets)

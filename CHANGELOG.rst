@@ -16,6 +16,12 @@ Added
   the state of the queue from Slurm or if submitting a job failed.
 * Support for Python 3.8.
 
+Changed
+-------
+
+* When running `gwf cancel` without specififying targets, only
+  submitted/running targets will be cancelled.
+
 Fixed
 -----
 
