@@ -2,6 +2,8 @@ import os
 import os.path
 import multiprocessing
 
+multiprocessing.set_start_method("fork")
+
 import pytest
 
 from gwf.cli import main

@@ -50,13 +50,13 @@ class timer(ContextDecorator):
         self.logger = logger or logging.getLogger(__name__)
 
     def __enter__(self):
-        self.start = time.clock()
+        self.start = time.perf_counter()
         return self
 
     def __exit__(self, *args):
-        self.end = time.clock()
+        self.end = time.perf_counter()
         self.duration = self.end - self.start
-        self.logger.debug(self.msg, self.duration * 1000)
+        self.logger.debug(self.msg, self.duration)
 
 
 def ensure_dir(path):
