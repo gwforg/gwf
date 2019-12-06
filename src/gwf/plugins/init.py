@@ -6,7 +6,7 @@ from ..backends import list_backends
 from ..conf import config_from_path
 
 
-banner = """
+banner = r"""
   .-_'''-.   .--.      .--. ________
  '_( )_   \  |  |_     |  ||        |
 |(_ o _)|  ' | _( )_   |  ||   .----'
