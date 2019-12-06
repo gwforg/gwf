@@ -20,7 +20,7 @@ Fixed
 -----
 
 * Fixed a deadlock in the local backend which caused the workers to freeze.
-* Links to examples and ReadTheDocs (we're not hosting the docs ourselves).
+* Links to examples and ReadTheDocs (we're now hosting the docs ourselves).
 
 
 Version 1.6.0
