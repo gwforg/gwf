@@ -19,7 +19,7 @@ Added
 Changed
 -------
 
-* When running `gwf cancel` without specififying targets, only
+* When running `gwf cancel` without specifying targets, only
   submitted/running targets will be cancelled.
 
 Fixed
