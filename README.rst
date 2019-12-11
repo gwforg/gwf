@@ -27,9 +27,9 @@ Contributing
   `contribute`_.
 
 .. _examples: https://github.com/gwforg/gwf/tree/master/examples
-.. _User's Guide: https://docs.gwf.app/en/stable/guide/index.html
-.. _Writing Backends: https://docs.gwf.app/en/stable/development/writingbackends.html
-.. _contribute: https://docs.gwf.app/en/stable/development/forcontributors.html
+.. _User's Guide: https://gwf.app/guide/tutorial/
+.. _Writing Backends: https://gwf.app/development/writingbackends/
+.. _contribute: https://gwf.app/development/forcontributors/
 
 
 .. |cistatus| image:: https://img.shields.io/travis/gwforg/gwf.svg
