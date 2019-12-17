@@ -31,8 +31,11 @@ def _delete_file(path):
 @click.command()
 @click.argument("targets", nargs=-1)
 @click.option("--all", is_flag=True, default=False)
+@click.option(
+    "-f", "--force", is_flag=True, default=False, help="Do not ask for confirmation."
+)
 @click.pass_obj
-def clean(obj, targets, all):
+def clean(obj, targets, all, force):
     """Clean output files of targets.
 
     By default, only targets that are not endpoints will have their output files
@@ -58,6 +61,12 @@ def clean(obj, targets, all):
     )
 
     logger.info("Will delete %s of files!", _format_size(total_size))
+
+    if not targets and not force:
+        click.confirm(
+            "This will delete all unprotected output files from non-endpoint targets! Do you want to continue?",
+            abort=True,
+        )
 
     for target in matches:
         logger.info("Deleting output files of %s", target.name)
