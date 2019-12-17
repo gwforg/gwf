@@ -19,7 +19,7 @@ Changed
 Version 1.7.0
 =============
 
-This release is the first version of *gwf* to support Python 3.8. We're not
+This release is the first version of *gwf* to support Python 3.8. We're now
 testing on nightly version of Python so that future Python releases should be
 supported as soon as they're available.
 
