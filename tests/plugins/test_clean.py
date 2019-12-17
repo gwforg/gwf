@@ -32,7 +32,7 @@ def setup(simple_workflow):
 
 def test_clean_output_from_non_endpoints(cli_runner):
     args = ["-b", "testing", "clean"]
-    cli_runner.invoke(main, args)
+    cli_runner.invoke(main, args, input="y\n")
 
     assert not os.path.exists("a.txt")
     assert os.path.exists("b.txt")
@@ -41,7 +41,7 @@ def test_clean_output_from_non_endpoints(cli_runner):
 
 def test_clean_output_from_all_targets(cli_runner):
     args = ["-b", "testing", "clean", "--all"]
-    cli_runner.invoke(main, args)
+    cli_runner.invoke(main, args, input="y\n")
 
     assert not os.path.exists("a.txt")
     assert not os.path.exists("b.txt")
