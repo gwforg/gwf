@@ -87,7 +87,7 @@ class SlurmBackend(PbsLikeBackendBase):
 
     @retry(on_exc=BackendError)
     def call_queue_command(self):
-        return call("squeue", "--noheader", "--format=%i;%t")
+        return call("squeue", "--noheader", "--format=%i;%t", "--all")
 
     @retry(on_exc=BackendError)
     def call_cancel_command(self, job_id):

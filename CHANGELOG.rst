@@ -3,6 +3,19 @@ Change Log
 ==========
 
 
+Version 1.7.1
+=============
+
+Changed
+-------
+
+* The ``clean`` command now asks for confirmation when no targets are
+  specified. This can be avoided by using the ``--force`` flag.
+* The Slurm backend will now get all jobs from ``squeue`` and not only jobs
+  belonging to the current user. This used to be the default behaviour, but was
+  unintentionally changed when refactoring the Slurm backend.
+
+
 Version 1.7.0
 =============
 
