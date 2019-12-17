@@ -9,19 +9,20 @@ from ..filtering import filter_names
 def cancel_many(backend, targets, ignore_unknown=False):
     for target in targets:
         try:
-            click.echo("Cancelling target {}.".format(target.name))
+            click.echo("Cancelling target {}".format(target.name), err=True)
             backend.cancel(target)
-        except TargetError as exc:
+        except TargetError:
             if ignore_unknown:
                 continue
 
             click.echo(
-                "Target {} could not be cancelled since it is unknown to the backend.".format(
-                    exc
-                )
+                "Target {} could not be cancelled since it is unknown to the backend".format(
+                    target.name
+                ),
+                err=True,
             )
         except UnsupportedOperationError:
-            click.echo("Cancelling targets is not supported by this backend.")
+            click.echo("Cancelling targets is not supported by this backend", err=True)
             raise click.Abort()
 
 
@@ -34,15 +35,14 @@ def cancel_many(backend, targets, ignore_unknown=False):
 def cancel(obj, targets, force):
     """Cancel the specified targets."""
     graph = graph_from_config(obj)
-
     backend_cls = backend_from_config(obj)
+
     with backend_cls() as backend:
-        if not targets and not force:
-            if click.confirm(
-                "This will cancel all targets! Do you want to continue?", abort=True
-            ):
-                cancel_many(backend, graph, ignore_unknown=True)
-        elif not targets and force:
+        if not targets:
+            if not force:
+                click.confirm(
+                    "This will cancel all targets! Do you want to continue?", abort=True
+                )
             cancel_many(backend, graph, ignore_unknown=True)
         else:
             matched_targets = filter_names(graph, targets)
