@@ -2,7 +2,7 @@ import logging
 import os
 import os.path
 
-from ..core import graph_from_config
+from ..core import Graph
 from ..filtering import NameFilter, EndpointFilter, filter_generic
 
 import click
@@ -42,7 +42,7 @@ def clean(obj, targets, all, force):
     deleted. If you want to clean up output files from endpoints too, use the
     ``--all`` flag.
     """
-    graph = graph_from_config(obj)
+    graph = Graph.from_config(obj)
 
     filters = []
     if targets:

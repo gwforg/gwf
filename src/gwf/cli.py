@@ -6,7 +6,7 @@ import click
 from click_plugins import with_plugins
 
 from . import __version__
-from .backends import list_backends
+from .backends import Backend
 from .conf import config
 from .exceptions import ConfigurationError
 from .utils import ColorFormatter, ensure_dir, get_latest_version
@@ -57,7 +57,7 @@ def _validate_bool(key, value):
 
 @config.validator("backend")
 def validate_backend(value):
-    return _validate_choice("backend", value, list_backends())
+    return _validate_choice("backend", value, Backend.list())
 
 
 @config.validator("verbose")
@@ -82,7 +82,7 @@ def validate_check_updates(value):
 @click.option(
     "-b",
     "--backend",
-    type=click.Choice(list_backends()),
+    type=click.Choice(Backend.list()),
     default=config["backend"],
     help="Backend used to run workflow.",
 )

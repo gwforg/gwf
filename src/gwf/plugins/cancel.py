@@ -1,8 +1,8 @@
 import click
 
-from ..backends import backend_from_config
+from ..backends import Backend
 from ..backends.exceptions import TargetError, UnsupportedOperationError
-from ..core import graph_from_config
+from ..core import Graph
 from ..filtering import filter_names
 
 
@@ -34,8 +34,8 @@ def cancel_many(backend, targets, ignore_unknown=False):
 @click.pass_obj
 def cancel(obj, targets, force):
     """Cancel the specified targets."""
-    graph = graph_from_config(obj)
-    backend_cls = backend_from_config(obj)
+    graph = Graph.from_config(obj)
+    backend_cls = Backend.from_config(obj)
 
     with backend_cls() as backend:
         if not targets:

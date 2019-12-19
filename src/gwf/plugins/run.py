@@ -1,9 +1,9 @@
 import logging
 from contextlib import suppress
 
-from ..backends import backend_from_config
+from ..backends import Backend
 from ..backends.exceptions import LogError
-from ..core import Scheduler, graph_from_config
+from ..core import Scheduler, Graph
 from ..filtering import filter_names
 
 import click
@@ -30,9 +30,8 @@ def clean_logs(graph, backend):
 @click.pass_obj
 def run(obj, targets, dry_run):
     """Run the specified workflow."""
-    graph = graph_from_config(obj)
-
-    backend_cls = backend_from_config(obj)
+    graph = Graph.from_config(obj)
+    backend_cls = Backend.from_config(obj)
     with backend_cls() as backend:
         if not dry_run:
             logger.debug("Cleaning old log files...")

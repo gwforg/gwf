@@ -438,6 +438,27 @@ class Workflow(object):
             filename = inspect.getfile(sys._getframe(1))
             self.working_dir = os.path.dirname(os.path.realpath(filename))
 
+    @classmethod
+    def from_path(cls, path):
+        """Return workflow object for the workflow given by `path`.
+
+        Returns a :class:`~gwf.Workflow` object containing the workflow object
+        of the workflow given by `path`.
+
+        :arg str path: Path to a workflow file, optionally specifying a
+            workflow object in that file.
+        """
+        basedir, filename, obj = parse_path(path)
+        return load_workflow(basedir, filename, obj)
+
+    @classmethod
+    def from_config(cls, config):
+        """Return workflow object for the workflow specified by `config`.
+
+        See :func:`Workflow.from_path` for further information.
+        """
+        return cls.from_path(config["file"])
+
     def _add_target(self, target, namespace=None):
         if namespace is not None:
             target.name = target.qualname(namespace)

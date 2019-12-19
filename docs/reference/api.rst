@@ -23,15 +23,13 @@ Core
 ----
 
 .. automodule:: gwf.core
-    :members:
-        workflow_from_config, workflow_from_path,
-        graph_from_config, graph_from_path, Graph, Scheduler
+    :members: Graph, Scheduler
 
 Backends
 --------
 
 .. automodule:: gwf.backends
-    :members: list_backends, backend_from_config, backend_from_name, Backend, Status
+    :members: Backend, Status
     :inherited-members:
     :undoc-members:
 

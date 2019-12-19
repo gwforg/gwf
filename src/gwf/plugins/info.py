@@ -4,7 +4,7 @@ import click
 
 from collections import OrderedDict
 
-from ..core import graph_from_config
+from ..core import Graph
 from ..filtering import filter_names
 
 
@@ -13,7 +13,7 @@ from ..filtering import filter_names
 @click.pass_obj
 def info(obj, targets):
     """Display information about a target."""
-    graph = graph_from_config(obj)
+    graph = Graph.from_config(obj)
 
     matches = iter(graph)
     if targets:

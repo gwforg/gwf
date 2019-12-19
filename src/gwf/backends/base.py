@@ -9,44 +9,11 @@ from .logmanager import FileLogManager
 logger = logging.getLogger(__name__)
 
 
-__all__ = (
-    "list_backends",
-    "backend_from_name",
-    "backend_from_config",
-    "Backend",
-    "Status",
-)
+__all__ = ("Backend", "Status")
 
 
 def _load_backends():
     return {ep.name: ep.load() for ep in iter_entry_points("gwf.backends")}
-
-
-def list_backends():
-    """Return the names of all registered backends."""
-    return set(_load_backends().keys())
-
-
-def backend_from_name(name):
-    """Return backend class for the backend given by `name`.
-
-    Returns the backend class registered with `name`. Note that the *class* is
-    returned, not the instance, since not all uses requires initialization of
-    the backend (e.g. accessing the backends' log manager), and initialization
-    of the backend may be expensive.
-
-    :arg str name:
-        Path to a workflow file, optionally specifying a workflow object in
-        that file.
-    """
-    return _load_backends()[name]
-
-
-def backend_from_config(config):
-    """Return backend class for the backend specified by `config`.
-
-    See :func:`backend_from_name` for further information."""
-    return backend_from_name(config["backend"])
 
 
 class Status(Enum):
@@ -73,6 +40,32 @@ class Backend:
 
     option_defaults = {}
     log_manager = FileLogManager()
+
+    @classmethod
+    def list(cls):
+        """Return the names of all registered backends."""
+        return set(_load_backends().keys())
+
+    @classmethod
+    def from_name(cls, name):
+        """Return backend class for the backend given by `name`.
+
+        Returns the backend class registered with `name`. Note that the *class*
+        is returned, not the instance, since not all uses requires
+        initialization of the backend (e.g. accessing the backends' log
+        manager), and initialization of the backend may be expensive.
+
+        :arg str name: Path to a workflow file, optionally specifying a
+            workflow object in that file.
+        """
+        return _load_backends()[name]
+
+    @classmethod
+    def from_config(cls, config):
+        """Return backend class for the backend specified by `config`.
+
+        See :func:`Backend.from_name` for further information."""
+        return cls.from_name(config["backend"])
 
     def __enter__(self):
         return self

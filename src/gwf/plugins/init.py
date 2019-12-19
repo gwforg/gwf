@@ -2,7 +2,7 @@ import click
 
 from pathlib import Path
 
-from ..backends import list_backends
+from ..backends import Backend
 from ..conf import config_from_path
 
 
@@ -59,7 +59,7 @@ def init():
     backend = click.prompt(
         "Which backend do you want to use?",
         default="local",
-        type=click.Choice(list_backends()),
+        type=click.Choice(Backend.list()),
         show_choices=True,
     )
 

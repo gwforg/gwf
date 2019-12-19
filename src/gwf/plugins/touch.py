@@ -1,5 +1,5 @@
 import click
-from ..core import graph_from_config
+from ..core import Graph
 from ..utils import touchfile
 
 
@@ -15,7 +15,7 @@ def touch(obj):
     This is useful if one or more files were accidentially deleted, but you
     don't want to re-run the workflow to recreate them.
     """
-    graph = graph_from_config(obj)
+    graph = Graph.from_config(obj)
     visited = set()
     for endpoint in graph.endpoints():
         for target in graph.dfs(endpoint):

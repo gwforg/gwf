@@ -1,7 +1,7 @@
 import click
 
-from ..backends import backend_from_config
-from ..core import workflow_from_config
+from ..backends import Backend
+from ..workflow import Workflow
 from ..exceptions import WorkflowError
 
 
@@ -15,8 +15,8 @@ def logs(obj, target, stderr, no_pager):
 
     By default only standard output is shown. Supply the --stderr flag to show standard error instead.
     """
-    workflow = workflow_from_config(obj)
-    backend_cls = backend_from_config(obj)
+    workflow = Workflow.from_config(obj)
+    backend_cls = Backend.from_config(obj)
 
     if target not in workflow.targets:
         raise WorkflowError(

@@ -1,9 +1,8 @@
 import click
 
-from ..backends import backend_from_config
-from ..core import Scheduler, TargetStatus, graph_from_config
-from ..filtering import StatusFilter, EndpointFilter, NameFilter, filter_generic
-
+from ..backends import Backend
+from ..core import Graph, Scheduler, TargetStatus
+from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
 
 STATUS_COLORS = {
     TargetStatus.SHOULDRUN: "magenta",
@@ -112,8 +111,8 @@ def status(obj, status, summary, endpoints, targets):
 
     The targets are shown in creation-order.
     """
-    graph = graph_from_config(obj)
-    backend_cls = backend_from_config(obj)
+    graph = Graph.from_config(obj)
+    backend_cls = Backend.from_config(obj)
 
     with backend_cls() as backend:
         scheduler = Scheduler(graph=graph, backend=backend)

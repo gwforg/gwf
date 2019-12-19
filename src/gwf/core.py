@@ -7,58 +7,14 @@ from enum import Enum
 
 from .backends import Status
 from .exceptions import WorkflowError
-from .utils import LazyDict, cache, load_workflow, parse_path, timer
+from .utils import LazyDict, cache, timer
+from .workflow import Workflow
 
 logger = logging.getLogger(__name__)
 
 
-def workflow_from_path(path):
-    """Return workflow object for the workflow given by `path`.
-
-    Returns a :class:`~gwf.Workflow` object containing the workflow object of
-    the workflow given by `path`.
-
-    :arg str path:
-        Path to a workflow file, optionally specifying a workflow object in that
-        file.
-    """
-    basedir, filename, obj = parse_path(path)
-    return load_workflow(basedir, filename, obj)
-
-
-def workflow_from_config(config):
-    """Return workflow object for the workflow specified by `config`.
-
-    See :func:`workflow_from_path` for further information.
-    """
-    return workflow_from_path(config["file"])
-
-
-def graph_from_path(path):
-    """Return graph for the workflow given by `path`.
-
-    Returns a :class:`~gwf.Graph` object containing the workflow graph of the
-    workflow given by `path`. Note that calling this function computes the
-    complete dependency graph which may take some time for large workflows.
-
-    :arg str path:
-        Path to a workflow file, optionally specifying a workflow object in that
-        file.
-    """
-    workflow = workflow_from_path(path)
-    return Graph.from_targets(workflow.targets)
-
-
-def graph_from_config(config):
-    """Return graph for the workflow specified by `config`.
-
-    See :func:`graph_from_path` for further information.
-    """
-    return graph_from_path(config["file"])
-
-
 class TargetStatus(Enum):
-    """Status of a target, as reported by the scheduler."""
+    """Status of a target as computed by the Scheduler."""
 
     SHOULDRUN = 0  #: The target should run.
     SUBMITTED = 1  #: The target has been submitted, but is not currently running.
@@ -167,6 +123,29 @@ class Graph:
             dependents=dependents,
             unresolved=unresolved,
         )
+
+    @classmethod
+    def from_path(cls, path):
+        """Return graph for the workflow given by `path`.
+
+        Returns a :class:`~gwf.Graph` object containing the workflow graph of
+        the workflow given by `path`. Note that calling this function computes
+        the complete dependency graph which may take some time for large
+        workflows.
+
+        :arg str path: Path to a workflow file, optionally specifying a
+            workflow object in that file.
+        """
+        workflow = Workflow.from_path(path)
+        return Graph.from_targets(workflow.targets)
+
+    @classmethod
+    def from_config(cls, config):
+        """Return graph for the workflow specified by `config`.
+
+        See :func:`graph_from_path` for further information.
+        """
+        return cls.from_path(config["file"])
 
     @timer("Checked for circular dependencies in %.3fms", logger=logger)
     def _check_for_circular_dependencies(self):
