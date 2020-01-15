@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gwf"
-version = "1.7.0"
+version = "1.7.1"
 description = "A flexible, pragmatic workflow tool."
 authors = ["Dan Søndergaard <das@birc.au.dk>", "Thomas Mailund <mailund@birc.au.dk>"]
 license = "GPL-3.0"

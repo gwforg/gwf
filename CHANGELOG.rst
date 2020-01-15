@@ -15,6 +15,11 @@ Changed
   belonging to the current user. This used to be the default behaviour, but was
   unintentionally changed when refactoring the Slurm backend.
 
+Fixed
+-----
+
+* The output of the ``cancel`` command is now correct.
+
 
 Version 1.7.0
 =============
