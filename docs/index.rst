@@ -22,6 +22,18 @@ Contributing
   We aim to make *gwf* a community developed project. Learn how to
   :doc:`contribute </development/forcontributors>`.
 
+Features
+========
+
+* Easy to adopt, there's no special syntax to learn if you already know Python
+* Automatically resolves dependencies between targets based on filenames
+* Only submits targets when their output files are not up to date
+* Supports multiple backends like Slurm, SGE and a local backend for testing
+* Fire-and-forget, does not require you to use *screen* or *tmux* to keep your
+  workflow running
+* Commands for cleaning temporary data from your workflow
+* Friendly to your system administrator!
+
 User's Guide
 ============
 
