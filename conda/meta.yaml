@@ -1,13 +1,13 @@
 {% set name = "gwf" %}
-{% set version = "1.6.0" %}
+{% set version = "1.7.1" %}
 
 package:
   name: "{{ name|lower }}"
   version: "{{ version }}"
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: 28e17099b0219d047a63a37f78f861fff847947fa40101eb2764b4daeb36ead9
+  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
+  sha256: "12c3438eaf2b86a771c511f6cdbb33e89e9da87cbb4ea7c91f384534893ff70b"
 
 build:
   number: 0
@@ -18,15 +18,16 @@ build:
 
 requirements:
   host:
-    - click
-    - click-plugins
+    - click >=6.0,<7.0
+    - click-plugins >=1.0,<2.0
     - pip
     - python
     - setuptools
     - pytest-runner
+    - poetry
   run:
-    - click
-    - click-plugins
+    - click >=6.0,<7.0
+    - click-plugins >=1.0,<2.0
     - python
     - setuptools
 
