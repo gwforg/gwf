@@ -9,22 +9,13 @@ documentation? Defined useful snippets for your text editor? Add it and submit a
 Set Up a Development Environment
 ================================
 
-We strongly recommend that you use the
-`Anaconda Python distribution <https://www.continuum.io/anaconda-overview>`_
-and the conda package manager to set up a development environment (actually, we
-recommend it for all of your Python work). However, feel free to use
-virtualenvs instead.
+We recommend that you set up a separate environment for *gwf* development, for example
+with `venv <https://docs.python.org/3/library/venv.html>` or 
+`Conda <https://conda.io/projects/conda/en/latest/user-guide/getting-started.html#managing-environments>`_.
 
-1. Download and install the Anaconda Python distribution following the instructions
-   `here <https://www.continuum.io/downloads>`_.
-
-2. Create an environment for *gwf* development::
-
-    conda create -n gwfdev python=3.5
-
-3. Activate the environment::
-
-    source activate gwfdev
+You'll also need `Poetry <https://python-poetry.org/>`_ to be installed. To install it
+globally, use a tool like `pipx <https://github.com/pipxproject/pipx>`_. Alternatively,
+you can install it in your virtual environment.
 
 
 Make Your Changes
@@ -63,4 +54,4 @@ Show Us Your Contribution!
 2. Follow `these <https://help.github.com/articles/creating-a-pull-request/>`_ steps to create a pull request.
 
 3. Check for comments and suggestions on your pull request and keep an eye on the
-   `CI output <https://travis-ci.org/mailund/gwf>`_.
+   `CI output <https://travis-ci.org/gwforg/gwf>`_.
