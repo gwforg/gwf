@@ -20,7 +20,7 @@ def logs(obj, target, stderr, no_pager):
 
     if target not in workflow.targets:
         raise WorkflowError(
-            'Target "{}" is not found in the workflow.'.format(target.name)
+            'Target "{}" is not found in the workflow.'.format(target)
         )
 
     log_file = backend_cls.logs(workflow.targets[target], stderr=stderr)
