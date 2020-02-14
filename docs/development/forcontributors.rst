@@ -10,7 +10,7 @@ Set Up a Development Environment
 ================================
 
 We recommend that you set up a separate environment for *gwf* development, for example
-with `venv <https://docs.python.org/3/library/venv.html>` or 
+with `venv <https://docs.python.org/3/library/venv.html>`_ or 
 `Conda <https://conda.io/projects/conda/en/latest/user-guide/getting-started.html#managing-environments>`_.
 
 You'll also need `Poetry <https://python-poetry.org/>`_ to be installed. To install it
