@@ -1,0 +1,13 @@
+coverage
+coveralls
+flake8
+nox
+pytest
+pytest-click
+pytest-cov
+pytest-flake8
+pytest-mock
+pytest-runner
+sphinx
+sphinx-press-theme
+twine

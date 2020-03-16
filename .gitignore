@@ -18,4 +18,4 @@ examples/minimal-workflow-explicit-options/world.txt
 .cache
 .vscode/
 .pytest_cache/
-Pipfile.lock
+.nox
