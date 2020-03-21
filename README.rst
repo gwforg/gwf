@@ -32,8 +32,8 @@ Contributing
 .. _contribute: https://gwf.app/development/forcontributors/
 
 
-.. |cistatus| image:: https://img.shields.io/travis/gwforg/gwf.svg
-    :target: https://travis-ci.org/gwforg/gwf
+.. |cistatus| image:: https://github.com/gwforg/gwf/workflows/Run%20tests/badge.svg
+    :target: https://github.com/gwforg/gwf/actions?query=workflow%3A%22Run+tests%22
     :alt: Build status
 .. |coveralls| image:: https://img.shields.io/coveralls/gwforg/gwf.svg
     :target: https://coveralls.io/github/gwforg/gwf
