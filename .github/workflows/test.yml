@@ -13,3 +13,4 @@ jobs:
       - uses: actions/checkout@1.0.0
       - uses: excitedleigh/setup-nox@0.1.0
       - run: nox
+      - run: coveralls
