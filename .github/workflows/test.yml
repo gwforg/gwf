@@ -12,5 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@1.0.0
       - uses: excitedleigh/setup-nox@0.1.0
-      - run: nox
-      - run: coveralls
+      - name: Run tests
+        run: nox
+      - name: Submit coverage results
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        run: |
+          pip install coveralls
+          coveralls
