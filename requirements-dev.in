@@ -11,3 +11,4 @@ pytest-runner
 sphinx
 sphinx-press-theme
 twine
+wheel
