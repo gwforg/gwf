@@ -292,18 +292,14 @@ virtualenv==20.0.13 \
     --hash=sha256:87831f1070534b636fea2241dd66f3afe37ac9041bcca6d0af3215cdcfbf7d82 \
     --hash=sha256:f3128d882383c503003130389bf892856341c1da12c881ae24d6358c82561b55 \
     # via nox
-wcwidth==0.1.8 \
-    --hash=sha256:8fd29383f539be45b20bd4df0dc29c20ba48654a41e661925e612311e9f3c603 \
-    --hash=sha256:f28b3e8a6483e5d49e7f8949ac1a78314e740333ae305b4ba5defd3e74fb37a8 \
+wcwidth==0.1.9 \
+    --hash=sha256:cafe2186b3c009a04067022ce1dcd79cb38d8d65ee4f4791b8888d6599d1bbe1 \
+    --hash=sha256:ee73862862a156bf77ff92b09034fc4825dd3af9cf81bc5b360668d425f3c5f1 \
     # via pytest
 webencodings==0.5.1 \
     --hash=sha256:a0af1213f3c2226497a97e2b3aa01a7e4bee4f403f95be16fc9acd2947514a78 \
     --hash=sha256:b36a1c245f2d304965eb4e0a82848379241dc04b865afcc4aab16748587e1923 \
     # via bleach
-wheel==0.34.2 \
-    --hash=sha256:8788e9155fe14f54164c1b9eb0a319d98ef02c160725587ad60f14ddc57b6f96 \
-    --hash=sha256:df277cb51e61359aba502208d680f90c0493adec6f0e848af94948778aed386e \
-    # via -r requirements-dev.in
 
 # WARNING: The following packages were not pinned, but pip requires them to be
 # pinned when the requirements file includes hashes. Consider using the --allow-unsafe flag.
