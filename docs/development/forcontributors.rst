@@ -2,21 +2,17 @@
 For Contributors
 ================
 
-We appreciate all contributions to *gwf*, not just contributions to the code! Think something is missing from the
-documentation? Defined useful snippets for your text editor? Add it and submit a pull request!
+We appreciate all contributions to *gwf*, not just contributions to the code!
+Think something is missing from the documentation? Defined useful snippets for
+your text editor? Add it and submit a pull request!
 
 
 Set Up a Development Environment
 ================================
 
-We recommend that you set up a separate environment for *gwf* development, for example
-with `venv <https://docs.python.org/3/library/venv.html>`_ or 
+We recommend that you set up a separate environment for *gwf* development, for
+example with `venv <https://docs.python.org/3/library/venv.html>`_ or
 `Conda <https://conda.io/projects/conda/en/latest/user-guide/getting-started.html#managing-environments>`_.
-
-You'll also need `Poetry <https://python-poetry.org/>`_ to be installed. To install it
-globally, use a tool like `pipx <https://github.com/pipxproject/pipx>`_. Alternatively,
-you can install it in your virtual environment.
-
 
 Make Your Changes
 =================
@@ -54,4 +50,4 @@ Show Us Your Contribution!
 2. Follow `these <https://help.github.com/articles/creating-a-pull-request/>`_ steps to create a pull request.
 
 3. Check for comments and suggestions on your pull request and keep an eye on the
-   `CI output <https://travis-ci.org/gwforg/gwf>`_.
+   `CI output <https://github.com/gwforg/gwf/actions?query=workflow%3A%22Run+tests%22>`_.
