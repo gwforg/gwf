@@ -28,7 +28,7 @@ def lint(session):
     session.run("flake8", "src/gwf")
 
 
-@nox.session
+@nox.session(python="3.6")
 def docs(session):
     setup_test_env(session)
     session.chdir("docs")
