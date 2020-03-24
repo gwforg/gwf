@@ -38,7 +38,9 @@ clean:
 # PyPI
 
 package: clean
-	python setup.py sdist bdist_wheel
+	pip install --upgrade pep517
+	rm -rf build/ dist/
+	python -m pep517.build .
 
 publish-test:
 	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
