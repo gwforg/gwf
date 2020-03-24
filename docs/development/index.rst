@@ -1,6 +1,6 @@
-===========
-Development
-===========
+=================
+How to Contribute
+=================
 
 You can extend *gwf* by writing backends, which can be distributed as regular Python packages and registered with *gwf*
 through the `entrypoints`_ mechanism.
