@@ -2,54 +2,51 @@
 	help \
 	init \
 	test \
-	lint \
-	coverage \
 	docs \
 	clean \
-	package-pypi \
-	publish-pypi \
+	update-deps \
+	init \
+	update \
+	package \
+	publish \
+	publish-test \
 	package-conda \
 	publish-conda
 
-help:
-	@echo "Usage:"
-	@echo "    make help              show this message"
-	@echo "    make init              create and setup development environment"
-	@echo "    make test              run unit tests"
-	@echo "    make lint              run lint checks"
-	@echo "    make test              build docs"
-	@echo "    make clean             remove temporary files"
-	@echo "    make package           build source distribution and wheel"
-	@echo "    make publish           publish distributions to pypi"
-	@echo "    make package-conda     build source distribution and wheel"
-	@echo "    make publish-conda     publish distributions to pypi"
+update-deps:
+	pip install --upgrade pip-tools pip setuptools
+	pip-compile --upgrade --build-isolation --generate-hashes --output-file requirements.txt
+	pip-compile --upgrade --build-isolation --generate-hashes --output-file requirements-dev.txt requirements-dev.in
 
 init:
-	poetry install
+	pip install --upgrade -r requirements.txt -r requirements-dev.txt
+	pip install --no-deps --editable .
+	rm -rf .nox
+
+update: update-deps init
 
 test:
-	poetry run pytest --doctest-modules --cov-config=.coveragerc --cov=src/gwf tests/
-
-lint:
-	poetry run flake8 src/gwf
-
-docs:
-	poetry run $(MAKE) -C docs html
+	nox
 
 clean:
-	find . -prune -name "*.egg-info" -type d -exec rm -rf {} ';'
+	find . -prune -name ".egg-info" -type d -exec rm -rf {} ';'
 	find . -prune -name ".gwf" -type d -exec rm -rf {} ';'
 	find . -prune -name ".eggs" -type d -exec rm -rf {} ';'
 	find . -prune -name "__pycache__" -type d -exec rm -rf {} ';'
-	rm -rf docs/_build .gwfconf.json build/ dist/ .gwf .pytest_cache .egg conda-bld .coverage
+	rm -rf docs/_build .gwfconf.json build/ dist/ .gwf .pytest_cache .egg conda-bld .coverage .nox
 
 # PyPI
 
 package: clean
-	poetry build
+	pip install --upgrade pep517
+	rm -rf build/ dist/
+	python -m pep517.build .
+
+publish-test:
+	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
 publish:
-	poetry publish
+	twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
 
 # Conda
 

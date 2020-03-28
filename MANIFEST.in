@@ -1,0 +1,17 @@
+include CHANGELOG.rst
+include CONTRIBUTORS.rst
+include LICENSE
+
+
+include LICENSE *.rst *.toml
+graft .github
+
+# Tests
+include .coveragerc
+recursive-include tests *.py
+
+# Documentation
+include docs/Makefile
+recursive-include docs *.py
+recursive-include docs *.rst
+prune docs/_build
