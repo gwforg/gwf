@@ -13,6 +13,7 @@ def setup_test_env(session):
 @nox.session(python=["3.5", "3.6", "3.7"])
 def test(session):
     setup_test_env(session)
+
     session.run(
         "pytest",
         "--doctest-modules",
@@ -20,6 +21,12 @@ def test(session):
         "--cov=src/gwf",
         "tests/",
     )
+
+
+@nox.session(python="3.6")
+def black(session):
+    session.install("black")
+    session.run("black", "--check", "--diff", "src/")
 
 
 @nox.session
