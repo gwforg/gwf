@@ -57,30 +57,6 @@ def test_initialization(tmpdir, popen, no_sleep):
                 pass
 
 
-def test_executable_unavailable_initialization(monkeypatch, no_sleep):
-    monkeypatch.setattr("gwf.backends.utils.find_executable", lambda e: None)
-    with pytest.raises(BackendError):
-        with SlurmBackend():
-            pass
-
-
-def test_executable_unavailable_after_initialization(popen, monkeypatch, no_sleep):
-    exes = {"squeue": "/bin/squeue"}
-    monkeypatch.setattr("gwf.backends.utils.find_executable", lambda e: exes.get(e))
-
-    t = Target.empty("TestTarget")
-
-    popen.return_value.returncode = 0
-    popen.return_value.communicate.return_value = ("", "")
-
-    backend = SlurmBackend()
-    with pytest.raises(BackendError):
-        backend.cancel(t)
-
-    with pytest.raises(BackendError):
-        backend.submit(t, dependencies=[])
-
-
 def test_submit_1(popen, no_sleep):
     t1 = Target.empty("Target1")
     t2 = Target.empty("Target2")
