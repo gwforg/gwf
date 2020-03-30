@@ -173,7 +173,7 @@ class LocalBackend(Backend):
         try:
             dependency_ids = [self._tracked[dep.name] for dep in dependencies]
         except KeyError as exc:
-            key, = exc.args
+            (key,) = exc.args
             raise DependencyError(key)
 
         task_id = self.client.submit(
