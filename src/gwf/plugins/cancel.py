@@ -1,26 +1,17 @@
 import click
 
-from ..backends import Backend
-from ..backends.exceptions import TargetError, UnsupportedOperationError
+from ..backends import Backend, Status
+from ..backends.exceptions import UnsupportedOperationError
 from ..core import Graph
 from ..filtering import filter_names
 
 
-def cancel_many(backend, targets, ignore_unknown=False):
+def cancel_many(backend, targets):
     for target in targets:
         try:
             click.echo("Cancelling target {}".format(target.name), err=True)
-            backend.cancel(target)
-        except TargetError:
-            if ignore_unknown:
-                continue
-
-            click.echo(
-                "Target {} could not be cancelled since it is unknown to the backend".format(
-                    target.name
-                ),
-                err=True,
-            )
+            if backend.status(target) != Status.UNKNOWN:
+                backend.cancel(target)
         except UnsupportedOperationError:
             click.echo("Cancelling targets is not supported by this backend", err=True)
             raise click.Abort()
@@ -34,16 +25,18 @@ def cancel_many(backend, targets, ignore_unknown=False):
 @click.pass_obj
 def cancel(obj, targets, force):
     """Cancel the specified targets."""
-    graph = Graph.from_config(obj)
-    backend_cls = Backend.from_config(obj)
 
+    if not force and not targets:
+        click.confirm(
+            "This will cancel all targets! Do you want to continue?", abort=True
+        )
+
+    graph = Graph.from_config(obj)
+    if targets:
+        targets = filter_names(graph, targets)
+    else:
+        targets = list(graph)
+
+    backend_cls = Backend.from_config(obj)
     with backend_cls() as backend:
-        if not targets:
-            if not force:
-                click.confirm(
-                    "This will cancel all targets! Do you want to continue?", abort=True
-                )
-            cancel_many(backend, graph, ignore_unknown=True)
-        else:
-            matched_targets = filter_names(graph, targets)
-            cancel_many(backend, matched_targets)
+        cancel_many(backend, targets)

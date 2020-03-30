@@ -3,6 +3,15 @@ Change Log
 ==========
 
 
+Version 1.7.2
+=============
+
+Fixed
+-----
+
+* Trying to cancel a target that is not running or completed will now *not* fail.
+
+
 Version 1.7.1
 =============
 
