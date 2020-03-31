@@ -1,4 +1,3 @@
-import functools
 import logging
 import os
 import os.path
@@ -7,7 +6,7 @@ from enum import Enum
 
 from .backends import Status
 from .exceptions import WorkflowError
-from .utils import LazyDict, cache, timer
+from .utils import cache, timer
 from .workflow import Workflow
 
 logger = logging.getLogger(__name__)
@@ -208,16 +207,28 @@ class Graph:
         return target_name in self.targets
 
 
-def _fileinfo(path):
-    try:
-        st = os.stat(path)
-    except FileNotFoundError:
-        return None
-    else:
-        return st.st_mtime
+class CachedFilesystem:
+    def __init__(self):
+        self._cache = {}
 
+    def _lookup_file(self, path):
+        if path not in self._cache:
+            try:
+                st = os.stat(path)
+            except FileNotFoundError:
+                self._cache[path] = None
+            else:
+                self._cache[path] = st.st_mtime
+        return self._cache[path]
 
-FileCache = functools.partial(LazyDict, valfunc=_fileinfo)
+    def exists(self, path):
+        return self._lookup_file(path) is not None
+
+    def changed_at(self, path):
+        st = self._lookup_file(path)
+        if st is None:
+            raise FileNotFoundError(path)
+        return st
 
 
 class Scheduler:
@@ -240,7 +251,7 @@ class Scheduler:
         system and that is not provided by another target.
     """
 
-    def __init__(self, graph, backend, dry_run=False, file_cache=FileCache()):
+    def __init__(self, graph, backend, dry_run=False, filesystem=CachedFilesystem()):
         """
         :param gwf.Graph graph:
             Graph of the workflow.
@@ -255,7 +266,7 @@ class Scheduler:
         self.backend = backend
         self.dry_run = dry_run
 
-        self._file_cache = file_cache
+        self._filesystem = filesystem
         self._pretend_known = set()
 
     def prepare_target_options(self, target):
@@ -354,7 +365,7 @@ class Scheduler:
         # Check whether all input files actually exists are are being provided
         # by another target. If not, it's an error.
         for path in target.flattened_inputs():
-            if path in self.graph.unresolved and self._file_cache[path] is None:
+            if path in self.graph.unresolved and not self._filesystem.exists(path):
                 msg = (
                     'File "{}" is required by "{}", but does not exist and is not '
                     "provided by any target in the workflow."
@@ -366,7 +377,7 @@ class Scheduler:
             return True
 
         for path in target.flattened_outputs():
-            if self._file_cache[path] is None:
+            if not self._filesystem.exists(path):
                 logger.debug(
                     "%s should run because its output file %s does not exist",
                     target,
@@ -379,7 +390,8 @@ class Scheduler:
             return False
 
         youngest_in_ts, youngest_in_path = max(
-            (self._file_cache[path], path) for path in target.flattened_inputs()
+            (self._filesystem.changed_at(path), path)
+            for path in target.flattened_inputs()
         )
         logger.debug(
             "%s is the youngest input file of %s with timestamp %s",
@@ -389,7 +401,8 @@ class Scheduler:
         )
 
         oldest_out_ts, oldest_out_path = min(
-            (self._file_cache[path], path) for path in target.flattened_outputs()
+            (self._filesystem.changed_at(path), path)
+            for path in target.flattened_outputs()
         )
         logger.debug(
             "%s is the oldest output file of %s with timestamp %s",
