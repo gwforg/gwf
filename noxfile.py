@@ -26,7 +26,7 @@ def test(session):
 @nox.session(python="3.6")
 def black(session):
     session.install("black")
-    session.run("black", "--check", "--diff", "src/")
+    session.run("black", "--check", "--diff", "src/", "tests/")
 
 
 @nox.session
