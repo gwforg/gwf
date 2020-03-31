@@ -175,7 +175,7 @@ def test_including_workflow_path_dispatches_to_include_path():
 
 @patch("gwf.workflow.inspect.ismodule", return_value=True, autospec=True)
 def test_including_workflow_module_gets_workflow_attribute_and_dispatches_to_include_workflow(
-    mock_ismodule
+    mock_ismodule,
 ):
     workflow = Workflow(working_dir="/some/dir")
     other_workflow = Workflow(working_dir="/some/other/dir")
@@ -268,7 +268,7 @@ def test_iglob_with_absolute_path_does_not_search_relative_to_working_dir(iglob_
 
 @patch("gwf.workflow.subprocess.check_output", autospec=True)
 def test_shell_calls_subprocess_with_same_working_dir_as_workflow_in_a_shell(
-    mock_check_output
+    mock_check_output,
 ):
     workflow = Workflow(working_dir="/some/path")
     workflow.shell("echo hello")

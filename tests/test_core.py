@@ -414,7 +414,7 @@ def test_exception_if_input_file_is_not_provided_and_output_file_exists():
 
 @patch("gwf.core.os.path.exists", return_value=True, autospec=True)
 def test_two_targets_producing_the_same_file_but_declared_with_rel_and_abs_path(
-    mock_os_path_exists
+    mock_os_path_exists,
 ):
     workflow = Workflow(working_dir="/some/dir")
     workflow.target("TestTarget1", inputs=[], outputs=["/some/dir/test_output.txt"])
@@ -946,7 +946,9 @@ def test_scheduler_injects_target_defaults_into_target_options_on_submit(mocker)
     assert target2.options == {"cores": 32, "memory": "1g"}
 
 
-def test_scheduler_warns_user_when_submitting_target_with_unsupported_option(mocker, caplog):
+def test_scheduler_warns_user_when_submitting_target_with_unsupported_option(
+    mocker, caplog
+):
     target = Target(
         "TestTarget",
         inputs=[],
@@ -975,7 +977,11 @@ def test_scheduler_warns_user_when_submitting_target_with_unsupported_option(moc
 
 def test_scheduler_removes_options_with_none_value(mocker):
     target = Target(
-        "TestTarget", inputs=[], outputs=[], options={"cores": None}, working_dir="/some/dir"
+        "TestTarget",
+        inputs=[],
+        outputs=[],
+        options={"cores": None},
+        working_dir="/some/dir",
     )
 
     backend = FakeBackend()

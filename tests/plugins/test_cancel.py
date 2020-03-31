@@ -36,7 +36,7 @@ def test_cancel_two_targets(cli_runner):
 
 
 def test_cancel_no_targets_specified_should_ask_for_confirmation_and_cancel_all_if_approved(
-    cli_runner
+    cli_runner,
 ):
     result = cli_runner.invoke(
         main,
@@ -50,7 +50,7 @@ def test_cancel_no_targets_specified_should_ask_for_confirmation_and_cancel_all_
 
 
 def test_cancel_no_targets_specified_should_ask_for_confirmation_and_abort_if_not_approved(
-    cli_runner
+    cli_runner,
 ):
     result = cli_runner.invoke(
         main,
