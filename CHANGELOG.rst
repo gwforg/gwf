@@ -10,6 +10,13 @@ Fixed
 -----
 
 * Trying to cancel a target that is not running or completed will now *not* fail.
+* Documented the Slurm target options ``mail_user`` and ``mail_type``.
+
+Added
+-----
+
+* Slurm backend now accepts a ``gres`` target option that maps directly to
+  Slurm's ``--gres`` flag.
 
 
 Version 1.7.1
