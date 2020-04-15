@@ -289,6 +289,22 @@ def test_graph_raises_circular_dependency_error():
         Graph.from_targets({"Target1": t1, "Target2": t2, "Target3": t3})
 
 
+class FakeFilesystem:
+    def __init__(self):
+        self._files = {}
+
+    def add_file(self, path, changed_at):
+        self._files[path] = changed_at
+
+    def exists(self, path):
+        return path in self._files
+
+    def changed_at(self, path):
+        if path not in self._files:
+            raise FileNotFoundError(path)
+        return self._files[path]
+
+
 class TestShouldRun(unittest.TestCase):
     def setUp(self):
         workflow = Workflow(working_dir="/some/dir")
@@ -309,7 +325,10 @@ class TestShouldRun(unittest.TestCase):
 
         self.graph = Graph.from_targets(workflow.targets)
         self.backend = DummyBackend()
-        self.scheduler = Scheduler(graph=self.graph, backend=self.backend)
+        self.filesystem = FakeFilesystem()
+        self.scheduler = Scheduler(
+            graph=self.graph, backend=self.backend, filesystem=self.filesystem
+        )
 
     def test_target_should_run_if_one_of_its_dependencies_does_not_exist(self):
         with self.assertLogs(level="DEBUG") as logs:
@@ -339,7 +358,9 @@ class TestShouldRun(unittest.TestCase):
             "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
         )
         graph = Graph.from_targets({"TestTarget": target})
-        scheduler = Scheduler(graph=graph, backend=DummyBackend())
+        scheduler = Scheduler(
+            graph=graph, backend=DummyBackend(), filesystem=self.filesystem
+        )
         with self.assertLogs(level="DEBUG") as logs:
             self.assertTrue(scheduler.schedule(target))
             self.assertEqual(
@@ -358,55 +379,48 @@ class TestShouldRun(unittest.TestCase):
         )
 
         graph = Graph.from_targets(workflow.targets)
-        scheduler = Scheduler(graph=graph, backend=DummyBackend())
 
-        mock_file_cache = {
-            "/some/dir/test_output1.txt": 1,
-            "/some/dir/test_output2.txt": 2,
-        }
-        with patch.dict(scheduler._file_cache, mock_file_cache):
-            self.assertFalse(scheduler.should_run(target))
+        self.filesystem.add_file("/some/dir/test_output1.txt", changed_at=1)
+        self.filesystem.add_file("/some/dir/test_output2.txt", changed_at=2)
+
+        scheduler = Scheduler(
+            graph=graph, backend=DummyBackend(), filesystem=self.filesystem
+        )
+        self.assertFalse(scheduler.should_run(target))
 
     def test_should_run_if_any_input_file_is_newer_than_any_output_file(self):
-        mock_file_cache = {
-            "/some/dir/test_output1.txt": 0,
-            "/some/dir/test_output2.txt": 1,
-            "/some/dir/test_output3.txt": 3,
-            "/some/dir/final_output.txt": 2,
-        }
+        self.filesystem.add_file("/some/dir/test_output1.txt", changed_at=0)
+        self.filesystem.add_file("/some/dir/test_output2.txt", changed_at=1)
+        self.filesystem.add_file("/some/dir/test_output3.txt", changed_at=3)
+        self.filesystem.add_file("/some/dir/final_output.txt", changed_at=2)
 
-        with patch.dict(self.scheduler._file_cache, mock_file_cache):
-            self.assertFalse(self.scheduler.should_run(self.target1))
-            self.assertFalse(self.scheduler.should_run(self.target2))
-            self.assertFalse(self.scheduler.should_run(self.target3))
-            self.assertTrue(self.scheduler.should_run(self.target4))
+        self.assertFalse(self.scheduler.should_run(self.target1))
+        self.assertFalse(self.scheduler.should_run(self.target2))
+        self.assertFalse(self.scheduler.should_run(self.target3))
+        self.assertTrue(self.scheduler.should_run(self.target4))
 
     def test_should_run_not_run_if_all_outputs_are_newer_then_the_inputs(self):
-        mock_file_cache = {
-            "/some/dir/test_output1.txt": 0,
-            "/some/dir/test_output2.txt": 1,
-            "/some/dir/test_output3.txt": 3,
-            "/some/dir/final_output.txt": 4,
-        }
+        self.filesystem.add_file("/some/dir/test_output1.txt", changed_at=0)
+        self.filesystem.add_file("/some/dir/test_output2.txt", changed_at=1)
+        self.filesystem.add_file("/some/dir/test_output3.txt", changed_at=3)
+        self.filesystem.add_file("/some/dir/final_output.txt", changed_at=4)
 
-        with patch.dict(self.scheduler._file_cache, mock_file_cache):
-            self.assertFalse(self.scheduler.should_run(self.target1))
-            self.assertFalse(self.scheduler.should_run(self.target2))
-            self.assertFalse(self.scheduler.should_run(self.target3))
-            self.assertFalse(self.scheduler.should_run(self.target4))
+        self.assertFalse(self.scheduler.should_run(self.target1))
+        self.assertFalse(self.scheduler.should_run(self.target2))
+        self.assertFalse(self.scheduler.should_run(self.target3))
+        self.assertFalse(self.scheduler.should_run(self.target4))
 
 
 def test_exception_if_input_file_is_not_provided_and_output_file_exists():
     workflow = Workflow(working_dir="/some/dir")
     target = workflow.target("TestTarget", inputs=["in.txt"], outputs=["out.txt"])
-
     graph = Graph.from_targets(workflow.targets)
     backend = DummyBackend()
-    scheduler = Scheduler(
-        graph=graph,
-        backend=backend,
-        file_cache={"/some/dir/in.txt": None, "/some/dir/out.txt": 1},
-    )
+
+    filesystem = FakeFilesystem()
+    filesystem.add_file("/some/dir/out.txt", changed_at=1)
+
+    scheduler = Scheduler(graph=graph, backend=backend, filesystem=filesystem)
 
     with pytest.raises(WorkflowError):
         scheduler.should_run(target)
@@ -429,11 +443,11 @@ def test_scheduling_submitted_target(backend, monkeypatch):
         "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
     )
     graph = Graph.from_targets({"TestTarget": target})
-    scheduler = Scheduler(graph=graph, backend=backend)
+    scheduler = Scheduler(graph=graph, backend=backend, filesystem=FakeFilesystem())
     monkeypatch.setattr(scheduler, "should_run", lambda t: True)
     backend.submit(target, dependencies=set())
     assert len(backend.submit.call_args_list) == 1
-    assert scheduler.schedule(target) == True
+    assert scheduler.schedule(target)
     assert len(backend.submit.call_args_list) == 1
 
 
@@ -442,9 +456,9 @@ def test_scheduling_unsubmitted_target(backend, monkeypatch):
         "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
     )
     graph = Graph.from_targets({"TestTarget": target})
-    scheduler = Scheduler(graph=graph, backend=backend)
+    scheduler = Scheduler(graph=graph, backend=backend, filesystem=FakeFilesystem())
     monkeypatch.setattr(scheduler, "should_run", lambda t: True)
-    assert scheduler.schedule(target) == True
+    assert scheduler.schedule(target)
     assert len(backend.submit.call_args_list) == 1
     assert call(target, dependencies=set()) in backend.submit.call_args_list
 
@@ -458,9 +472,7 @@ def test_non_existing_files_not_provided_by_other_target(backend):
         working_dir="/some/dir",
     )
     graph = Graph.from_targets({"TestTarget": target})
-    scheduler = Scheduler(
-        graph=graph, backend=backend, file_cache={"/some/dir/test_input.txt": None}
-    )
+    scheduler = Scheduler(graph=graph, backend=backend, filesystem=FakeFilesystem())
     with pytest.raises(WorkflowError):
         scheduler.schedule(target)
 
@@ -474,10 +486,12 @@ def test_existing_files_not_provided_by_other_target(backend):
         working_dir="/some/dir",
     )
     graph = Graph.from_targets({"TestTarget": target})
-    scheduler = Scheduler(
-        graph=graph, backend=backend, file_cache={"/some/dir/test_input.txt": 0}
-    )
-    assert scheduler.schedule(target) == True
+
+    filesystem = FakeFilesystem()
+    filesystem.add_file("/some/dir/test_input.txt", changed_at=0)
+
+    scheduler = Scheduler(graph=graph, backend=backend, filesystem=filesystem)
+    assert scheduler.schedule(target)
 
 
 def test_scheduling_target_with_deps_that_are_not_submitted(backend, monkeypatch):
@@ -496,9 +510,9 @@ def test_scheduling_target_with_deps_that_are_not_submitted(backend, monkeypatch
         working_dir="/some/dir",
     )
     graph = Graph.from_targets({"TestTarget1": target1, "TestTarget2": target2})
-    scheduler = Scheduler(graph=graph, backend=backend)
+    scheduler = Scheduler(graph=graph, backend=backend, filesystem=FakeFilesystem())
     monkeypatch.setattr(scheduler, "should_run", lambda t: True)
-    assert scheduler.schedule(target2) == True
+    assert scheduler.schedule(target2)
     assert len(backend.submit.call_args_list) == 2
     assert call(target1, dependencies=set()) in backend.submit.call_args_list
     assert call(target2, dependencies=set([target1])) in backend.submit.call_args_list
@@ -536,9 +550,9 @@ def test_scheduling_target_with_deep_deps_that_are_not_submitted(backend, monkey
     graph = Graph.from_targets(
         {"target1": target1, "target2": target2, "target3": target3, "target4": target4}
     )
-    scheduler = Scheduler(graph=graph, backend=backend)
+    scheduler = Scheduler(graph=graph, backend=backend, filesystem=FakeFilesystem())
     monkeypatch.setattr(scheduler, "should_run", lambda t: True)
-    assert scheduler.schedule(target4) == True
+    assert scheduler.schedule(target4)
     assert len(backend.submit.call_args_list) == 4
     assert call(target1, dependencies=set()) in backend.submit.call_args_list
     assert call(target2, dependencies=set([target1])) in backend.submit.call_args_list
@@ -578,9 +592,9 @@ def test_scheduling_branch_and_join_structure(backend, monkeypatch):
     graph = Graph.from_targets(
         {"target1": target1, "target2": target2, "target3": target3, "target4": target4}
     )
-    scheduler = Scheduler(graph=graph, backend=backend)
+    scheduler = Scheduler(graph=graph, backend=backend, filesystem=FakeFilesystem())
     monkeypatch.setattr(scheduler, "should_run", lambda t: True)
-    assert scheduler.schedule(target4) == True
+    assert scheduler.schedule(target4)
     assert len(backend.submit.call_args_list) == 4
     assert call(target1, dependencies=set([])) in backend.submit.call_args_list
     assert call(target2, dependencies=set([target1])) in backend.submit.call_args_list
@@ -626,12 +640,12 @@ def test_scheduling_branch_and_join_structure_with_previously_submitted_dependen
     graph = Graph.from_targets(
         {"target1": target1, "target2": target2, "target3": target3, "target4": target4}
     )
-    scheduler = Scheduler(graph=graph, backend=backend)
+    scheduler = Scheduler(graph=graph, backend=backend, filesystem=FakeFilesystem())
     monkeypatch.setattr(scheduler, "should_run", lambda t: True)
 
     backend.submit(target1, dependencies=set())
 
-    assert scheduler.schedule(target4) == True
+    assert scheduler.schedule(target4)
     assert len(backend.submit.call_args_list) == 4
     assert call(target2, dependencies=set([target1])) in backend.submit.call_args_list
     assert call(target3, dependencies=set([target1])) in backend.submit.call_args_list
@@ -666,9 +680,9 @@ def test_scheduling_non_submitted_targets_that_should_not_run(backend, monkeypat
     graph = Graph.from_targets(
         {"TestTarget1": target1, "TestTarget2": target2, "TestTarget3": target3}
     )
-    scheduler = Scheduler(graph=graph, backend=backend)
+    scheduler = Scheduler(graph=graph, backend=backend, filesystem=FakeFilesystem())
     monkeypatch.setattr(scheduler, "should_run", lambda t: False)
-    assert scheduler.schedule(target3) == False
+    assert not scheduler.schedule(target3)
     assert backend.submit.call_args_list == []
 
 
@@ -937,7 +951,7 @@ def test_scheduler_injects_target_defaults_into_target_options_on_submit(mocker)
     mocker.patch.object(backend, "submit", autospec=True)
 
     graph = Graph.from_targets({"TestTarget1": target1, "TestTarget2": target2})
-    scheduler = Scheduler(graph=graph, backend=backend, file_cache={})
+    scheduler = Scheduler(graph=graph, backend=backend, filesystem=FakeFilesystem())
 
     scheduler.schedule(target1)
     assert target1.options == {"cores": 1, "memory": "1g"}
@@ -962,7 +976,7 @@ def test_scheduler_warns_user_when_submitting_target_with_unsupported_option(
 
     graph = Graph.from_targets({"TestTarget": target})
 
-    scheduler = Scheduler(graph=graph, backend=backend, file_cache={})
+    scheduler = Scheduler(graph=graph, backend=backend, filesystem=FakeFilesystem())
     scheduler.schedule(target)
 
     assert target.options == {"cores": 1, "memory": "1g"}
@@ -989,7 +1003,7 @@ def test_scheduler_removes_options_with_none_value(mocker):
 
     graph = Graph.from_targets({"TestTarget": target})
 
-    scheduler = Scheduler(graph=graph, backend=backend, file_cache={})
+    scheduler = Scheduler(graph=graph, backend=backend, filesystem=FakeFilesystem())
     scheduler.schedule(target)
 
     assert target.options == {"memory": "1g"}
