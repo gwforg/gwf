@@ -1,13 +1,12 @@
 import logging
 from contextlib import suppress
 
-from ..backends import Backend
-from ..backends.exceptions import LogError
-from ..core import Scheduler, Graph
-from ..filtering import filter_names
-
 import click
 
+from ..backends import Backend, Status
+from ..backends.exceptions import LogError
+from ..core import Graph, schedule
+from ..filtering import filter_names
 
 logger = logging.getLogger(__name__)
 
@@ -32,15 +31,35 @@ def run(obj, targets, dry_run):
     """Run the specified workflow."""
     graph = Graph.from_config(obj)
     backend_cls = Backend.from_config(obj)
+
     with backend_cls() as backend:
         if not dry_run:
             logger.debug("Cleaning old log files...")
             clean_logs(graph, backend)
 
-        if targets:
-            matched_targets = filter_names(graph, targets)
-        else:
-            matched_targets = list(graph)
+        matched_targets = filter_names(graph, targets) if targets else graph.endpoints()
+        subgraph = graph.subset(matched_targets)
 
-        scheduler = Scheduler(graph=graph, backend=backend, dry_run=dry_run)
-        scheduler.schedule_many(matched_targets)
+        scheduled, reasons = schedule(matched_targets, subgraph)
+
+        seen = set()
+        for endpoint in subgraph.endpoints():
+            for target in subgraph.dfs(endpoint):
+                if target in seen:
+                    continue
+                seen.add(target)
+
+                if target not in scheduled:
+                    logger.debug(reasons[target])
+                    continue
+
+                if backend.status(target) != Status.UNKNOWN:
+                    logger.debug("Target %s already submitted", target.name)
+                    continue
+
+                logger.debug("Target %s", reasons[target])
+                if dry_run:
+                    logger.info("Would submit target %s", target.name)
+                else:
+                    logger.info("Submitting target %s", target.name)
+                    backend.submit(target, dependencies=scheduled[target])
