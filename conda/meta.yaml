@@ -1,5 +1,5 @@
 {% set name = "gwf" %}
-{% set version = "1.7.1" %}
+{% set version = "1.7.2" %}
 
 package:
   name: "{{ name|lower }}"
@@ -7,27 +7,24 @@ package:
 
 source:
   url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
-  sha256: "12c3438eaf2b86a771c511f6cdbb33e89e9da87cbb4ea7c91f384534893ff70b"
+  sha256: "f449be77d58929cf95f192c0888d1b7727fb92b16df36a2054529ef0eef53c35"
 
 build:
   number: 0
-  noarch: python
   entry_points:
     - gwf = gwf.cli:main
   script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
 
 requirements:
   host:
-    - click >=6.0,<7.0
-    - click-plugins >=1.0,<2.0
+    - click
+    - click-plugins
     - pip
     - python
     - setuptools
-    - pytest-runner
-    - poetry
   run:
-    - click >=6.0,<7.0
-    - click-plugins >=1.0,<2.0
+    - click
+    - click-plugins
     - python
     - setuptools
 
