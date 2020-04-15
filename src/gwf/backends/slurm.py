@@ -46,15 +46,25 @@ class SlurmBackend(PbsLikeBackendBase):
       Time limit for this target (default: 01:00:00).
     * **queue (str):**
       Queue to submit the target to. To specify multiple queues, specify a
-      comma-separated list of queue names.
+      comma-separated list of queue names. A queue is equivalent to a Slurm
+      partition.
     * **account (str):**
       Account to be used when running the target.
     * **constraint (str):**
       Constraint string. Equivalent to setting the `--constraint` flag on
       `sbatch`.
     * **qos (str):**
-      Quality-of-service strring. Equivalent to setting the `--qos` flog
+      Quality-of-service string. Equivalent to setting the `--qos` flog
       on `sbatch`.
+    * **mail_type (str):**
+      Equivalent to the `--mail-type` flag on `sbatch`.
+    * **mail_user (str):**
+      Equivalent to the `--mail-user` flag on `sbatch`.
+    * **mail_type (str):**
+      Account to be used when running the target.
+    * **gres (str):**
+      Equivalent to the `--gres` flog on `sbatch`. Usually used to
+      request access to GPUs.
     """
 
     option_defaults = {
@@ -68,6 +78,7 @@ class SlurmBackend(PbsLikeBackendBase):
         "mail_type": None,
         "mail_user": None,
         "qos": None,
+        "gres": None,
     }
 
     option_flags = {
@@ -81,6 +92,7 @@ class SlurmBackend(PbsLikeBackendBase):
         "mail_type": "--mail-type=",
         "mail_user": "--mail-user=",
         "qos": "--qos=",
+        "gres": "--gres=",
     }
 
     option_str = "#SBATCH {0}{1}"
