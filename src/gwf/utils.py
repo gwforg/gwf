@@ -100,32 +100,6 @@ def load_workflow(basedir, filename, objname):
         )
 
 
-class LazyDict(dict):
-    """A dict which lazily computes values for keys using `valfunc`.
-
-    When accessing an key in the dict, it will check whether the key exists. If it does, the value is returned
-    immediately. If not, `valfunc` will be called on the key and the return value will be assigned as the value of the
-    key. For example::
-
-        >>> d = LazyDict(valfunc=lambda k: k + 1)
-        >>> 0 in d
-        False
-        >>> d[0]
-        1
-        >>> d[100]
-        101
-    """
-
-    def __init__(self, valfunc, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.valfunc = valfunc
-
-    def __getitem__(self, item):
-        if not super().__contains__(item):
-            super().__setitem__(item, self.valfunc(item))
-        return super().__getitem__(item)
-
-
 class PersistableDict(UserDict):
     """A dictionary which can persist itself to JSON."""
 
