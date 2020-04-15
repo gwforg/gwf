@@ -5,7 +5,7 @@ with open("README.rst", "r") as fh:
 
 setup(
     name="gwf",
-    version="1.8.0.dev0",
+    version="1.7.2",
     author="Dan Søndergaard",
     author_email="das@birc.au.dk",
     description="A flexible, pragmatic workflow tool.",
