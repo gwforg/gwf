@@ -7,6 +7,7 @@ from ..backends import Backend, Status
 from ..backends.exceptions import LogError
 from ..core import Graph, schedule
 from ..filtering import filter_names
+from ..workflow import Workflow
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,8 @@ def clean_logs(graph, backend):
 @click.pass_obj
 def run(obj, targets, dry_run):
     """Run the specified workflow."""
-    graph = Graph.from_config(obj)
+    workflow = Workflow.from_config(obj)
+    graph = Graph.from_targets(workflow.targets)
     backend_cls = Backend.from_config(obj)
 
     with backend_cls() as backend:

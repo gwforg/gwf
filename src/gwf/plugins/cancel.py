@@ -4,6 +4,7 @@ from ..backends import Backend, Status
 from ..backends.exceptions import UnsupportedOperationError
 from ..core import Graph
 from ..filtering import filter_names
+from ..workflow import Workflow
 
 
 def cancel_many(backend, targets):
@@ -31,7 +32,9 @@ def cancel(obj, targets, force):
             "This will cancel all targets! Do you want to continue?", abort=True
         )
 
-    graph = Graph.from_config(obj)
+    workflow = Workflow.from_config(obj)
+    graph = Graph.from_targets(workflow.targets)
+
     if targets:
         targets = filter_names(graph, targets)
     else:

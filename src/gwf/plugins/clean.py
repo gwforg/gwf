@@ -4,6 +4,7 @@ import os.path
 
 from ..core import Graph
 from ..filtering import NameFilter, EndpointFilter, filter_generic
+from ..workflow import Workflow
 
 import click
 
@@ -42,7 +43,8 @@ def clean(obj, targets, all, force):
     deleted. If you want to clean up output files from endpoints too, use the
     ``--all`` flag.
     """
-    graph = Graph.from_config(obj)
+    workflow = Workflow.from_config(obj)
+    graph = Graph.from_targets(workflow.targets)
 
     filters = []
     if targets:

@@ -1,13 +1,12 @@
-import time
 import functools
+import time
 
 import pytest
 
 import gwf.conf
 from gwf.backends.base import Backend, Status
-from gwf.core import Graph
+from gwf.core import Graph, Target
 from gwf.core import schedule as _schedule
-from gwf.workflow import Target
 
 
 @pytest.fixture(autouse=True)

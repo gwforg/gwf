@@ -3,9 +3,8 @@ import unittest
 
 import pytest
 
-from gwf import AnonymousTarget, Graph, Target, Workflow
+from gwf.core import Graph, Target, TargetStatus, _flatten, get_status
 from gwf.exceptions import NameError, WorkflowError
-from gwf.workflow import _flatten
 
 
 @pytest.mark.parametrize(
@@ -71,6 +70,17 @@ class TestTarget(unittest.TestCase):
             working_dir="/some/path",
         )
         self.assertFalse(target.is_source)
+
+    def test_target_with_protected_outputs(self):
+        target = Target(
+            name="TestTarget",
+            inputs=["test_input1.txt", "test_input2.txt"],
+            outputs=[],
+            options={},
+            working_dir="/some/path",
+            protect=["test_input1.txt"],
+        )
+        self.assertEqual(target.protected, set(["test_input1.txt"]))
 
     def test_assigning_spec_to_target_sets_spec_attribute(self):
         target = (
@@ -474,171 +484,19 @@ def test_scheduling_multiple_targets(diamond_graph, schedule):
     assert len(scheduled) == 3
 
 
-def test_map_naming_with_template_function():
-    def my_template(path):
-        return AnonymousTarget(inputs=[path], outputs=[path + ".new"], options={})
-
-    files = ["a", "b", "c"]
-
-    workflow = Workflow(working_dir="/some/dir")
-    workflow.map(my_template, files)
-
-    assert len(workflow.targets) == 3
-    assert "my_template_0" in workflow.targets
-    assert "my_template_1" in workflow.targets
-    assert "my_template_2" in workflow.targets
-
-
-def test_map_naming_with_template_class_instance():
-    class MyTemplate:
-        def __call__(self, path):
-            return AnonymousTarget(inputs=[path], outputs=[path + ".new"], options={})
-
-    files = ["a", "b", "c"]
-
-    workflow = Workflow(working_dir="/some/dir")
-    workflow.map(MyTemplate(), files)
-
-    assert len(workflow.targets) == 3
-    assert "MyTemplate_0" in workflow.targets
-    assert "MyTemplate_1" in workflow.targets
-    assert "MyTemplate_2" in workflow.targets
-
-
-def test_map_naming_with_invalid_template_arg():
-    files = ["a", "b", "c"]
-
-    workflow = Workflow(working_dir="/some/dir")
-
-    with pytest.raises(ValueError):
-        workflow.map(42, files)
-
-
-def test_map_with_custom_naming_function():
-    def my_template(path):
-        return AnonymousTarget(
-            inputs={"path": path}, outputs={"path": path + ".new"}, options={}
-        )
-
-    files = ["a", "b", "c"]
-
-    workflow = Workflow(working_dir="/some/dir")
-    workflow.map(
-        my_template, files, name=lambda i, t: "foo_{}".format(t.inputs["path"])
+def test_get_status(backend):
+    target = Target(
+        "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
     )
 
-    assert len(workflow.targets) == 3
-    assert "foo_a" in workflow.targets
-    assert "foo_b" in workflow.targets
-    assert "foo_c" in workflow.targets
-
-
-def test_map_with_custom_naming_string():
-    def my_template(path):
-        return AnonymousTarget(
-            inputs={"path": path}, outputs={"path": path + ".new"}, options={}
-        )
-
-    files = ["a", "b", "c"]
-
-    workflow = Workflow(working_dir="/some/dir")
-    workflow.map(my_template, files, name="bar")
-
-    assert len(workflow.targets) == 3
-    assert "bar_0" in workflow.targets
-    assert "bar_1" in workflow.targets
-    assert "bar_2" in workflow.targets
-
-
-@pytest.fixture
-def mock_template(mocker,):
-    mock_template = mocker.MagicMock()
-    mock_template.__name__ = "mock_template"
-    mock_template.return_value = AnonymousTarget(inputs=[], outputs=[], options={})
-    return mock_template
-
-
-def test_map_arg_passing_list_of_strings(mocker, mock_template):
-    files = ["a", "b", "c"]
-
-    workflow = Workflow(working_dir="/some/dir")
-    workflow.map(mock_template, files)
-
-    mock_template.assert_has_calls(
-        [mocker.call("a"), mocker.call("b"), mocker.call("c")], any_order=True
+    assert get_status(target, scheduled={}, backend=backend) == TargetStatus.COMPLETED
+    assert (
+        get_status(target, scheduled={target: set()}, backend=backend)
+        == TargetStatus.SHOULDRUN
     )
 
-
-def test_map_arg_passing_list_of_tuples(mocker, mock_template):
-    files = [("a", "/foo"), ("b", "/foo"), ("c", "/foo")]
-
-    workflow = Workflow(working_dir="/some/dir")
-    workflow.map(mock_template, files)
-
-    mock_template.assert_has_calls(
-        [mocker.call("a", "/foo"), mocker.call("b", "/foo"), mocker.call("c", "/foo")],
-        any_order=True,
-    )
-
-
-def test_map_arg_passing_list_of_dicts(mocker, mock_template):
-    files = [
-        {"path": "a", "output_dir": "foo/"},
-        {"path": "b", "output_dir": "foo/"},
-        {"path": "c", "output_dir": "foo/"},
-    ]
-
-    workflow = Workflow(working_dir="/some/dir")
-    workflow.map(mock_template, files)
-
-    mock_template.assert_has_calls(
-        [
-            mocker.call(path="a", output_dir="foo/"),
-            mocker.call(path="b", output_dir="foo/"),
-            mocker.call(path="c", output_dir="foo/"),
-        ],
-        any_order=True,
-    )
-
-
-def test_map_arg_passing_list_of_dicts_with_extra(mocker, mock_template):
-    files = [{"path": "a"}, {"path": "b"}, {"path": "c"}]
-
-    workflow = Workflow(working_dir="/some/dir")
-    workflow.map(mock_template, files, extra={"output_dir": "foo/"})
-
-    mock_template.assert_has_calls(
-        [
-            mocker.call(path="a", output_dir="foo/"),
-            mocker.call(path="b", output_dir="foo/"),
-            mocker.call(path="c", output_dir="foo/"),
-        ],
-        any_order=True,
-    )
-
-
-def test_target_list():
-    def my_template(path):
-        return AnonymousTarget(
-            inputs={"path": path}, outputs={"path": path + ".new"}, options={}
-        )
-
-    files = ["a", "b", "c"]
-
-    workflow = Workflow(working_dir="/some/dir")
-    target_list = workflow.map(my_template, files)
-
-    assert len(target_list) == 3
-
-    assert len(target_list.outputs) == 3
-    assert target_list.outputs == [
-        {"path": "a.new"},
-        {"path": "b.new"},
-        {"path": "c.new"},
-    ]
-
-    assert len(target_list.inputs) == 3
-    assert target_list.inputs == [{"path": "a"}, {"path": "b"}, {"path": "c"}]
+    backend.submit(target, dependencies=set())
+    assert get_status(target, scheduled={}, backend=backend) == TargetStatus.SUBMITTED
 
 
 @pytest.mark.skip(msg="injection of backend defaults will be moved to backends")

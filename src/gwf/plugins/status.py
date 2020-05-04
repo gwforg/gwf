@@ -5,6 +5,7 @@ import click
 from ..backends import Backend
 from ..core import Graph, TargetStatus, schedule, get_status
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
+from ..workflow import Workflow
 
 STATUS_COLORS = {
     TargetStatus.SHOULDRUN: "magenta",
@@ -110,7 +111,8 @@ def status(obj, status, summary, endpoints, targets):
 
     The targets are shown in creation-order.
     """
-    graph = Graph.from_config(obj)
+    workflow = Workflow.from_config(obj)
+    graph = Graph.from_targets(workflow.targets)
     backend_cls = Backend.from_config(obj)
 
     scheduled, _ = schedule(graph.endpoints(), graph=graph)
