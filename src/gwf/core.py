@@ -436,6 +436,11 @@ class Graph:
         return path
 
     def subset(self, endpoints):
+        """Subset a graph given an iterable of endpoints.
+
+        This will return a new, potentially disjoint graph with the given
+        endpoints and all of their dependencies.
+        """
         targets = set()
         for target in endpoints:
             for dep in self.dfs(target):
