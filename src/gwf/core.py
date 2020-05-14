@@ -1,15 +1,75 @@
+import collections
 import logging
 import os
 import os.path
+import unicodedata
 from collections import defaultdict
 from enum import Enum
 
 from .backends import Status
-from .exceptions import WorkflowError
-from .utils import cache, timer
-from .workflow import Workflow
+from .compat import fspath
+from .exceptions import NameError, WorkflowError
+from .utils import cache, is_valid_name, timer
 
 logger = logging.getLogger(__name__)
+
+
+def _flatten(t):
+    res = []
+
+    def flatten_rec(g):
+        if isinstance(g, str) or hasattr(g, "__fspath__"):
+            res.append(g)
+        elif isinstance(g, collections.abc.Mapping):
+            for k, v in g.items():
+                flatten_rec(v)
+        else:
+            for v in g:
+                flatten_rec(v)
+
+    flatten_rec(t)
+    return res
+
+
+def _has_nonprintable_char(s):
+    chars = enumerate((unicodedata.category(char) == "Cc", char) for char in s)
+    for pos, (unprintable, char) in chars:
+        if unprintable:
+            return (
+                s.encode("unicode_escape").decode("utf-8"),
+                char.encode("unicode_escape").decode("utf-8"),
+                pos,
+            )
+    return None
+
+
+def _check_path(path, target_name, mode):
+    if not path:
+        msg = 'Target "{}" has an empty {} path.'.format(target_name, mode)
+        raise WorkflowError(msg)
+
+    result = _has_nonprintable_char(path)
+    if result is not None:
+        clean_path, char, pos = result
+        msg = (
+            'Path "{}" in target "{}" {}s contains a '
+            'non-printable character "{}" on position {}. '
+            "This is always unintentional and can cause "
+            "strange behaviour."
+        ).format(clean_path, target_name, mode, char, pos)
+        raise WorkflowError(msg)
+    return path
+
+
+def _norm_path(working_dir, path):
+    path = fspath(path)
+    if os.path.isabs(path):
+        return path
+    return os.path.abspath(os.path.join(working_dir, path))
+
+
+def _norm_paths(working_dir, paths):
+    return [_norm_path(working_dir, path) for path in paths]
 
 
 class TargetStatus(Enum):
@@ -19,6 +79,207 @@ class TargetStatus(Enum):
     SUBMITTED = 1  #: The target has been submitted, but is not currently running.
     RUNNING = 2  #: The target is currently running.
     COMPLETED = 3  #: The target has completed and should not run.
+
+
+class AnonymousTarget:
+    """Represents an unnamed target.
+
+    An anonymous target is an unnamed, abstract target much like the tuple
+    returned by function templates. Thus, `AnonymousTarget` can also be used as
+    the return value of a template function.
+
+    :ivar list inputs:
+        A string, list or dictionary containing inputs to the target.
+    :ivar list outputs:
+        A string, list or dictionary containing outputs to the target.
+    :ivar dict options:
+        Options such as number of cores, memory requirements etc. Options are
+        backend-dependent. Backends will ignore unsupported options.
+    :ivar str working_dir:
+        Working directory of this target.
+    :ivar str spec:
+        The specification of the target.
+    :ivar set protect:
+        An iterable of protected files which will not be removed during
+        cleaning, even if this target is not an endpoint.
+    """
+
+    _creation_order = 0
+
+    def __init__(
+        self, inputs, outputs, options, working_dir=None, spec="", protect=None
+    ):
+        self.options = options
+        self.working_dir = working_dir
+        self.inputs = inputs
+        self.outputs = outputs
+        self._spec = spec
+
+        self.order = AnonymousTarget._creation_order
+        AnonymousTarget._creation_order += 1
+
+        if protect is None:
+            self.protected = set()
+        else:
+            self.protected = set(protect)
+
+    @property
+    def spec(self):
+        return self._spec
+
+    @spec.setter
+    def spec(self, value):
+        if not isinstance(value, str):
+            msg = (
+                "Target spec must be a string, not {}. Did you attempt to "
+                "assign a template to this target? This is no is not allowed "
+                "since version 1.0. Use the Workflow.target_from_template() "
+                "method instead. See the tutorial for more details."
+            )
+            raise TypeError(msg.format(type(value)))
+
+        self._spec = value
+
+    @property
+    def is_source(self):
+        """Return whether this target is a source.
+
+        A target is a source if it does not depend on any files.
+        """
+        return not self.inputs
+
+    @property
+    def is_sink(self):
+        """Return whether this target is a sink.
+
+        A target is a sink if it does not output any files.
+        """
+        return not self.outputs
+
+    def inherit_options(self, super_options):
+        options = super_options.copy()
+        options.update(self.options)
+        self.options = options
+
+    def __lshift__(self, spec):
+        self.spec = spec
+        return self
+
+    def __repr__(self):
+        return "{}(inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, spec={!r})".format(
+            self.__class__.__name__,
+            self.inputs,
+            self.outputs,
+            self.options,
+            self.working_dir,
+            self.spec,
+        )
+
+    def __str__(self):
+        return "{}_{}".format(self.__class__.__name__, id(self))
+
+
+class Target(AnonymousTarget):
+    """Represents a target.
+
+    This class inherits from :class:`AnonymousTarget`.
+
+    A target is a named unit of work that declare their file *inputs* and
+    *outputs*. Target names must be valid Python identifiers.
+
+    A script (or spec) is associated with the target. The script must be a
+    valid Bash script and should produce the files declared as *outputs* and
+    consume the files declared as *inputs*. Both parameters must be provided
+    explicitly, even if no inputs or outputs are needed. In that case, provide
+    the empty list::
+
+        Target('Foo', inputs=[], outputs=[], options={}, working_dir='/tmp')
+
+    The *inputs* and *outputs* arguments can either be a string, a list or
+    a dictionary. If a dictionary is given, the keys act as names for the
+    files. The values may be either strings or a list of strings::
+
+        foo = Target(
+            name='foo',
+            inputs={'A': ['a1', 'a2'], 'B': 'b'},
+            outputs={'C': ['a1b', 'a2b], 'D': 'd},
+        )
+
+    This is useful for referring the outputs of a target::
+
+        bar = Target(
+            name='bar',
+            inputs=foo.outputs['C'],
+            outputs='result',
+        )
+
+    The target can also specify an *options* dictionary specifying the
+    resources needed to run the target. The options are consumed by the backend
+    and may be ignored if the backend doesn't support a given option. For
+    example, we can set the *cores* option to set the number of cores that the
+    target uses::
+
+        Target('Foo', inputs=[], outputs=[], options={'cores': 16}, working_dir='/tmp')
+
+    To see which options are supported by your backend of choice, see the
+    documentation for the backend.
+
+    :ivar str name:
+        Name of the target.
+
+    .. versionchanged:: 1.6.0
+        Named inputs and outputs were added. Prior versions require *inputs*
+        and *outputs* to be lists.
+    """
+
+    def __init__(
+        self, name, inputs, outputs, options, working_dir=None, spec="", protect=None
+    ):
+        self.name = name
+        if not is_valid_name(self.name):
+            raise NameError('Target defined with invalid name: "{}".'.format(self.name))
+
+        _check_path(working_dir, target_name=self.name, mode="working_dir")
+        for path in inputs:
+            _check_path(path, target_name=self.name, mode="input")
+        for path in outputs:
+            _check_path(path, target_name=self.name, mode="output")
+
+        super().__init__(
+            inputs=inputs,
+            outputs=outputs,
+            options=options,
+            working_dir=working_dir,
+            spec=spec,
+            protect=protect,
+        )
+
+    def flattened_inputs(self):
+        return _norm_paths(self.working_dir, _flatten(self.inputs))
+
+    def flattened_outputs(self):
+        return _norm_paths(self.working_dir, _flatten(self.outputs))
+
+    @classmethod
+    def empty(cls, name):
+        """Return a target with no inputs, outputs and options.
+
+        This is mostly useful for testing.
+        """
+        return cls(
+            name=name, inputs=[], outputs=[], options={}, working_dir=os.getcwd()
+        )
+
+    def qualname(self, namespace):
+        if namespace is not None:
+            return "{}.{}".format(namespace, self.name)
+        return self.name
+
+    def __repr__(self):
+        return "{}(name={!r}, ...)".format(self.__class__.__name__, self.name)
+
+    def __str__(self):
+        return self.name
 
 
 class Graph:
@@ -94,8 +355,11 @@ class Graph:
 
         logger.debug("Building dependency graph from %d targets", len(targets))
 
+        if isinstance(targets, dict):
+            targets = targets.values()
+
         with timer("Built dependency graph in %.3fms", logger=logger):
-            for target in targets.values():
+            for target in targets:
                 for path in target.flattened_outputs():
                     if path in provides:
                         msg = 'File "{}" provided by targets "{}" and "{}".'.format(
@@ -104,7 +368,7 @@ class Graph:
                         raise WorkflowError(msg)
                     provides[path] = target
 
-        for target in targets.values():
+        for target in targets:
             for path in target.flattened_inputs():
                 if path in provides:
                     dependencies[target].add(provides[path])
@@ -116,35 +380,12 @@ class Graph:
                 dependents[dep].add(target)
 
         return cls(
-            targets=targets,
+            targets={target.name: target for target in targets},
             provides=provides,
             dependencies=dependencies,
             dependents=dependents,
             unresolved=unresolved,
         )
-
-    @classmethod
-    def from_path(cls, path):
-        """Return graph for the workflow given by `path`.
-
-        Returns a :class:`~gwf.Graph` object containing the workflow graph of
-        the workflow given by `path`. Note that calling this function computes
-        the complete dependency graph which may take some time for large
-        workflows.
-
-        :arg str path: Path to a workflow file, optionally specifying a
-            workflow object in that file.
-        """
-        workflow = Workflow.from_path(path)
-        return Graph.from_targets(workflow.targets)
-
-    @classmethod
-    def from_config(cls, config):
-        """Return graph for the workflow specified by `config`.
-
-        See :func:`graph_from_path` for further information.
-        """
-        return cls.from_path(config["file"])
 
     @timer("Checked for circular dependencies in %.3fms", logger=logger)
     def _check_for_circular_dependencies(self):
@@ -194,6 +435,18 @@ class Graph:
         dfs_inner(root)
         return path
 
+    def subset(self, endpoints):
+        """Subset a graph given an iterable of endpoints.
+
+        This will return a new, potentially disjoint graph with the given
+        endpoints and all of their dependencies.
+        """
+        targets = set()
+        for target in endpoints:
+            for dep in self.dfs(target):
+                targets.add(dep)
+        return Graph.from_targets(targets)
+
     def __iter__(self):
         return iter(self.targets.values())
 
@@ -208,6 +461,8 @@ class Graph:
 
 
 class CachedFilesystem:
+    """A cached file system abstraction."""
+
     def __init__(self):
         self._cache = {}
 
@@ -232,140 +487,65 @@ class CachedFilesystem:
 
 
 class Scheduler:
-    """Schedule one or more targets and submit to a backend.
-
-    Scheduling a target will determine whether the target needs to run based on
-    whether it already has been submitted and whether any of its dependencies
-    have been submitted.
-
-    Targets that should run will be submitted to *backend*, unless *dry_run* is
-    set to ``True``.
-
-    When scheduling a target, the scheduler checks whether any of its inputs
-    are unresolved, meaning that during construction of the graph, no other
-    target providing the file was found. This means that the file should then
-    exist on disk. If it doesn't the following exception is raised:
-
-    :raises gwf.exceptions.FileRequiredButNotProvidedError:
-        Raised if a target has an input file that does not exist on the file
-        system and that is not provided by another target.
-    """
-
-    def __init__(self, graph, backend, dry_run=False, filesystem=CachedFilesystem()):
+    def __init__(self, filesystem=CachedFilesystem()):
         """
         :param gwf.Graph graph:
             Graph of the workflow.
         :param gwf.backends.Backend backend:
             An instance of :class:`gwf.backends.Backend` to which targets will
             be submitted.
-        :param bool dry_run:
-            If ``True``, targets will not be submitted to the backend. Defaults
-            to ``False``.
         """
-        self.graph = graph
-        self.backend = backend
-        self.dry_run = dry_run
-
         self._filesystem = filesystem
-        self._pretend_known = set()
+        self._scheduled = {}
+        self._reasons = {}
 
-    def prepare_target_options(self, target):
-        """Apply backend-specific option defaults to a target.
-
-        Injects backend target defaults into the target options and checks
-        whether the option in the given target are supported by the backend.
-        Warns the user and removes the option if this is not the case.
-        """
-        new_options = dict(self.backend.option_defaults)
-        new_options.update(target.options)
-
-        for option_name, option_value in list(new_options.items()):
-            if option_name not in self.backend.option_defaults.keys():
-                logger.warning(
-                    'Option "{}" used in "{}" is not supported by backend. Ignored.'.format(
-                        option_name, target.name
-                    )
-                )
-                del new_options[option_name]
-            elif option_value is None:
-                del new_options[option_name]
-        target.options = new_options
-
-    def schedule(self, target):
-        """Schedule a target and its dependencies.
-
-        Returns ``True`` if *target* was submitted to the backend (even when
-        *dry_run* is ``True``).
-
-        :param gwf.Target target:
-            Target to be scheduled.
-        """
-        logger.debug("Scheduling target %s", target)
-
-        if (
-            self.backend.status(target) != Status.UNKNOWN
-            or target in self._pretend_known
-        ):
-            logger.debug("Target %s has already been submitted", target)
-            return True
-
-        submitted_deps = set()
-        for dependency in sorted(self.graph.dependencies[target], key=lambda t: t.name):
-            was_submitted = self.schedule(dependency)
-            if was_submitted:
-                submitted_deps.add(dependency)
-
-        if submitted_deps or self.should_run(target):
-            self.prepare_target_options(target)
-            if self.dry_run:
-                logger.info("Would submit target %s", target)
-                self._pretend_known.add(target)
-            else:
-                logger.info("Submitting target %s", target)
-                self.backend.submit(target, dependencies=submitted_deps)
-            return True
-        else:
-            logger.debug("Target %s should not run", target)
-            return False
-
-    def schedule_many(self, targets):
+    def schedule(self, targets, graph):
         """Schedule multiple targets and their dependencies.
-
-        This is a convenience method for scheduling multiple targets. See
-        :func:`schedule` for a detailed description of the arguments and
-        behavior.
 
         :param list targets:
             A list of targets to be scheduled.
         """
-        logger.debug("Scheduling %d targets", len(targets))
 
-        schedules = []
-        submitted_targets = 0
+        logger.debug("Scheduling %d target(s)", len(targets))
         with timer("Scheduled targets in %.3fms", logger=logger):
             for target in targets:
-                was_submitted = self.schedule(target)
-                if was_submitted:
-                    submitted_targets += 1
-                schedules.append(was_submitted)
-        logger.debug("Submitted %d targets", submitted_targets)
-        return schedules
+                self._schedule_dependencies(target, graph)
+
+        return self._scheduled, self._reasons
 
     @cache
-    def should_run(self, target):
+    def _schedule_dependencies(self, target, graph):
+        logger.debug("Scheduling target %s", target)
+        scheduled_deps = set(
+            dependency
+            for dependency in graph.dependencies[target]
+            if self._schedule_dependencies(dependency, graph)
+        )
+        should_schedule, reason = self.should_schedule(target, graph)
+        is_scheduled = scheduled_deps or should_schedule
+        if is_scheduled:
+            self._scheduled[target] = scheduled_deps
+        self._reasons[target] = reason
+        return is_scheduled
+
+    @cache
+    def should_schedule(self, target, graph):
         """Return whether a target should be run or not."""
 
-        for dep in self.graph.dependencies[target]:
-            if self.should_run(dep):
-                logger.debug(
-                    "%s should run because its dependency %s should run", target, dep
+        for dep in graph.dependencies[target]:
+            should_run, _ = self.should_schedule(dep, graph)
+            if should_run:
+                return (
+                    True,
+                    "{} was scheduled because its dependency {} was scheduled".format(
+                        target, dep
+                    ),
                 )
-                return True
 
         # Check whether all input files actually exists are are being provided
         # by another target. If not, it's an error.
         for path in target.flattened_inputs():
-            if path in self.graph.unresolved and not self._filesystem.exists(path):
+            if path in graph.unresolved and not self._filesystem.exists(path):
                 msg = (
                     'File "{}" is required by "{}", but does not exist and is not '
                     "provided by any target in the workflow."
@@ -373,21 +553,22 @@ class Scheduler:
                 raise WorkflowError(msg)
 
         if target.is_sink:
-            logger.debug("%s should run because it is a sink", target)
-            return True
+            return (True, "{} was scheduled because it is a sink".format(target))
 
         for path in target.flattened_outputs():
             if not self._filesystem.exists(path):
-                logger.debug(
-                    "%s should run because its output file %s does not exist",
-                    target,
-                    path,
+                return (
+                    True,
+                    "{} was scheduled because its output file {} does not exist".format(
+                        target, path,
+                    ),
                 )
-                return True
 
         if target.is_source:
-            logger.debug("%s should not run because it is a source", target)
-            return False
+            return (
+                False,
+                "{} was not scheduled because it is a source".format(target),
+            )
 
         youngest_in_ts, youngest_in_path = max(
             (self._filesystem.changed_at(path), path)
@@ -412,27 +593,48 @@ class Scheduler:
         )
 
         if youngest_in_ts > oldest_out_ts:
-            logger.debug(
-                "%s should run because input file %s is newer than output file %s",
-                target,
-                youngest_in_path,
-                oldest_out_path,
+            return (
+                True,
+                "{} was scheduled because input file {} is newer than output file {}".format(
+                    target, youngest_in_path, oldest_out_path,
+                ),
             )
-            return True
-        return False
+        return (False, "{} was not scheduled because it is up to date".format(target))
 
-    def status(self, target):
-        """Return the status of a target.
 
-        Returns the status of a target where it is taken into account whether
-        the target should run or not.
+def schedule(targets, graph, filesystem=CachedFilesystem()):
+    """Schedule one or more targets.
 
-        :param Target target:
-            The target to return status for.
-        """
-        status = self.backend.status(target)
-        if status == Status.UNKNOWN:
-            if self.should_run(target):
-                return TargetStatus.SHOULDRUN
-            return TargetStatus.COMPLETED
-        return TargetStatus[status.name]
+    Scheduling a target will determine whether the target needs to run.
+
+    When scheduling a target, the scheduler checks whether any of its inputs
+    are unresolved, meaning that during construction of the graph, no other
+    target providing the file was found. This means that the file should then
+    exist on disk. If it doesn't the following exception is raised:
+
+    :raises gwf.exceptions.WorkflowError:
+        Raised if a target has an input file that does not exist on the file
+        system and that is not provided by another target.
+
+    Returns a tuple `(scheduled, reasons)` where `scheduled` is a map from
+    a target to its scheduled direct dependencies, and `reasons` is a map from
+    a target to a string describing why (or why not) the target was scheduled.
+    """
+    return Scheduler(filesystem=filesystem).schedule(targets, graph)
+
+
+def get_status(target, scheduled, backend):
+    """Return the status of a target.
+
+    Returns the status of a target where it is taken into account whether
+    the target should run or not.
+
+    :param Target target:
+        The target to return status for.
+    """
+    status = backend.status(target)
+    if status == Status.UNKNOWN:
+        if target in scheduled:
+            return TargetStatus.SHOULDRUN
+        return TargetStatus.COMPLETED
+    return TargetStatus[status.name]

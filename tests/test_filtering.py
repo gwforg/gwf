@@ -1,110 +1,67 @@
-from unittest.mock import create_autospec
-
 import pytest
 
 from gwf import Target
-from gwf.core import Graph, Scheduler, TargetStatus
-from gwf.backends import Status
-from gwf.backends.testing import TestingBackend
+from gwf.core import TargetStatus
 from gwf.filtering import StatusFilter, NameFilter, EndpointFilter
 
 
-@pytest.fixture
-def backend():
-    return create_autospec(TestingBackend(), spec_set=True)
+def make_status_provider(statuses):
+    def status(target):
+        return statuses[target]
+
+    return status
 
 
-@pytest.fixture
-def graph():
-    return create_autospec(
-        Graph(dependencies={}, dependents={}, provides={}, targets={}, unresolved={}),
-        spec_set=True,
-    )
+target1 = Target(
+    "TestTarget1", inputs=[], outputs=[], options={}, working_dir="/some/dir"
+)
+target2 = Target(
+    "TestTarget2", inputs=[], outputs=[], options={}, working_dir="/some/dir"
+)
+target3 = Target(
+    "TestTarget3", inputs=[], outputs=[], options={}, working_dir="/some/dir"
+)
+target4 = Target(
+    "TestTarget4", inputs=[], outputs=[], options={}, working_dir="/some/dir"
+)
+target5 = Target(
+    "TestTarget5", inputs=[], outputs=[], options={}, working_dir="/some/dir"
+)
+target6 = Target(
+    "TestTarget6", inputs=[], outputs=[], options={}, working_dir="/some/dir"
+)
+
+targets = [target1, target2, target3, target4, target5, target6]
+
+status_provider = make_status_provider(
+    {
+        target1: TargetStatus.COMPLETED,
+        target2: TargetStatus.RUNNING,
+        target3: TargetStatus.SHOULDRUN,
+        target4: TargetStatus.SUBMITTED,
+        target5: TargetStatus.SHOULDRUN,
+        target6: TargetStatus.COMPLETED,
+    }
+)
 
 
-@pytest.fixture
-def scheduler(backend, graph):
-    scheduler = Scheduler(backend=backend, graph=graph)
-    scheduler.should_run = create_autospec(scheduler.should_run, spec_set=True)
-    return scheduler
-
-
-def test_filter_status_completed(scheduler):
-    scheduler.backend.status.return_value = Status.UNKNOWN
-
-    status_filter = StatusFilter(scheduler=scheduler, status=[TargetStatus.COMPLETED])
-    target = Target(
-        "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
-    )
-
-    status_filter.scheduler.should_run.return_value = False
-    assert list(status_filter.apply([target])) == [target]
-
-    status_filter.scheduler.should_run.return_value = True
-    assert list(status_filter.apply([target])) == []
-
-
-def test_filter_status_shouldrun(scheduler):
-    status_filter = StatusFilter(scheduler=scheduler, status=[TargetStatus.SHOULDRUN])
-    target = Target(
-        "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
-    )
-
-    status_filter.scheduler.backend.status.return_value = Status.UNKNOWN
-    status_filter.scheduler.should_run.return_value = False
-    assert list(status_filter.apply([target])) == []
-
-    status_filter.scheduler.backend.status.return_value = Status.UNKNOWN
-    status_filter.scheduler.should_run.return_value = True
-    assert list(status_filter.apply([target])) == [target]
-
-    status_filter.scheduler.backend.status.return_value = Status.RUNNING
-    status_filter.scheduler.should_run.return_value = False
-    assert list(status_filter.apply([target])) == []
-
-    status_filter.scheduler.backend.status.return_value = Status.RUNNING
-    status_filter.scheduler.should_run.return_value = True
-    assert list(status_filter.apply([target])) == []
-
-    status_filter.scheduler.backend.status.return_value = Status.SUBMITTED
-    status_filter.scheduler.should_run.return_value = False
-    assert list(status_filter.apply([target])) == []
-
-    status_filter.scheduler.backend.status.return_value = Status.SUBMITTED
-    status_filter.scheduler.should_run.return_value = True
-    assert list(status_filter.apply([target])) == []
-
-
-def test_filter_status_running(scheduler):
-    status_filter = StatusFilter(scheduler=scheduler, status=[TargetStatus.RUNNING])
-    target = Target(
-        "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
-    )
-
-    status_filter.scheduler.backend.status.return_value = Status.UNKNOWN
-    assert list(status_filter.apply([target])) == []
-
-    status_filter.scheduler.backend.status.return_value = Status.SUBMITTED
-    assert list(status_filter.apply([target])) == []
-
-    status_filter.scheduler.backend.status.return_value = Status.RUNNING
-    assert list(status_filter.apply([target])) == [target]
-
-
-def test_filter_status_submitted(scheduler):
-    status_filter = StatusFilter(scheduler=scheduler, status=[TargetStatus.SUBMITTED])
-    target = Target(
-        "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
-    )
-
-    status_filter.scheduler.backend.status.return_value = Status.UNKNOWN
-    assert list(status_filter.apply([target])) == []
-
-    status_filter.scheduler.backend.status.return_value = Status.SUBMITTED
-    assert list(status_filter.apply([target])) == [target]
-
-    status_filter.scheduler.backend.status.return_value = Status.RUNNING
-    assert list(status_filter.apply([target])) == []
+@pytest.mark.parametrize(
+    "status,result",
+    [
+        ([TargetStatus.COMPLETED], [target1, target6]),
+        ([TargetStatus.RUNNING], [target2]),
+        ([TargetStatus.SHOULDRUN], [target3, target5]),
+        ([TargetStatus.SUBMITTED], [target4]),
+        ([TargetStatus.SUBMITTED, TargetStatus.RUNNING], [target2, target4]),
+        (
+            [TargetStatus.COMPLETED, TargetStatus.SHOULDRUN],
+            [target1, target6, target3, target5],
+        ),
+    ],
+)
+def test_filter_status(status, result):
+    status_filter = StatusFilter(status_provider=status_provider, status=status,)
+    assert set(status_filter.apply(targets)) == set(result)
 
 
 def test_filter_name():

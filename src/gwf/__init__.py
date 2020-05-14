@@ -1,6 +1,6 @@
-from .core import Graph, Scheduler
-from .workflow import AnonymousTarget, Target, TargetList, Workflow
+from .core import AnonymousTarget, Target
+from .workflow import TargetList, Workflow
 
 __version__ = "1.7.2"
 
-__all__ = ("Graph", "Target", "AnonymousTarget", "Workflow", "TargetList", "Scheduler")
+__all__ = ("Target", "AnonymousTarget", "Workflow", "TargetList")

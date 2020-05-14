@@ -1,8 +1,11 @@
+from collections import Counter
+
 import click
 
 from ..backends import Backend
-from ..core import Graph, Scheduler, TargetStatus
+from ..core import Graph, TargetStatus, schedule, get_status
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
+from ..workflow import Workflow
 
 STATUS_COLORS = {
     TargetStatus.SHOULDRUN: "magenta",
@@ -27,7 +30,7 @@ def _status_strs_to_enums(iterable):
     return list(map(_status_str_to_enum, iterable))
 
 
-def print_table(scheduler, graph, targets):
+def print_table(graph, targets, status_provider):
     targets = list(targets)
 
     name_col_width = max((len(target.name) for target in targets), default=0) + 4
@@ -37,14 +40,14 @@ def print_table(scheduler, graph, targets):
     )
 
     for target in sorted(targets, key=lambda t: t.order):
-        status = scheduler.status(target)
+        status = status_provider(target)
         color = STATUS_COLORS[status]
 
         deps = graph.dfs(target)
         deps_total = len(deps)
 
         def num_deps_with_status(status):
-            return sum(1 for target in deps if scheduler.status(target) == status)
+            return sum(1 for target in deps if status_provider(target) == status)
 
         num_shouldrun = num_deps_with_status(TargetStatus.SHOULDRUN)
         num_submitted = num_deps_with_status(TargetStatus.SUBMITTED)
@@ -67,10 +70,7 @@ def print_table(scheduler, graph, targets):
 
 
 def print_summary(backend, graph, targets):
-    from collections import Counter
-
-    scheduler = Scheduler(backend=backend, graph=graph)
-    status_counts = Counter(scheduler.status(target) for target in targets)
+    status_counts = Counter(get_status(target, backend=backend) for target in targets)
     click.echo("{:<15}{:>10}".format("total", len(targets)))
     for status in STATUS_ORDER:
         color = STATUS_COLORS[status]
@@ -111,16 +111,20 @@ def status(obj, status, summary, endpoints, targets):
 
     The targets are shown in creation-order.
     """
-    graph = Graph.from_config(obj)
+    workflow = Workflow.from_config(obj)
+    graph = Graph.from_targets(workflow.targets)
     backend_cls = Backend.from_config(obj)
 
-    with backend_cls() as backend:
-        scheduler = Scheduler(graph=graph, backend=backend)
+    scheduled, _ = schedule(graph.endpoints(), graph=graph)
 
+    def status_provider(target):
+        return get_status(target, scheduled, backend)
+
+    with backend_cls() as backend:
         filters = []
         if status:
             status = _status_strs_to_enums(status)
-            filters.append(StatusFilter(scheduler=scheduler, status=status))
+            filters.append(StatusFilter(status_provider=status_provider, status=status))
         if targets:
             filters.append(NameFilter(patterns=targets))
         if endpoints:
@@ -129,6 +133,6 @@ def status(obj, status, summary, endpoints, targets):
         matches = filter_generic(targets=graph, filters=filters)
 
         if not summary:
-            print_table(scheduler, graph, matches)
+            print_table(graph, matches, status_provider)
         else:
-            print_summary(scheduler, graph, matches)
+            print_summary(graph, matches, status_provider)

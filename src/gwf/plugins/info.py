@@ -6,6 +6,7 @@ from collections import OrderedDict
 
 from ..core import Graph
 from ..filtering import filter_names
+from ..workflow import Workflow
 
 
 @click.command()
@@ -13,7 +14,8 @@ from ..filtering import filter_names
 @click.pass_obj
 def info(obj, targets):
     """Display information about a target."""
-    graph = Graph.from_config(obj)
+    workflow = Workflow.from_config(obj)
+    graph = Graph.from_targets(workflow.targets)
 
     matches = iter(graph)
     if targets:

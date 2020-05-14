@@ -1,7 +1,6 @@
 import pytest
 
 from gwf.conf import FileConfig
-
 from gwf.exceptions import ConfigurationError
 
 

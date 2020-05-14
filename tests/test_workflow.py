@@ -1,13 +1,8 @@
 import pytest
 from unittest.mock import Mock, patch
 
-from gwf.workflow import AnonymousTarget, Workflow
-from gwf.exceptions import NameError, TypeError, WorkflowError
-
-
-def test_workflow_with_invalid_name_raises_error():
-    with pytest.raises(NameError):
-        Workflow(name="123abc")
+from gwf import AnonymousTarget, Workflow
+from gwf.exceptions import TypeError, WorkflowError
 
 
 def test_target_with_no_input_has_empty_inputs_attribute():
@@ -275,3 +270,170 @@ def test_shell_calls_subprocess_with_same_working_dir_as_workflow_in_a_shell(
     mock_check_output.assert_called_once_with(
         "echo hello", cwd="/some/path", shell=True
     )
+
+
+def test_map_naming_with_template_function():
+    def my_template(path):
+        return AnonymousTarget(inputs=[path], outputs=[path + ".new"], options={})
+
+    files = ["a", "b", "c"]
+
+    workflow = Workflow(working_dir="/some/dir")
+    workflow.map(my_template, files)
+
+    assert len(workflow.targets) == 3
+    assert "my_template_0" in workflow.targets
+    assert "my_template_1" in workflow.targets
+    assert "my_template_2" in workflow.targets
+
+
+def test_map_naming_with_template_class_instance():
+    class MyTemplate:
+        def __call__(self, path):
+            return AnonymousTarget(inputs=[path], outputs=[path + ".new"], options={})
+
+    files = ["a", "b", "c"]
+
+    workflow = Workflow(working_dir="/some/dir")
+    workflow.map(MyTemplate(), files)
+
+    assert len(workflow.targets) == 3
+    assert "MyTemplate_0" in workflow.targets
+    assert "MyTemplate_1" in workflow.targets
+    assert "MyTemplate_2" in workflow.targets
+
+
+def test_map_naming_with_invalid_template_arg():
+    files = ["a", "b", "c"]
+
+    workflow = Workflow(working_dir="/some/dir")
+
+    with pytest.raises(ValueError):
+        workflow.map(42, files)
+
+
+def test_map_with_custom_naming_function():
+    def my_template(path):
+        return AnonymousTarget(
+            inputs={"path": path}, outputs={"path": path + ".new"}, options={}
+        )
+
+    files = ["a", "b", "c"]
+
+    workflow = Workflow(working_dir="/some/dir")
+    workflow.map(
+        my_template, files, name=lambda i, t: "foo_{}".format(t.inputs["path"])
+    )
+
+    assert len(workflow.targets) == 3
+    assert "foo_a" in workflow.targets
+    assert "foo_b" in workflow.targets
+    assert "foo_c" in workflow.targets
+
+
+def test_map_with_custom_naming_string():
+    def my_template(path):
+        return AnonymousTarget(
+            inputs={"path": path}, outputs={"path": path + ".new"}, options={}
+        )
+
+    files = ["a", "b", "c"]
+
+    workflow = Workflow(working_dir="/some/dir")
+    workflow.map(my_template, files, name="bar")
+
+    assert len(workflow.targets) == 3
+    assert "bar_0" in workflow.targets
+    assert "bar_1" in workflow.targets
+    assert "bar_2" in workflow.targets
+
+
+@pytest.fixture
+def mock_template(mocker,):
+    mock_template = mocker.MagicMock()
+    mock_template.__name__ = "mock_template"
+    mock_template.return_value = AnonymousTarget(inputs=[], outputs=[], options={})
+    return mock_template
+
+
+def test_map_arg_passing_list_of_strings(mocker, mock_template):
+    files = ["a", "b", "c"]
+
+    workflow = Workflow(working_dir="/some/dir")
+    workflow.map(mock_template, files)
+
+    mock_template.assert_has_calls(
+        [mocker.call("a"), mocker.call("b"), mocker.call("c")], any_order=True
+    )
+
+
+def test_map_arg_passing_list_of_tuples(mocker, mock_template):
+    files = [("a", "/foo"), ("b", "/foo"), ("c", "/foo")]
+
+    workflow = Workflow(working_dir="/some/dir")
+    workflow.map(mock_template, files)
+
+    mock_template.assert_has_calls(
+        [mocker.call("a", "/foo"), mocker.call("b", "/foo"), mocker.call("c", "/foo")],
+        any_order=True,
+    )
+
+
+def test_map_arg_passing_list_of_dicts(mocker, mock_template):
+    files = [
+        {"path": "a", "output_dir": "foo/"},
+        {"path": "b", "output_dir": "foo/"},
+        {"path": "c", "output_dir": "foo/"},
+    ]
+
+    workflow = Workflow(working_dir="/some/dir")
+    workflow.map(mock_template, files)
+
+    mock_template.assert_has_calls(
+        [
+            mocker.call(path="a", output_dir="foo/"),
+            mocker.call(path="b", output_dir="foo/"),
+            mocker.call(path="c", output_dir="foo/"),
+        ],
+        any_order=True,
+    )
+
+
+def test_map_arg_passing_list_of_dicts_with_extra(mocker, mock_template):
+    files = [{"path": "a"}, {"path": "b"}, {"path": "c"}]
+
+    workflow = Workflow(working_dir="/some/dir")
+    workflow.map(mock_template, files, extra={"output_dir": "foo/"})
+
+    mock_template.assert_has_calls(
+        [
+            mocker.call(path="a", output_dir="foo/"),
+            mocker.call(path="b", output_dir="foo/"),
+            mocker.call(path="c", output_dir="foo/"),
+        ],
+        any_order=True,
+    )
+
+
+def test_target_list():
+    def my_template(path):
+        return AnonymousTarget(
+            inputs={"path": path}, outputs={"path": path + ".new"}, options={}
+        )
+
+    files = ["a", "b", "c"]
+
+    workflow = Workflow(working_dir="/some/dir")
+    target_list = workflow.map(my_template, files)
+
+    assert len(target_list) == 3
+
+    assert len(target_list.outputs) == 3
+    assert target_list.outputs == [
+        {"path": "a.new"},
+        {"path": "b.new"},
+        {"path": "c.new"},
+    ]
+
+    assert len(target_list.inputs) == 3
+    assert target_list.inputs == [{"path": "a"}, {"path": "b"}, {"path": "c"}]
