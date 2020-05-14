@@ -78,6 +78,34 @@ class Backend:
         :return gwf.backends.Status: Status of `target`.
         """
 
+    def submit_full(self, target, dependencies):
+        """Prepare and submit `target` with `dependencies`.
+
+        Will prepare the target for submission by injecting option defaults
+        from the backend, check for unsupported options, and removing options
+        with a `None` value.
+
+        This is the primary way to submit a target. Do not call
+        :func:`submit` directly, unless you want to manually deal with with
+        injection of option defaults.
+        """
+        new_options = dict(self.option_defaults)
+        new_options.update(target.options)
+
+        for option_name, option_value in list(new_options.items()):
+            if option_name not in self.option_defaults.keys():
+                logger.warning(
+                    'Option "{}" used in "{}" is not supported by backend. Ignored.'.format(
+                        option_name, target.name
+                    )
+                )
+                del new_options[option_name]
+            elif option_value is None:
+                del new_options[option_name]
+        target.options = new_options
+
+        self.submit(target, dependencies)
+
     def submit(self, target, dependencies):
         """Submit `target` with `dependencies`.
 

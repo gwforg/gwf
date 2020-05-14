@@ -24,6 +24,30 @@ def clean_logs(graph, backend):
             backend.log_manager.remove_stderr(target_name)
 
 
+def submit(graph, scheduled, reasons, backend, dry_run):
+    seen = set()
+    for endpoint in graph.endpoints():
+        for target in graph.dfs(endpoint):
+            if target in seen:
+                continue
+            seen.add(target)
+
+            if target not in scheduled:
+                logger.debug(reasons[target])
+                continue
+
+            if backend.status(target) != Status.UNKNOWN:
+                logger.debug("Target %s already submitted", target.name)
+                continue
+
+            logger.debug("Target %s", reasons[target])
+            if dry_run:
+                logger.info("Would submit target %s", target.name)
+            else:
+                logger.info("Submitting target %s", target.name)
+                backend.submit_full(target, dependencies=scheduled[target])
+
+
 @click.command()
 @click.argument("targets", nargs=-1)
 @click.option("-d", "--dry-run", is_flag=True, default=False)
@@ -43,25 +67,4 @@ def run(obj, targets, dry_run):
         subgraph = graph.subset(matched_targets)
 
         scheduled, reasons = schedule(matched_targets, subgraph)
-
-        seen = set()
-        for endpoint in subgraph.endpoints():
-            for target in subgraph.dfs(endpoint):
-                if target in seen:
-                    continue
-                seen.add(target)
-
-                if target not in scheduled:
-                    logger.debug(reasons[target])
-                    continue
-
-                if backend.status(target) != Status.UNKNOWN:
-                    logger.debug("Target %s already submitted", target.name)
-                    continue
-
-                logger.debug("Target %s", reasons[target])
-                if dry_run:
-                    logger.info("Would submit target %s", target.name)
-                else:
-                    logger.info("Submitting target %s", target.name)
-                    backend.submit(target, dependencies=scheduled[target])
+        submit(subgraph, scheduled, reasons, backend, dry_run=dry_run)
