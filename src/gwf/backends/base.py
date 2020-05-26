@@ -128,8 +128,7 @@ class Backend:
             If the target does not exist in the workflow.
         """
 
-    @classmethod
-    def logs(cls, target, stderr=False):
+    def logs(self, target, stderr=False):
         """Return log files for a target.
 
         If the backend cannot return logs a
@@ -149,8 +148,8 @@ class Backend:
             if the backend could not find a log for the given target.
         """
         if stderr:
-            return cls.log_manager.open_stderr(target)
-        return cls.log_manager.open_stdout(target)
+            return self.log_manager.open_stderr(target)
+        return self.log_manager.open_stdout(target)
 
     def close(self):
         """Close the backend.

@@ -28,7 +28,7 @@ def setup(simple_workflow):
 
 
 def test_info_all_targets(cli_runner):
-    args = ["-b", "testing", "info"]
+    args = ["info"]
     result = cli_runner.invoke(main, args)
     doc = json.loads(result.output)
 
@@ -38,7 +38,7 @@ def test_info_all_targets(cli_runner):
 
 
 def test_info_single_target(cli_runner):
-    args = ["-b", "testing", "info", "Target1"]
+    args = ["info", "Target1"]
     result = cli_runner.invoke(main, args)
     doc = json.loads(result.output)
 

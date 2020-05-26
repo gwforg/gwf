@@ -1,33 +1,17 @@
 from gwf.cli import main
 
 
-def test_cancel_one_target(cli_runner):
+def test_cancel_one_target(cli_runner, local_backend):
     result = cli_runner.invoke(
-        main,
-        [
-            "-b",
-            "testing",
-            "-f",
-            "examples/simple-workflow/workflow.py",
-            "cancel",
-            "Target1",
-        ],
+        main, ["-f", "examples/simple-workflow/workflow.py", "cancel", "Target1"],
     )
     assert result.output == "Cancelling target Target1\n"
 
 
-def test_cancel_two_targets(cli_runner):
+def test_cancel_two_targets(cli_runner, local_backend):
     result = cli_runner.invoke(
         main,
-        [
-            "-b",
-            "testing",
-            "-f",
-            "examples/simple-workflow/workflow.py",
-            "cancel",
-            "Target1",
-            "Target2",
-        ],
+        ["-f", "examples/simple-workflow/workflow.py", "cancel", "Target1", "Target2"],
     )
     lines = result.output.split("\n")
     assert len(lines) == 3
@@ -36,12 +20,10 @@ def test_cancel_two_targets(cli_runner):
 
 
 def test_cancel_no_targets_specified_should_ask_for_confirmation_and_cancel_all_if_approved(
-    cli_runner,
+    cli_runner, local_backend
 ):
     result = cli_runner.invoke(
-        main,
-        ["-b", "testing", "-f", "examples/simple-workflow/workflow.py", "cancel"],
-        input="y",
+        main, ["-f", "examples/simple-workflow/workflow.py", "cancel"], input="y",
     )
     lines = result.output.split("\n")
     assert len(lines) == 4
@@ -50,11 +32,9 @@ def test_cancel_no_targets_specified_should_ask_for_confirmation_and_cancel_all_
 
 
 def test_cancel_no_targets_specified_should_ask_for_confirmation_and_abort_if_not_approved(
-    cli_runner,
+    cli_runner, local_backend
 ):
     result = cli_runner.invoke(
-        main,
-        ["-b", "testing", "-f", "examples/simple-workflow/workflow.py", "cancel"],
-        input="N",
+        main, ["-f", "examples/simple-workflow/workflow.py", "cancel"], input="N",
     )
     assert "Aborted!\n" in result.output

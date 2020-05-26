@@ -49,7 +49,6 @@ setup(
             "slurm = gwf.backends.slurm:SlurmBackend",
             "sge = gwf.backends.sge:SGEBackend",
             "local = gwf.backends.local:LocalBackend",
-            "testing = gwf.backends.testing:TestingBackend",
         ],
     },
 )

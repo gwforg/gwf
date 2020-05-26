@@ -1,27 +1,13 @@
 import logging
-from contextlib import suppress
 
 import click
 
 from ..backends import Backend, Status
-from ..backends.exceptions import LogError
 from ..core import Graph, schedule
 from ..filtering import filter_names
 from ..workflow import Workflow
 
 logger = logging.getLogger(__name__)
-
-
-def clean_logs(graph, backend):
-    target_set = set(graph.targets.keys())
-    log_files = set(backend.log_manager.list())
-
-    for target_name in log_files.difference(target_set):
-        logger.debug("Target %s does not exist, deleting log files...", target_name)
-
-        with suppress(LogError):
-            backend.log_manager.remove_stdout(target_name)
-            backend.log_manager.remove_stderr(target_name)
 
 
 def submit(graph, scheduled, reasons, backend, dry_run):
@@ -59,10 +45,6 @@ def run(obj, targets, dry_run):
     backend_cls = Backend.from_config(obj)
 
     with backend_cls() as backend:
-        if not dry_run:
-            logger.debug("Cleaning old log files...")
-            clean_logs(graph, backend)
-
         matched_targets = filter_names(graph, targets) if targets else graph.endpoints()
         subgraph = graph.subset(matched_targets)
 

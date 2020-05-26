@@ -5,6 +5,8 @@ import pytest
 
 import gwf.conf
 from gwf.backends.base import Backend, Status
+from gwf.backends.logmanager import MemoryLogManager
+from gwf.backends.local import start_server
 from gwf.core import Graph, Target
 from gwf.core import schedule as _schedule
 
@@ -20,6 +22,18 @@ def no_sleep(request, monkeypatch):
         pass
 
     monkeypatch.setattr(time, "sleep", sleep)
+
+
+@pytest.fixture
+def log_manager():
+    return MemoryLogManager()
+
+
+@pytest.fixture
+def local_backend(log_manager):
+    server = start_server(max_cores=1, log_manager=log_manager)
+    yield server
+    server.shutdown()
 
 
 class FakeBackend(Backend):

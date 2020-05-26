@@ -1,8 +1,32 @@
 import io
+import os
 import os.path
+import threading
 
 from ..utils import ensure_dir, redirect_exception
 from .exceptions import LogError
+
+
+class OutputStream(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        self.done = False
+        self.buffer = io.StringIO()
+        self.read_fd, self.write_fd = os.pipe()
+        self.reader = os.fdopen(self.read_fd)
+        self.start()
+
+    def fileno(self):
+        return self.write_fd
+
+    def run(self):
+        while not self.done:
+            self.buffer.write(self.reader.read())
+        self.reader.close()
+
+    def close(self):
+        self.done = True
+        os.close(self.write_fd)
 
 
 class LogManager:
@@ -46,13 +70,13 @@ class MemoryLogManager(LogManager):
     @redirect_exception(KeyError, LogError)
     def open_stdout(self, target, mode="r"):
         if target not in self._stdout_logs and mode == "w":
-            self._stdout_logs[target] = io.StringIO()
+            self._stdout_logs[target] = OutputStream()
         return self._stdout_logs[target]
 
     @redirect_exception(KeyError, LogError)
     def open_stderr(self, target, mode="r"):
         if target not in self._stderr_logs and mode == "w":
-            self._stderr_logs[target] = io.StringIO()
+            self._stderr_logs[target] = OutputStream()
         return self._stderr_logs[target]
 
     @redirect_exception(KeyError, LogError)
@@ -96,13 +120,17 @@ class FileLogManager(LogManager):
         log_file = "{}.{}".format(target_name, extension)
         return os.path.join(FileLogManager.log_dir, log_file)
 
-    def stdout_path(self, target_name):
+    def stdout_path(self, target):
         """Return path of the log file containing standard output for target."""
-        return self._get_log_path(target_name, "stdout")
+        if hasattr(target, "name"):
+            target = target.name
+        return self._get_log_path(target, "stdout")
 
-    def stderr_path(self, target_name):
+    def stderr_path(self, target):
         """Return path of the log file containing standard error for target."""
-        return self._get_log_path(target_name, "stderr")
+        if hasattr(target, "name"):
+            target = target.name
+        return self._get_log_path(target, "stderr")
 
     @redirect_exception(FileNotFoundError, LogError)
     def open_stdout(self, target, mode="r"):
@@ -110,7 +138,9 @@ class FileLogManager(LogManager):
 
         :raises LogError: If the log could not be found.
         """
-        return open(self.stdout_path(target.name), mode)
+        if hasattr(target, "name"):
+            target = target.name
+        return open(self.stdout_path(target), mode)
 
     @redirect_exception(FileNotFoundError, LogError)
     def open_stderr(self, target, mode="r"):
@@ -118,15 +148,21 @@ class FileLogManager(LogManager):
 
         :raises LogError: If the log could not be found.
         """
-        return open(self.stderr_path(target.name), mode)
+        if hasattr(target, "name"):
+            target = target.name
+        return open(self.stderr_path(target), mode)
 
     @redirect_exception(OSError, LogError)
-    def remove_stdout(self, target_name):
-        os.remove(self.stdout_path(target_name))
+    def remove_stdout(self, target):
+        if hasattr(target, "name"):
+            target = target.name
+        os.remove(self.stdout_path(target))
 
     @redirect_exception(OSError, LogError)
-    def remove_stderr(self, target_name):
-        os.remove(self.stderr_path(target_name))
+    def remove_stderr(self, target):
+        if hasattr(target, "name"):
+            target = target.name
+        os.remove(self.stderr_path(target))
 
     def list(self):
         return (

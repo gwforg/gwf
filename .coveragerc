@@ -1,8 +1,7 @@
 [run]
 branch = True
-omit = 
+omit =
     src/gwf/backends/sge.py
-    src/gwf/backends/local.py
 
 [report]
 sort = Cover

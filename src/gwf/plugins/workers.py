@@ -3,16 +3,17 @@ import multiprocessing
 import click
 
 from ..conf import config
-from ..backends.local import Server
+from ..backends.logmanager import FileLogManager
+from ..backends.local import start_server
 
 
 @click.command()
 @click.option(
     "-n",
-    "--num-workers",
+    "--max-cores",
     type=int,
-    default=config.get("local.num_workers", multiprocessing.cpu_count()),
-    help="Number of workers to spawn.",
+    default=config.get("local.max_cores", multiprocessing.cpu_count()),
+    help="Maximum number of cores to allocate.",
 )
 @click.option(
     "-p",
@@ -27,7 +28,7 @@ from ..backends.local import Server
     default=config.get("local.host", "localhost"),
     help="Host that workers will bind to.",
 )
-def workers(host, port, num_workers):
+def workers(host, port, max_cores):
     """Start workers for the local backend."""
-    server = Server(hostname=host, port=port, num_workers=num_workers)
-    server.start()
+    log_manager = FileLogManager()
+    start_server(log_manager, host=host, port=port, max_cores=max_cores)

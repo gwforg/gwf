@@ -31,7 +31,7 @@ def setup(simple_workflow):
 
 
 def test_clean_output_from_non_endpoints(cli_runner):
-    args = ["-b", "testing", "clean"]
+    args = ["clean"]
     cli_runner.invoke(main, args, input="y\n")
 
     assert not os.path.exists("a.txt")
@@ -40,7 +40,7 @@ def test_clean_output_from_non_endpoints(cli_runner):
 
 
 def test_clean_output_from_all_targets(cli_runner):
-    args = ["-b", "testing", "clean", "--all"]
+    args = ["clean", "--all"]
     cli_runner.invoke(main, args, input="y\n")
 
     assert not os.path.exists("a.txt")
@@ -49,7 +49,7 @@ def test_clean_output_from_all_targets(cli_runner):
 
 
 def test_clean_output_from_single_endpoint_target(cli_runner):
-    args = ["-b", "testing", "clean", "--all", "Target2"]
+    args = ["clean", "--all", "Target2"]
     cli_runner.invoke(main, args)
 
     assert os.path.exists("a.txt")
@@ -58,7 +58,7 @@ def test_clean_output_from_single_endpoint_target(cli_runner):
 
 
 def test_clean_output_from_two_targets(cli_runner):
-    args = ["-b", "testing", "clean", "--all", "Target1", "Target2"]
+    args = ["clean", "--all", "Target1", "Target2"]
     cli_runner.invoke(main, args)
 
     assert not os.path.exists("a.txt")

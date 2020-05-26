@@ -3,7 +3,6 @@ import logging
 from unittest.mock import patch
 
 from gwf import Target
-from gwf.backends.testing import TestingBackend
 
 
 def test_backend_submit_full_injects_backend_defaults(backend):
@@ -60,20 +59,3 @@ def test_backend_submit_full_removes_options_with_none_value(backend):
 
     backend.submit_full(target, set())
     assert target.options == {"memory": "1g"}
-
-
-def test_backend_logs():
-    target = Target(
-        "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
-    )
-
-    backend = TestingBackend()
-    with patch.object(
-        backend.log_manager, "open_stdout", return_value=io.StringIO("foo")
-    ):
-        assert backend.logs(target).read() == "foo"
-
-    with patch.object(
-        backend.log_manager, "open_stderr", return_value=io.StringIO("bar")
-    ):
-        assert backend.logs(target, stderr=True).read() == "bar"
