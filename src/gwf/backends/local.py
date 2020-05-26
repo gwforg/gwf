@@ -391,7 +391,7 @@ class Master:
                     return
 
                 self._dependents[dep_id].add(task.id)
-        if status == LocalStatus.RUNNING and old_status == LocalStatus.SUBMITTED:
+        elif status == LocalStatus.RUNNING and old_status == LocalStatus.SUBMITTED:
             logger.debug("Task %s started", task_id)
             self._available_cores -= 1
             self._status_map[task_id] = LocalStatus.RUNNING
