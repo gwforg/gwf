@@ -394,7 +394,6 @@ class Master:
         elif status == LocalStatus.RUNNING and old_status == LocalStatus.SUBMITTED:
             logger.debug("Task %s started", task_id)
             self._available_cores -= 1
-            self._status_map[task_id] = LocalStatus.RUNNING
             executor = Executor(master=self, log_manager=self._log_manager)
             self._executors[task_id] = executor
             executor.execute(self._queue[task_id])
@@ -403,13 +402,10 @@ class Master:
             logger.debug("Task %s cancelled", task_id)
             executor = self._executors[task_id]
             executor.cancel()
-            # executor.wait()
-            self._status_map[task_id] = LocalStatus.CANCELLED
             del self._executors[task_id]
         elif status == LocalStatus.CANCELLED and old_status == LocalStatus.SUBMITTED:
             logger.debug("Task %s cancelled", task_id)
             del self._queue[task_id]
-            self._status_map[task_id] = LocalStatus.CANCELLED
         elif status in self.FINISHED_STATES:
             logger.debug("Task %s finished", task_id)
             self._available_cores += 1
