@@ -450,22 +450,6 @@ class ConnectionHandler(socketserver.BaseRequestHandler):
         self.request.sendall(bytes(data + "\n", "utf-8"))
 
 
-# import ssl
-
-
-# class SSLMixIn:
-#     def get_request(self):
-#         newsocket, fromaddr = self.socket.accept()
-#         connstream = ssl.wrap_socket(
-#             newsocket,
-#             server_side=True,
-#             certfile=self.certfile,
-#             keyfile=self.keyfile,
-#             ssl_version=self.ssl_version,
-#         )
-#         return connstream, fromaddr
-
-
 class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
