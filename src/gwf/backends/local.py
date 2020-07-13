@@ -479,6 +479,8 @@ class Server:
         )
         self._tcp_server_thread.start()
 
+        logger.info("Server listening on %s port %d", self._host, self._port)
+
     def shutdown(self):
         self._tcp_server.shutdown()
         self._tcp_server.server_close()
