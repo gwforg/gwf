@@ -544,12 +544,30 @@ class Client:
         self.close()
 
     def connect(self):
+        """Connect to `host` on `port`."""
         self._socket = socket.create_connection((self._host, self._port))
 
     def close(self):
+        """Close the connection to the server."""
         self._socket.close()
 
     def submit(self, script, working_dir, env=None, dependencies=None):
+        """Submit a script to the server.
+
+        Submit `script` as a task to the server. The script will run in
+        `working_dir` with the environment variables defined in `env`.
+
+        The task will run after all of its `dependencies` have completed.
+
+        :ivar str script:
+            The Bash script to be executed.
+        :ivar str working_dir:
+            The directory in which to execute the task.
+        :ivar dict env:
+            A dictionary of environment variables available when the task runs.
+        :ivar iterable dependencies:
+            An iterable of task identifiers for the tasks' dependencies.
+        """
         task_id = _gen_task_id()
         response = self._send_message(
             {
@@ -565,10 +583,12 @@ class Client:
         return task_id
 
     def cancel(self, task_id):
+        """Cancel the given task."""
         response = self._send_message({"type": "cancel-task", "id": task_id})
         assert response["type"] == "ok"
 
     def status(self, task_id):
+        """Get the status of the given task."""
         response = self._send_message({"type": "get-status", "id": task_id})
         return LocalStatus[response["status"]]
 
