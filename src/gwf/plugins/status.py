@@ -117,8 +117,12 @@ def status(obj, status, summary, endpoints, targets):
 
     scheduled, _ = schedule(graph.endpoints(), graph=graph)
 
+    status_cache = {}
+
     def status_provider(target):
-        return get_status(target, scheduled, backend)
+        if target not in status_cache:
+            status_cache[target] = get_status(target, scheduled, backend)
+        return status_cache[target]
 
     with backend_cls() as backend:
         filters = []
