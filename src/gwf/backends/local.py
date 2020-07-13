@@ -489,6 +489,15 @@ class Server:
 
 
 def start_server(log_manager, host="127.0.0.1", port=12345, max_cores=None):
+    """Start a local backend server.
+
+    Accepts a `host` and `port` to connect to. The `host` defaults to 127.0.0.1
+    (localhost) and the port defaults to 12345.
+
+    A server will allow at most `max_cores` to be allocated at once. Tasks
+    running on the server may allocate one or more of the cores. However, the
+    cores used are currently not limited by the executor.
+    """
     if max_cores is None:
         max_cores = multiprocessing.cpu_count()
     master = Master(max_cores=max_cores, log_manager=log_manager)
