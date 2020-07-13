@@ -554,9 +554,7 @@ class Client:
     def close(self):
         self._socket.close()
 
-    def submit(
-        self, script, working_dir, env=None, dependencies=None,
-    ):
+    def submit(self, script, working_dir, env=None, dependencies=None):
         task_id = _gen_task_id()
         response = self._send_message(
             {
