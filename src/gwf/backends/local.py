@@ -27,10 +27,6 @@ def _gen_task_id():
     return uuid.uuid4().hex
 
 
-class ServerError(BackendError):
-    pass
-
-
 class LocalStatus(Enum):
     UNKNOWN = 0
     SUBMITTED = 1
