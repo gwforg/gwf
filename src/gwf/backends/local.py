@@ -124,17 +124,16 @@ class LocalBackend(Backend):
         self.client.cancel(self._tracked[target.name])
 
     def status(self, target):
-        try:
+        if target.name not in self._tracked:
+            return Status.UNKNOWN
+
             target_id = self._tracked[target.name]
             target_status = self.client.status(target_id)
             if target_status == LocalStatus.RUNNING:
                 return Status.RUNNING
             elif target_status == LocalStatus.SUBMITTED:
                 return Status.SUBMITTED
-            else:
                 return Status.UNKNOWN
-        except KeyError:
-            return Status.UNKNOWN
 
     def logs(self, target, stderr=False):
         """Return log files for a target.
