@@ -189,7 +189,7 @@ class ExecutorError(Exception):
 class Executor:
     def __init__(self, master, log_manager, kill_timeout=10):
         self._master = master
-        self._kill_timeout = 10
+        self._kill_timeout = kill_timeout
         self._log_manager = log_manager
 
         self._terminated = threading.Event()
