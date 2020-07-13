@@ -165,9 +165,7 @@ class LocalBackend(Backend):
 
 
 class Task:
-    def __init__(
-        self, id, script="", working_dir=None, env=None, dependencies=None,
-    ):
+    def __init__(self, id, script="", working_dir=None, env=None, dependencies=None):
         self.id = id
         self.script = script
         self.working_dir = working_dir
