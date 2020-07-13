@@ -498,10 +498,44 @@ def start_server(log_manager, host="127.0.0.1", port=12345, max_cores=None):
 
 
 class Client:
+    """Client for connecting to running local backend server.
+
+    Accepts a `host` and `port` to connect to. The `host` defaults to 127.0.0.1
+    (localhost) and the port defaults to 12345.
+
+    To connect to a running local backend server:
+
+        >>> c = Client()
+        >>> c.connect()
+
+    You can now interact with the local backend server. For example, to get
+    the status of a task:
+
+        >>> c.status()
+
+    Remember to close the connection again by calling `close`:
+
+        >>> c.close()
+
+    You may also use the `Client` as a context manager. In this case, the
+    client will automatically connect and close the connection at the end of
+    the context manager:
+
+    with Client() as c:
+        c.status("foo")
+    """
+
     def __init__(self, host="127.0.0.1", port=12345):
         self._host = host
         self._port = port
         self._socket = None
+
+    def __enter__(self):
+        self.connect()
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.close()
 
     def connect(self):
         self._socket = socket.create_connection((self._host, self._port))
