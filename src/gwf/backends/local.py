@@ -18,7 +18,7 @@ from . import Backend, Status
 from .exceptions import BackendError, DependencyError
 from .logmanager import FileLogManager
 
-__all__ = ("Client", "Server", "LocalBackend")
+__all__ = ("Client", "Server", "LocalBackend", "start_server")
 
 logger = logging.getLogger(__name__)
 
