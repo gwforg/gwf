@@ -186,8 +186,8 @@ class ExecutorError(Exception):
 
 
 class Executor:
-    def __init__(self, master, log_manager, kill_timeout=10):
-        self._master = master
+    def __init__(self, scheduler, log_manager, kill_timeout=10):
+        self._scheduler = scheduler
         self._kill_timeout = kill_timeout
         self._log_manager = log_manager
 
@@ -214,7 +214,7 @@ class Executor:
         self._thread.start()
 
     def update_status(self, status):
-        self._master.set_status(self._task.id, status)
+        self._scheduler.set_status(self._task.id, status)
 
     def terminate_gracefully(self, process, poll_interval=1):
         process.terminate()
@@ -283,7 +283,7 @@ class Executor:
             logger.debug("Exiting executor")
 
 
-class Master:
+class TaskScheduler:
 
     FAILED_STATES = (LocalStatus.CANCELLED, LocalStatus.FAILED)
     FINISHED_STATES = (LocalStatus.CANCELLED, LocalStatus.FAILED, LocalStatus.COMPLETED)
@@ -386,7 +386,7 @@ class Master:
         elif status == LocalStatus.RUNNING and old_status == LocalStatus.SUBMITTED:
             logger.debug("Task %s started", task_id)
             self._available_cores -= 1
-            executor = Executor(master=self, log_manager=self._log_manager)
+            executor = Executor(scheduler=self, log_manager=self._log_manager)
             self._executors[task_id] = executor
             executor.execute(self._queue[task_id])
             del self._queue[task_id]
@@ -413,7 +413,7 @@ class Master:
 class ConnectionHandler(socketserver.BaseRequestHandler):
     def handle(self):
         logger.debug("Accepted connection from %s", self.client_address[0])
-        master = self.server.master
+        scheduler = self.server.scheduler
         while True:
             message = self.receive_message()
             if message is None:
@@ -421,13 +421,13 @@ class ConnectionHandler(socketserver.BaseRequestHandler):
 
             request_type = message.pop("type")
             if request_type == "submit-task":
-                master.enqueue_task(Task(**message))
+                scheduler.enqueue_task(Task(**message))
                 self.send_message({"type": "ok"})
             elif request_type == "cancel-task":
-                master.cancel_task(message["id"])
+                scheduler.cancel_task(message["id"])
                 self.send_message({"type": "ok"})
             elif request_type == "get-status":
-                status = master.get_status(message["id"])
+                status = scheduler.get_status(message["id"])
                 self.send_message({"type": "status", "status": status.name})
 
     def receive_message(self):
@@ -447,27 +447,27 @@ class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
 
 class Server:
-    def __init__(self, master, host, port):
-        self._master = master
+    def __init__(self, scheduler, host, port):
+        self._scheduler = scheduler
         self._host = host
         self._port = port
 
         self._tcp_server = _ThreadedTCPServer(
             (self._host, self._port), ConnectionHandler
         )
-        self._tcp_server.master = master
+        self._tcp_server.scheduler = scheduler
 
         self._tcp_server_thread = None
-        self._master_thread = None
+        self._scheduler_thread = None
 
-    def get_master(self):
-        return self._master
+    def get_scheduler(self):
+        return self._scheduler
 
     def start(self):
-        self._master_thread = threading.Thread(
-            target=self._master.schedule_forever, name="local-master"
+        self._scheduler_thread = threading.Thread(
+            target=self._scheduler.schedule_forever, name="local-scheduler"
         )
-        self._master_thread.start()
+        self._scheduler_thread.start()
 
         self._tcp_server_thread = threading.Thread(
             target=self._tcp_server.serve_forever, name="local-server"
@@ -481,8 +481,8 @@ class Server:
         self._tcp_server.server_close()
         self._tcp_server_thread.join()
 
-        self._master.shutdown()
-        self._master_thread.join()
+        self._scheduler.shutdown()
+        self._scheduler_thread.join()
 
 
 def start_server(log_manager, host="127.0.0.1", port=12345, max_cores=None):
@@ -497,8 +497,8 @@ def start_server(log_manager, host="127.0.0.1", port=12345, max_cores=None):
     """
     if max_cores is None:
         max_cores = multiprocessing.cpu_count()
-    master = Master(max_cores=max_cores, log_manager=log_manager)
-    server = Server(master, host, port)
+    scheduler = TaskScheduler(max_cores=max_cores, log_manager=log_manager)
+    server = Server(scheduler, host, port)
     server.start()
     return server
 
