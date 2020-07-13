@@ -108,10 +108,13 @@ class LocalBackend(Backend):
             (key,) = exc.args
             raise DependencyError(key)
 
+        env = dict(os.environ)
+        env["GWF_TARGET_NAME"] = target.name
+
         task_id = self.client.submit(
             script=target.spec,
             working_dir=target.working_dir,
-            env=dict(os.environ),
+            env=env,
             dependencies=dependency_ids,
         )
         self._tracked[target.name] = task_id
@@ -232,10 +235,6 @@ class Executor:
         stdout_file = self._log_manager.open_stdout(self._task.id, mode="w")
         stderr_file = self._log_manager.open_stderr(self._task.id, mode="w")
         try:
-            # TODO: The client should include this when submitting the job
-            # env = os.environ.copy()
-            # env["GWF_TARGET_NAME"] = target.name
-
             process = subprocess.Popen(
                 ["/bin/bash"],
                 stdin=subprocess.PIPE,
