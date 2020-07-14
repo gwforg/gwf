@@ -76,7 +76,7 @@ class LocalBackend(Backend):
 
     log_manager = FileLogManager()
 
-    option_defaults = {}
+    option_defaults = {"cores": 1}
 
     def __init__(self):
         super().__init__()
@@ -111,10 +111,14 @@ class LocalBackend(Backend):
         env = dict(os.environ)
         env["GWF_TARGET_NAME"] = target.name
 
+        resources = dict(self.option_defaults)
+        resources.update(target.options)
+
         task_id = self.client.submit(
             script=target.spec,
             working_dir=target.working_dir,
             env=env,
+            resources=resources,
             dependencies=dependency_ids,
         )
         self._tracked[target.name] = task_id
@@ -164,11 +168,21 @@ class LocalBackend(Backend):
 
 
 class Task:
-    def __init__(self, id, script="", working_dir=None, env=None, dependencies=None):
+    def __init__(
+        self,
+        id,
+        script="",
+        working_dir=None,
+        env=None,
+        resources=None,
+        dependencies=None,
+    ):
         self.id = id
         self.script = script
         self.working_dir = working_dir
         self.env = env or {}
+        self.resources = resources or {}
+
         if dependencies is None:
             self.dependencies = set()
         else:
@@ -342,7 +356,7 @@ class TaskScheduler:
                 )
 
                 if can_run:
-                    available_cores -= 1
+                    available_cores -= task.resources["cores"]
                     scheduled.append(task)
 
             for task in scheduled:
@@ -551,7 +565,7 @@ class Client:
         """Close the connection to the server."""
         self._socket.close()
 
-    def submit(self, script, working_dir, env=None, dependencies=None):
+    def submit(self, script, working_dir, env=None, resources=None, dependencies=None):
         """Submit a script to the server.
 
         Submit `script` as a task to the server. The script will run in
@@ -576,6 +590,7 @@ class Client:
                 "script": script,
                 "working_dir": working_dir,
                 "env": env,
+                "resources": resources,
                 "dependencies": dependencies,
             }
         )

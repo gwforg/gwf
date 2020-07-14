@@ -165,6 +165,38 @@ class TestScheduler:
         assert scheduler.get_status("foo2") == LocalStatus.COMPLETED
         assert scheduler.get_status("foo3") == LocalStatus.COMPLETED
 
+    def test_cap_with_task_using_two_cores(self, log_manager):
+        scheduler = TaskScheduler(max_cores=2, log_manager=log_manager)
+
+        task1 = create_task(id="foo1", script="sleep 1", resources={"cores": 2})
+        scheduler.enqueue_task(task1)
+
+        task2 = create_task(id="foo2", script="sleep 1", resources={"cores": 1})
+        scheduler.enqueue_task(task2)
+
+        task3 = create_task(id="foo3", script="sleep 1", resources={"cores": 1})
+        scheduler.enqueue_task(task3)
+
+        scheduler.schedule_once()
+        assert scheduler.get_status("foo1") == LocalStatus.RUNNING
+        assert scheduler.get_status("foo2") == LocalStatus.SUBMITTED
+        assert scheduler.get_status("foo3") == LocalStatus.SUBMITTED
+
+        scheduler.wait()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.SUBMITTED
+        assert scheduler.get_status("foo3") == LocalStatus.SUBMITTED
+
+        scheduler.schedule_once()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.RUNNING
+        assert scheduler.get_status("foo3") == LocalStatus.RUNNING
+
+        scheduler.wait()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo3") == LocalStatus.COMPLETED
+
     def test_unknown_dependency(self, log_manager):
         scheduler = TaskScheduler(max_cores=2, log_manager=log_manager)
 
