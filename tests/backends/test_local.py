@@ -15,6 +15,11 @@ from gwf.backends import Status
 from gwf.backends.exceptions import DependencyError
 
 
+def create_task(*args, **kwargs):
+    resources = kwargs.pop("resources", {"cores": 1})
+    return Task(*args, **kwargs, resources=resources)
+
+
 class Fakescheduler:
     def __init__(self):
         self.history = []
@@ -42,7 +47,7 @@ def scheduler():
 class TestExecutor:
     def test_task_successful(self, scheduler, log_manager):
         executor = Executor(scheduler, log_manager=log_manager)
-        executor.execute(Task(id="foo", script="exit 0"))
+        executor.execute(create_task(id="foo", script="exit 0"))
         executor.wait()
 
         assert scheduler.history[0] == ("foo", LocalStatus.RUNNING)
@@ -50,7 +55,7 @@ class TestExecutor:
 
     def test_task_failed(self, scheduler, log_manager):
         executor = Executor(scheduler, log_manager=log_manager)
-        executor.execute(Task(id="foo", script="exit 1"))
+        executor.execute(create_task(id="foo", script="exit 1"))
         executor.wait()
 
         assert scheduler.history[0] == ("foo", LocalStatus.RUNNING)
@@ -58,7 +63,7 @@ class TestExecutor:
 
     def test_cancel(self, scheduler, log_manager):
         executor = Executor(scheduler, log_manager=log_manager)
-        executor.execute(Task(id="foo", script="sleep 1"))
+        executor.execute(create_task(id="foo", script="sleep 1"))
         executor.cancel()
         executor.wait()
 
@@ -67,7 +72,7 @@ class TestExecutor:
 
     def test_terminate(self, scheduler, log_manager):
         executor = Executor(scheduler, log_manager=log_manager)
-        executor.execute(Task(id="foo", script="sleep 1"))
+        executor.execute(create_task(id="foo", script="sleep 1"))
         executor.terminate()
         executor.wait()
 
@@ -79,7 +84,7 @@ class TestScheduler:
     def test_task_lifecycle_successful(self, log_manager):
         scheduler = TaskScheduler(max_cores=1, log_manager=MemoryLogManager())
 
-        task = Task(id="foo", script="sleep 1")
+        task = create_task(id="foo", script="sleep 1")
         scheduler.enqueue_task(task)
         assert scheduler.get_status("foo") == LocalStatus.SUBMITTED
 
@@ -92,7 +97,7 @@ class TestScheduler:
     def test_cancel_task(self, log_manager):
         scheduler = TaskScheduler(max_cores=1, log_manager=MemoryLogManager())
 
-        task = Task(id="foo", script="sleep 10")
+        task = create_task(id="foo", script="sleep 10")
         scheduler.enqueue_task(task)
         assert scheduler.get_status("foo") == LocalStatus.SUBMITTED
 
@@ -106,10 +111,10 @@ class TestScheduler:
     def test_cap_at_one_core(self, log_manager):
         scheduler = TaskScheduler(max_cores=1, log_manager=log_manager)
 
-        task1 = Task(id="foo1", script="sleep 1")
+        task1 = create_task(id="foo1", script="sleep 1")
         scheduler.enqueue_task(task1)
 
-        task2 = Task(id="foo2", script="sleep 1")
+        task2 = create_task(id="foo2", script="sleep 1")
         scheduler.enqueue_task(task2)
 
         scheduler.schedule_once()
@@ -131,13 +136,13 @@ class TestScheduler:
     def test_cap_at_two_cores(self, log_manager):
         scheduler = TaskScheduler(max_cores=2, log_manager=log_manager)
 
-        task1 = Task(id="foo1", script="sleep 1")
+        task1 = create_task(id="foo1", script="sleep 1")
         scheduler.enqueue_task(task1)
 
-        task2 = Task(id="foo2", script="sleep 1")
+        task2 = create_task(id="foo2", script="sleep 1")
         scheduler.enqueue_task(task2)
 
-        task3 = Task(id="foo3", script="sleep 1")
+        task3 = create_task(id="foo3", script="sleep 1")
         scheduler.enqueue_task(task3)
 
         scheduler.schedule_once()
@@ -163,17 +168,17 @@ class TestScheduler:
     def test_unknown_dependency(self, log_manager):
         scheduler = TaskScheduler(max_cores=2, log_manager=log_manager)
 
-        task1 = Task(id="foo1", script="sleep 1", dependencies=set(["bar"]))
+        task1 = create_task(id="foo1", script="sleep 1", dependencies=set(["bar"]))
         with pytest.raises(BackendError):
             scheduler.enqueue_task(task1)
 
     def test_wait_for_dependency(self, log_manager):
         scheduler = TaskScheduler(max_cores=2, log_manager=log_manager)
 
-        task1 = Task(id="foo1", script="sleep 1")
+        task1 = create_task(id="foo1", script="sleep 1")
         scheduler.enqueue_task(task1)
 
-        task2 = Task(id="foo2", script="sleep 1", dependencies=set(["foo1"]))
+        task2 = create_task(id="foo2", script="sleep 1", dependencies=set(["foo1"]))
         scheduler.enqueue_task(task2)
 
         scheduler.schedule_once()
@@ -195,13 +200,15 @@ class TestScheduler:
     def test_wait_for_multiple_dependencies(self, log_manager):
         scheduler = TaskScheduler(max_cores=3, log_manager=log_manager)
 
-        task1 = Task(id="foo1", script="sleep 1")
+        task1 = create_task(id="foo1", script="sleep 1")
         scheduler.enqueue_task(task1)
 
-        task2 = Task(id="foo2", script="sleep 1")
+        task2 = create_task(id="foo2", script="sleep 1")
         scheduler.enqueue_task(task2)
 
-        task3 = Task(id="foo3", script="sleep 1", dependencies=set(["foo1", "foo2"]))
+        task3 = create_task(
+            id="foo3", script="sleep 1", dependencies=set(["foo1", "foo2"])
+        )
         scheduler.enqueue_task(task3)
 
         scheduler.schedule_once()
@@ -227,13 +234,15 @@ class TestScheduler:
     def test_dependents_fail_when_task_fails(self, log_manager):
         scheduler = TaskScheduler(max_cores=2, log_manager=log_manager)
 
-        task1 = Task(id="foo1", script="exit 1")
+        task1 = create_task(id="foo1", script="exit 1")
         scheduler.enqueue_task(task1)
 
-        task2 = Task(id="foo2", script="sleep 1")
+        task2 = create_task(id="foo2", script="sleep 1")
         scheduler.enqueue_task(task2)
 
-        task3 = Task(id="foo3", script="sleep 1", dependencies=set(["foo1", "foo2"]))
+        task3 = create_task(
+            id="foo3", script="sleep 1", dependencies=set(["foo1", "foo2"])
+        )
         scheduler.enqueue_task(task3)
 
         scheduler.schedule_once()
@@ -249,13 +258,13 @@ class TestScheduler:
     def test_enqueue_task_with_failed_dependency(self, log_manager):
         scheduler = TaskScheduler(max_cores=2, log_manager=log_manager)
 
-        task1 = Task(id="foo1", script="exit 1")
+        task1 = create_task(id="foo1", script="exit 1")
         scheduler.enqueue_task(task1)
         scheduler.schedule_once()
         scheduler.wait()
         assert scheduler.get_status("foo1") == LocalStatus.FAILED
 
-        task2 = Task(id="foo2", script="sleep 1", dependencies=set(["foo1"]))
+        task2 = create_task(id="foo2", script="sleep 1", dependencies=set(["foo1"]))
         scheduler.enqueue_task(task2)
         scheduler.schedule_once()
         assert scheduler.get_status("foo2") == LocalStatus.FAILED
