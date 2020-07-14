@@ -2,13 +2,20 @@ import pytest
 
 from gwf.backends.base import BackendError
 from gwf.backends.logmanager import MemoryLogManager
-from gwf.backends.local import Client, Executor, LocalBackend, LocalStatus, Master, Task
+from gwf.backends.local import (
+    Client,
+    Executor,
+    LocalBackend,
+    LocalStatus,
+    TaskScheduler,
+    Task,
+)
 from gwf import Target
 from gwf.backends import Status
 from gwf.backends.exceptions import DependencyError
 
 
-class FakeMaster:
+class Fakescheduler:
     def __init__(self):
         self.history = []
         self._task_status = {}
@@ -28,230 +35,230 @@ class FakeMaster:
 
 
 @pytest.fixture
-def master():
-    return FakeMaster()
+def scheduler():
+    return Fakescheduler()
 
 
 class TestExecutor:
-    def test_task_successful(self, master, log_manager):
-        executor = Executor(master, log_manager=log_manager)
+    def test_task_successful(self, scheduler, log_manager):
+        executor = Executor(scheduler, log_manager=log_manager)
         executor.execute(Task(id="foo", script="exit 0"))
         executor.wait()
 
-        assert master.history[0] == ("foo", LocalStatus.RUNNING)
-        assert master.history[1] == ("foo", LocalStatus.COMPLETED)
+        assert scheduler.history[0] == ("foo", LocalStatus.RUNNING)
+        assert scheduler.history[1] == ("foo", LocalStatus.COMPLETED)
 
-    def test_task_failed(self, master, log_manager):
-        executor = Executor(master, log_manager=log_manager)
+    def test_task_failed(self, scheduler, log_manager):
+        executor = Executor(scheduler, log_manager=log_manager)
         executor.execute(Task(id="foo", script="exit 1"))
         executor.wait()
 
-        assert master.history[0] == ("foo", LocalStatus.RUNNING)
-        assert master.history[1] == ("foo", LocalStatus.FAILED)
+        assert scheduler.history[0] == ("foo", LocalStatus.RUNNING)
+        assert scheduler.history[1] == ("foo", LocalStatus.FAILED)
 
-    def test_cancel(self, master, log_manager):
-        executor = Executor(master, log_manager=log_manager)
-        executor.execute(Task(id="foo", script="sleep 1",))
+    def test_cancel(self, scheduler, log_manager):
+        executor = Executor(scheduler, log_manager=log_manager)
+        executor.execute(Task(id="foo", script="sleep 1"))
         executor.cancel()
         executor.wait()
 
-        assert master.history[0] == ("foo", LocalStatus.RUNNING)
-        assert master.history[1] == ("foo", LocalStatus.CANCELLED)
+        assert scheduler.history[0] == ("foo", LocalStatus.RUNNING)
+        assert scheduler.history[1] == ("foo", LocalStatus.CANCELLED)
 
-    def test_terminate(self, master, log_manager):
-        executor = Executor(master, log_manager=log_manager)
+    def test_terminate(self, scheduler, log_manager):
+        executor = Executor(scheduler, log_manager=log_manager)
         executor.execute(Task(id="foo", script="sleep 1"))
         executor.terminate()
         executor.wait()
 
-        assert master.history[0] == ("foo", LocalStatus.RUNNING)
-        assert master.history[1] == ("foo", LocalStatus.FAILED)
+        assert scheduler.history[0] == ("foo", LocalStatus.RUNNING)
+        assert scheduler.history[1] == ("foo", LocalStatus.FAILED)
 
 
-class TestMaster:
+class TestScheduler:
     def test_task_lifecycle_successful(self, log_manager):
-        master = Master(max_cores=1, log_manager=MemoryLogManager())
+        scheduler = TaskScheduler(max_cores=1, log_manager=MemoryLogManager())
 
         task = Task(id="foo", script="sleep 1")
-        master.enqueue_task(task)
-        assert master.get_status("foo") == LocalStatus.SUBMITTED
+        scheduler.enqueue_task(task)
+        assert scheduler.get_status("foo") == LocalStatus.SUBMITTED
 
-        master.schedule_once()
-        assert master.get_status("foo") == LocalStatus.RUNNING
+        scheduler.schedule_once()
+        assert scheduler.get_status("foo") == LocalStatus.RUNNING
 
-        master.wait()
-        assert master.get_status("foo") == LocalStatus.COMPLETED
+        scheduler.wait()
+        assert scheduler.get_status("foo") == LocalStatus.COMPLETED
 
     def test_cancel_task(self, log_manager):
-        master = Master(max_cores=1, log_manager=MemoryLogManager())
+        scheduler = TaskScheduler(max_cores=1, log_manager=MemoryLogManager())
 
         task = Task(id="foo", script="sleep 10")
-        master.enqueue_task(task)
-        assert master.get_status("foo") == LocalStatus.SUBMITTED
+        scheduler.enqueue_task(task)
+        assert scheduler.get_status("foo") == LocalStatus.SUBMITTED
 
-        master.schedule_once()
-        assert master.get_status("foo") == LocalStatus.RUNNING
+        scheduler.schedule_once()
+        assert scheduler.get_status("foo") == LocalStatus.RUNNING
 
-        master.cancel_task("foo")
-        master.wait()
-        assert master.get_status("foo") == LocalStatus.CANCELLED
+        scheduler.cancel_task("foo")
+        scheduler.wait()
+        assert scheduler.get_status("foo") == LocalStatus.CANCELLED
 
     def test_cap_at_one_core(self, log_manager):
-        master = Master(max_cores=1, log_manager=log_manager)
+        scheduler = TaskScheduler(max_cores=1, log_manager=log_manager)
 
         task1 = Task(id="foo1", script="sleep 1")
-        master.enqueue_task(task1)
+        scheduler.enqueue_task(task1)
 
         task2 = Task(id="foo2", script="sleep 1")
-        master.enqueue_task(task2)
+        scheduler.enqueue_task(task2)
 
-        master.schedule_once()
-        assert master.get_status("foo1") == LocalStatus.RUNNING
-        assert master.get_status("foo2") == LocalStatus.SUBMITTED
+        scheduler.schedule_once()
+        assert scheduler.get_status("foo1") == LocalStatus.RUNNING
+        assert scheduler.get_status("foo2") == LocalStatus.SUBMITTED
 
-        master.wait()
-        assert master.get_status("foo1") == LocalStatus.COMPLETED
-        assert master.get_status("foo2") == LocalStatus.SUBMITTED
+        scheduler.wait()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.SUBMITTED
 
-        master.schedule_once()
-        assert master.get_status("foo1") == LocalStatus.COMPLETED
-        assert master.get_status("foo2") == LocalStatus.RUNNING
+        scheduler.schedule_once()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.RUNNING
 
-        master.wait()
-        assert master.get_status("foo1") == LocalStatus.COMPLETED
-        assert master.get_status("foo2") == LocalStatus.COMPLETED
+        scheduler.wait()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.COMPLETED
 
     def test_cap_at_two_cores(self, log_manager):
-        master = Master(max_cores=2, log_manager=log_manager)
+        scheduler = TaskScheduler(max_cores=2, log_manager=log_manager)
 
         task1 = Task(id="foo1", script="sleep 1")
-        master.enqueue_task(task1)
+        scheduler.enqueue_task(task1)
 
         task2 = Task(id="foo2", script="sleep 1")
-        master.enqueue_task(task2)
+        scheduler.enqueue_task(task2)
 
         task3 = Task(id="foo3", script="sleep 1")
-        master.enqueue_task(task3)
+        scheduler.enqueue_task(task3)
 
-        master.schedule_once()
-        assert master.get_status("foo1") == LocalStatus.RUNNING
-        assert master.get_status("foo2") == LocalStatus.RUNNING
-        assert master.get_status("foo3") == LocalStatus.SUBMITTED
+        scheduler.schedule_once()
+        assert scheduler.get_status("foo1") == LocalStatus.RUNNING
+        assert scheduler.get_status("foo2") == LocalStatus.RUNNING
+        assert scheduler.get_status("foo3") == LocalStatus.SUBMITTED
 
-        master.wait()
-        assert master.get_status("foo1") == LocalStatus.COMPLETED
-        assert master.get_status("foo2") == LocalStatus.COMPLETED
-        assert master.get_status("foo3") == LocalStatus.SUBMITTED
+        scheduler.wait()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo3") == LocalStatus.SUBMITTED
 
-        master.schedule_once()
-        assert master.get_status("foo1") == LocalStatus.COMPLETED
-        assert master.get_status("foo2") == LocalStatus.COMPLETED
-        assert master.get_status("foo3") == LocalStatus.RUNNING
+        scheduler.schedule_once()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo3") == LocalStatus.RUNNING
 
-        master.wait()
-        assert master.get_status("foo1") == LocalStatus.COMPLETED
-        assert master.get_status("foo2") == LocalStatus.COMPLETED
-        assert master.get_status("foo3") == LocalStatus.COMPLETED
+        scheduler.wait()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo3") == LocalStatus.COMPLETED
 
     def test_unknown_dependency(self, log_manager):
-        master = Master(max_cores=2, log_manager=log_manager)
+        scheduler = TaskScheduler(max_cores=2, log_manager=log_manager)
 
         task1 = Task(id="foo1", script="sleep 1", dependencies=set(["bar"]))
         with pytest.raises(BackendError):
-            master.enqueue_task(task1)
+            scheduler.enqueue_task(task1)
 
     def test_wait_for_dependency(self, log_manager):
-        master = Master(max_cores=2, log_manager=log_manager)
+        scheduler = TaskScheduler(max_cores=2, log_manager=log_manager)
 
         task1 = Task(id="foo1", script="sleep 1")
-        master.enqueue_task(task1)
+        scheduler.enqueue_task(task1)
 
         task2 = Task(id="foo2", script="sleep 1", dependencies=set(["foo1"]))
-        master.enqueue_task(task2)
+        scheduler.enqueue_task(task2)
 
-        master.schedule_once()
-        assert master.get_status("foo1") == LocalStatus.RUNNING
-        assert master.get_status("foo2") == LocalStatus.SUBMITTED
+        scheduler.schedule_once()
+        assert scheduler.get_status("foo1") == LocalStatus.RUNNING
+        assert scheduler.get_status("foo2") == LocalStatus.SUBMITTED
 
-        master.wait()
-        assert master.get_status("foo1") == LocalStatus.COMPLETED
-        assert master.get_status("foo2") == LocalStatus.SUBMITTED
+        scheduler.wait()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.SUBMITTED
 
-        master.schedule_once()
-        assert master.get_status("foo1") == LocalStatus.COMPLETED
-        assert master.get_status("foo2") == LocalStatus.RUNNING
+        scheduler.schedule_once()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.RUNNING
 
-        master.wait()
-        assert master.get_status("foo1") == LocalStatus.COMPLETED
-        assert master.get_status("foo2") == LocalStatus.COMPLETED
+        scheduler.wait()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.COMPLETED
 
     def test_wait_for_multiple_dependencies(self, log_manager):
-        master = Master(max_cores=3, log_manager=log_manager)
+        scheduler = TaskScheduler(max_cores=3, log_manager=log_manager)
 
         task1 = Task(id="foo1", script="sleep 1")
-        master.enqueue_task(task1)
+        scheduler.enqueue_task(task1)
 
         task2 = Task(id="foo2", script="sleep 1")
-        master.enqueue_task(task2)
+        scheduler.enqueue_task(task2)
 
         task3 = Task(id="foo3", script="sleep 1", dependencies=set(["foo1", "foo2"]))
-        master.enqueue_task(task3)
+        scheduler.enqueue_task(task3)
 
-        master.schedule_once()
-        assert master.get_status("foo1") == LocalStatus.RUNNING
-        assert master.get_status("foo2") == LocalStatus.RUNNING
-        assert master.get_status("foo3") == LocalStatus.SUBMITTED
+        scheduler.schedule_once()
+        assert scheduler.get_status("foo1") == LocalStatus.RUNNING
+        assert scheduler.get_status("foo2") == LocalStatus.RUNNING
+        assert scheduler.get_status("foo3") == LocalStatus.SUBMITTED
 
-        master.wait()
-        assert master.get_status("foo1") == LocalStatus.COMPLETED
-        assert master.get_status("foo2") == LocalStatus.COMPLETED
-        assert master.get_status("foo3") == LocalStatus.SUBMITTED
+        scheduler.wait()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo3") == LocalStatus.SUBMITTED
 
-        master.schedule_once()
-        assert master.get_status("foo1") == LocalStatus.COMPLETED
-        assert master.get_status("foo2") == LocalStatus.COMPLETED
-        assert master.get_status("foo3") == LocalStatus.RUNNING
+        scheduler.schedule_once()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo3") == LocalStatus.RUNNING
 
-        master.wait()
-        assert master.get_status("foo1") == LocalStatus.COMPLETED
-        assert master.get_status("foo2") == LocalStatus.COMPLETED
-        assert master.get_status("foo3") == LocalStatus.COMPLETED
+        scheduler.wait()
+        assert scheduler.get_status("foo1") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo2") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo3") == LocalStatus.COMPLETED
 
     def test_dependents_fail_when_task_fails(self, log_manager):
-        master = Master(max_cores=2, log_manager=log_manager)
+        scheduler = TaskScheduler(max_cores=2, log_manager=log_manager)
 
         task1 = Task(id="foo1", script="exit 1")
-        master.enqueue_task(task1)
+        scheduler.enqueue_task(task1)
 
         task2 = Task(id="foo2", script="sleep 1")
-        master.enqueue_task(task2)
+        scheduler.enqueue_task(task2)
 
         task3 = Task(id="foo3", script="sleep 1", dependencies=set(["foo1", "foo2"]))
-        master.enqueue_task(task3)
+        scheduler.enqueue_task(task3)
 
-        master.schedule_once()
-        assert master.get_status("foo1") == LocalStatus.RUNNING
-        assert master.get_status("foo2") == LocalStatus.RUNNING
-        assert master.get_status("foo3") == LocalStatus.SUBMITTED
+        scheduler.schedule_once()
+        assert scheduler.get_status("foo1") == LocalStatus.RUNNING
+        assert scheduler.get_status("foo2") == LocalStatus.RUNNING
+        assert scheduler.get_status("foo3") == LocalStatus.SUBMITTED
 
-        master.wait()
-        assert master.get_status("foo1") == LocalStatus.FAILED
-        assert master.get_status("foo2") == LocalStatus.COMPLETED
-        assert master.get_status("foo3") == LocalStatus.FAILED
+        scheduler.wait()
+        assert scheduler.get_status("foo1") == LocalStatus.FAILED
+        assert scheduler.get_status("foo2") == LocalStatus.COMPLETED
+        assert scheduler.get_status("foo3") == LocalStatus.FAILED
 
     def test_enqueue_task_with_failed_dependency(self, log_manager):
-        master = Master(max_cores=2, log_manager=log_manager)
+        scheduler = TaskScheduler(max_cores=2, log_manager=log_manager)
 
         task1 = Task(id="foo1", script="exit 1")
-        master.enqueue_task(task1)
-        master.schedule_once()
-        master.wait()
-        assert master.get_status("foo1") == LocalStatus.FAILED
+        scheduler.enqueue_task(task1)
+        scheduler.schedule_once()
+        scheduler.wait()
+        assert scheduler.get_status("foo1") == LocalStatus.FAILED
 
         task2 = Task(id="foo2", script="sleep 1", dependencies=set(["foo1"]))
-        master.enqueue_task(task2)
-        master.schedule_once()
-        assert master.get_status("foo2") == LocalStatus.FAILED
+        scheduler.enqueue_task(task2)
+        scheduler.schedule_once()
+        assert scheduler.get_status("foo2") == LocalStatus.FAILED
 
 
 class TestServer:
@@ -263,14 +270,14 @@ class TestServer:
     def test_submit_task_request(self, local_backend):
         client = Client()
         client.connect()
-        task_id = client.submit(script="exit 0", working_dir="/tmp",)
+        task_id = client.submit(script="exit 0", working_dir="/tmp")
         assert client.status(task_id) == LocalStatus.SUBMITTED
         client.close()
 
     def test_cancel_task_request(self, local_backend):
         client = Client()
         client.connect()
-        task_id = client.submit(script="sleep 5", working_dir="/tmp",)
+        task_id = client.submit(script="sleep 5", working_dir="/tmp")
         client.cancel(task_id)
         assert client.status(task_id) == LocalStatus.CANCELLED
         client.close()
