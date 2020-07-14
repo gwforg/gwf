@@ -307,6 +307,7 @@ class TaskScheduler:
         self._log_manager = log_manager
 
         self._queue = OrderedDict()
+        self._running = {}
         self._dependents = defaultdict(set)
         self._status_map = {}
         self._executors = {}
@@ -399,24 +400,37 @@ class TaskScheduler:
                 self._dependents[dep_id].add(task.id)
         elif status == LocalStatus.RUNNING and old_status == LocalStatus.SUBMITTED:
             logger.debug("Task %s started", task_id)
-            self._available_cores -= 1
+            task = self._running[task_id] = self._queue[task_id]
+            del self._queue[task_id]
+
+            assert self._available_cores - task.resources["cores"] >= 0
+            self._available_cores -= task.resources["cores"]
             executor = Executor(scheduler=self, log_manager=self._log_manager)
             self._executors[task_id] = executor
-            executor.execute(self._queue[task_id])
-            del self._queue[task_id]
+            executor.execute(task)
         elif status == LocalStatus.CANCELLED and old_status == LocalStatus.RUNNING:
             logger.debug("Task %s cancelled", task_id)
             executor = self._executors[task_id]
             executor.cancel()
+
             del self._executors[task_id]
+            del self._running[task_id]
         elif status == LocalStatus.CANCELLED and old_status == LocalStatus.SUBMITTED:
             logger.debug("Task %s cancelled", task_id)
             del self._queue[task_id]
-        elif status in self.FINISHED_STATES:
+
+        if status in self.FINISHED_STATES:
             logger.debug("Task %s finished", task_id)
-            self._available_cores += 1
             if old_status == LocalStatus.RUNNING:
+                task = self._running[task_id]
                 del self._executors[task_id]
+                del self._running[task_id]
+            else:
+                task = self._queue[task_id]
+                del self._queue[task_id]
+
+            assert self._available_cores + task.resources["cores"] <= self._max_cores
+            self._available_cores += task.resources["cores"]
 
         self._status_map[task_id] = status
         if status in self.FAILED_STATES:
