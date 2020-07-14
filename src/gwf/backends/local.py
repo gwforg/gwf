@@ -126,13 +126,13 @@ class LocalBackend(Backend):
         if target.name not in self._tracked:
             return Status.UNKNOWN
 
-            target_id = self._tracked[target.name]
-            target_status = self.client.status(target_id)
-            if target_status == LocalStatus.RUNNING:
-                return Status.RUNNING
-            elif target_status == LocalStatus.SUBMITTED:
-                return Status.SUBMITTED
-                return Status.UNKNOWN
+        task_id = self._tracked[target.name]
+        status = self.client.status(task_id)
+        if status == LocalStatus.RUNNING:
+            return Status.RUNNING
+        elif status == LocalStatus.SUBMITTED:
+            return Status.SUBMITTED
+        return Status.UNKNOWN
 
     def logs(self, target, stderr=False):
         """Return log files for a target.
