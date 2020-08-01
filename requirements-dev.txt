@@ -35,10 +35,9 @@ chardet==3.0.4 \
 click==7.1.2 \
     --hash=sha256:d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a \
     --hash=sha256:dacca89f4bfadd5de3d7489b7c8a566eee0d3676333fbb50030263894c38c0dc    # via pytest-click
-colorlog==4.1.0 \
-    --hash=sha256:30aaef5ab2a1873dec5da38fd6ba568fa761c9fa10b40241027fa3edea47f3d2 \
-    --hash=sha256:732c191ebbe9a353ec160d043d02c64ddef9028de8caae4cfa8bd49b6afed53e \
-    # via nox
+colorlog==4.2.1 \
+    --hash=sha256:43597fd822ce705190fc997519342fdaaf44b9b47f896ece7aa153ed4b909c74 \
+    --hash=sha256:75e55822c3a3387d721579241e776de2cf089c9ef9528b1f09e8b04d403ad118    # via nox
 coverage==5.0.4 \
     --hash=sha256:03f630aba2b9b0d69871c2e8d23a69b7fe94a1e2f5f10df5049c0df99db639a0 \
     --hash=sha256:046a1a742e66d065d16fb564a26c2a15867f17695e7f3d358d7b1ad8a61bca30 \
