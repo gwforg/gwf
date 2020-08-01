@@ -110,10 +110,9 @@ importlib-metadata==1.7.0 \
 importlib-resources==3.0.0 \
     --hash=sha256:19f745a6eca188b490b1428c8d1d4a0d2368759f32370ea8fb89cad2ab1106c3 \
     --hash=sha256:d028f66b66c0d5732dae86ba4276999855e162a749c92620a38c1d779ed138a7    # via virtualenv
-jinja2==2.11.1 \
-    --hash=sha256:93187ffbc7808079673ef52771baa950426fd664d3aad1d0fa3e95644360e250 \
-    --hash=sha256:b0eaf100007721b5c16c1fc1eecb87409464edc10469ddc9a22a27a99123be49 \
-    # via sphinx
+jinja2==2.11.2 \
+    --hash=sha256:89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0 \
+    --hash=sha256:f0a4641d3cf955324a89c04f3d94663aa4d638abe8f733ecd3582848e1c37035    # via sphinx
 markupsafe==1.1.1 \
     --hash=sha256:00bc623926325b26bb9605ae9eae8a215691f33cae5df11ca5424f06f2d1f473 \
     --hash=sha256:09027a7803a62ca78792ad89403b1b7a73a01c8cb65909cd876f7fcebd79b161 \
