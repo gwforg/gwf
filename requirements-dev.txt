@@ -77,10 +77,9 @@ coverage==5.0.4 \
     --hash=sha256:eda55e6e9ea258f5e4add23bcf33dc53b2c319e70806e180aecbff8d90ea24de \
     --hash=sha256:f372cdbb240e09ee855735b9d85e7f50730dcfb6296b74b95a3e5dea0615c4c1 \
     # via -r requirements-dev.in, coveralls, pytest-cov
-coveralls==1.11.1 \
-    --hash=sha256:4b6bfc2a2a77b890f556bc631e35ba1ac21193c356393b66c84465c06218e135 \
-    --hash=sha256:67188c7ec630c5f708c31552f2bcdac4580e172219897c4136504f14b823132f \
-    # via -r requirements-dev.in
+coveralls==2.2.0 \
+    --hash=sha256:2301a19500b06649d2ec4f2858f9c69638d7699a4c63027c5d53daba666147cc \
+    --hash=sha256:b990ba1f7bc4288e63340be0433698c1efe8217f78c689d254c2540af3d38617    # via -r requirements-dev.in
 distlib==0.3.0 \
     --hash=sha256:2e166e231a26b36d6dfe35a48c4464346620f8645ed0ace01ee31822b288de21 \
     # via virtualenv
