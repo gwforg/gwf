@@ -206,9 +206,9 @@ pyparsing==2.4.6 \
     --hash=sha256:4c830582a84fb022400b85429791bc551f1f4871c33f23e44f353119e92f969f \
     --hash=sha256:c342dccb5250c08d45fd6f8b4a559613ca603b57498511740e65cd11a2e7dcec \
     # via packaging
-pytest-click==0.3 \
-    --hash=sha256:302102d8c966cfebdb89d3f81ae4342ca4072b735e89c7c6eee7443ac0a687ee \
-    # via -r requirements-dev.in
+pytest-click==1.0.2 \
+    --hash=sha256:ac298e15a31d8892d9d063c3be82bb9877aaa11a4944e05e541ecc753258e474 \
+    --hash=sha256:b40b8435adde7a0d931352036a3882b13cd424fce2ffd7be6c87665050259be5    # via -r requirements-dev.in
 pytest-cov==2.8.1 \
     --hash=sha256:cc6742d8bac45070217169f5f72ceee1e0e55b0221f54bcf24845972d3a47f2b \
     --hash=sha256:cdbdef4f870408ebdbfeb44e63e07eb18bb4619fae852f6e760645fa36172626 \
