@@ -113,7 +113,8 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = "sphinx"
+pygments_style = "friendly"
+pygments_dark_style = "monokai"
 
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
@@ -132,7 +133,7 @@ todo_include_todos = False
 #
 # html_theme = 'alabaster'
 
-html_theme = "press"
+html_theme = "furo"
 # html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # Theme options are theme-specific and customize the look and feel of a theme
