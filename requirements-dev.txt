@@ -12,10 +12,9 @@ appdirs==1.4.3 \
     --hash=sha256:9e5896d1372858f8dd3344faf4e5014d21849c756c8d5701f78f8a103b372d92 \
     --hash=sha256:d8b24664561d0d34ddfaec54636d502d7cea6e29c3eaf68f3df6180863e2166e \
     # via virtualenv
-argcomplete==1.11.1 \
-    --hash=sha256:5ae7b601be17bf38a749ec06aa07fb04e7b6b5fc17906948dc1866e7facf3740 \
-    --hash=sha256:890bdd1fcbb973ed73db241763e78b6d958580e588c2910b508c770a59ef37d7 \
-    # via nox
+argcomplete==1.12.2 \
+    --hash=sha256:17f01a9b9b9ece3e6b07058eae737ad6e10de8b4e149105f84614783913aba71 \
+    --hash=sha256:de0e1282330940d52ea92a80fea2e4b9e0da1932aaa570f84d268939d1897b04    # via nox
 attrs==19.3.0 \
     --hash=sha256:08a96c641c3a74e44eb59afb61a24f2cb9f4d7188748e76ba4bb5edfa3cb7d1c \
     --hash=sha256:f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72 \
