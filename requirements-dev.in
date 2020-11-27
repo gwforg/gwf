@@ -1,3 +1,4 @@
+-c requirements.txt
 coverage
 coveralls
 flake8
