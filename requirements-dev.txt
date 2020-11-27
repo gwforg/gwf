@@ -217,10 +217,9 @@ pytest-flake8==1.0.4 \
     --hash=sha256:4d225c13e787471502ff94409dcf6f7927049b2ec251c63b764a4b17447b60c0 \
     --hash=sha256:d7e2b6b274a255b7ae35e9224c85294b471a83b76ecb6bd53c337ae977a499af \
     # via -r requirements-dev.in
-pytest-mock==2.0.0 \
-    --hash=sha256:b35eb281e93aafed138db25c8772b95d3756108b601947f89af503f8c629413f \
-    --hash=sha256:cb67402d87d5f53c579263d37971a164743dc33c159dfb4fb4a86f37c5552307 \
-    # via -r requirements-dev.in
+pytest-mock==3.3.1 \
+    --hash=sha256:024e405ad382646318c4281948aadf6fe1135632bea9cc67366ea0c4098ef5f2 \
+    --hash=sha256:a4d6d37329e4a893e77d9ffa89e838dd2b45d5dc099984cf03c703ac8411bb82    # via -r requirements-dev.in
 pytest-runner==5.2 \
     --hash=sha256:5534b08b133ef9a5e2c22c7886a8f8508c95bb0b0bdc6cc13214f269c3c70d51 \
     --hash=sha256:96c7e73ead7b93e388c5d614770d2bae6526efd997757d3543fe17b557a0942b \
