@@ -60,8 +60,6 @@ class SlurmBackend(PbsLikeBackendBase):
       Equivalent to the `--mail-type` flag on `sbatch`.
     * **mail_user (str):**
       Equivalent to the `--mail-user` flag on `sbatch`.
-    * **mail_type (str):**
-      Account to be used when running the target.
     * **gres (str):**
       Equivalent to the `--gres` flog on `sbatch`. Usually used to
       request access to GPUs.
