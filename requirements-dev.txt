@@ -311,10 +311,9 @@ tqdm==4.53.0 \
     --hash=sha256:3d3f1470d26642e88bd3f73353cb6ff4c51ef7d5d7efef763238f4bc1f7e4e81 \
     --hash=sha256:5ff3f5232b19fa4c5531641e480b7fad4598819f708a32eb815e6ea41c5fa313 \
     # via twine
-twine==3.2.0 \
-    --hash=sha256:34352fd52ec3b9d29837e6072d5a2a7c6fe4290e97bba46bb8d478b5c598f7ab \
-    --hash=sha256:ba9ff477b8d6de0c89dd450e70b2185da190514e91c42cc62f96850025c10472 \
-    # via -r requirements-dev.in
+twine==3.3.0 \
+    --hash=sha256:2f6942ec2a17417e19d2dd372fc4faa424c87ee9ce49b4e20c427eb00a0f3f41 \
+    --hash=sha256:fcffa8fc37e8083a5be0728371f299598870ee1eccc94e9a25cef7b1dcfa8297    # via -r requirements-dev.in
 urllib3==1.26.2 \
     --hash=sha256:19188f96923873c92ccb987120ec4acaa12f0461fa9ce5d3d0772bc965a39e08 \
     --hash=sha256:d8ff90d979214d7b4f8ce956e80f4028fc6860e4431f731ea4a8c08f23f99473 \
