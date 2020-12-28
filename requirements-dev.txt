@@ -112,10 +112,9 @@ flake8==3.8.4 \
     --hash=sha256:749dbbd6bfd0cf1318af27bf97a14e28e5ff548ef8e5b1566ccfb25a11e7c839 \
     --hash=sha256:aadae8761ec651813c24be05c6f7b4680857ef6afaae4651a4eccaef97ce6c3b \
     # via -r requirements-dev.in, pytest-flake8
-furo==2020.11.14b16 \
-    --hash=sha256:64426381a7de24eac146c996fa463ec1a4e281146db0af183247137b8663af9f \
-    --hash=sha256:bba0a03d53ee9bc37715bb34311f507aa70fca3d59fa56fe10f88422eb94d1ae \
-    # via -r requirements-dev.in
+furo==2020.12.28b22 \
+    --hash=sha256:2564a4f649d8c058554d386a8defa96f5bdb93ced42cb6d856a3ed9fff0ff88b \
+    --hash=sha256:93cc861f447f53cc7dad960db0eb4ff96480c5969040ce5251a72d0d3e4cb354    # via -r requirements-dev.in
 idna==2.10 \
     --hash=sha256:b307872f855b18632ce0c21c5e45be78c0ea7ae4c15c828c20788b26921eb3f6 \
     --hash=sha256:b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0 \
