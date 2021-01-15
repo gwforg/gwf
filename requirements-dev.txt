@@ -49,10 +49,9 @@ colorama==0.4.4 \
     --hash=sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b \
     --hash=sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2 \
     # via twine
-colorlog==4.6.2 \
-    --hash=sha256:54e5f153419c22afc283c130c4201db19a3dbd83221a0f4657d5ee66234a2ea4 \
-    --hash=sha256:edd5ada5de03e880e42b2526f8be5570fd9b692f8eb7cf6b1fdcac3e3fb23976 \
-    # via nox
+colorlog==4.7.2 \
+    --hash=sha256:0a9dcdba6cab68e8a768448b418a858d73c52b37b6e8dea2568296faece393bd \
+    --hash=sha256:18d05b616438a75762d7d214b9ec3b05d274466c9f3ddd92807e755840c88251    # via nox
 coverage==5.3 \
     --hash=sha256:0203acd33d2298e19b57451ebb0bed0ab0c602e5cf5a818591b4918b1f97d516 \
     --hash=sha256:0f313707cdecd5cd3e217fc68c78a960b616604b559e9ea60cc16795c4304259 \
