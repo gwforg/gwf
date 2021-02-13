@@ -148,9 +148,9 @@ arguments to the function template:
 .. code-block:: python
 
     photos = [
-        {'path': 'photos/dog.jpg', width: 600},
-        {'path': 'photos/horse.jpg', width: 200},
-        {'path': 'photos/cat.jpg', width: 1000},
+        {'path': 'photos/dog.jpg', 'width': 600},
+        {'path': 'photos/horse.jpg', 'width': 200},
+        {'path': 'photos/cat.jpg', 'width': 1000},
     ]
 
     gwf.map(transform_photo, photos, name=get_photo_name)
