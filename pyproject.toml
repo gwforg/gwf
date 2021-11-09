@@ -1,3 +1,111 @@
 [build-system]
-requires = ["setuptools>=40.6.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "gwf"
+authors = [{name = "Dan Søndergaard", email = "das@genome.au.dk"}]
+readme = "README.rst"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python",
+    "Topic :: System :: Distributed Computing",
+    "Topic :: Utilities",
+]
+dynamic = ["version", "description"]
+requires-python = "~=3.6"
+
+dependencies = [
+    "click",
+    "click-plugins",
+    # Used to discover plugins and backends, see:
+    # https://packaging.python.org/guides/creating-and-discovering-plugins/
+    "importlib_metadata>=3.6; python_version<'3.10'"
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "isort",
+    "nox",
+]
+
+test = [
+    "coverage",
+    "coveralls",
+    "flake8",
+    "pytest",
+    "pytest-click",
+    "pytest-cov",
+    "pytest-flake8",
+    "pytest-mock",
+    "pytest-runner",
+]
+
+doc = [
+    "sphinx",
+    "furo",
+]
+
+
+[project.scripts]
+gwf = "gwf.cli:main"
+
+[project.entry-points."gwf.plugins"]
+init = "gwf.plugins.init:init"
+run = "gwf.plugins.run:run"
+config = "gwf.plugins.config:config"
+status = "gwf.plugins.status:status"
+info = "gwf.plugins.info:info"
+logs = "gwf.plugins.logs:logs"
+clean = "gwf.plugins.clean:clean"
+workers = "gwf.plugins.workers:workers"
+cancel = "gwf.plugins.cancel:cancel"
+touch = "gwf.plugins.touch:touch"
+
+[project.entry-points."gwf.backends"]
+slurm = "gwf.backends.slurm:SlurmBackend"
+sge = "gwf.backends.sge:SGEBackend"
+local = "gwf.backends.local:LocalBackend"
+testing = "gwf.backends.testing:TestingBackend"
+
+[project.urls]
+Home = "https://gwf.app"
+
+[tool.isort]
+profile = "black"
+
+[tool.coverage.run]
+branch = true
+parallel = true
+
+[tool.coverage.report]
+sort = "Cover"
+
+# Regexes for lines to exclude from consideration
+exclude_lines = [
+    # Have to re-enable the standard pragma
+    "pragma: no cover",
+
+    # Don't complain about missing debug-only code:
+    "def __repr__",
+    "def __str__",
+    "if self.debug",
+
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+    "if __name__ == '__main__':",
+]
+
+skip_covered = true
+show_missing = true

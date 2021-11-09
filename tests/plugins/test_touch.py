@@ -1,14 +1,13 @@
+import multiprocessing
 import os
 import os.path
-import multiprocessing
 
 multiprocessing.set_start_method("fork")
 
 import pytest
 
-from gwf.cli import main
 from gwf.backends.local import Server
-
+from gwf.cli import main
 
 SIMPLE_WORKFLOW = """from gwf import Workflow
 

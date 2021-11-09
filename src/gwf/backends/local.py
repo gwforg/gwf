@@ -11,9 +11,9 @@ from multiprocessing.connection import Client as Client_
 from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
-from . import Backend, Status
 from ..conf import config
 from ..utils import PersistableDict
+from . import Backend, Status
 from .exceptions import BackendError, DependencyError, UnsupportedOperationError
 from .logmanager import FileLogManager
 

@@ -1,6 +1,12 @@
+import sys
+
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
+
 import logging
 from enum import Enum
-from pkg_resources import iter_entry_points
 
 from ..utils import PersistableDict, retry
 from .exceptions import BackendError, DependencyError, TargetError
@@ -13,7 +19,7 @@ __all__ = ("Backend", "Status")
 
 
 def _load_backends():
-    return {ep.name: ep.load() for ep in iter_entry_points("gwf.backends")}
+    return {ep.name: ep.load() for ep in entry_points(group="gwf.backends")}
 
 
 class Status(Enum):

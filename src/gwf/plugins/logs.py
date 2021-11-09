@@ -1,8 +1,8 @@
 import click
 
 from ..backends import Backend
-from ..workflow import Workflow
 from ..exceptions import WorkflowError
+from ..workflow import Workflow
 
 
 @click.command()

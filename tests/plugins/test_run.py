@@ -2,7 +2,6 @@ import pytest
 
 from gwf.cli import main
 
-
 SIMPLE_WORKFLOW = """from gwf import Workflow
 
 gwf = Workflow()

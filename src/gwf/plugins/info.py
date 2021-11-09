@@ -1,8 +1,7 @@
 import json
+from collections import OrderedDict
 
 import click
-
-from collections import OrderedDict
 
 from ..core import Graph
 from ..filtering import filter_names

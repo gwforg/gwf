@@ -2,11 +2,11 @@ import logging
 import os
 import os.path
 
-from ..core import Graph
-from ..filtering import NameFilter, EndpointFilter, filter_generic
-from ..workflow import Workflow
-
 import click
+
+from ..core import Graph
+from ..filtering import EndpointFilter, NameFilter, filter_generic
+from ..workflow import Workflow
 
 logger = logging.getLogger(__name__)
 

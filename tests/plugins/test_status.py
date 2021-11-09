@@ -2,7 +2,6 @@ import pytest
 
 from gwf.cli import main
 
-
 SIMPLE_WORKFLOW = """from gwf import Workflow
 gwf = Workflow()
 gwf.target('Target1', inputs=[], outputs=['a.txt']) << "echo hello world"

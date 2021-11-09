@@ -1,17 +1,17 @@
-import copy
 import collections
 import collections.abc
+import copy
 import inspect
+import os.path
 import subprocess
 import sys
 import warnings
-import os.path
 from glob import glob as _glob
 from glob import iglob as _iglob
 
 from .core import AnonymousTarget, Target
-from .exceptions import WorkflowError, NameError, TypeError
-from .utils import parse_path, load_workflow, is_valid_name
+from .exceptions import NameError, TypeError, WorkflowError
+from .utils import is_valid_name, load_workflow, parse_path
 
 
 def select(lst, fields):

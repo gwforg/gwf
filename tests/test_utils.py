@@ -1,6 +1,6 @@
 import pytest
 
-from gwf.utils import parse_path, cache, PersistableDict, ensure_trailing_newline, retry
+from gwf.utils import PersistableDict, cache, ensure_trailing_newline, parse_path, retry
 
 
 def test_cache_returns_same_object_when_called_twice_with_same_args():
