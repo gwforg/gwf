@@ -7,7 +7,7 @@ import shutil
 @nox.session(python=["3.8", "3.9", "3.10"])
 def test(session):
     session.install("--upgrade", "pip", "flit")
-    session.run("flit", "install", "--deps", "production")
+    session.run("flit", "install")
 
     session.run(
         "pytest",
