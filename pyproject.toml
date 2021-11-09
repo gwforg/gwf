@@ -37,7 +37,7 @@ dev = [
 ]
 
 test = [
-    "coverage",
+    "coverage[toml]",
     "coveralls",
     "flake8",
     "pytest",
