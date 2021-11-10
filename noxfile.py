@@ -6,8 +6,17 @@ import shutil
 
 @nox.session(python=["3.8", "3.9", "3.10"])
 def test(session):
-    # session.install("--upgrade", "pip", "flit")
-    # session.run("flit", "install")
+    session.install(
+        *[
+            "flake8",
+            "pytest",
+            "pytest-click",
+            "pytest-cov",
+            "pytest-flake8",
+            "pytest-mock",
+            "pytest-runner",
+        ]
+    )
 
     session.run(
         "pytest",
