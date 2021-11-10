@@ -101,7 +101,7 @@ class Backend:
         for option_name, option_value in list(new_options.items()):
             if option_name not in self.option_defaults.keys():
                 logger.warning(
-                    "Option '%s' used in '%' is not supported by backend. Ignored.",
+                    "Option '%s' used in '%s' is not supported by backend. Ignored.",
                     option_name,
                     target.name,
                 )
