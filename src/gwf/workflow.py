@@ -327,7 +327,7 @@ class Workflow(object):
                 inputs = {'from_file': from_file}
                 outputs = {'to_file': to_file + '.copy'}
                 options = {}
-                spec = "cp {from_file} {to_file}".format(from_file, to_file)
+                spec = f"cp {inputs[from_file]} {outputs[to_file]}"
                 return AnonymousTarget(
                     inputs=inputs,
                     outputs=outputs,
