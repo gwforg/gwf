@@ -37,8 +37,6 @@ dev = [
 ]
 
 test = [
-    "coverage[toml]",
-    "coveralls",
     "flake8",
     "pytest",
     "pytest-click",
@@ -50,6 +48,7 @@ test = [
 
 doc = [
     "sphinx",
+    "sphinx-autobuild",
     "furo",
 ]
 
@@ -83,29 +82,8 @@ profile = "black"
 
 [tool.coverage.run]
 branch = true
-parallel = true
+parallel = false
 
 [tool.coverage.report]
 sort = "Cover"
 
-# Regexes for lines to exclude from consideration
-exclude_lines = [
-    # Have to re-enable the standard pragma
-    "pragma: no cover",
-
-    # Don't complain about missing debug-only code:
-    "def __repr__",
-    "def __str__",
-    "if self.debug",
-
-    # Don't complain if tests don't hit defensive assertion code:
-    "raise AssertionError",
-    "raise NotImplementedError",
-
-    # Don't complain if non-runnable code isn't run:
-    "if 0:",
-    "if __name__ == '__main__':",
-]
-
-skip_covered = true
-show_missing = true

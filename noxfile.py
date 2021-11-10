@@ -14,7 +14,7 @@ def test(session):
         "--cov-config",
         "pyproject.toml",
         "--cov",
-        "src/gwf",
+        "src/",
         "tests/",
         env={"COVERAGE_FILE": f".coverage.{session.python}"},
     )
@@ -24,17 +24,20 @@ def test(session):
 
 @nox.session(python="3.10")
 def coverage(session):
-    session.install("--upgrade", "pip", "flit")
-    session.run("flit", "install", "--deps", "production", "--extras", "test")
+    session.install("coverage[toml]")
     session.run("coverage", "combine")
     session.run("coverage", "report", "--fail-under=95", "--show-missing")
     session.run("coverage", "erase")
 
+    token = os.getenv("COVERALLS_REPO_TOKEN")
+    if token:
+        session.install("coveralls")
+        session.run("coveralls", env={"COVERALLS_REPO_TOKEN": token})
+
 
 @nox.session
 def format(session):
-    session.install("--upgrade", "pip", "flit")
-    session.run("flit", "install", "--deps", "production", "--extras", "dev")
+    session.install("black", "isort")
 
     files = ["src/gwf", "tests"]
     session.run("black", *files)
@@ -43,8 +46,7 @@ def format(session):
 
 @nox.session
 def lint(session):
-    session.install("--upgrade", "pip", "flit")
-    session.run("flit", "install", "--deps", "production", "--extras", "dev,test")
+    session.install("black", "isort", "flake8")
 
     files = ["src/gwf", "tests"]
     session.run("black", "--check", *files)
@@ -55,7 +57,7 @@ def lint(session):
 @nox.session(python="3.10")
 def docs(session):
     session.install("--upgrade", "pip", "flit")
-    session.run("flit", "install", "--deps", "production", "--extras", "docs")
+    session.run("flit", "install", "--deps", "production", "--extras", "doc")
 
     session.cd("docs")
     if os.path.exists("_build"):

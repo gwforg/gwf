@@ -29,8 +29,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install nox
+        python -m pip install --upgrade pip nox
       shell: bash
 
     - name: Run tests
@@ -42,5 +41,4 @@ jobs:
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
       run: |
-        python -m pip install --upgrade pip coveralls
-        coveralls
+        python -m nox -s coverage
