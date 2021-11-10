@@ -29,7 +29,7 @@ def test(session):
         env={"COVERAGE_FILE": f".coverage.{session.python}"},
     )
 
-    session.notify("coverage")
+    # session.notify("coverage")
 
 
 # @nox.session(python="3.10")
