@@ -11,9 +11,9 @@ from multiprocessing.connection import Client as Client_
 from multiprocessing.connection import Listener
 from multiprocessing.pool import Pool
 
-from . import Backend, Status
 from ..conf import config
 from ..utils import PersistableDict
+from . import Backend, Status
 from .exceptions import BackendError, DependencyError, UnsupportedOperationError
 from .logmanager import FileLogManager
 
@@ -130,8 +130,10 @@ class LocalBackend(Backend):
 
     **Backend options:**
 
-    * **local.host (str):** Set the host that the workers are running on (default: localhost).
-    * **local.port (int):** Set the port used to connect to the workers (default: 12345).
+    * **local.host (str):** Set the host that the workers are running on
+      (default: localhost).
+    * **local.port (int):** Set the port used to connect to the workers
+      (default: 12345).
 
     **Target options:**
 
@@ -153,12 +155,10 @@ class LocalBackend(Backend):
             self.client = Client((host, port))
         except ConnectionRefusedError:
             raise BackendError(
-                "Local backend could not connect to workers on port {}. "
-                'Workers can be started by running "gwf workers". '
+                f"Local backend could not connect to workers on port {port}. "
+                "Workers can be started by running 'gwf workers'. "
                 "You can read more in the documentation: "
-                "https://gwf.app/reference/backends/#gwf.backends.local.LocalBackend".format(
-                    port
-                )
+                "https://gwf.app/reference/backends/#gwf.backends.local.LocalBackend"
             )
 
         self._status = self.client.status()

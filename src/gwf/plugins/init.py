@@ -1,10 +1,9 @@
-import click
-
 from pathlib import Path
+
+import click
 
 from ..backends import Backend
 from ..conf import config_from_path
-
 
 banner = r"""
   .-_'''-.   .--.      .--. ________

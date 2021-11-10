@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 
 from gwf import AnonymousTarget, Workflow
 from gwf.exceptions import TypeError, WorkflowError
@@ -349,7 +350,9 @@ def test_map_with_custom_naming_string():
 
 
 @pytest.fixture
-def mock_template(mocker,):
+def mock_template(
+    mocker,
+):
     mock_template = mocker.MagicMock()
     mock_template.__name__ = "mock_template"
     mock_template.return_value = AnonymousTarget(inputs=[], outputs=[], options={})

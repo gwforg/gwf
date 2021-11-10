@@ -44,7 +44,7 @@ def test_backend_submit_full_warns_user_when_submitting_target_with_unsupported_
         (
             "gwf.backends.base",
             logging.WARNING,
-            'Option "foo" used in "TestTarget" is not supported by backend. Ignored.',
+            "Option 'foo' used in 'TestTarget' is not supported by backend. Ignored.",
         )
     ]
 

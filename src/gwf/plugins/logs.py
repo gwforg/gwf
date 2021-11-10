@@ -1,8 +1,8 @@
 import click
 
 from ..backends import Backend
-from ..workflow import Workflow
 from ..exceptions import WorkflowError
+from ..workflow import Workflow
 
 
 @click.command()
@@ -13,7 +13,8 @@ from ..exceptions import WorkflowError
 def logs(obj, target, stderr, no_pager):
     """Display logs for the latest run of a target.
 
-    By default only standard output is shown. Supply the --stderr flag to show standard error instead.
+    By default only standard output is shown. Supply the --stderr flag to show
+    standard error instead.
     """
     workflow = Workflow.from_config(obj)
     backend_cls = Backend.from_config(obj)

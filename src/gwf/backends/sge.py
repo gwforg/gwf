@@ -55,7 +55,9 @@ class SGEBackend(PbsLikeBackendBase):
     }
 
     @retry(on_exc=BackendError)
-    def call_queue_command(self,):
+    def call_queue_command(
+        self,
+    ):
         return call("qstat", "-f", "-xml")
 
     @retry(on_exc=BackendError)

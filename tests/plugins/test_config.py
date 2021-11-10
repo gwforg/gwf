@@ -1,7 +1,7 @@
 import pytest
 
 from gwf.cli import main
-from gwf.plugins.config import humanbool, cast_value
+from gwf.plugins.config import cast_value, humanbool
 
 
 def test_set_get(cli_runner):

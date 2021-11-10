@@ -1,16 +1,15 @@
+import shutil
 import subprocess
-from distutils.spawn import find_executable
 
 from .exceptions import BackendError
 
 
 def _find_exe(name):
-    exe = find_executable(name)
+    exe = shutil.which(name)
     if exe is None:
         raise BackendError(
-            'Could not find executable "{}". This backend requires Slurm to be installed on this host.'.format(
-                name
-            )
+            f'Could not find executable "{name}". This backend requires Slurm '
+            f"to be installed on this host."
         )
     return exe
 

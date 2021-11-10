@@ -2,7 +2,7 @@ import pytest
 
 from gwf import Target
 from gwf.core import TargetStatus
-from gwf.filtering import StatusFilter, NameFilter, EndpointFilter
+from gwf.filtering import EndpointFilter, NameFilter, StatusFilter
 
 
 def make_status_provider(statuses):
@@ -60,7 +60,10 @@ status_provider = make_status_provider(
     ],
 )
 def test_filter_status(status, result):
-    status_filter = StatusFilter(status_provider=status_provider, status=status,)
+    status_filter = StatusFilter(
+        status_provider=status_provider,
+        status=status,
+    )
     assert set(status_filter.apply(targets)) == set(result)
 
 

@@ -1,9 +1,9 @@
 import logging
 import os
-from pkg_resources import iter_entry_points
 
 import click
 from click_plugins import with_plugins
+from pkg_resources import iter_entry_points
 
 from . import __version__
 from .backends import Backend

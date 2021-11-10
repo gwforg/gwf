@@ -2,8 +2,8 @@ import multiprocessing
 
 import click
 
-from ..conf import config
 from ..backends.local import Server
+from ..conf import config
 
 
 @click.command()

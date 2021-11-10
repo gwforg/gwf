@@ -3,7 +3,7 @@ from collections import Counter
 import click
 
 from ..backends import Backend
-from ..core import Graph, TargetStatus, schedule, get_status
+from ..core import Graph, TargetStatus, get_status, schedule
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
 from ..workflow import Workflow
 

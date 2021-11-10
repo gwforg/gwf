@@ -166,7 +166,10 @@ class AnonymousTarget:
         return self
 
     def __repr__(self):
-        return "{}(inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, spec={!r})".format(
+        return (
+            "{}(inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, "
+            "spec={!r})"
+        ).format(
             self.__class__.__name__,
             self.inputs,
             self.outputs,
@@ -560,7 +563,8 @@ class Scheduler:
                 return (
                     True,
                     "{} was scheduled because its output file {} does not exist".format(
-                        target, path,
+                        target,
+                        path,
                     ),
                 )
 
@@ -593,10 +597,15 @@ class Scheduler:
         )
 
         if youngest_in_ts > oldest_out_ts:
+            msg = (
+                "{} was scheduled because input file {} " "is newer than output file {}"
+            )
             return (
                 True,
-                "{} was scheduled because input file {} is newer than output file {}".format(
-                    target, youngest_in_path, oldest_out_path,
+                msg.format(
+                    target,
+                    youngest_in_path,
+                    oldest_out_path,
                 ),
             )
         return (False, "{} was not scheduled because it is up to date".format(target))
