@@ -36,22 +36,6 @@ dev = [
     "nox",
 ]
 
-test = [
-    "flake8",
-    "pytest",
-    "pytest-click",
-    "pytest-cov",
-    "pytest-flake8",
-    "pytest-mock",
-    "pytest-runner",
-]
-
-doc = [
-    "sphinx",
-    "sphinx-autobuild",
-    "furo",
-]
-
 
 [project.scripts]
 gwf = "gwf.cli:main"

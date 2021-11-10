@@ -6,24 +6,25 @@ import shutil
 
 @nox.session(python=["3.8", "3.9", "3.10"])
 def test(session):
-    session.install(
-        *[
-            "flake8",
-            "pytest",
-            "pytest-click",
-            "pytest-cov",
-            "pytest-flake8",
-            "pytest-mock",
-            "pytest-runner",
-        ]
-    )
+    session.install("flit")
+    session.run("flit", "install", "-s", "--deps", "production")
 
+    session.install(
+        "flake8",
+        "pytest",
+        "pytest-click",
+        "pytest-cov",
+        "pytest-flake8",
+        "pytest-mock",
+        "pytest-runner",
+    )
+    session.warn(session.virtualenv)
     session.run(
         "pytest",
         "--cov-config",
         "pyproject.toml",
         "--cov",
-        "src/gwf",
+        "gwf",
         "tests/",
         env={"COVERAGE_FILE": f".coverage.{session.python}"},
     )
@@ -65,14 +66,21 @@ def lint(session):
 
 @nox.session(python="3.10")
 def docs(session):
-    session.install("--upgrade", "pip", "flit")
-    session.run("flit", "install", "--deps", "production", "--extras", "doc")
+    session.install("flit")
+    session.run("flit", "install", "-s", "--deps", "production")
+
+    session.install(
+        "sphinx",
+        "sphinx-autobuild",
+        "furo",
+    )
 
     session.cd("docs")
     if os.path.exists("_build"):
         shutil.rmtree("_build")
 
-    sphinx_args = ["-b", "html", "-W", ".", "_build/html"]
+    # TODO: Add -W to treat warnings as errors
+    sphinx_args = ["-b", "html", ".", "_build/html"]
 
     if not session.interactive:
         sphinx_cmd = "sphinx-build"
