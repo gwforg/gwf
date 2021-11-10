@@ -32,17 +32,17 @@ def test(session):
     session.notify("coverage")
 
 
-@nox.session(python="3.10")
-def coverage(session):
-    session.install("coverage[toml]")
-    session.run("coverage", "combine")
-    session.run("coverage", "report", "--fail-under=65", "--show-missing")
-    session.run("coverage", "erase")
+# @nox.session(python="3.10")
+# def coverage(session):
+#     session.install("coverage[toml]")
+#     session.run("coverage", "combine")
+#     session.run("coverage", "report", "--fail-under=65", "--show-missing")
+#     session.run("coverage", "erase")
 
-    token = os.getenv("COVERALLS_REPO_TOKEN")
-    if token:
-        session.install("coveralls")
-        session.run("coveralls", env={"COVERALLS_REPO_TOKEN": token})
+#     token = os.getenv("COVERALLS_REPO_TOKEN")
+#     if token:
+#         session.install("coveralls")
+#         session.run("coveralls", env={"COVERALLS_REPO_TOKEN": token})
 
 
 @nox.session
