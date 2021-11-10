@@ -13,7 +13,8 @@ from ..workflow import Workflow
 def logs(obj, target, stderr, no_pager):
     """Display logs for the latest run of a target.
 
-    By default only standard output is shown. Supply the --stderr flag to show standard error instead.
+    By default only standard output is shown. Supply the --stderr flag to show
+    standard error instead.
     """
     workflow = Workflow.from_config(obj)
     backend_cls = Backend.from_config(obj)

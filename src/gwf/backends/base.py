@@ -34,9 +34,9 @@ class Status(Enum):
     A target is running if it is currently being executed by the backend.
     """
 
-    UNKNOWN = 0  #: The backend is not aware of the status of this target (it may be completed or failed).
-    SUBMITTED = 1  #: The target has been submitted, but is not currently running.
-    RUNNING = 2  #: The target is currently running.
+    UNKNOWN = 0
+    SUBMITTED = 1
+    RUNNING = 2
 
 
 class Backend:
@@ -101,9 +101,9 @@ class Backend:
         for option_name, option_value in list(new_options.items()):
             if option_name not in self.option_defaults.keys():
                 logger.warning(
-                    'Option "{}" used in "{}" is not supported by backend. Ignored.'.format(
-                        option_name, target.name
-                    )
+                    "Option '%s' used in '%' is not supported by backend. Ignored.",
+                    option_name,
+                    target.name,
                 )
                 del new_options[option_name]
             elif option_value is None:

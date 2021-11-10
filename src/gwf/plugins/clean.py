@@ -66,7 +66,10 @@ def clean(obj, targets, all, force):
 
     if not targets and not force:
         click.confirm(
-            "This will delete all unprotected output files from non-endpoint targets! Do you want to continue?",
+            (
+                "This will delete all unprotected output files from "
+                "non-endpoint targets! Do you want to continue?"
+            ),
             abort=True,
         )
 
@@ -75,7 +78,10 @@ def clean(obj, targets, all, force):
         for path in target.flattened_outputs():
             if path in target.protected:
                 logging.debug(
-                    'Skpping deleting file "%s" from target "%s" because it is protected',
+                    (
+                        'Skipping deleting file "%s" from target "%s" because it '
+                        "is protected"
+                    ),
                     click.format_filename(path),
                     target.name,
                 )

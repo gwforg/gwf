@@ -125,8 +125,8 @@ class Workflow(object):
     This is the most central user-facing abstraction in *gwf*.
 
     A workflow consists of a collection of targets and has methods for adding
-    targets to the workflow in two different ways. A workflow can be initialized
-    with the following arguments:
+    targets to the workflow in two different ways. A workflow can be
+    initialized with the following arguments:
 
     :ivar str name: initial value: None
         The name is used for namespacing when including workflows. See
@@ -138,9 +138,10 @@ class Workflow(object):
     :ivar dict defaults:
         A dictionary with defaults for target options.
 
-    By default, *working_dir* is set to the directory of the workflow file which
-    initialized the workflow. However, advanced users may wish to set it manually.
-    Targets added to the workflow will inherit the workflow working directory.
+    By default, *working_dir* is set to the directory of the workflow file
+    which initialized the workflow. However, advanced users may wish to set it
+    manually. Targets added to the workflow will inherit the workflow working
+    directory.
 
     The *defaults* argument is a dictionary of option defaults for targets and
     overrides defaults provided by the backend. Targets can override the
@@ -154,8 +155,8 @@ class Workflow(object):
         gwf.target('Foo', inputs=[], outputs=[]) << \"\"\"echo hello\"\"\"
         gwf.target('Bar', inputs=[], outputs=[], cores=2) << \"\"\"echo world\"\"\"
 
-    In this case `Foo` and `Bar` inherit the `cores` and `memory` options set in
-    `defaults`, but `Bar` overrides the `cores` option.
+    In this case `Foo` and `Bar` inherit the `cores` and `memory` options set
+    in `defaults`, but `Bar` overrides the `cores` option.
 
     See :func:`~include` for a description of the use of the `name` argument.
     """
@@ -388,7 +389,8 @@ class Workflow(object):
             )
         ):
             raise ValueError(
-                "Argument `template_func` must be a function or a callable class instance."
+                "Argument `template_func` must be a function or a callable "
+                "class instance."
             )
 
         def template_namer(idx, target):
@@ -558,7 +560,8 @@ class Workflow(object):
         .. versionchanged:: 1.0
 
             This function no longer return a list of lines in the output, but a
-            byte array with the output, exactly like :func:`python:subprocess.check_output`.
+            byte array with the output, exactly like
+            :func:`python:subprocess.check_output`.
             You may specifically set *universal_newlines* to `True` to get a
             string with the output instead.
         """
