@@ -14,7 +14,7 @@ def test(session):
         "--cov-config",
         "pyproject.toml",
         "--cov",
-        "src/",
+        "gwf",
         "tests/",
         env={"COVERAGE_FILE": f".coverage.{session.python}"},
     )

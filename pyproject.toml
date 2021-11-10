@@ -82,7 +82,7 @@ profile = "black"
 
 [tool.coverage.run]
 branch = true
-parallel = false
+parallel = true
 
 [tool.coverage.report]
 sort = "Cover"
