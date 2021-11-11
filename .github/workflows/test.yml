@@ -28,27 +28,21 @@ jobs:
           python -m nox -s test-${{ matrix.python_version }}
         shell: bash
 
+      - name: Record coverage
+        uses: AndreMiras/coveralls-python-action@develop
+        with:
+          parallel: true
+          flag-name: Unit test
+
   finish:
     needs: test
     runs-on: ubuntu-20.04
 
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.10'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip nox
-        shell: bash
-
       - name: Submit coverage
-        run: |
-          python -m nox -s coverage
-        shell: bash
+        uses: AndreMiras/coveralls-python-action@develop
+        with:
+          parallel-finished: true
 
   lint:
     runs-on: ubuntu-20.04
