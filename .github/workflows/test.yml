@@ -10,32 +10,37 @@ jobs:
         python_version: ['3.8', '3.9', '3.10']
 
     steps:
-    - uses: actions/checkout@v1
+      - uses: actions/checkout@v1
 
-    - uses: actions/setup-python@v1
-      name: Install Python ${{ matrix.python_version }}
-      with:
-        python-version: ${{ matrix.python_version }}
+      - uses: actions/setup-python@v1
+        name: Install Python ${{ matrix.python_version }}
+        with:
+          python-version: ${{ matrix.python_version }}
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip nox
-      shell: bash
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip nox
+        shell: bash
 
-    - name: Run tests
-      run: |
-        python -m nox -s test-${{ matrix.python_version }}
-      shell: bash
+      - name: Run tests
+        run: |
+          python -m nox -s test-${{ matrix.python_version }}
+        shell: bash
 
   finish:
     needs: test
     runs-on: ubuntu-20.04
 
     steps:
-    - name: Submit coverage
-      run: |
-        python -m nox -s coverage
-      shell: bash
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip nox
+        shell: bash
+
+      - name: Submit coverage
+        run: |
+          python -m nox -s coverage
+        shell: bash
 
   lint:
     runs-on: ubuntu-20.04
