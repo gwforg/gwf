@@ -27,23 +27,15 @@ jobs:
         python -m nox -s test-${{ matrix.python_version }}
       shell: bash
 
-    - name: Submit partial coverage results
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.github_token }}
-        flag-name: run-${{ matrix.python_version }}
-        parallel: true
-
   finish:
     needs: test
     runs-on: ubuntu-20.04
 
     steps:
-    - name: Submit complete coverage results
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.github_token }}
-        parallel-finished: true
+    - name: Submit coverage
+      run: |
+        python -m nox -s coverage
+      shell: bash
 
   lint:
     runs-on: ubuntu-20.04
