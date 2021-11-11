@@ -28,22 +28,6 @@ jobs:
           python -m nox -s test-${{ matrix.python_version }}
         shell: bash
 
-      - name: Record coverage
-        uses: AndreMiras/coveralls-python-action@v20201129
-        with:
-          parallel: true
-          flag-name: Unit test
-
-  finish:
-    needs: test
-    runs-on: ubuntu-20.04
-
-    steps:
-      - name: Submit coverage
-        uses: AndreMiras/coveralls-python-action@v20201129
-        with:
-          parallel-finished: true
-
   lint:
     runs-on: ubuntu-20.04
     steps:
