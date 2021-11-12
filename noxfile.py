@@ -83,7 +83,7 @@ def docs(session):
         shutil.rmtree("_build")
 
     # TODO: Add -W to treat warnings as errors
-    sphinx_args = ["-b", "html", ".", "_build/html"]
+    sphinx_args = ["-b", "dirhtml", ".", "_build/dirhtml"]
 
     if not session.interactive:
         sphinx_cmd = "sphinx-build"
