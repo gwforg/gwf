@@ -4,7 +4,7 @@ gwf
 
 A flexible, pragmatic workflow tool.
 
-|anacondaversion| |anacondadownloads| |cistatus| |coveralls|
+|anacondaversion| |anacondadownloads| |cistatus|
 
 *gwf* is a flexible, pragmatic workflow tool for building and running large,
 scientific workflows. It runs on Python 3.5+ and is developed at the
@@ -35,9 +35,6 @@ Contributing
 .. |cistatus| image:: https://github.com/gwforg/gwf/workflows/Run%20tests/badge.svg
     :target: https://github.com/gwforg/gwf/actions?query=workflow%3A%22Run+tests%22
     :alt: Build status
-.. |coveralls| image:: https://img.shields.io/coveralls/gwforg/gwf.svg
-    :target: https://coveralls.io/github/gwforg/gwf
-    :alt: Coverage
 .. |anacondaversion| image:: https://anaconda.org/gwforg/gwf/badges/version.svg
     :target: https://anaconda.org/gwforg/gwf
     :alt: Version of Conda package
