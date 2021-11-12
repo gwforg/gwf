@@ -31,7 +31,7 @@ jobs:
       - name: Push to docs branch
         uses: s0/git-publish-subdir-action@develop
         env:
-          REPO: self
-          BRANCH: docs
+          REPO: git@github.com:gwforg/gwforg.github.io.git
+          BRANCH: main
           FOLDER: docs/_build/dirhtml
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
