@@ -34,4 +34,4 @@ jobs:
           REPO: git@github.com:gwforg/gwforg.github.io.git
           BRANCH: main
           FOLDER: docs/_build/dirhtml
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_PRIVATE_KEY }}
