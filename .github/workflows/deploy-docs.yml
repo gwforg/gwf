@@ -1,4 +1,4 @@
-name: Build docs and push to docs branch
+name: Build and deploy docs
 
 on:
   push:
@@ -26,6 +26,11 @@ jobs:
       - name: Build docs
         run: |
           python -m nox -s docs
+        shell: bash
+
+      - name: Add .nojekyll
+        run: |
+          touch docs/_build/dirhtml/.nojekyll
         shell: bash
 
       - name: Push to docs branch
