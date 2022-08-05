@@ -7,8 +7,8 @@ A flexible, pragmatic workflow tool.
 |anacondaversion| |anacondadownloads| |cistatus|
 
 *gwf* is a flexible, pragmatic workflow tool for building and running large,
-scientific workflows. It runs on Python 3.5+ and is developed at the
-Bioinformatics Research Centre (BiRC), Aarhus University.
+scientific workflows. It runs on Python 3.6+ and is developed at GenomeDK, 
+Aarhus University.
 
 Examples
   To get a feeling for what a *gwf* workflow looks like, have a look at a few

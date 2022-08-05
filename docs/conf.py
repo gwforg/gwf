@@ -354,4 +354,4 @@ texinfo_documents = [
 
 # -- Options for intersphinx -------------------------------------------------
 
-intersphinx_mapping = {"python": ("https://docs.python.org/3.5", None)}
+intersphinx_mapping = {"python": ("https://docs.python.org/3.6", None)}

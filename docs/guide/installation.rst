@@ -13,7 +13,7 @@ To install *gwf* via conda::
 We recommend that you install *gwf* in a project-specific environment::
 
     conda config --add channels gwforg
-    conda create -n myproject python=3.5 gwf dep1 dep2 ...
+    conda create -n myproject gwf dep1 dep2 ...
     source activate myproject
 
 You can find the code for *gwf* `here <https://github.com/gwforg/gwf>`_. You are

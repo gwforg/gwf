@@ -5,9 +5,9 @@ import unicodedata
 from collections import defaultdict
 from collections.abc import Mapping
 from enum import Enum
+from os import fspath
 
 from .backends import Status
-from .compat import fspath
 from .exceptions import NameError, WorkflowError
 from .utils import cache, is_valid_name, timer
 
