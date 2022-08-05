@@ -177,38 +177,6 @@ def touchfile(path):
         os.utime(path, None)
 
 
-def get_latest_version():
-    """Return the latest version available.
-
-    Will return a string containing the version of the latest release.
-
-    Contacting the server to check for updates will happen at most once per
-    day. If the last check happened within 24 hours, `None` will be returned.
-
-    :return: A string containing the version number or `None`.
-    """
-    try:
-        last_check = os.stat(UPDATE_CHECK_FILE).st_mtime
-    except FileNotFoundError:
-        last_check = 0
-
-    current_time = time.time()
-    if current_time < last_check + UPDATE_CHECK_WAIT:
-        logger.debug("Skipping check for updates.")
-        return None
-
-    logger.debug("Checking for updates.")
-    touchfile(UPDATE_CHECK_FILE)
-    try:
-        with urlopen(UPDATE_CHECK_URL, timeout=1) as resp:
-            data = json.load(resp)
-            latest_version = data["info"]["version"]
-            return latest_version
-    except socket.timeout:
-        logger.debug("Connect to version server timed out.")
-        return None
-
-
 class RetryError(Exception):
     """Raised when max_retries has been exceeded."""
 

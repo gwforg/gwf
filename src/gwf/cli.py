@@ -9,7 +9,7 @@ from . import __version__
 from .backends import Backend
 from .conf import config
 from .exceptions import ConfigurationError
-from .utils import ColorFormatter, ensure_dir, get_latest_version
+from .utils import ColorFormatter, ensure_dir
 
 logger = logging.getLogger(__name__)
 
@@ -70,11 +70,6 @@ def validate_no_color(value):
     return _validate_bool("no_color", value)
 
 
-@config.validator("check_updates")
-def validate_check_updates(value):
-    return _validate_bool("check_updates", value)
-
-
 @with_plugins(iter_entry_points("gwf.plugins"))
 @click.group(context_settings={"obj": {}})
 @click.version_option(version=__version__)
@@ -123,18 +118,5 @@ def main(ctx, file, backend, verbose, no_color):
         click._compat.isatty = lambda s: False
 
     configure_logging(level_name=verbose)
-
-    # Check for updates and show a warning if there's a new version.
-    if config["check_updates"]:
-        latest_version = get_latest_version()
-        if latest_version is not None and latest_version != __version__:
-            msg = (
-                "You are currently running version {current_version}, but the "
-                "latest version is {latest_version}. Consider updating. You "
-                "can disable this check with `gwf config set check_updates no`."
-            )
-            logger.warning(
-                msg.format(current_version=__version__, latest_version=latest_version)
-            )
 
     ctx.obj = {"file": file, "backend": backend}

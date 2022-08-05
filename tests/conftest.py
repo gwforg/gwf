@@ -9,11 +9,6 @@ from gwf.core import Graph, Target
 from gwf.core import schedule as _schedule
 
 
-@pytest.fixture(autouse=True)
-def no_version_check(request, monkeypatch):
-    monkeypatch.setitem(gwf.conf.CONFIG_DEFAULTS, "check_updates", False)
-
-
 @pytest.fixture
 def no_sleep(request, monkeypatch):
     def sleep(seconds):
