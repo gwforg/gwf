@@ -1,9 +1,9 @@
-import collections
 import logging
 import os
 import os.path
 import unicodedata
 from collections import defaultdict
+from collections.abc import Mapping
 from enum import Enum
 
 from .backends import Status
@@ -20,7 +20,7 @@ def _flatten(t):
     def flatten_rec(g):
         if isinstance(g, str) or hasattr(g, "__fspath__"):
             res.append(g)
-        elif isinstance(g, collections.abc.Mapping):
+        elif isinstance(g, Mapping):
             for k, v in g.items():
                 flatten_rec(v)
         else:
