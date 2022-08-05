@@ -4,7 +4,7 @@ import os.path
 import shutil
 
 
-@nox.session(python=["3.6", "3.7", "3.8", "3.9", "3.10"])
+@nox.session(python=["3.7", "3.8", "3.9", "3.10"])
 def test(session):
     session.install("flit")
     session.run("flit", "install", "-s", "--deps", "production")

@@ -1,9 +1,8 @@
 name: readmapping
 channels:
-  - dansondergaard
+  - gwforg
   - bioconda
 dependencies:
-  - python=3.6
   - gwf
   - bwa
   - samtools
