@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["macos-10.15", "ubuntu-20.04"]
+        os: ["macos-latest", "ubuntu-latest"]
         python_version: ['3.6', '3.7', '3.8', '3.9', '3.10']
 
     steps:
@@ -29,7 +29,7 @@ jobs:
         shell: bash
 
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
