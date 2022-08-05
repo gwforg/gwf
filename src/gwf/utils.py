@@ -7,13 +7,11 @@ import logging
 import os
 import os.path
 import re
-import socket
 import sys
 import time
 from collections import UserDict
 from contextlib import ContextDecorator
 from functools import wraps
-from urllib.request import urlopen
 
 import click
 
