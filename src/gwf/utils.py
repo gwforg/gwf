@@ -238,7 +238,7 @@ def retry(on_exc, max_retries=3, callback=None):
                 except on_exc as exc:
                     last_exc = exc
 
-                    delay = (2 ** retries) // 2
+                    delay = (2**retries) // 2
                     if callback is not None:
                         callback(retries, delay)
 
