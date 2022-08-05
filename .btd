@@ -1,3 +1,0 @@
-btd_output_type="dirhtml"
-btd_docs_dir="docs/"
-btd_install_script="pip install --upgrade pip && pip install nox && cd .. && nox -s docs"
