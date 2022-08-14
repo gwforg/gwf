@@ -8,20 +8,9 @@ from ..filtering import filter_names
 from ..workflow import Workflow
 
 
-@click.command()
-@click.argument("targets", nargs=-1)
-@click.pass_obj
-def info(obj, targets):
-    """Display information about a target."""
-    workflow = Workflow.from_config(obj)
-    graph = Graph.from_targets(workflow.targets)
-
-    matches = iter(graph)
-    if targets:
-        matches = filter_names(matches, targets)
-
+def print_json(targets, graph):
     obj = {}
-    for target in matches:
+    for target in targets:
         obj[target.name] = OrderedDict(
             [
                 ("options", target.options),
@@ -37,3 +26,25 @@ def info(obj, targets):
         )
 
     print(json.dumps(obj, indent=4))
+
+
+FORMATS = {
+    "json": print_json,
+}
+
+
+@click.command()
+@click.argument("targets", nargs=-1)
+@click.option("-f", "--format", type=click.Choice(["json"]), default="json")
+@click.pass_obj
+def info(obj, targets, format):
+    """Display information about a target."""
+    workflow = Workflow.from_config(obj)
+    graph = Graph.from_targets(workflow.targets)
+
+    matches = iter(graph)
+    if targets:
+        matches = filter_names(matches, targets)
+
+    printer = FORMATS[format]
+    printer(matches, graph)
