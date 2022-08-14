@@ -10,7 +10,7 @@ from os import fspath
 
 from .backends import Status
 from .exceptions import NameError, WorkflowError
-from .utils import PersistableDict, cache, is_valid_name, timer
+from .utils import cache, is_valid_name, timer
 
 logger = logging.getLogger(__name__)
 
