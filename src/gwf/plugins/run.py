@@ -1,14 +1,16 @@
 import logging
+import os.path
 from contextlib import suppress
 
 import click
 
 from ..backends import Backend, Status
 from ..backends.exceptions import LogError
+from ..conf import config
 from ..core import Graph, schedule
 from ..filtering import filter_names
+from ..utils import PersistableDict
 from ..workflow import Workflow
-from ..conf import config
 
 logger = logging.getLogger(__name__)
 
@@ -67,5 +69,12 @@ def run(obj, targets, dry_run):
         matched_targets = filter_names(graph, targets) if targets else graph.endpoints()
         subgraph = graph.subset(matched_targets)
 
-        scheduled, reasons = schedule(matched_targets, subgraph)
+        spec_hashes = PersistableDict(os.path.join(".gwf", "spec-hashes.json"))
+        scheduled, reasons = schedule(
+            matched_targets,
+            subgraph,
+            spec_hashes=spec_hashes,
+        )
         submit(subgraph, scheduled, reasons, backend, dry_run=dry_run)
+        if not dry_run:
+            spec_hashes.persist()

@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import os
 import os.path
@@ -9,7 +10,7 @@ from os import fspath
 
 from .backends import Status
 from .exceptions import NameError, WorkflowError
-from .utils import cache, is_valid_name, timer
+from .utils import PersistableDict, cache, is_valid_name, timer
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,10 @@ def _norm_path(working_dir, path):
 
 def _norm_paths(working_dir, paths):
     return [_norm_path(working_dir, path) for path in paths]
+
+
+def hash_spec(spec):
+    return hashlib.sha1(spec.encode("utf-8")).hexdigest()
 
 
 class TargetStatus(Enum):
@@ -490,7 +495,7 @@ class CachedFilesystem:
 
 
 class Scheduler:
-    def __init__(self, filesystem=CachedFilesystem()):
+    def __init__(self, spec_hashes=None, filesystem=CachedFilesystem()):
         """
         :param gwf.Graph graph:
             Graph of the workflow.
@@ -499,6 +504,7 @@ class Scheduler:
             be submitted.
         """
         self._filesystem = filesystem
+        self._spec_hashes = spec_hashes
         self._scheduled = {}
         self._reasons = {}
 
@@ -608,10 +614,19 @@ class Scheduler:
                     oldest_out_path,
                 ),
             )
+
+        spec_hash = hash_spec(target.spec)
+        if (
+            self._spec_hashes is not None
+            and self._spec_hashes.get(target.name, "") != spec_hash
+        ):
+            logger.debug("Looks like the spec for %s was changed", target)
+            self._spec_hashes[target.name] = spec_hash
+            return (True, "{} was sheduled because its spec had changed".format(target))
         return (False, "{} was not scheduled because it is up to date".format(target))
 
 
-def schedule(targets, graph, filesystem=CachedFilesystem()):
+def schedule(targets, graph, spec_hashes=None, filesystem=CachedFilesystem()):
     """Schedule one or more targets.
 
     Scheduling a target will determine whether the target needs to run.
@@ -629,7 +644,9 @@ def schedule(targets, graph, filesystem=CachedFilesystem()):
     a target to its scheduled direct dependencies, and `reasons` is a map from
     a target to a string describing why (or why not) the target was scheduled.
     """
-    return Scheduler(filesystem=filesystem).schedule(targets, graph)
+    return Scheduler(spec_hashes=spec_hashes, filesystem=filesystem).schedule(
+        targets, graph
+    )
 
 
 def get_status(target, scheduled, backend):
