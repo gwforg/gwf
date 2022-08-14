@@ -24,7 +24,7 @@ def test_unset(cli_runner):
 
         res = cli_runner.invoke(main, ["config", "get", "backend"])
         assert res.exit_code == 0
-        assert res.output == "local\n"
+        assert res.output == "<not set>\n"
 
 
 def test_humanbool():

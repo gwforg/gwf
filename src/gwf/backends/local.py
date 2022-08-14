@@ -204,6 +204,10 @@ class LocalBackend(Backend):
     def close(self):
         self._tracked.persist()
 
+    @staticmethod
+    def priority():
+        return 0
+
 
 class Worker:
     def __init__(self, status, queue, waiting, lock):

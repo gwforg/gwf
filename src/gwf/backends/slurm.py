@@ -5,7 +5,7 @@ from ..conf import config
 from ..utils import ensure_trailing_newline, retry
 from .base import PbsLikeBackendBase, Status
 from .exceptions import BackendError
-from .utils import call
+from .utils import call, has_exe
 
 logger = logging.getLogger(__name__)
 
@@ -159,3 +159,9 @@ class SlurmBackend(PbsLikeBackendBase):
         out.append("")
         out.append(ensure_trailing_newline(target.spec))
         return "\n".join(out)
+
+    @staticmethod
+    def priority():
+        if has_exe("sbatch") and has_exe("sinfo"):
+            return 100
+        return -100

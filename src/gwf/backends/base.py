@@ -45,8 +45,15 @@ class Backend:
     option_defaults = {}
     log_manager = FileLogManager()
 
-    @classmethod
-    def list(cls):
+    @staticmethod
+    def guess():
+        return max(
+            (backend_cls.priority(), name)
+            for name, backend_cls in _load_backends().items()
+        )
+
+    @staticmethod
+    def list():
         """Return the names of all registered backends."""
         return set(_load_backends().keys())
 
@@ -76,6 +83,10 @@ class Backend:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+    @staticmethod
+    def priority():
+        return -1000
 
     def status(self, target):
         """Return the status of `target`.

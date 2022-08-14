@@ -41,6 +41,7 @@ def configure_logging(level_name):
     root = logging.getLogger()
     root.addHandler(handler)
     root.setLevel(get_level(level_name))
+    return root
 
 
 def _validate_choice(key, value, valid_values, human_values=None):
@@ -78,7 +79,6 @@ def validate_no_color(value):
     "-b",
     "--backend",
     type=click.Choice(Backend.list()),
-    default=config["backend"],
     help="Backend used to run workflow.",
 )
 @click.option(
@@ -101,6 +101,7 @@ def main(ctx, file, backend, verbose, no_color):
 
     Shows help for the status command.
     """
+    configure_logging(level_name=verbose)
     ensure_dir(".gwf")
 
     # If the --use-color/--no-color argument is not set, get a value from the
@@ -117,6 +118,13 @@ def main(ctx, file, backend, verbose, no_color):
         # click and pretend that the shell is never a TTY.
         click._compat.isatty = lambda s: False
 
-    configure_logging(level_name=verbose)
+    if backend is None:
+        backend = config.get("backend")
+
+    if backend is None:
+        logging.debug("No backend was configured, guessing a backend instead")
+        score, backend = Backend.guess()
+        logger.debug("Found backend '%s' with priority %s", backend, score)
+    logger.debug("Using '%s' backend", backend)
 
     ctx.obj = {"file": file, "backend": backend}

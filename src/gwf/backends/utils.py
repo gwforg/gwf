@@ -14,6 +14,10 @@ def _find_exe(name):
     return exe
 
 
+def has_exe(name):
+    return shutil.which(name) is not None
+
+
 def call(executable_name, *args, input=None):
     executable_path = _find_exe(executable_name)
     proc = subprocess.Popen(
