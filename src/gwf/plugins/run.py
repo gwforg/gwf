@@ -8,6 +8,7 @@ from ..backends.exceptions import LogError
 from ..core import Graph, schedule
 from ..filtering import filter_names
 from ..workflow import Workflow
+from ..conf import config
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ def run(obj, targets, dry_run):
     backend_cls = Backend.from_config(obj)
 
     with backend_cls() as backend:
-        if not dry_run:
+        if config.get("clean_logs") and not dry_run:
             logger.debug("Cleaning old log files...")
             clean_logs(graph, backend)
 

@@ -1,7 +1,7 @@
 import json
 from collections import ChainMap
 
-CONFIG_DEFAULTS = {"verbose": "info"}
+CONFIG_DEFAULTS = {"verbose": "info", "clean_logs": True}
 
 
 class FileConfig:
