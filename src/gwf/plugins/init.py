@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 
 import click
@@ -38,7 +39,7 @@ def init():
     workflow, as well as a `templates.py` file for your templates. It will also
     allow you to choose a backend.
     """
-    width, height = click.get_terminal_size()
+    width, height = shutil.get_terminal_size()
     max_width = max(len(line) for line in banner.splitlines())
     indent = int(width / 2 - max_width / 2)
     centered_banner = "\n".join((" " * indent) + line for line in banner.splitlines())
