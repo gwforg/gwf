@@ -2,7 +2,14 @@ import unittest
 
 import pytest
 
-from gwf.core import Graph, Target, TargetStatus, _flatten, get_status
+from gwf.core import (
+    Reason,
+    Graph,
+    Target,
+    TargetStatus,
+    _flatten,
+    get_status,
+)
 from gwf.exceptions import NameError, WorkflowError
 
 
@@ -302,10 +309,11 @@ def test_schedule_if_one_of_its_output_files_does_not_exist(diamond_graph, sched
     scheduled, reasons = schedule([target], diamond_graph)
     assert target in scheduled
     assert scheduled[target] == set()
-    assert reasons[target] == (
-        "TestTarget1 was scheduled because its output "
-        "file /some/dir/test_output1.txt does not exist"
-    )
+    assert isinstance(reasons[target], Reason.MissingOutput)
+    # assert str(reasons[target]) == (
+    #     "TestTarget1 was scheduled because its output "
+    #     "file /some/dir/test_output1.txt does not exist"
+    # )
 
 
 def test_schedule_if_one_of_its_dependencies_was_scheduled(diamond_graph, schedule):
@@ -314,9 +322,7 @@ def test_schedule_if_one_of_its_dependencies_was_scheduled(diamond_graph, schedu
     scheduled, reasons = schedule([target2], diamond_graph)
 
     assert target2 in scheduled
-    assert reasons[target2] == (
-        "TestTarget2 was scheduled because its dependency TestTarget1 was scheduled"
-    )
+    assert isinstance(reasons[target2], Reason.DependencyScheduled)
     assert scheduled[target2] == set([target1])
 
 
@@ -325,7 +331,7 @@ def test_schedule_if_it_is_a_sink(trivial_graph, schedule):
     scheduled, reasons = schedule([target], trivial_graph)
 
     assert target in scheduled
-    assert reasons[target] == "TestTarget was scheduled because it is a sink"
+    assert isinstance(reasons[target], Reason.IsSink)
     assert scheduled[target] == set()
 
 
@@ -344,10 +350,7 @@ def test_schedule_if_any_input_file_is_newer_than_any_output_file(
 
     assert target4 in scheduled
     assert scheduled[target4] == set()
-    assert reasons[target4] == (
-        "TestTarget4 was scheduled because input file /some/dir/test_output3.txt "
-        "is newer than output file /some/dir/final_output.txt"
-    )
+    assert isinstance(reasons[target4], Reason.OutOfDate)
 
 
 def test_do_not_schedule_if_it_is_a_source_and_all_outputs_exist(
@@ -358,7 +361,7 @@ def test_do_not_schedule_if_it_is_a_source_and_all_outputs_exist(
     target = diamond_graph.targets["TestTarget1"]
     scheduled, reasons = schedule([target], diamond_graph)
     assert target not in scheduled
-    assert reasons[target] == "TestTarget1 was not scheduled because it is a source"
+    assert isinstance(reasons[target], Reason.IsSource)
 
 
 def test_do_not_schedule_if_all_outputs_are_newer_then_the_inputs(
@@ -490,7 +493,7 @@ def test_scheduling_when_spec_changed(diamond_graph, schedule, filesystem):
     scheduled, reasons = schedule([target], diamond_graph, spec_hashes={})
     assert target in scheduled
     assert scheduled[target] == set()
-    assert reasons[target] == "TestTarget2 was sheduled because its spec has changed"
+    assert isinstance(reasons[target], Reason.SpecChanged)
 
 
 def test_scheduling_when_spec_not_changed(diamond_graph, schedule, filesystem):

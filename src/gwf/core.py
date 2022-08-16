@@ -1,3 +1,5 @@
+import attrs
+
 import hashlib
 import logging
 import os
@@ -494,6 +496,68 @@ class CachedFilesystem:
         return st
 
 
+class Reason:
+    @attrs.frozen
+    class IsSink:
+        target: Target
+        scheduled: bool = True
+
+        def __str__(self):
+            return f"{self.target} was scheduled because it is a sink"
+
+    @attrs.frozen
+    class IsSource:
+        target: Target
+        scheduled: bool = False
+
+        def __str__(self):
+            return f"{self.target} was not scheduled because it is a source"
+
+    @attrs.frozen
+    class DependencyScheduled:
+        target: Target
+        dependency: Target
+        scheduled: bool = True
+
+        def __str__(self):
+            return f"{self.target} was scheduled because its dependency {self.dependency} was scheduled"
+
+    @attrs.frozen
+    class MissingOutput:
+        target: Target
+        path: str
+        scheduled: bool = True
+
+        def __str__(self):
+            return f"{self.target} was scheduled because its output file {self.path} does not exist"
+
+    @attrs.frozen
+    class OutOfDate:
+        target: Target
+        input_path: str
+        output_path: str
+        scheduled: bool = True
+
+        def __str__(self):
+            return f"{self.target} was scheduled because input file {self.input_path} is newer than output file {self.output_path}"
+
+    @attrs.frozen
+    class SpecChanged:
+        target: Target
+        scheduled: bool = True
+
+        def __str__(self):
+            return f"{self.target} was sheduled because its spec has changed"
+
+    @attrs.frozen
+    class UpToDate:
+        target: Target
+        scheduled: bool = False
+
+        def __str__(self):
+            return f"{self.target} was not sheduled because it is up-to-date"
+
+
 class Scheduler:
     def __init__(self, spec_hashes=None, filesystem=CachedFilesystem()):
         """
@@ -530,8 +594,8 @@ class Scheduler:
             for dependency in graph.dependencies[target]
             if self._schedule_dependencies(dependency, graph)
         )
-        should_schedule, reason = self.should_schedule(target, graph)
-        is_scheduled = scheduled_deps or should_schedule
+        reason = self.should_schedule(target, graph)
+        is_scheduled = scheduled_deps or reason.scheduled
         if is_scheduled:
             self._scheduled[target] = scheduled_deps
         self._reasons[target] = reason
@@ -542,14 +606,9 @@ class Scheduler:
         """Return whether a target should be run or not."""
 
         for dep in graph.dependencies[target]:
-            should_run, _ = self.should_schedule(dep, graph)
-            if should_run:
-                return (
-                    True,
-                    "{} was scheduled because its dependency {} was scheduled".format(
-                        target, dep
-                    ),
-                )
+            reason = self.should_schedule(dep, graph)
+            if reason.scheduled:
+                return Reason.DependencyScheduled(target, dep)
 
         # Check whether all input files actually exists are are being provided
         # by another target. If not, it's an error.
@@ -562,23 +621,14 @@ class Scheduler:
                 raise WorkflowError(msg)
 
         if target.is_sink:
-            return (True, "{} was scheduled because it is a sink".format(target))
+            return Reason.IsSink(target)
 
         for path in target.flattened_outputs():
             if not self._filesystem.exists(path):
-                return (
-                    True,
-                    "{} was scheduled because its output file {} does not exist".format(
-                        target,
-                        path,
-                    ),
-                )
+                return Reason.MissingOutput(target, path)
 
         if target.is_source:
-            return (
-                False,
-                "{} was not scheduled because it is a source".format(target),
-            )
+            return Reason.IsSource(target)
 
         youngest_in_ts, youngest_in_path = max(
             (self._filesystem.changed_at(path), path)
@@ -603,17 +653,7 @@ class Scheduler:
         )
 
         if youngest_in_ts > oldest_out_ts:
-            msg = (
-                "{} was scheduled because input file {} " "is newer than output file {}"
-            )
-            return (
-                True,
-                msg.format(
-                    target,
-                    youngest_in_path,
-                    oldest_out_path,
-                ),
-            )
+            return Reason.OutOfDate(target, youngest_in_path, oldest_out_path)
 
         if self._spec_hashes is not None:
             curr_hash = hash_spec(target.spec)
@@ -626,11 +666,8 @@ class Scheduler:
                     curr_hash,
                 )
                 self._spec_hashes[target.name] = curr_hash
-                return (
-                    True,
-                    "{} was sheduled because its spec has changed".format(target),
-                )
-        return (False, "{} was not scheduled because it is up to date".format(target))
+                return Reason.SpecChanged(target)
+        return Reason.UpToDate(target)
 
 
 def schedule(targets, graph, spec_hashes=None, filesystem=CachedFilesystem()):
