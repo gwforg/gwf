@@ -615,14 +615,21 @@ class Scheduler:
                 ),
             )
 
-        spec_hash = hash_spec(target.spec)
-        if (
-            self._spec_hashes is not None
-            and self._spec_hashes.get(target.name, "") != spec_hash
-        ):
-            logger.debug("Looks like the spec for %s has changed", target)
-            self._spec_hashes[target.name] = spec_hash
-            return (True, "{} was sheduled because its spec has changed".format(target))
+        if self._spec_hashes is not None:
+            curr_hash = hash_spec(target.spec)
+            old_hash = self._spec_hashes.get(target.name, "")
+            if curr_hash != old_hash:
+                logger.debug(
+                    "Looks like the spec for %s has changed (%s -> %s)",
+                    target,
+                    old_hash,
+                    curr_hash,
+                )
+                self._spec_hashes[target.name] = curr_hash
+                return (
+                    True,
+                    "{} was sheduled because its spec has changed".format(target),
+                )
         return (False, "{} was not scheduled because it is up to date".format(target))
 
 
