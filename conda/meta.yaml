@@ -1,18 +1,16 @@
 {% set name = "gwf" %}
-{% set version = "1.7.2" %}
+{% set version = "1.8.0" %}
 
 package:
   name: "{{ name|lower }}"
   version: "{{ version }}"
 
 source:
-  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
-  sha256: "f449be77d58929cf95f192c0888d1b7727fb92b16df36a2054529ef0eef53c35"
+  path: ../
 
 build:
+  noarch: python
   number: 0
-  entry_points:
-    - gwf = gwf.cli:main
   script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
 
 requirements:
@@ -20,13 +18,14 @@ requirements:
     - click
     - click-plugins
     - pip
-    - python
-    - setuptools
+    - flit
+    - python>=3.7
+    - importlib_metadata
   run:
     - click
     - click-plugins
-    - python
-    - setuptools
+    - python>=3.7
+    - importlib_metadata
 
 test:
   imports:
