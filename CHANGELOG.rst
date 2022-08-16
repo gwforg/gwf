@@ -2,6 +2,35 @@
 Change Log
 ==========
 
+Version 1.8.0
+=============
+
+Changed
+-------
+
+* Drop support for Python <3.7.
+* Use a nicer theme for the website!
+* Removed the automatic update checking as it was fragile and usually not 
+  useful.
+* If no backend is configured, **gwf** will not try to guess which backend to 
+  use based on which commands are available on the system.
+
+Added
+-----
+
+* Pretty output for the ``info`` command with ``--format pretty``. Still 
+  supports the JSON output format as the default.
+* Added ``clean_logs`` setting which defaults to `yes` (the current behaviour).
+  Setting this to `no` will not remove old logs when ``gwf run`` is executed.
+* Re-run targets when their spec changes (#180). Can be disabled with
+  ``gwf config set use_spec_hashes no``. Enabled by default.
+
+Fixed
+-----
+
+* Remove use of ``time.clock()`` as it was deprecated.
+* Fix import of `collections.abc.Mapping`.
+
 
 Version 1.7.2
 =============
