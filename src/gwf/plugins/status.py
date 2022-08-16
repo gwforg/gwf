@@ -4,6 +4,7 @@ from collections import Counter
 import click
 
 from ..backends import Backend
+from ..conf import config
 from ..core import Graph, TargetStatus, get_status, schedule
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
 from ..utils import PersistableDict
@@ -117,7 +118,9 @@ def status(obj, status, summary, endpoints, targets):
     graph = Graph.from_targets(workflow.targets)
     backend_cls = Backend.from_config(obj)
 
-    spec_hashes = PersistableDict(os.path.join(".gwf", "spec-hashes.json"))
+    spec_hashes = None
+    if config.get("use_spec_hashing"):
+        spec_hashes = PersistableDict(os.path.join(".gwf", "spec-hashes.json"))
     scheduled, _ = schedule(graph.endpoints(), spec_hashes=spec_hashes, graph=graph)
 
     def status_provider(target):

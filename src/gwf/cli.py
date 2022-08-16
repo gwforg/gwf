@@ -71,6 +71,11 @@ def validate_no_color(value):
     return _validate_bool("no_color", value)
 
 
+@config.validator("use_spec_hashing")
+def validate_use_spec_hashing(value):
+    return _validate_bool("use_spec_hashing", value)
+
+
 @with_plugins(iter_entry_points("gwf.plugins"))
 @click.group(context_settings={"obj": {}})
 @click.version_option(version=__version__)

@@ -620,9 +620,9 @@ class Scheduler:
             self._spec_hashes is not None
             and self._spec_hashes.get(target.name, "") != spec_hash
         ):
-            logger.debug("Looks like the spec for %s was changed", target)
+            logger.debug("Looks like the spec for %s has changed", target)
             self._spec_hashes[target.name] = spec_hash
-            return (True, "{} was sheduled because its spec had changed".format(target))
+            return (True, "{} was sheduled because its spec has changed".format(target))
         return (False, "{} was not scheduled because it is up to date".format(target))
 
 

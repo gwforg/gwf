@@ -69,12 +69,15 @@ def run(obj, targets, dry_run):
         matched_targets = filter_names(graph, targets) if targets else graph.endpoints()
         subgraph = graph.subset(matched_targets)
 
-        spec_hashes = PersistableDict(os.path.join(".gwf", "spec-hashes.json"))
+        spec_hashes = None
+        if config.get("use_spec_hashing"):
+            spec_hashes = PersistableDict(os.path.join(".gwf", "spec-hashes.json"))
+
         scheduled, reasons = schedule(
             matched_targets,
             subgraph,
             spec_hashes=spec_hashes,
         )
         submit(subgraph, scheduled, reasons, backend, dry_run=dry_run)
-        if not dry_run:
+        if spec_hashes is not None and not dry_run:
             spec_hashes.persist()

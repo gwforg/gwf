@@ -483,6 +483,28 @@ def test_scheduling_multiple_targets(diamond_graph, schedule):
     assert len(scheduled) == 3
 
 
+def test_scheduling_when_spec_changed(diamond_graph, schedule, filesystem):
+    filesystem.add_file("/some/dir/test_output1.txt", changed_at=1)
+    filesystem.add_file("/some/dir/test_output2.txt", changed_at=1)
+    target = diamond_graph.targets["TestTarget2"]
+    scheduled, reasons = schedule([target], diamond_graph, spec_hashes={})
+    assert target in scheduled
+    assert scheduled[target] == set()
+    assert reasons[target] == "TestTarget2 was sheduled because its spec has changed"
+
+
+def test_scheduling_when_spec_not_changed(diamond_graph, schedule, filesystem):
+    filesystem.add_file("/some/dir/test_output1.txt", changed_at=1)
+    filesystem.add_file("/some/dir/test_output2.txt", changed_at=1)
+    target = diamond_graph.targets["TestTarget2"]
+    scheduled, _ = schedule(
+        [target],
+        diamond_graph,
+        spec_hashes={target.name: "da39a3ee5e6b4b0d3255bfef95601890afd80709"},
+    )
+    assert target not in scheduled
+
+
 def test_get_status(backend):
     target = Target(
         "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
