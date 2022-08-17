@@ -498,63 +498,71 @@ class CachedFilesystem:
 
 class Reason:
     @attrs.frozen
-    class IsSink:
+    class _Base:
+        def reason(self):
+            return NotImplementedError("reason")
+
+        def __str__(self):
+            return self.reason()
+
+    @attrs.frozen
+    class IsSink(_Base):
         target: Target
         scheduled: bool = True
 
-        def __str__(self):
+        def reason(self):
             return f"{self.target} was scheduled because it is a sink"
 
     @attrs.frozen
-    class IsSource:
+    class IsSource(_Base):
         target: Target
         scheduled: bool = False
 
-        def __str__(self):
+        def reason(self):
             return f"{self.target} was not scheduled because it is a source"
 
     @attrs.frozen
-    class DependencyScheduled:
+    class DependencyScheduled(_Base):
         target: Target
         dependency: Target
         scheduled: bool = True
 
-        def __str__(self):
+        def reason(self):
             return f"{self.target} was scheduled because its dependency {self.dependency} was scheduled"
 
     @attrs.frozen
-    class MissingOutput:
+    class MissingOutput(_Base):
         target: Target
         path: str
         scheduled: bool = True
 
-        def __str__(self):
+        def reason(self):
             return f"{self.target} was scheduled because its output file {self.path} does not exist"
 
     @attrs.frozen
-    class OutOfDate:
+    class OutOfDate(_Base):
         target: Target
         input_path: str
         output_path: str
         scheduled: bool = True
 
-        def __str__(self):
+        def reason(self):
             return f"{self.target} was scheduled because input file {self.input_path} is newer than output file {self.output_path}"
 
     @attrs.frozen
-    class SpecChanged:
+    class SpecChanged(_Base):
         target: Target
         scheduled: bool = True
 
-        def __str__(self):
+        def reason(self):
             return f"{self.target} was sheduled because its spec has changed"
 
     @attrs.frozen
-    class UpToDate:
+    class UpToDate(_Base):
         target: Target
         scheduled: bool = False
 
-        def __str__(self):
+        def reason(self):
             return f"{self.target} was not sheduled because it is up-to-date"
 
 
