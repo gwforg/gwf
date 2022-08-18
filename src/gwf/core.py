@@ -511,7 +511,7 @@ class Reason:
         scheduled: bool = True
 
         def reason(self):
-            return f"{self.target} was scheduled because it is a sink"
+            return f"scheduled because it is a sink"
 
     @attrs.frozen
     class IsSource(_Base):
@@ -519,7 +519,7 @@ class Reason:
         scheduled: bool = False
 
         def reason(self):
-            return f"{self.target} was not scheduled because it is a source"
+            return f"not scheduled because it is a source"
 
     @attrs.frozen
     class DependencyScheduled(_Base):
@@ -528,7 +528,7 @@ class Reason:
         scheduled: bool = True
 
         def reason(self):
-            return f"{self.target} was scheduled because its dependency {self.dependency} was scheduled"
+            return f"scheduled because the dependency {self.dependency} was scheduled"
 
     @attrs.frozen
     class MissingOutput(_Base):
@@ -537,7 +537,7 @@ class Reason:
         scheduled: bool = True
 
         def reason(self):
-            return f"{self.target} was scheduled because its output file {self.path} does not exist"
+            return f"scheduled because its output file {self.path} does not exist"
 
     @attrs.frozen
     class OutOfDate(_Base):
@@ -547,7 +547,7 @@ class Reason:
         scheduled: bool = True
 
         def reason(self):
-            return f"{self.target} was scheduled because input file {self.input_path} is newer than output file {self.output_path}"
+            return f"scheduled because input file {self.input_path} is newer than output file {self.output_path}"
 
     @attrs.frozen
     class SpecChanged(_Base):
@@ -555,7 +555,7 @@ class Reason:
         scheduled: bool = True
 
         def reason(self):
-            return f"{self.target} was sheduled because its spec has changed"
+            return f"sheduled because its spec has changed"
 
     @attrs.frozen
     class UpToDate(_Base):
@@ -563,7 +563,7 @@ class Reason:
         scheduled: bool = False
 
         def reason(self):
-            return f"{self.target} was not sheduled because it is up-to-date"
+            return f" is up-to-date"
 
 
 class Scheduler:
