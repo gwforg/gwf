@@ -6,7 +6,14 @@ import click
 
 from ..backends import Backend
 from ..conf import config
-from ..core import Graph, TargetStatus, linearize_plan, get_status, schedule
+from ..core import (
+    Graph,
+    TargetStatus,
+    get_scheduled_targets,
+    linearize_plan,
+    get_status,
+    schedule,
+)
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
 from ..utils import PersistableDict
 from ..workflow import Workflow
@@ -142,17 +149,10 @@ def status(obj, status, endpoints, format, targets):
         spec_hashes = PersistableDict(os.path.join(".gwf", "spec-hashes.json"))
 
     plans = schedule(graph.endpoints(), spec_hashes=spec_hashes, graph=graph)
-
-    scheduled = []
-    scheduled_set = set()
-    for plan in plans.values():
-        for reason in linearize_plan(plan):
-            if reason.scheduled and reason.target not in scheduled_set:
-                scheduled.append(reason)
-                scheduled_set.add(reason.target)
+    scheduled = set(*(get_scheduled_targets(plan) for plan in plans.values()))
 
     def status_provider(target):
-        return get_status(target, scheduled_set, backend)
+        return get_status(target, scheduled, backend)
 
     with backend_cls() as backend:
         filters = []

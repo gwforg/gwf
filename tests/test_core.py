@@ -8,6 +8,7 @@ from gwf.core import (
     Target,
     TargetStatus,
     _flatten,
+    get_scheduled_targets,
     get_status,
 )
 from gwf.exceptions import NameError, WorkflowError
@@ -306,33 +307,28 @@ def test_graph_subset(diamond_graph):
 
 def test_schedule_if_one_of_its_output_files_does_not_exist(diamond_graph, schedule):
     target = diamond_graph.targets["TestTarget1"]
-    scheduled, reasons = schedule([target], diamond_graph)
-    assert target in scheduled
-    assert scheduled[target] == set()
-    assert isinstance(reasons[target], Reason.MissingOutput)
-    # assert str(reasons[target]) == (
-    #     "TestTarget1 was scheduled because its output "
-    #     "file /some/dir/test_output1.txt does not exist"
-    # )
+    plans = schedule([target], diamond_graph)
+    plan = plans[target]
+    assert isinstance(plan, Reason.MissingOutput)
+    assert plan.target == target
+    assert plan.scheduled
 
 
 def test_schedule_if_one_of_its_dependencies_was_scheduled(diamond_graph, schedule):
-    target1 = diamond_graph.targets["TestTarget1"]
     target2 = diamond_graph.targets["TestTarget2"]
-    scheduled, reasons = schedule([target2], diamond_graph)
-
-    assert target2 in scheduled
-    assert isinstance(reasons[target2], Reason.DependencyScheduled)
-    assert scheduled[target2] == set([target1])
+    plans = schedule([target2], diamond_graph)
+    plan = plans[target2]
+    assert isinstance(plan, Reason.DependencyScheduled)
+    assert plan.target is target2
+    assert plan.scheduled
 
 
 def test_schedule_if_it_is_a_sink(trivial_graph, schedule):
     target = trivial_graph.targets["TestTarget"]
-    scheduled, reasons = schedule([target], trivial_graph)
-
-    assert target in scheduled
-    assert isinstance(reasons[target], Reason.IsSink)
-    assert scheduled[target] == set()
+    plans = schedule([target], trivial_graph)
+    plan = plans[target]
+    assert plan.scheduled
+    assert isinstance(plan, Reason.IsSink)
 
 
 def test_schedule_if_any_input_file_is_newer_than_any_output_file(
@@ -344,13 +340,11 @@ def test_schedule_if_any_input_file_is_newer_than_any_output_file(
     filesystem.add_file("/some/dir/final_output.txt", changed_at=2)
 
     target4 = diamond_graph.targets["TestTarget4"]
-
-    scheduled, reasons = schedule([target4], diamond_graph)
-    assert len(scheduled) == 1
-
-    assert target4 in scheduled
-    assert scheduled[target4] == set()
-    assert isinstance(reasons[target4], Reason.OutOfDate)
+    plans = schedule([target4], diamond_graph)
+    plan = plans[target4]
+    assert plan.target is target4
+    assert plan.scheduled
+    assert isinstance(plan, Reason.OutOfDate)
 
 
 def test_do_not_schedule_if_it_is_a_source_and_all_outputs_exist(
@@ -359,9 +353,10 @@ def test_do_not_schedule_if_it_is_a_source_and_all_outputs_exist(
     filesystem.add_file("/some/dir/test_output1.txt", changed_at=1)
 
     target = diamond_graph.targets["TestTarget1"]
-    scheduled, reasons = schedule([target], diamond_graph)
-    assert target not in scheduled
-    assert isinstance(reasons[target], Reason.IsSource)
+    plans = schedule([target], diamond_graph)
+    plan = plans[target]
+    assert not plan.scheduled
+    assert isinstance(plan, Reason.IsSource)
 
 
 def test_do_not_schedule_if_all_outputs_are_newer_then_the_inputs(
@@ -372,11 +367,10 @@ def test_do_not_schedule_if_all_outputs_are_newer_then_the_inputs(
     filesystem.add_file("/some/dir/test_output3.txt", changed_at=3)
     filesystem.add_file("/some/dir/final_output.txt", changed_at=4)
 
-    scheduled, not_scheduled = schedule(
-        [diamond_graph.targets["TestTarget4"]], diamond_graph
-    )
-    assert len(scheduled) == 0
-    assert len(not_scheduled) == 4
+    target = diamond_graph.targets["TestTarget4"]
+    plans = schedule([target], diamond_graph)
+    plan = plans[target]
+    assert not plan.scheduled
 
 
 def test_scheduler_raises_if_input_file_is_not_provided_and_does_not_exist(
@@ -428,14 +422,13 @@ def test_scheduling_target_with_deep_deps_that_are_not_submitted(
     )
 
     graph = graph_factory([target1, target2, target3, target4])
-    scheduled, reasons = schedule([target4], graph)
-
-    assert len(scheduled) == 4
-
-    assert scheduled[target1] == set([])
-    assert scheduled[target2] == set([target1])
-    assert scheduled[target3] == set([target2])
-    assert scheduled[target4] == set([target3])
+    plans = schedule([target4], graph)
+    plan = plans[target4]
+    scheduled = get_scheduled_targets(plan)
+    assert target1 in scheduled
+    assert target2 in scheduled
+    assert target3 in scheduled
+    assert target4 in scheduled
 
 
 def test_scheduling_branch_and_join_structure(schedule, graph_factory):
@@ -468,44 +461,47 @@ def test_scheduling_branch_and_join_structure(schedule, graph_factory):
         working_dir="/some/dir",
     )
     graph = graph_factory([target1, target2, target3, target4])
-    scheduled, reasons = schedule([target4], graph)
+    plans = schedule([target4], graph)
+    plan = plans[target4]
 
+    scheduled = get_scheduled_targets(plan)
     assert len(scheduled) == 4
 
-    assert scheduled[target1] == set()
-    assert scheduled[target2] == set([target1])
-    assert scheduled[target3] == set([target1])
-    assert scheduled[target4] == set([target2, target3])
+    assert target1 in scheduled
+    assert target2 in scheduled
+    assert target3 in scheduled
+    assert target4 in scheduled
 
 
 def test_scheduling_multiple_targets(diamond_graph, schedule):
-    scheduled, reasons = schedule(
+    plans = schedule(
         [diamond_graph.targets["TestTarget3"], diamond_graph.targets["TestTarget2"]],
         diamond_graph,
     )
-    assert len(scheduled) == 3
+    assert len(plans) == 2
 
 
 def test_scheduling_when_spec_changed(diamond_graph, schedule, filesystem):
     filesystem.add_file("/some/dir/test_output1.txt", changed_at=1)
     filesystem.add_file("/some/dir/test_output2.txt", changed_at=1)
     target = diamond_graph.targets["TestTarget2"]
-    scheduled, reasons = schedule([target], diamond_graph, spec_hashes={})
-    assert target in scheduled
-    assert scheduled[target] == set()
-    assert isinstance(reasons[target], Reason.SpecChanged)
+    plans = schedule([target], diamond_graph, spec_hashes={})
+    plan = plans[target]
+    assert plan.scheduled
+    assert isinstance(plan, Reason.SpecChanged)
 
 
 def test_scheduling_when_spec_not_changed(diamond_graph, schedule, filesystem):
     filesystem.add_file("/some/dir/test_output1.txt", changed_at=1)
     filesystem.add_file("/some/dir/test_output2.txt", changed_at=1)
     target = diamond_graph.targets["TestTarget2"]
-    scheduled, _ = schedule(
+    plans = schedule(
         [target],
         diamond_graph,
         spec_hashes={target.name: "da39a3ee5e6b4b0d3255bfef95601890afd80709"},
     )
-    assert target not in scheduled
+    plan = plans[target]
+    assert not plan.scheduled
 
 
 def test_get_status(backend):

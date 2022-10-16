@@ -83,7 +83,7 @@ def run(obj, targets, dry_run):
                 if isinstance(reason, Reason.DependencyScheduled):
                     for dep in reason.dependencies:
                         submit(dep)
-                        dependencies.add(dep)
+                        dependencies.add(dep.target)
 
                 target = reason.target
                 if backend.status(target) != Status.UNKNOWN:

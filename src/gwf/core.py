@@ -493,7 +493,6 @@ class CachedFilesystem:
         st = self._lookup_file(path)
         if st is None:
             raise FileNotFoundError(path)
-        logger.debug("%s: %s", path, st)
         return st
 
 
@@ -697,6 +696,16 @@ def linearize_plan(plan):
 
     traverse(plan)
     return linear_plan
+
+
+def get_scheduled_targets(plan):
+    scheduled = []
+    scheduled_set = set()
+    for reason in linearize_plan(plan):
+        if reason.scheduled and reason.target not in scheduled_set:
+            scheduled.append(reason)
+            scheduled_set.add(reason.target)
+    return scheduled_set
 
 
 def get_status(target, scheduled, backend):
