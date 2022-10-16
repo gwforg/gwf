@@ -6,13 +6,7 @@ import click
 
 from ..backends import Backend
 from ..conf import config
-from ..core import (
-    Graph,
-    TargetStatus,
-    get_scheduled_targets,
-    get_status,
-    schedule,
-)
+from ..core import Graph, TargetStatus, get_scheduled_targets, get_status, schedule
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
 from ..utils import PersistableDict
 from ..workflow import Workflow

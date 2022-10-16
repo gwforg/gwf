@@ -511,7 +511,7 @@ class Reason:
         scheduled: bool = True
 
         def reason(self):
-            return f"scheduled because it is a sink"
+            return "scheduled because it is a sink"
 
     @attrs.frozen
     class IsSource(_Base):
@@ -519,7 +519,7 @@ class Reason:
         scheduled: bool = False
 
         def reason(self):
-            return f"not scheduled because it is a source"
+            return "not scheduled because it is a source"
 
     @attrs.frozen
     class DependencyScheduled(_Base):
@@ -528,7 +528,10 @@ class Reason:
         scheduled: bool = True
 
         def reason(self):
-            return f"scheduled because its dependency {self.dependencies[0].target.name} was scheduled"
+            return (
+                f"scheduled because its dependency {self.dependencies[0].target.name} "
+                "was scheduled"
+            )
 
     @attrs.frozen
     class MissingOutput(_Base):
@@ -547,7 +550,10 @@ class Reason:
         scheduled: bool = True
 
         def reason(self):
-            return f"scheduled because input file {self.input_path} is newer than output file {self.output_path}"
+            return (
+                f"scheduled because input file {self.input_path} is newer "
+                "than output file {self.output_path}"
+            )
 
     @attrs.frozen
     class SpecChanged(_Base):
@@ -557,7 +563,7 @@ class Reason:
         scheduled: bool = True
 
         def reason(self):
-            return f"sheduled because its spec has changed"
+            return "sheduled because its spec has changed"
 
     @attrs.frozen
     class UpToDate(_Base):
@@ -565,7 +571,7 @@ class Reason:
         scheduled: bool = False
 
         def reason(self):
-            return f"is up-to-date"
+            return "is up-to-date"
 
 
 class Scheduler:
