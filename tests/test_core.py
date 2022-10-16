@@ -3,8 +3,8 @@ import unittest
 import pytest
 
 from gwf.core import (
-    Reason,
     Graph,
+    Reason,
     Target,
     TargetStatus,
     _flatten,

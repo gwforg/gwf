@@ -1,5 +1,3 @@
-import attrs
-
 import hashlib
 import logging
 import os
@@ -9,6 +7,8 @@ from collections import defaultdict
 from collections.abc import Mapping
 from enum import Enum
 from os import fspath
+
+import attrs
 
 from .backends import Status
 from .exceptions import NameError, WorkflowError

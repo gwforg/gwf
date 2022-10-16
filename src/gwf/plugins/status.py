@@ -1,5 +1,5 @@
-import os.path
 import logging
+import os.path
 from collections import Counter
 
 import click
@@ -10,14 +10,12 @@ from ..core import (
     Graph,
     TargetStatus,
     get_scheduled_targets,
-    linearize_plan,
     get_status,
     schedule,
 )
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
 from ..utils import PersistableDict
 from ..workflow import Workflow
-
 
 logger = logging.getLogger(__name__)
 
