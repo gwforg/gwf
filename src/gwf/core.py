@@ -493,6 +493,7 @@ class CachedFilesystem:
         st = self._lookup_file(path)
         if st is None:
             raise FileNotFoundError(path)
+        logger.debug("%s: %s", path, st)
         return st
 
 
@@ -523,17 +524,17 @@ class Reason:
 
     @attrs.frozen
     class DependencyScheduled(_Base):
-        target: Target
-        dependency: Target
+        target: Target = attrs.field()
+        dependencies: list = attrs.field()
         scheduled: bool = True
 
         def reason(self):
-            return f"scheduled because the dependency {self.dependency} was scheduled"
+            return f"scheduled because its dependency {self.dependencies[0].target.name} was scheduled"
 
     @attrs.frozen
     class MissingOutput(_Base):
-        target: Target
-        path: str
+        target: Target = attrs.field()
+        path: str = attrs.field()
         scheduled: bool = True
 
         def reason(self):
@@ -541,9 +542,9 @@ class Reason:
 
     @attrs.frozen
     class OutOfDate(_Base):
-        target: Target
-        input_path: str
-        output_path: str
+        target: Target = attrs.field()
+        input_path: str = attrs.field()
+        output_path: str = attrs.field()
         scheduled: bool = True
 
         def reason(self):
@@ -551,7 +552,9 @@ class Reason:
 
     @attrs.frozen
     class SpecChanged(_Base):
-        target: Target
+        target: Target = attrs.field()
+        old_hash: str = attrs.field()
+        curr_hash: str = attrs.field()
         scheduled: bool = True
 
         def reason(self):
@@ -559,11 +562,11 @@ class Reason:
 
     @attrs.frozen
     class UpToDate(_Base):
-        target: Target
+        target: Target = attrs.field()
         scheduled: bool = False
 
         def reason(self):
-            return f" is up-to-date"
+            return f"is up-to-date"
 
 
 class Scheduler:
@@ -577,8 +580,6 @@ class Scheduler:
         """
         self._filesystem = filesystem
         self._spec_hashes = spec_hashes
-        self._scheduled = {}
-        self._reasons = {}
 
     def schedule(self, targets, graph):
         """Schedule multiple targets and their dependencies.
@@ -586,37 +587,22 @@ class Scheduler:
         :param list targets:
             A list of targets to be scheduled.
         """
-
         logger.debug("Scheduling %d target(s)", len(targets))
         with timer("Scheduled targets in %.3fms", logger=logger):
+            plans = {}
             for target in targets:
-                self._schedule_dependencies(target, graph)
-
-        return self._scheduled, self._reasons
-
-    @cache
-    def _schedule_dependencies(self, target, graph):
-        logger.debug("Scheduling target %s", target)
-        scheduled_deps = set(
-            dependency
-            for dependency in graph.dependencies[target]
-            if self._schedule_dependencies(dependency, graph)
-        )
-        reason = self.should_schedule(target, graph)
-        is_scheduled = scheduled_deps or reason.scheduled
-        if is_scheduled:
-            self._scheduled[target] = scheduled_deps
-        self._reasons[target] = reason
-        return is_scheduled
+                plans[target] = self.should_schedule(target, graph)
+            return plans
 
     @cache
     def should_schedule(self, target, graph):
         """Return whether a target should be run or not."""
 
-        for dep in graph.dependencies[target]:
-            reason = self.should_schedule(dep, graph)
-            if reason.scheduled:
-                return Reason.DependencyScheduled(target, dep)
+        dep_reasons = [
+            self.should_schedule(dep, graph) for dep in graph.dependencies[target]
+        ]
+        if any(r for r in dep_reasons if r.scheduled):
+            return Reason.DependencyScheduled(target, dep_reasons)
 
         # Check whether all input files actually exists are are being provided
         # by another target. If not, it's an error.
@@ -638,6 +624,12 @@ class Scheduler:
         if target.is_source:
             return Reason.IsSource(target)
 
+        if self._spec_hashes is not None:
+            curr_hash = hash_spec(target.spec)
+            old_hash = self._spec_hashes.get(target.name)
+            if curr_hash != old_hash:
+                return Reason.SpecChanged(target, old_hash, curr_hash)
+
         youngest_in_ts, youngest_in_path = max(
             (self._filesystem.changed_at(path), path)
             for path in target.flattened_inputs()
@@ -657,28 +649,15 @@ class Scheduler:
             "%s is the oldest output file of %s with timestamp %s",
             oldest_out_path,
             target,
-            youngest_in_ts,
+            oldest_out_ts,
         )
 
         if youngest_in_ts > oldest_out_ts:
             return Reason.OutOfDate(target, youngest_in_path, oldest_out_path)
-
-        if self._spec_hashes is not None:
-            curr_hash = hash_spec(target.spec)
-            old_hash = self._spec_hashes.get(target.name, "")
-            if curr_hash != old_hash:
-                logger.debug(
-                    "Looks like the spec for %s has changed (%s -> %s)",
-                    target,
-                    old_hash,
-                    curr_hash,
-                )
-                self._spec_hashes[target.name] = curr_hash
-                return Reason.SpecChanged(target)
         return Reason.UpToDate(target)
 
 
-def schedule(targets, graph, spec_hashes=None, filesystem=CachedFilesystem()):
+def schedule(targets, graph, spec_hashes=None, filesystem=None):
     """Schedule one or more targets.
 
     Scheduling a target will determine whether the target needs to run.
@@ -696,9 +675,28 @@ def schedule(targets, graph, spec_hashes=None, filesystem=CachedFilesystem()):
     a target to its scheduled direct dependencies, and `reasons` is a map from
     a target to a string describing why (or why not) the target was scheduled.
     """
+    if filesystem is None:
+        filesystem = CachedFilesystem()
     return Scheduler(spec_hashes=spec_hashes, filesystem=filesystem).schedule(
         targets, graph
     )
+
+
+def linearize_plan(plan):
+    linear_plan = []
+    visited = set()
+
+    def traverse(reason):
+        if reason.scheduled and isinstance(reason, Reason.DependencyScheduled):
+            for dep in reason.dependencies:
+                traverse(dep)
+
+        if reason.target.name not in visited:
+            linear_plan.append(reason)
+            visited.add(reason.target.name)
+
+    traverse(plan)
+    return linear_plan
 
 
 def get_status(target, scheduled, backend):

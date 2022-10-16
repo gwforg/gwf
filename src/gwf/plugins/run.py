@@ -7,7 +7,7 @@ import click
 from ..backends import Backend, Status
 from ..backends.exceptions import LogError
 from ..conf import config
-from ..core import Graph, schedule
+from ..core import Graph, Reason, hash_spec, schedule
 from ..filtering import filter_names
 from ..utils import PersistableDict
 from ..workflow import Workflow
@@ -73,11 +73,39 @@ def run(obj, targets, dry_run):
         if config.get("use_spec_hashing"):
             spec_hashes = PersistableDict(os.path.join(".gwf", "spec-hashes.json"))
 
-        scheduled, reasons = schedule(
-            matched_targets,
-            subgraph,
-            spec_hashes=spec_hashes,
-        )
-        submit(subgraph, scheduled, reasons, backend, dry_run=dry_run)
+        plans = schedule(matched_targets, spec_hashes=spec_hashes, graph=subgraph)
+
+        seen = set()
+
+        def submit(reason):
+            if reason.target not in seen and reason.scheduled:
+                dependencies = set()
+                if isinstance(reason, Reason.DependencyScheduled):
+                    for dep in reason.dependencies:
+                        submit(dep)
+                        dependencies.add(dep)
+
+                target = reason.target
+                if backend.status(target) != Status.UNKNOWN:
+                    logger.debug("Target %s already submitted", target.name)
+                    return
+
+                if dry_run:
+                    logger.info(
+                        "Would submit target %s (%s)",
+                        target,
+                        reason,
+                    )
+                else:
+                    logger.info(
+                        "Submitting target %s (%s)", target.name, reason.reason()
+                    )
+                    backend.submit_full(target, dependencies=dependencies)
+
+        for _, plan in plans.items():
+            submit(plan)
+
         if spec_hashes is not None and not dry_run:
+            for target in graph.targets.values():
+                spec_hashes[target.name] = hash_spec(target.spec)
             spec_hashes.persist()

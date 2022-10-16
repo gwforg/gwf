@@ -1,20 +1,25 @@
 import os.path
+import logging
 from collections import Counter
 
 import click
 
 from ..backends import Backend
 from ..conf import config
-from ..core import Graph, TargetStatus, get_status, schedule
+from ..core import Graph, TargetStatus, linearize_plan, get_status, schedule
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
 from ..utils import PersistableDict
 from ..workflow import Workflow
 
+
+logger = logging.getLogger(__name__)
+
+
 STATUS_COLORS = {
-    TargetStatus.SHOULDRUN: "magenta",
-    TargetStatus.SUBMITTED: "yellow",
-    TargetStatus.RUNNING: "blue",
-    TargetStatus.COMPLETED: "green",
+    TargetStatus.SHOULDRUN: ("magenta", "⨯"),
+    TargetStatus.SUBMITTED: ("cyan", "-"),
+    TargetStatus.RUNNING: ("blue", "↻"),
+    TargetStatus.COMPLETED: ("green", "✓"),
 }
 
 STATUS_ORDER = (
@@ -38,13 +43,13 @@ def print_table(graph, targets, status_provider):
 
     name_col_width = max((len(target.name) for target in targets), default=0) + 4
     format_str = (
-        "{name:<{name_col_width}}{status:<23}{percentage:>7.2%}"
+        "{status} {name:<{name_col_width}}{percentage:>7.2%}"
         " [{num_shouldrun}/{num_submitted}/{num_running}/{num_completed}]"
     )
 
     for target in sorted(targets, key=lambda t: t.order):
         status = status_provider(target)
-        color = STATUS_COLORS[status]
+        color, symbol = STATUS_COLORS[status]
 
         deps = graph.dfs(target)
         deps_total = len(deps)
@@ -61,7 +66,7 @@ def print_table(graph, targets, status_provider):
 
         line = format_str.format(
             name=target.name,
-            status=click.style(status.name.lower(), fg=color),
+            status=symbol,
             percentage=percentage,
             num_shouldrun=num_shouldrun,
             num_submitted=num_submitted,
@@ -69,25 +74,39 @@ def print_table(graph, targets, status_provider):
             num_completed=num_completed,
             name_col_width=name_col_width,
         )
-        click.echo(line)
+        click.echo(click.style(line, fg=color))
 
 
-def print_summary(backend, graph, targets):
-    status_counts = Counter(get_status(target, backend=backend) for target in targets)
-    click.echo("{:<15}{:>10}".format("total", len(targets)))
+def print_summary(_, targets, status_provider):
+    status_counts = Counter(status_provider(target) for target in targets)
+    click.echo("∑ {:<15}{:>10}".format("total", len(targets)))
     for status in STATUS_ORDER:
-        color = STATUS_COLORS[status]
+        color, symbol = STATUS_COLORS[status]
         padded_name = "{:<15}".format(status.name.lower())
         click.echo(
-            "{}{:>10}".format(click.style(padded_name, fg=color), status_counts[status])
+            "{} {}{:>10}".format(
+                click.style(symbol, fg=color),
+                click.style(padded_name, fg=color),
+                status_counts[status],
+            )
         )
+
+
+FORMATS = {
+    "summary": print_summary,
+    "default": print_table,
+}
 
 
 @click.command()
 @click.argument("targets", nargs=-1)
 @click.option("--endpoints", is_flag=True, default=False, help="Show only endpoints.")
 @click.option(
-    "--summary", is_flag=True, default=False, help="Only show summary statistics."
+    "-f",
+    "--format",
+    default="default",
+    type=click.Choice(["summary", "default"]),
+    help="How to show status output.",
 )
 @click.option(
     "-s",
@@ -96,7 +115,7 @@ def print_summary(backend, graph, targets):
     multiple=True,
 )
 @click.pass_obj
-def status(obj, status, summary, endpoints, targets):
+def status(obj, status, endpoints, format, targets):
     """
     Show the status of targets.
 
@@ -121,10 +140,19 @@ def status(obj, status, summary, endpoints, targets):
     spec_hashes = None
     if config.get("use_spec_hashing"):
         spec_hashes = PersistableDict(os.path.join(".gwf", "spec-hashes.json"))
-    scheduled, _ = schedule(graph.endpoints(), spec_hashes=spec_hashes, graph=graph)
+
+    plans = schedule(graph.endpoints(), spec_hashes=spec_hashes, graph=graph)
+
+    scheduled = []
+    scheduled_set = set()
+    for plan in plans.values():
+        for reason in linearize_plan(plan):
+            if reason.scheduled and reason.target not in scheduled_set:
+                scheduled.append(reason)
+                scheduled_set.add(reason.target)
 
     def status_provider(target):
-        return get_status(target, scheduled, backend)
+        return get_status(target, scheduled_set, backend)
 
     with backend_cls() as backend:
         filters = []
@@ -138,7 +166,5 @@ def status(obj, status, summary, endpoints, targets):
 
         matches = filter_generic(targets=graph, filters=filters)
 
-        if not summary:
-            print_table(graph, matches, status_provider)
-        else:
-            print_summary(graph, matches, status_provider)
+        printer = FORMATS[format]
+        printer(graph, matches, status_provider)

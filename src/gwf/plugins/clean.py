@@ -6,6 +6,7 @@ import click
 
 from ..core import Graph
 from ..filtering import EndpointFilter, NameFilter, filter_generic
+from ..utils import PersistableDict
 from ..workflow import Workflow
 
 logger = logging.getLogger(__name__)
@@ -73,7 +74,13 @@ def clean(obj, targets, all, force):
             abort=True,
         )
 
+    spec_hashes = PersistableDict(os.path.join(".gwf", "spec-hashes.json"))
+
     for target in matches:
+        logger.info("Clearing hash for %s", target)
+        if target.name in spec_hashes:
+            del spec_hashes[target.name]
+
         logger.info("Deleting output files of %s", target.name)
         for path in target.flattened_outputs():
             if path in target.protected:
@@ -93,3 +100,5 @@ def clean(obj, targets, all, force):
                 target.name,
             )
             _delete_file(path)
+
+    spec_hashes.persist()
