@@ -1,5 +1,5 @@
 {% set name = "gwf" %}
-{% set version = "1.8.0" %}
+{% set version = "1.8.1" %}
 
 package:
   name: "{{ name|lower }}"
@@ -15,6 +15,7 @@ build:
 
 requirements:
   host:
+    - attrs
     - click
     - click-plugins
     - pip
@@ -22,6 +23,7 @@ requirements:
     - python>=3.7
     - importlib_metadata
   run:
+    - attrs
     - click
     - click-plugins
     - python>=3.7

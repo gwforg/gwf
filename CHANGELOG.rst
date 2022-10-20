@@ -2,6 +2,23 @@
 Change Log
 ==========
 
+Version 1.8.1
+=============
+
+Fixed
+-----
+
+* Fixed bug in the scheduling code which caused workflows that ran just fine to
+  report "shouldrun" for some targets.
+
+Changed
+-------
+
+* The scheduler now outputs a data structure with all information from the
+  scheduling process and with separate types for each "reason".
+* The ``gwf status`` command is now more informative about the state of each
+  target.
+
 Version 1.8.0
 =============
 
