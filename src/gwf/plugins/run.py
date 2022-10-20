@@ -7,8 +7,9 @@ import click
 from ..backends import Backend, Status
 from ..backends.exceptions import LogError
 from ..conf import config
-from ..core import Graph, Reason, hash_spec, schedule
+from ..core import CachedFilesystem, Graph, hash_spec
 from ..filtering import filter_names
+from ..scheduling import linearize_plan, schedule_workflow
 from ..utils import PersistableDict
 from ..workflow import Workflow
 
@@ -59,33 +60,35 @@ def run(obj, targets, dry_run):
     """Run the specified workflow."""
     workflow = Workflow.from_config(obj)
     graph = Graph.from_targets(workflow.targets)
-    backend_cls = Backend.from_config(obj)
 
+    matched_targets = filter_names(graph, targets) if targets else graph.endpoints()
+    spec_hashes = None
+    if config.get("use_spec_hashing"):
+        spec_hashes = PersistableDict(os.path.join(".gwf", "spec-hashes.json"))
+
+    fs = CachedFilesystem()
+    reasons = schedule_workflow(
+        graph,
+        fs=fs,
+        spec_hashes=spec_hashes,
+        endpoints=matched_targets,
+    )
+
+    backend_cls = Backend.from_config(obj)
     with backend_cls() as backend:
         if config.get("clean_logs") and not dry_run:
             logger.debug("Cleaning old log files...")
             clean_logs(graph, backend)
 
-        matched_targets = filter_names(graph, targets) if targets else graph.endpoints()
-        subgraph = graph.subset(matched_targets)
-
-        spec_hashes = None
-        if config.get("use_spec_hashing"):
-            spec_hashes = PersistableDict(os.path.join(".gwf", "spec-hashes.json"))
-
-        plans = schedule(matched_targets, spec_hashes=spec_hashes, graph=subgraph)
-
         seen = set()
-
-        def submit(reason):
-            if reason.target not in seen and reason.scheduled:
-                dependencies = set()
-                if isinstance(reason, Reason.DependencyScheduled):
-                    for dep in reason.dependencies:
-                        submit(dep)
-                        dependencies.add(dep.target)
-
+        for endpoint in matched_targets:
+            reason = reasons[endpoint]
+            plan = linearize_plan(reason)
+            for reason, deps in plan:
                 target = reason.target
+                if target in seen:
+                    continue
+
                 if backend.status(target) != Status.UNKNOWN:
                     logger.debug("Target %s already submitted", target.name)
                     return
@@ -100,12 +103,10 @@ def run(obj, targets, dry_run):
                     logger.info(
                         "Submitting target %s (%s)", target.name, reason.reason()
                     )
-                    backend.submit_full(target, dependencies=dependencies)
+                    backend.submit_full(target, dependencies=deps)
+                seen.add(target)
 
-        for _, plan in plans.items():
-            submit(plan)
-
-        if spec_hashes is not None and not dry_run:
-            for target in graph.targets.values():
-                spec_hashes[target.name] = hash_spec(target.spec)
-            spec_hashes.persist()
+    if spec_hashes is not None and not dry_run:
+        for target in graph.targets.values():
+            spec_hashes[target.name] = hash_spec(target.spec)
+        spec_hashes.persist()

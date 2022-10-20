@@ -3,10 +3,9 @@ import time
 
 import pytest
 
-import gwf.conf
 from gwf.backends.base import Backend, Status
 from gwf.core import Graph, Target
-from gwf.core import schedule as _schedule
+from gwf.scheduling import schedule_workflow as _schedule_workflow
 
 
 @pytest.fixture
@@ -70,8 +69,13 @@ def filesystem():
 
 
 @pytest.fixture
-def schedule(filesystem):
-    return functools.partial(_schedule, filesystem=filesystem)
+def spec_hashes():
+    return None
+
+
+@pytest.fixture
+def schedule(filesystem, spec_hashes):
+    return functools.partial(_schedule_workflow, fs=filesystem, spec_hashes=spec_hashes)
 
 
 @pytest.fixture

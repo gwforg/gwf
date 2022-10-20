@@ -77,9 +77,9 @@ def clean(obj, targets, all, force):
     spec_hashes = PersistableDict(os.path.join(".gwf", "spec-hashes.json"))
 
     for target in matches:
-        logger.info("Clearing hash for %s", target)
-        if target.name in spec_hashes:
-            del spec_hashes[target.name]
+        # logger.info("Clearing hash for %s", target)
+        # if target.name in spec_hashes:
+        #    del spec_hashes[target.name]
 
         logger.info("Deleting output files of %s", target.name)
         for path in target.flattened_outputs():
