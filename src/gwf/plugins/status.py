@@ -50,16 +50,14 @@ def get_status(reason, backend):
         The target to return status for.
     """
     status = backend.status(reason.target)
-    if status == Status.UNKNOWN:
-        if reason.scheduled:
-            return TargetStatus.SHOULDRUN, reason
+    if status == Status.RUNNING:
+        return TargetStatus.RUNNING, "is running"
+    elif status == Status.SUBMITTED:
+        return TargetStatus.SUBMITTED, "has been submitted"
+    elif reason.scheduled:
+        return TargetStatus.SHOULDRUN, reason
+    else:
         return TargetStatus.COMPLETED, reason
-
-    status = TargetStatus[status.name]
-    if status == TargetStatus.RUNNING:
-        return status, "is running"
-    elif status == TargetStatus.SUBMITTED:
-        return status, "has been submitted"
 
 
 def print_table(graph, targets, reasons, backend):
@@ -175,9 +173,7 @@ def status(obj, status, endpoints, format, targets):
         )
 
         def status_provider(target):
-            res = get_status(reasons[target], backend)
-            assert res is not None, "invalid status state"
-            status, _ = res
+            status, _ = get_status(reasons[target], backend)
             return status
 
         filters = []
