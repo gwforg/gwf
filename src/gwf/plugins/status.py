@@ -2,6 +2,7 @@ import logging
 import os.path
 from collections import Counter
 
+import attr
 import click
 
 from gwf.backends.base import Status
@@ -40,6 +41,12 @@ def _status_strs_to_enums(iterable):
     return list(map(_status_str_to_enum, iterable))
 
 
+@attr.s
+class HumanStatus:
+    status: TargetStatus = attr.ib()
+    reason: str = attr.ib()
+
+
 def get_status(reason, backend):
     """Return the status of a target.
 
@@ -51,13 +58,13 @@ def get_status(reason, backend):
     """
     status = backend.status(reason.target)
     if status == Status.RUNNING:
-        return TargetStatus.RUNNING, "is running"
+        return HumanStatus(TargetStatus.RUNNING, "is running")
     elif status == Status.SUBMITTED:
-        return TargetStatus.SUBMITTED, "has been submitted"
+        return HumanStatus(TargetStatus.SUBMITTED, "has been submitted")
     elif reason.scheduled:
-        return TargetStatus.SHOULDRUN, reason
+        return HumanStatus(TargetStatus.SHOULDRUN, reason)
     else:
-        return TargetStatus.COMPLETED, reason
+        return HumanStatus(TargetStatus.COMPLETED, reason)
 
 
 def print_table(graph, targets, reasons, backend):
@@ -71,8 +78,8 @@ def print_table(graph, targets, reasons, backend):
 
     for target in sorted(targets, key=lambda t: t.order):
         reason = reasons[target]
-        status, explanation = get_status(reason, backend)
-        color, symbol = STATUS_COLORS[status]
+        status = get_status(reason, backend)
+        color, symbol = STATUS_COLORS[status.status]
 
         deps = graph.dfs(target)
         deps_total = len(deps)
@@ -96,13 +103,15 @@ def print_table(graph, targets, reasons, backend):
             num_running=num_running,
             num_completed=num_completed,
             name_col_width=name_col_width,
-            explanation=explanation or "",
+            explanation=status.reason or "",
         )
         click.echo(click.style(line, fg=color))
 
 
 def print_summary(_, targets, reasons, backend):
-    status_counts = Counter(reasons(target) for target in targets)
+    status_counts = Counter(
+        get_status(reasons[target], backend).status for target in targets
+    )
     click.echo("∑ {:<15}{:>10}".format("total", len(targets)))
     for status in STATUS_ORDER:
         color, symbol = STATUS_COLORS[status]
@@ -130,7 +139,7 @@ FORMATS = {
     "--format",
     default="default",
     type=click.Choice(["summary", "default"]),
-    help="How to show status output.",
+    help="How to format status output.",
 )
 @click.option(
     "-s",
