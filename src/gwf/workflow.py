@@ -1,7 +1,9 @@
 import collections
 import collections.abc
 import copy
+import importlib.util
 import inspect
+import logging
 import os.path
 import subprocess
 import sys
@@ -10,8 +12,10 @@ from glob import glob as _glob
 from glob import iglob as _iglob
 
 from .core import AnonymousTarget, Target
-from .exceptions import NameError, TypeError, WorkflowError
+from .exceptions import GWFError, NameError, TypeError, WorkflowError
 from .utils import is_valid_name, load_workflow, parse_path
+
+logger = logging.getLogger(__name__)
 
 
 def select(lst, fields):
@@ -189,8 +193,39 @@ class Workflow(object):
         :arg str path: Path to a workflow file, optionally specifying a
             workflow object in that file.
         """
-        basedir, filename, obj = parse_path(path)
-        return load_workflow(basedir, filename, obj)
+        path, _, obj = path.partition(":")
+        obj = obj or "gwf"
+
+        import os
+        from pathlib import Path
+
+        workflow_dir = Path.cwd()
+        workflow_path = workflow_dir.joinpath(path)
+
+        if not os.path.isabs(path):
+            while True:
+                logger.debug("Looking for workflow file %s in %s", path, workflow_dir)
+                if workflow_path.exists():
+                    break
+
+                if workflow_dir == Path(workflow_dir.anchor):
+                    raise GWFError(f"The file {path} could not be found")
+
+                workflow_dir = workflow_dir.parent
+                workflow_path = workflow_dir.joinpath(path)
+
+        logger.debug("Loading workflow from %s:%s", workflow_path, obj)
+
+        filename = workflow_path.name
+        module_name, _ = os.path.splitext(filename)
+        spec = importlib.util.spec_from_file_location(module_name, workflow_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        if not hasattr(module, obj):
+            raise GWFError(f"The module '{filename}' does not have attribute '{obj}'")
+        workflow = getattr(module, obj)
+        return workflow
 
     @classmethod
     def from_config(cls, config):
