@@ -184,8 +184,7 @@ def status(obj, status, endpoints, format, targets):
         )
 
         def status_provider(target):
-            status, _ = get_status(reasons[target], backend)
-            return status
+            return get_status(reasons[target], backend).status
 
         filters = []
         if status:
