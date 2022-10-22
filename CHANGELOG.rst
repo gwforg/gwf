@@ -5,6 +5,13 @@ Change Log
 Version 1.8.1
 =============
 
+Added
+-----
+
+* Will now recursively look for a workflow file in parent directories. This
+  means that you can now run e.g. ``gwf status`` in any subdirectory below the
+  directory containing your workflow file.
+
 Fixed
 -----
 
