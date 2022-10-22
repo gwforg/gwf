@@ -163,7 +163,9 @@ def status(obj, status, endpoints, format, targets):
 
     spec_hashes = None
     if config.get("use_spec_hashing"):
-        spec_hashes = PersistableDict(os.path.join(".gwf", "spec-hashes.json"))
+        spec_hashes = PersistableDict(
+            os.path.join(workflow.working_dir, ".gwf", "spec-hashes.json")
+        )
 
     with backend_cls() as backend:
         reasons = schedule_workflow(
