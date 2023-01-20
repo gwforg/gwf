@@ -244,7 +244,7 @@ class Workflow(object):
             )
         self.targets[target.name] = target
 
-    def target(self, name, inputs, outputs, **options):
+    def target(self, name, inputs, outputs, protect=None, **options):
         """Create a target and add it to the :class:`gwf.Workflow`.
 
         This is syntactic sugar for creating a new :class:`~gwf.Target` and
@@ -271,6 +271,7 @@ class Workflow(object):
             name=name,
             inputs=inputs,
             outputs=outputs,
+            protect=protect,
             options=options,
             working_dir=self.working_dir,
         )
@@ -308,6 +309,7 @@ class Workflow(object):
                 name=name,
                 inputs=template.inputs,
                 outputs=template.outputs,
+                protect=template.protect,
                 options=options,
                 working_dir=template.working_dir or self.working_dir,
                 spec=template.spec,

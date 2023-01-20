@@ -123,9 +123,9 @@ class AnonymousTarget:
         AnonymousTarget._creation_order += 1
 
         if protect is None:
-            self.protected = set()
+            self.protect = set()
         else:
-            self.protected = set(protect)
+            self.protect = set(protect)
 
     @property
     def spec(self):
@@ -266,6 +266,9 @@ class Target(AnonymousTarget):
 
     def flattened_outputs(self):
         return _norm_paths(self.working_dir, _flatten(self.outputs))
+
+    def protected(self):
+        return set(_norm_paths(self.working_dir, _flatten(self.protect)))
 
     @classmethod
     def empty(cls, name):

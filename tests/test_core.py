@@ -80,7 +80,7 @@ class TestTarget(unittest.TestCase):
             working_dir="/some/path",
             protect=["test_input1.txt"],
         )
-        self.assertEqual(target.protected, set(["test_input1.txt"]))
+        self.assertEqual(target.protected(), set(["/some/path/test_input1.txt"]))
 
     def test_assigning_spec_to_target_sets_spec_attribute(self):
         target = (
