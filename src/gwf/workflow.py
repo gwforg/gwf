@@ -1,6 +1,5 @@
 import collections
 import collections.abc
-import copy
 import importlib.util
 import inspect
 import logging
@@ -12,8 +11,7 @@ from glob import glob as _glob
 from glob import iglob as _iglob
 
 from .core import AnonymousTarget, Target
-from .exceptions import GWFError, NameError, TypeError, WorkflowError
-from .utils import is_valid_name, load_workflow, parse_path
+from .exceptions import GWFError, TypeError, WorkflowError
 
 logger = logging.getLogger(__name__)
 
