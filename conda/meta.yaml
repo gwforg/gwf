@@ -1,5 +1,5 @@
 {% set name = "gwf" %}
-{% set version = "1.8.1" %}
+{% set version = "1.8.2" %}
 
 package:
   name: "{{ name|lower }}"

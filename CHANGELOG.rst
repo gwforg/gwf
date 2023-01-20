@@ -2,6 +2,24 @@
 Change Log
 ==========
 
+Version 1.8.2
+=============
+
+Fixed
+-----
+
+* You can now protect an output file from being deleted by the ``gwf clean``
+  command with the ``protect`` argument when creating a target. Specify a list of
+  the files to be protected and ``gwf clean`` will ignore them (even ``gwf clean --all``).
+  This was implemented before, but it was broken, so this is considered a fix.
+* You can now load modules next to your workflow file, e.g., ``templates.py`` again.
+
+Changed
+-------
+
+* Including one workflow into another workflow had very few real use cases, so the
+  feature has been dropped.
+
 Version 1.8.1
 =============
 
