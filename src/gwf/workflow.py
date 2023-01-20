@@ -123,7 +123,7 @@ class TargetList(list):
         return str(self)
 
 
-class Workflow(object):
+class Workflow:
     """Represents a workflow.
 
     This is the most central user-facing abstraction in *gwf*.
@@ -132,9 +132,6 @@ class Workflow(object):
     targets to the workflow in two different ways. A workflow can be
     initialized with the following arguments:
 
-    :ivar str name: initial value: None
-        The name is used for namespacing when including workflows. See
-        :func:`~include` for more details on namespacing.
     :ivar str working_dir:
         The directory containing the file where the workflow was initialized.
         All file paths used in targets added to this workflow are relative to
@@ -161,22 +158,15 @@ class Workflow(object):
 
     In this case `Foo` and `Bar` inherit the `cores` and `memory` options set
     in `defaults`, but `Bar` overrides the `cores` option.
-
-    See :func:`~include` for a description of the use of the `name` argument.
     """
 
-    def __init__(self, name=None, working_dir=None, defaults=None):
-        self.name = name
-        if self.name is not None and not is_valid_name(self.name):
-            raise NameError(
-                'Workflow defined with invalid name: "{}".'.format(self.name)
-            )
-
+    def __init__(self, working_dir=None, defaults=None):
         self.targets = {}
         self.defaults = defaults or {}
 
-        self.working_dir = working_dir
-        if self.working_dir is None:
+        if working_dir is not None:
+            self.working_dir = working_dir
+        else:
             # Get the frame object of whatever called the Workflow.__init__
             # and extract the path of the file which is was defined in. Then
             # normalize the path and get the directory of the file.
@@ -468,106 +458,6 @@ class Workflow(object):
             targets.append(target)
         return targets
 
-    def include_path(self, path, namespace=None):
-        """Include targets from another :class:`gwf.Workflow` into this workflow.
-
-        See :func:`~gwf.Workflow.include`.
-        """
-        basedir, filename, obj = parse_path(path)
-        other_workflow = load_workflow(basedir, filename, obj)
-        self.include_workflow(other_workflow, namespace=namespace)
-
-    def include_workflow(self, other_workflow, namespace=None):
-        """Include targets from another :class:`gwf.Workflow` into this workflow.
-
-        See :func:`~gwf.Workflow.include`.
-        """
-        if other_workflow.name is None and namespace is None:
-            raise WorkflowError(
-                "The included workflow has not been assigned a name. To "
-                "include the workflow you must assign a name to the included "
-                "workflow or set the namespace argument."
-            )
-        namespace_prefix = namespace or other_workflow.name
-        if namespace_prefix == self.name:
-            raise WorkflowError(
-                "The included workflow has the same name as this workflow."
-            )
-
-        for target in other_workflow.targets.values():
-            self._add_target(copy.deepcopy(target), namespace=namespace_prefix)
-
-    def include(self, other_workflow, namespace=None):
-        """Include targets from another :class:`gwf.Workflow` into this workflow.
-
-        This method can be given either an :class:`gwf.Workflow` instance,
-        a module or a path to a workflow file.
-
-        If a module or path the workflow object to include will be determined
-        according to the following rules:
-
-        1. If a module object is given, the module must define an attribute
-           named `gwf` containing a :class:`gwf.Workflow` object.
-        2. If a path is given it must point to a file defining a module with an
-           attribute named `gwf` containing a :class:`gwf.Workflow`
-           object. If you want to include a workflow with another name you can
-           specify the attribute name with a colon, e.g.::
-
-                /some/path/workflow.py:myworkflow
-
-           This will include all targets from the workflow `myworkflow`
-           declared in the file `/some/path/workflow.py`.
-
-        When a :class:`gwf.Workflow` instance has been obtained, all
-        targets will be included directly into this workflow. To avoid name
-        clashes the `namespace` argument must be provided. For example::
-
-            workflow1 = Workflow()
-            workflow1.target('TestTarget')
-
-            workflow2 = Workflow()
-            workflow2.target('TestTarget')
-
-            workflow1.include(workflow2, namespace='wf1')
-
-        The workflow now contains two targets named `TestTarget` (defined in
-        `workflow2`) and `wf1.TestTarget` (defined in `workflow1`). The
-        `namespace` parameter can be left out if the workflow to be included
-        has been named::
-
-            workflow1 = Workflow(name='wf1')
-            workflow1.target('TestTarget')
-
-            workflow2 = Workflow()
-            workflow2.target('TestTarget')
-
-            workflow1.include(workflow2)
-
-        This yields the same result as before. The `namespace` argument can be
-        used to override the specified name::
-
-            workflow1 = Workflow(name='wf1')
-            workflow1.target('TestTarget')
-
-            workflow2 = Workflow()
-            workflow2.target('TestTarget')
-
-            workflow1.include(workflow2, namespace='foo')
-
-        The workflow will now contain targets named `TestTarget` and
-        `foo.TestTarget`.
-        """
-        if isinstance(other_workflow, Workflow):
-            self.include_workflow(other_workflow, namespace=namespace)
-        elif isinstance(other_workflow, str):
-            self.include_path(other_workflow, namespace=namespace)
-        elif inspect.ismodule(other_workflow):
-            self.include_workflow(getattr(other_workflow, "gwf"), namespace=namespace)
-        else:
-            raise TypeError(
-                "First argument must be either a string or a Workflow object."
-            )
-
     def glob(self, pathname, *args, **kwargs):
         """Return a list of paths matching `pathname`.
 
@@ -610,6 +500,4 @@ class Workflow(object):
         )
 
     def __repr__(self):
-        return "{}(name={!r}, working_dir={!r})".format(
-            self.__class__.__name__, self.name, self.working_dir
-        )
+        return "{}(working_dir={!r})".format(self.__class__.__name__, self.working_dir)
