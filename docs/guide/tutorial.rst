@@ -8,18 +8,13 @@ In this tutorial we will explore various concepts in *gwf*. We will define
 workflows and see how *gwf* can help us keep track of the progress of workflow
 execution, the output of targets and dependencies between targets. Have fun!
 
-We'll assume that you have the Anaconda_ distribution installed and that you are
-familiar with how to install and manage packages and environments through the
-*conda* package manager.
-
 First, let's install *gwf* in its own conda environment. Create a new environment
 for your project, we'll call it *myproject*.
 
 .. code-block:: console
 
-    $ conda config --add channels gwforg
-    $ conda create -n myproject python=3.5 gwf
-    $ source activate myproject
+    $ conda create -n myproject gwf
+    $ conda activate myproject
 
 You should now be able to run the following command.
 
@@ -680,6 +675,19 @@ no other target depends on):
 
 We can tell *gwf* to remove all files by running ``gwf clean --all``.
 
+Protecting Files From Being Cleaned Up
+======================================
+
+You can protect output files from being cleaned up:
+
+.. code-block:: python
+
+    gwf.target('TargetA', inputs=['a'], outputs=['b', 'c', 'd'], protect=['d']) << """
+    ...
+    """
+
+Now, when running ``gwf clean``, the file ``d`` will not be deleted.
+
 A Note About Reproducibility
 ============================
 
@@ -695,6 +703,3 @@ bwa and *gwf* itself, we were able to easily create a working environment with e
 the right software versions used for our workflow. The whole workflow could also easily
 be copied to a cluster and run through e.g. the Slurm backend, since we can exactly
 reproduce the environment used locally.
-
-
-.. _Anaconda: https://www.continuum.io/downloads
