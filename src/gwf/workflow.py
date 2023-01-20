@@ -218,8 +218,11 @@ class Workflow(object):
 
         filename = workflow_path.name
         module_name, _ = os.path.splitext(filename)
+        sys.path.insert(0, str(workflow_dir))
         spec = importlib.util.spec_from_file_location(module_name, workflow_path)
+        assert spec is not None, "Could not load workflow file"
         module = importlib.util.module_from_spec(spec)
+        assert module is not None, "Could not load module from workflow file"
         spec.loader.exec_module(module)
 
         if not hasattr(module, obj):
