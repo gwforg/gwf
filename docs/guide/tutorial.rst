@@ -396,15 +396,18 @@ but with pretty colors.
 
 .. code-block:: console
 
-    TargetA    shouldrun       0.00%
-    TargetB    shouldrun       0.00%
-    TargetC    shouldrun       0.00%
+    ⨯ TargetA      0.00%    spec has changed
+    ⨯ TargetB      0.00%    spec has changed
+    ⨯ TargetC      0.00%    a dependency was scheduled
 
 Each target in the workflow is shown on a separate line. We can see the status
-of the target (`shouldrun`) and percentage completion. The percentage tells us
-how many dependencies of the target have been completed. If all dependencies of
-the target, and the target itself, have been completed, the percentage will be
-100%.
+of the target (`⨯` meaning that the target is incomplete) and percentage
+completion. In this case, **gwf** also tells us that the first two targets must
+run because their spec changed (since it's the first time running the workflow).
+
+The percentage tells us how many dependencies of the target have
+been completed. If all dependencies of the target, and the target itself, have
+been completed, the percentage will be 100%.
 
 Let's try to run the workflow and see what happens.
 
@@ -412,38 +415,31 @@ Let's try to run the workflow and see what happens.
 
     $ gwf run
     $ gwf status
-    TargetA    running         0.00%
-    TargetB    submitted       0.00%
-    TargetC    submitted       0.00%
+    ↻ TargetA      0.00%    is running
+    - TargetB      0.00%    has been submitted
+    - TargetC      0.00%    has been submitted
 
-The ``R`` shows that one third of the targets are running (since I'm only
-running with one worker, only one target can run at a time) and the other two
-thirds have been submitted. Running the status command again after some time
-should show something like this.
-
-.. code-block:: console
-
-    TargetA    completed     100.00%
-    TargetB    running         0.00%
-    TargetC    submitted      33.33%
-
-Now the target that was running before has completed, and another target is now
-running, while the final target is still just submitted. After some time, run
-the status command again. The last target should now be running.
+Now the first target is running and the other targets have been submitted and
+are waiting to run. Running the status command again after some time should show
+something like this.
 
 .. code-block:: console
 
-    TargetA    completed     100.00%
-    TargetB    completed     100.00%
-    TargetC    running        66.67%
+    ✓ TargetA    100.00%    not scheduled because it is a source
+    ✓ TargetB    100.00%    not scheduled because it is a source
+    ↻ TargetC     66.67%    is running
+
+Now the first two targets have completed and TargetC is running. We're also told
+that, if we run ``gwf run`` again, TargetA and TargetB will not be submitted
+because they're both "sources", that is, they don't have any input files.
 
 After a while, all targets should have completed.
 
 .. code-block:: console
 
-    TargetA    completed     100.00%
-    TargetB    completed     100.00%
-    TargetC    completed     100.00%
+    ✓ TargetA    100.00%    not scheduled because it is a source
+    ✓ TargetB    100.00%    not scheduled because it is a source
+    ✓ TargetC    100.00%    is up-to-date
 
 Here's a few neat things you should know about the status command:
 
