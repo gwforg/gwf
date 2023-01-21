@@ -2,6 +2,14 @@
 Change Log
 ==========
 
+Version 1.8.3
+=============
+
+Fixed
+-----
+
+* Status output regression reported in #399 has been fixed.
+
 Version 1.8.2
 =============
 
