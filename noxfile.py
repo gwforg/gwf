@@ -1,7 +1,72 @@
 import nox
 
-import os.path
+import os
 import shutil
+from fnmatch import fnmatch
+
+
+PURGE_PATTERNS = [
+    "*/__pycache__/*",
+    "docs/_build/*",
+    ".coverage/*",
+    "*/.egg-info/*",
+    "*/.egg/*",
+    "*/.eggs/*",
+    "*/.gwf/*",
+    "*/.gwfconf.json",
+    "*/.pytest_cache/*",
+    "build/*",
+    "conda-bld/*",
+    "dist/*",
+    "*.pyc",
+]
+
+
+def matches_pattern(path, patterns):
+    for pattern in patterns:
+        if fnmatch(path, pattern):
+            return True
+    return False
+
+
+@nox.session
+def clean(session):
+    def _delete(path, patterns):
+        for entry in os.scandir(path):
+            if entry.is_dir():
+                _delete(entry.path, patterns)
+            elif entry.is_file() and matches_pattern(entry.path, patterns):
+                os.remove(entry.path)
+        if matches_pattern(path, patterns):
+            os.rmdir(path)
+
+    _delete(".", PURGE_PATTERNS)
+
+
+@nox.session
+def build(session):
+    session.install("flit")
+    session.run("flit", "build", "--no-setup-py", "--format", "wheel")
+
+
+@nox.session
+def package(session):
+    session.run("conda", "build", "--output-folder", "conda-bld/", "conda/")
+
+
+@nox.session
+def publish(session):
+    session.run(
+        "anaconda",
+        "-t",
+        "${ANACONDA_TOKEN}",
+        "upload",
+        "--force",
+        "--no-progress",
+        "--user",
+        "gwforg",
+        "conda-bld/*/*.tar.bz2",
+    )
 
 
 @nox.session(python=["3.7", "3.8", "3.9", "3.10"])
