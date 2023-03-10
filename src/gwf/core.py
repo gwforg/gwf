@@ -8,7 +8,7 @@ from collections.abc import Mapping
 from enum import Enum
 from os import fspath
 
-from .exceptions import NameError, WorkflowError
+from .exceptions import GWFError, NameError, WorkflowError
 from .utils import cache, is_valid_name, timer
 
 logger = logging.getLogger(__name__)
@@ -292,6 +292,14 @@ class Target(AnonymousTarget):
         return self.name
 
 
+class CircularDependencyError(GWFError):
+    pass
+
+
+class FileProvidedByMultipleTargetsError(GWFError):
+    pass
+
+
 class Graph:
     """Represents a dependency graph for a set of targets.
 
@@ -327,9 +335,6 @@ class Graph:
     constructed. Checks are only performed at construction-time, thus
     introducing e.g. a circular dependency by manipulating *dependencies* will
     not raise an exception.
-
-    :raises gwf.exceptions.WorkflowError:
-        Raised if the workflow contains a circular dependency.
     """
 
     def __init__(self, targets, provides, dependencies, dependents, unresolved):
@@ -353,10 +358,8 @@ class Graph:
         :raises gwf.exceptions.FileProvidedByMultipleTargetsError:
             Raised if the same file is provided by multiple targets.
 
-        Since this method initializes the graph, it may also raise:
-
-        :raises gwf.exceptions.WorkflowError:
-            Raised if the workflow contains a circular dependency.
+        :raises gwf.exceptions.CircularDependencyError:
+            Raised if the graph contains a circular dependency.
         """
         provides = {}
         unresolved = set()
@@ -375,7 +378,7 @@ class Graph:
                         msg = 'File "{}" provided by targets "{}" and "{}".'.format(
                             path, provides[path].name, target
                         )
-                        raise WorkflowError(msg)
+                        raise FileProvidedByMultipleTargetsError(msg)
                     provides[path] = target
 
         for target in targets:
@@ -399,10 +402,6 @@ class Graph:
 
     @timer("Checked for circular dependencies in %.3fms", logger=logger)
     def _check_for_circular_dependencies(self):
-        """Check for circular dependencies in the graph.
-
-        Raises :class:`WorkflowError` if a circular dependency is found.
-        """
         logger.debug("Checking for circular dependencies")
 
         fresh, started, done = 0, 1, 2
@@ -414,7 +413,9 @@ class Graph:
             state[node] = started
             for dep in self.dependencies[node]:
                 if state[dep] == started:
-                    raise WorkflowError("Target {} depends on itself.".format(node))
+                    raise CircularDependencyError(
+                        "Target {} depends on itself.".format(node)
+                    )
                 elif state[dep] == fresh:
                     visitor(dep)
             state[node] = done

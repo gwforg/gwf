@@ -2,7 +2,13 @@ import unittest
 
 import pytest
 
-from gwf.core import Graph, Target, _flatten
+from gwf.core import (
+    CircularDependencyError,
+    FileProvidedByMultipleTargetsError,
+    Graph,
+    Target,
+    _flatten,
+)
 from gwf.exceptions import NameError, WorkflowError
 from gwf.scheduling import Reason
 
@@ -232,11 +238,11 @@ def test_graph_raises_multiple_providers_error():
         working_dir="/some/dir",
     )
 
-    with pytest.raises(WorkflowError):
+    with pytest.raises(FileProvidedByMultipleTargetsError):
         Graph.from_targets({"Target1": t1, "Target2": t2})
 
 
-def test_graph_raises_circular_dependency_error(graph_factory):
+def test_graph_raises_circular_dependency_error():
     t1 = Target(
         name="Target1",
         inputs=["f1.txt"],
@@ -258,7 +264,7 @@ def test_graph_raises_circular_dependency_error(graph_factory):
         options={},
         working_dir="/some/dir",
     )
-    with pytest.raises(WorkflowError):
+    with pytest.raises(CircularDependencyError):
         Graph.from_targets({"Target1": t1, "Target2": t2, "Target3": t3})
 
 
@@ -278,7 +284,7 @@ def test_graph_raises_when_two_targets_output_the_same_file(graph_factory):
         working_dir="/some/dir",
     )
 
-    with pytest.raises(WorkflowError):
+    with pytest.raises(FileProvidedByMultipleTargetsError):
         graph_factory([target1, target2])
 
 
