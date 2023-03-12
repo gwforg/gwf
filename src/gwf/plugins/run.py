@@ -63,7 +63,7 @@ def run(obj, targets, dry_run):
 
     matched_targets = filter_names(graph, targets) if targets else graph.endpoints()
     spec_hashes = None
-    if config.get("use_spec_hashing"):
+    if config.get("use_spec_hashes"):
         spec_hashes = PersistableDict(
             os.path.join(workflow.working_dir, ".gwf", "spec-hashes.json")
         )

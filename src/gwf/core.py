@@ -8,8 +8,10 @@ from collections.abc import Mapping
 from enum import Enum
 from os import fspath
 
+import attrs
+
 from .exceptions import GWFError, NameError, WorkflowError
-from .utils import cache, is_valid_name, timer
+from .utils import is_valid_name, timer
 
 logger = logging.getLogger(__name__)
 
@@ -300,6 +302,32 @@ class FileProvidedByMultipleTargetsError(GWFError):
     pass
 
 
+@timer("Checked for circular dependencies in %.3fms", logger=logger)
+def check_for_circular_dependencies(targets, dependencies):
+    logger.debug("Checking for circular dependencies")
+
+    fresh, started, done = 0, 1, 2
+
+    nodes = targets.values()
+    state = dict((n, fresh) for n in nodes)
+
+    def visitor(node):
+        state[node] = started
+        for dep in dependencies[node]:
+            if state[dep] == started:
+                raise CircularDependencyError(
+                    "Target {} depends on itself.".format(node)
+                )
+            elif state[dep] == fresh:
+                visitor(dep)
+        state[node] = done
+
+    for node in nodes:
+        if state[node] == fresh:
+            visitor(node)
+
+
+@attrs.define
 class Graph:
     """Represents a dependency graph for a set of targets.
 
@@ -337,14 +365,11 @@ class Graph:
     not raise an exception.
     """
 
-    def __init__(self, targets, provides, dependencies, dependents, unresolved):
-        self.targets = targets
-        self.provides = provides
-        self.dependencies = dependencies
-        self.dependents = dependents
-        self.unresolved = unresolved
-
-        self._check_for_circular_dependencies()
+    targets: dict
+    provides: dict
+    dependencies: defaultdict
+    dependents: defaultdict
+    unresolved: set
 
     @classmethod
     def from_targets(cls, targets):
@@ -392,43 +417,21 @@ class Graph:
             for dep in deps:
                 dependents[dep].add(target)
 
+        targets = {target.name: target for target in targets}
+        check_for_circular_dependencies(targets, dependencies)
+
         return cls(
-            targets={target.name: target for target in targets},
+            targets=targets,
             provides=provides,
             dependencies=dependencies,
             dependents=dependents,
             unresolved=unresolved,
         )
 
-    @timer("Checked for circular dependencies in %.3fms", logger=logger)
-    def _check_for_circular_dependencies(self):
-        logger.debug("Checking for circular dependencies")
-
-        fresh, started, done = 0, 1, 2
-
-        nodes = self.targets.values()
-        state = dict((n, fresh) for n in nodes)
-
-        def visitor(node):
-            state[node] = started
-            for dep in self.dependencies[node]:
-                if state[dep] == started:
-                    raise CircularDependencyError(
-                        "Target {} depends on itself.".format(node)
-                    )
-                elif state[dep] == fresh:
-                    visitor(dep)
-            state[node] = done
-
-        for node in nodes:
-            if state[node] == fresh:
-                visitor(node)
-
     def endpoints(self):
         """Return a set of all targets that are not depended on by other targets."""
         return set(self.targets.values()) - set(self.dependents.keys())
 
-    @cache
     def dfs(self, root):
         """Return the depth-first traversal path through a graph from `root`."""
         visited = set()
@@ -459,11 +462,11 @@ class Graph:
         return target_name in self.targets
 
 
+@attrs.define
 class CachedFilesystem:
     """A cached file system abstraction."""
 
-    def __init__(self):
-        self._cache = {}
+    _cache: dict = attrs.field(factory=dict)
 
     def _lookup_file(self, path):
         if path not in self._cache:

@@ -71,9 +71,9 @@ def validate_no_color(value):
     return _validate_bool("no_color", value)
 
 
-@config.validator("use_spec_hashing")
-def validate_use_spec_hashing(value):
-    return _validate_bool("use_spec_hashing", value)
+@config.validator("use_spec_hashes")
+def validate_use_spec_hashes(value):
+    return _validate_bool("use_spec_hashes", value)
 
 
 @with_plugins(iter_entry_points("gwf.plugins"))

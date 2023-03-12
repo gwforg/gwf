@@ -138,7 +138,7 @@ def status(obj, status, endpoints, format, targets):
     backend_cls = Backend.from_config(obj)
 
     spec_hashes = None
-    if config.get("use_spec_hashing"):
+    if config.get("use_spec_hashes"):
         spec_hashes = PersistableDict(
             os.path.join(workflow.working_dir, ".gwf", "spec-hashes.json")
         )

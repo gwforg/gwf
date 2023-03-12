@@ -30,18 +30,6 @@ def is_valid_name(candidate):
     return re.match(r"^[a-zA-Z_][a-zA-Z0-9._]*$", candidate) is not None
 
 
-def cache(obj):
-    _cache = obj._cache = {}
-
-    @functools.wraps(obj)
-    def memoizer(*args, **kwargs):
-        if args not in _cache:
-            _cache[args] = obj(*args, **kwargs)
-        return _cache[args]
-
-    return memoizer
-
-
 class timer(ContextDecorator):
     def __init__(self, msg, logger=None):
         self.msg = msg

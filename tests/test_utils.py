@@ -1,20 +1,6 @@
 import pytest
 
-from gwf.utils import PersistableDict, cache, ensure_trailing_newline, parse_path, retry
-
-
-def test_cache_returns_same_object_when_called_twice_with_same_args():
-    func = cache(lambda x: object())
-    obj1 = func(42)
-    obj2 = func(42)
-    assert id(obj1) == id(obj2)
-
-
-def test_cache_does_not_return_same_object_when_called_with_diff_args():
-    func = cache(lambda x: object())
-    obj1 = func(42)
-    obj2 = func(43)
-    assert id(obj1) != id(obj2)
+from gwf.utils import PersistableDict, ensure_trailing_newline, parse_path, retry
 
 
 @pytest.mark.parametrize(
