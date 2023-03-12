@@ -9,7 +9,7 @@ from gwf.backends.base import Status
 
 from ..backends import Backend
 from ..conf import config
-from ..core import CachedFilesystem, Graph, TargetStatus
+from ..core import CachedFilesystem, Graph, TargetStatus, load_spec_hashes
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
 from ..scheduling import schedule_workflow
 from ..utils import PersistableDict
@@ -135,18 +135,14 @@ def status(obj, status, endpoints, format, targets):
     """
     workflow = Workflow.from_config(obj)
     graph = Graph.from_targets(workflow.targets)
-    backend_cls = Backend.from_config(obj)
 
     spec_hashes = None
     if config.get("use_spec_hashes"):
-        spec_hashes = PersistableDict(
-            os.path.join(workflow.working_dir, ".gwf", "spec-hashes.json")
-        )
+        spec_hashes = load_spec_hashes(workflow.working_dir, graph)
 
+    backend_cls = Backend.from_config(obj)
     with backend_cls() as backend:
-        reasons = schedule_workflow(
-            graph, fs=CachedFilesystem(), spec_hashes=spec_hashes
-        )
+        reasons = schedule_workflow(graph, spec_hashes=spec_hashes)
 
         target_status = {}
         for target, reason in reasons.items():

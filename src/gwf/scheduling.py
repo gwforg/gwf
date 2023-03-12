@@ -3,7 +3,7 @@ import os.path
 
 import attrs
 
-from .core import Target, hash_spec
+from .core import CachedFilesystem, Target, hash_spec
 from .exceptions import WorkflowError
 
 logger = logging.getLogger(__name__)
@@ -130,9 +130,12 @@ def linearize_plan(plan):
     return linear_plan
 
 
-def schedule_workflow(graph, fs, spec_hashes, endpoints=None):
+def schedule_workflow(graph, fs=None, spec_hashes=None, endpoints=None):
     if endpoints is None:
         endpoints = graph.endpoints()
+
+    if fs is None:
+        fs = CachedFilesystem()
 
     reasons = dict()
 

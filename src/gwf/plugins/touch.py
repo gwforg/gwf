@@ -1,6 +1,6 @@
 import click
 
-from ..core import Graph
+from ..core import Graph, dump_spec_hashes
 from ..utils import touchfile
 from ..workflow import Workflow
 
@@ -19,6 +19,9 @@ def touch(obj):
     """
     workflow = Workflow.from_config(obj)
     graph = Graph.from_targets(workflow.targets)
+
+    dump_spec_hashes(workflow.working_dir, graph)
+
     visited = set()
     for endpoint in graph.endpoints():
         for target in graph.dfs(endpoint):

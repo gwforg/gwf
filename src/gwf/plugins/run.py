@@ -1,5 +1,4 @@
 import logging
-import os.path
 from contextlib import suppress
 
 import click
@@ -7,10 +6,13 @@ import click
 from ..backends import Backend, Status
 from ..backends.exceptions import LogError
 from ..conf import config
-from ..core import CachedFilesystem, Graph, hash_spec
+from ..core import (
+    Graph,
+    dump_spec_hashes,
+    load_spec_hashes,
+)
 from ..filtering import filter_names
 from ..scheduling import linearize_plan, schedule_workflow
-from ..utils import PersistableDict
 from ..workflow import Workflow
 
 logger = logging.getLogger(__name__)
@@ -52,6 +54,32 @@ def submit(graph, scheduled, reasons, backend, dry_run):
                 backend.submit_full(target, dependencies=scheduled[target])
 
 
+def submit_workflow(matched_targets, reasons, backend, dry_run):
+    seen = set()
+    for endpoint in matched_targets:
+        reason = reasons[endpoint]
+        plan = linearize_plan(reason)
+        for reason, deps in plan:
+            target = reason.target
+            if target in seen:
+                continue
+
+            if backend.status(target) != Status.UNKNOWN:
+                logger.debug("Target %s already submitted", target.name)
+                return
+
+            if dry_run:
+                logger.info(
+                    "Would submit target %s (%s)",
+                    target,
+                    reason,
+                )
+            else:
+                logger.info("Submitting target %s (%s)", target.name, reason.reason())
+                backend.submit_full(target, dependencies=deps)
+            seen.add(target)
+
+
 @click.command()
 @click.argument("targets", nargs=-1)
 @click.option("-d", "--dry-run", is_flag=True, default=False)
@@ -62,16 +90,16 @@ def run(obj, targets, dry_run):
     graph = Graph.from_targets(workflow.targets)
 
     matched_targets = filter_names(graph, targets) if targets else graph.endpoints()
+
     spec_hashes = None
     if config.get("use_spec_hashes"):
-        spec_hashes = PersistableDict(
-            os.path.join(workflow.working_dir, ".gwf", "spec-hashes.json")
+        spec_hashes = load_spec_hashes(
+            workflow.working_dir,
+            graph,
         )
 
-    fs = CachedFilesystem()
     reasons = schedule_workflow(
         graph,
-        fs=fs,
         spec_hashes=spec_hashes,
         endpoints=matched_targets,
     )
@@ -82,33 +110,7 @@ def run(obj, targets, dry_run):
             logger.debug("Cleaning old log files...")
             clean_logs(graph, backend)
 
-        seen = set()
-        for endpoint in matched_targets:
-            reason = reasons[endpoint]
-            plan = linearize_plan(reason)
-            for reason, deps in plan:
-                target = reason.target
-                if target in seen:
-                    continue
-
-                if backend.status(target) != Status.UNKNOWN:
-                    logger.debug("Target %s already submitted", target.name)
-                    return
-
-                if dry_run:
-                    logger.info(
-                        "Would submit target %s (%s)",
-                        target,
-                        reason,
-                    )
-                else:
-                    logger.info(
-                        "Submitting target %s (%s)", target.name, reason.reason()
-                    )
-                    backend.submit_full(target, dependencies=deps)
-                seen.add(target)
+        submit_workflow(matched_targets, reasons, backend, dry_run)
 
     if spec_hashes is not None and not dry_run:
-        for target in graph.targets.values():
-            spec_hashes[target.name] = hash_spec(target.spec)
-        spec_hashes.persist()
+        dump_spec_hashes(workflow.working_dir, graph)

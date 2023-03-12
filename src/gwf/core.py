@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging
 import os
 import os.path
@@ -11,7 +12,7 @@ from os import fspath
 import attrs
 
 from .exceptions import GWFError, NameError, WorkflowError
-from .utils import is_valid_name, timer
+from .utils import PersistableDict, is_valid_name, timer
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,37 @@ def _norm_paths(working_dir, paths):
 
 def hash_spec(spec):
     return hashlib.sha1(spec.encode("utf-8")).hexdigest()
+
+
+def hash_specs(graph):
+    hashes = {}
+    for target in graph.targets.values():
+        hashes[target.name] = hash_spec(target.spec)
+    return hashes
+
+
+def _get_spec_hashes_path(working_dir):
+    return os.path.join(working_dir, ".gwf", "spec-hashes.json")
+
+
+def load_spec_hashes(working_dir, graph):
+    path = _get_spec_hashes_path(working_dir)
+
+    # If spec-hashes.json doesn't exist, it's because this is the first time
+    # we're using spec hashes, so we'll initialize the dict with the current
+    # spec hashes.
+    if not os.path.exists(path):
+        logging.debug("First run with spec hashes enabled - computing hashes")
+        return hash_specs(graph)
+
+    with open(path) as hashes_file:
+        return json.load(hashes_file)
+
+
+def dump_spec_hashes(working_dir, graph):
+    hashes = hash_specs(graph)
+    with open(_get_spec_hashes_path(working_dir), "w") as hashes_file:
+        json.dump(hashes, hashes_file)
 
 
 class TargetStatus(Enum):

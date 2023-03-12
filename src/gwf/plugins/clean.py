@@ -4,7 +4,7 @@ import os.path
 
 import click
 
-from ..core import Graph
+from ..core import Graph, load_spec_hashes
 from ..filtering import EndpointFilter, NameFilter, filter_generic
 from ..utils import PersistableDict
 from ..workflow import Workflow
@@ -74,7 +74,7 @@ def clean(obj, targets, all, force):
             abort=True,
         )
 
-    spec_hashes = PersistableDict(os.path.join(".gwf", "spec-hashes.json"))
+    spec_hashes = load_spec_hashes(workflow.working_dir, graph)
 
     for target in matches:
         # logger.info("Clearing hash for %s", target)
