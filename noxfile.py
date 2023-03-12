@@ -6,24 +6,23 @@ from fnmatch import fnmatch
 
 
 PURGE_PATTERNS = [
-    "*/__pycache__/*",
+    "__pycache__/*",
     "docs/_build/*",
     ".coverage/*",
-    "*/.egg-info/*",
-    "*/.egg/*",
-    "*/.eggs/*",
-    "*/.gwf/*",
-    "*/.gwfconf.json",
-    "*/.pytest_cache/*",
-    "build/*",
-    "conda-bld/*",
-    "dist/*",
+    ".egg-info/*",
+    ".egg/*",
+    ".eggs/*",
+    ".gwf/*",
+    ".gwfconf.json",
+    ".pytest_cache",
+    "./conda-bld",
+    "dist",
     "*.pyc",
 ]
 
 
-def matches_pattern(path, patterns):
-    for pattern in patterns:
+def matches_pattern(path):
+    for pattern in PURGE_PATTERNS:
         if fnmatch(path, pattern):
             return True
     return False
@@ -31,16 +30,20 @@ def matches_pattern(path, patterns):
 
 @nox.session
 def clean(session):
-    def _delete(path, patterns):
-        for entry in os.scandir(path):
-            if entry.is_dir():
-                _delete(entry.path, patterns)
-            elif entry.is_file() and matches_pattern(entry.path, patterns):
-                os.remove(entry.path)
-        if matches_pattern(path, patterns):
+    def delete_recursively(path):
+        if os.path.isdir(path):
+            for child in os.scandir(path):
+                delete_recursively(child.path)
+            print("Deleting directory", path)
             os.rmdir(path)
+        else:
+            print("Deleting file", path)
+            os.remove(path)
 
-    _delete(".", PURGE_PATTERNS)
+    for root, dirs, files in os.walk(".", topdown=False):
+        for name in dirs + files:
+            if matches_pattern(name):
+                delete_recursively(os.path.join(root, name))
 
 
 @nox.session
@@ -49,27 +52,7 @@ def build(session):
     session.run("flit", "build", "--no-setup-py", "--format", "wheel")
 
 
-@nox.session
-def package(session):
-    session.run("conda", "build", "--output-folder", "conda-bld/", "conda/")
-
-
-@nox.session
-def publish(session):
-    session.run(
-        "anaconda",
-        "-t",
-        "${ANACONDA_TOKEN}",
-        "upload",
-        "--force",
-        "--no-progress",
-        "--user",
-        "gwforg",
-        "conda-bld/*/*.tar.bz2",
-    )
-
-
-@nox.session(python=["3.7", "3.8", "3.9", "3.10"])
+@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11"])
 def test(session):
     session.install("flit")
     session.run("flit", "install", "-s", "--deps", "production")
