@@ -2,6 +2,21 @@
 Change Log
 ==========
 
+Version 1.8.5
+=============
+
+Added
+-----
+
+* Spec hashes will now be computed automatically on the first run with spec 
+  hashes enabled.
+* ``gwf touch`` will now also update spec hashes.
+
+Version 1.8.4
+=============
+
+Various tiny fixes to the scheduler, nothing user visible.
+
 Version 1.8.3
 =============
 

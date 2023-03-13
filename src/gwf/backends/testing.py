@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 class TestingBackend(Backend):
-
     log_manager = MemoryLogManager()
 
     option_defaults = {"cores": 2, "memory": "18g", "nodes": None}

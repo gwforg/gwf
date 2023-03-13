@@ -6,11 +6,7 @@ import click
 from ..backends import Backend, Status
 from ..backends.exceptions import LogError
 from ..conf import config
-from ..core import (
-    Graph,
-    dump_spec_hashes,
-    load_spec_hashes,
-)
+from ..core import Graph, dump_spec_hashes, load_spec_hashes
 from ..filtering import filter_names
 from ..scheduling import linearize_plan, schedule_workflow
 from ..workflow import Workflow

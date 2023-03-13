@@ -109,7 +109,6 @@ class PersistableDict(UserDict):
 
 
 class ColorFormatter(logging.Formatter):
-
     STYLING = {
         "WARNING": dict(fg="yellow"),
         "INFO": dict(fg="blue"),
