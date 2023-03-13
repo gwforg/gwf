@@ -18,7 +18,9 @@ jobs:
           python-version: "3.10"
 
       - name: Extract changes for this release
-        run: cat CHANGELOG.rst | python extract-changelog.py ${{ github.ref_name }} > /tmp/changelog.md
+        run: cat CHANGELOG.rst | python extract-changelog.py ${{ github.ref_name }} > ${{ github.workspace }}/changelog.md
 
       - name: Release
         uses: softprops/action-gh-release@v1
+        with:
+          body_path: ${{ github.workspace }}/changelog.md
