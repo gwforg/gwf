@@ -32,14 +32,14 @@ Rolling a New Release
 2. Make any other release-related changes such as adding new contributors to
    ``CONTRIBUTORS.rst`` or adding missing items to ``CHANGELOG.rst``.
 
-3. Increase the version number in ``gwf/__init__.py``
+3. Increase the version number in ``gwf/__init__.py`` and ``conda/meta.yaml``.
 
-4. Commit the changes and push the branch. Wait for tests to run.
+4. Commit the changes and push. Wait for tests to run.
 
-5. Make a new release by tagging the merge commit with the version number, e.g.
-   ``vX.X.X``. Push the tag and wait for Travis to catch up.
+5. Make a new release by tagging the commit with the version number, e.g.
+   ``vX.X.X``. Push the tag.
 
-6. Run ``make package``, then ``make publish`` to publish the source
-   distribution and wheel to PyPI.
+6. Build the conda package with ``conda build conda/``, then upload with 
+   ``anaconda upload``.
 
-The documentation will be automatically be built.
+The documentation will be automatically be built and deplyed.

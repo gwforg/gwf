@@ -28,11 +28,7 @@ Make Your Changes
 
 4. Test your changes and check for style violations::
 
-    make init      # to install gwf for development
-    gwf ...        # test your changes by running gwf
-    make lint      # to check for style issues
-    make test      # to run tests
-    make coverage  # to check test coverage
+    nox -s test
 
 5. If everything is alright, commit your changes::
 
