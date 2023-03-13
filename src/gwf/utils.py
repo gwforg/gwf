@@ -1,5 +1,4 @@
 import copy
-import functools
 import importlib
 import itertools
 import json

@@ -12,7 +12,7 @@ from os import fspath
 import attrs
 
 from .exceptions import GWFError, NameError, WorkflowError
-from .utils import PersistableDict, is_valid_name, timer
+from .utils import is_valid_name, timer
 
 logger = logging.getLogger(__name__)
 

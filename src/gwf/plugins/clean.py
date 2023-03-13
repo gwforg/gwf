@@ -6,7 +6,6 @@ import click
 
 from ..core import Graph, load_spec_hashes
 from ..filtering import EndpointFilter, NameFilter, filter_generic
-from ..utils import PersistableDict
 from ..workflow import Workflow
 
 logger = logging.getLogger(__name__)

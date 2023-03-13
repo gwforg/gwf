@@ -1,5 +1,4 @@
 import logging
-import os.path
 from collections import Counter
 
 import attr
@@ -9,10 +8,9 @@ from gwf.backends.base import Status
 
 from ..backends import Backend
 from ..conf import config
-from ..core import CachedFilesystem, Graph, TargetStatus, load_spec_hashes
+from ..core import Graph, TargetStatus, load_spec_hashes
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
 from ..scheduling import schedule_workflow
-from ..utils import PersistableDict
 from ..workflow import Workflow
 
 logger = logging.getLogger(__name__)
