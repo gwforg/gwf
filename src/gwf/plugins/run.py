@@ -62,7 +62,7 @@ def submit_workflow(matched_targets, reasons, backend, dry_run):
 
             if backend.status(target) != Status.UNKNOWN:
                 logger.debug("Target %s already submitted", target.name)
-                return
+                continue
 
             if dry_run:
                 logger.info(
