@@ -1,6 +1,14 @@
 import logging
 import os
-from importlib.metadata import entry_points
+import sys
+
+if sys.version_info < (
+    3,
+    10,
+):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
 
 import click
 from click_plugins import with_plugins
