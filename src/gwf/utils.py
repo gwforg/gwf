@@ -17,11 +17,9 @@ if sys.version_info < (3, 10):
 else:
     from importlib.metadata import entry_points  # noqa: F401
 
-
 import click
 
 from gwf.exceptions import GWFError
-
 
 logger = logging.getLogger(__name__)
 
