@@ -2,7 +2,7 @@ import click
 
 from ..backends import Backend, Status
 from ..backends.exceptions import UnsupportedOperationError
-from ..core import Graph
+from ..core import CachedFilesystem, Graph
 from ..filtering import filter_names
 from ..workflow import Workflow
 
@@ -32,8 +32,9 @@ def cancel(obj, targets, force):
             "This will cancel all targets! Do you want to continue?", abort=True
         )
 
+    fs = CachedFilesystem()
     workflow = Workflow.from_config(obj)
-    graph = Graph.from_targets(workflow.targets)
+    graph = Graph.from_targets(workflow.targets, fs)
 
     if targets:
         targets = filter_names(graph, targets)

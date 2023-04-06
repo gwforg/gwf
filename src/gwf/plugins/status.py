@@ -1,19 +1,24 @@
 import logging
 from collections import Counter
 
-import attr
 import click
-
-from gwf.backends.base import Status
 
 from ..backends import Backend
 from ..conf import config
-from ..core import Graph, TargetStatus, load_spec_hashes
+from ..core import CachedFilesystem, Graph, TargetStatus, get_spec_hashes
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
-from ..scheduling import schedule_workflow
+from ..scheduling import get_status_map
 from ..workflow import Workflow
 
 logger = logging.getLogger(__name__)
+
+
+_STATUS_VISUALS = {
+    TargetStatus.SHOULDRUN: ("magenta", "⨯"),
+    TargetStatus.SUBMITTED: ("cyan", "-"),
+    TargetStatus.RUNNING: ("blue", "↻"),
+    TargetStatus.COMPLETED: ("green", "✓"),
+}
 
 
 def _status_str_to_enum(s):
@@ -24,69 +29,36 @@ def _status_strs_to_enums(iterable):
     return list(map(_status_str_to_enum, iterable))
 
 
-@attr.define(frozen=True)
-class HumanStatus:
-    status: TargetStatus = attr.ib()
-    reason: str = attr.ib(eq=False)
-    symbol: str = attr.ib()
-    color: str = attr.ib()
+def _key_target_order(item):
+    t, _ = item
+    return t.order
 
 
-def get_status(reason, backend):
-    """Return the status of a target.
-
-    Returns the status of a target where it is taken into account whether
-    the target should run or not.
-
-    :param Target target:
-        The target to return status for.
-    """
-    status = backend.status(reason.target)
-    if status == Status.RUNNING:
-        return HumanStatus(TargetStatus.RUNNING, "is running", symbol="↻", color="blue")
-    elif status == Status.SUBMITTED:
-        return HumanStatus(
-            TargetStatus.SUBMITTED, "has been submitted", symbol="-", color="cyan"
-        )
-    elif reason.scheduled:
-        return HumanStatus(TargetStatus.SHOULDRUN, reason, symbol="⨯", color="magenta")
-    else:
-        return HumanStatus(TargetStatus.COMPLETED, reason, symbol="✓", color="green")
-
-
-def print_table(graph, targets, target_status):
-    targets = list(targets)
-
-    name_col_width = max((len(target.name) for target in targets), default=0) + 4
-    format_str = "{status} {name:<{name_col_width}}{percentage:>7.2%}    {explanation}"
-
-    for target in sorted(targets, key=lambda t: t.order):
-        status = target_status[target]
-        deps = graph.dfs(target)
-        percentage = sum(
-            1 for t in deps if target_status[t].status == TargetStatus.COMPLETED
-        ) / len(deps)
+def print_table(target_states):
+    name_col_width = (
+        max((len(target.name) for target in target_states.values()), default=0) + 4
+    )
+    format_str = "{symbol} {name:<{name_col_width}} {status}"
+    for target, status in sorted(target_states.items(), key=_key_target_order):
+        color, symbol = _STATUS_VISUALS[status]
         line = format_str.format(
+            symbol=symbol,
             name=target.name,
-            status=status.symbol,
-            percentage=percentage,
+            status=status.name.lower(),
             name_col_width=name_col_width,
-            explanation=status.reason or "",
         )
-        click.secho(line, fg=status.color)
+        click.secho(line, fg=color)
 
 
-def print_summary(_, targets, target_status):
-    status_counts = Counter(status for status in target_status.values())
-    click.echo("∑ {:<10}{:>10}".format("total", len(targets)))
+def print_summary(target_states):
+    status_counts = Counter(status for status in target_states.values())
+    click.echo("{:<10}{:>10}".format("total", len(target_states)))
     for status, count in status_counts.items():
         click.secho(
-            "{} {:<10}{:>10}".format(
-                status.symbol,
-                status.status.name.lower(),
+            "{:<10}{:>10}".format(
+                status.name.lower(),
                 count,
-            ),
-            fg=status.color,
+            )
         )
 
 
@@ -131,29 +103,27 @@ def status(obj, status, endpoints, format, targets):
 
     The targets are shown in creation-order.
     """
+    fs = CachedFilesystem()
     workflow = Workflow.from_config(obj)
-    graph = Graph.from_targets(workflow.targets)
-
-    spec_hashes = None
-    if config.get("use_spec_hashes"):
-        spec_hashes = load_spec_hashes(workflow.working_dir, graph)
+    graph = Graph.from_targets(workflow.targets, fs)
 
     backend_cls = Backend.from_config(obj)
-    with backend_cls() as backend:
-        reasons = schedule_workflow(graph, spec_hashes=spec_hashes)
-
-        target_status = {}
-        for target, reason in reasons.items():
-            target_status[target] = get_status(reason, backend)
-
-        def status_provider(target):
-            return target_status[target].status
+    with (
+        backend_cls() as backend,
+        get_spec_hashes(working_dir=workflow.working_dir, config=config) as spec_hashes,
+    ):
+        target_states = get_status_map(
+            graph,
+            fs,
+            spec_hashes,
+            backend,
+        )
 
         filters = []
         if status:
             filters.append(
                 StatusFilter(
-                    status_provider=status_provider,
+                    status_provider=target_states.get,
                     status=_status_strs_to_enums(status),
                 )
             )
@@ -162,7 +132,8 @@ def status(obj, status, endpoints, format, targets):
         if endpoints:
             filters.append(EndpointFilter(endpoints=graph.endpoints()))
 
-        matches = filter_generic(targets=graph, filters=filters)
+        matches = set(filter_generic(targets=graph, filters=filters))
+        target_states = {k: v for k, v in target_states.items() if k in matches}
 
         printer = FORMATS[format]
-        printer(graph, matches, target_status)
+        printer(target_states)

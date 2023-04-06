@@ -4,7 +4,8 @@ import os.path
 
 import click
 
-from ..core import Graph, load_spec_hashes
+from ..conf import config
+from ..core import CachedFilesystem, Graph, get_spec_hashes
 from ..filtering import EndpointFilter, NameFilter, filter_generic
 from ..workflow import Workflow
 
@@ -43,8 +44,9 @@ def clean(obj, targets, all, force):
     deleted. If you want to clean up output files from endpoints too, use the
     ``--all`` flag.
     """
+    fs = CachedFilesystem()
     workflow = Workflow.from_config(obj)
-    graph = Graph.from_targets(workflow.targets)
+    graph = Graph.from_targets(workflow.targets, fs)
 
     filters = []
     if targets:
@@ -73,28 +75,26 @@ def clean(obj, targets, all, force):
             abort=True,
         )
 
-    spec_hashes = load_spec_hashes(workflow.working_dir, graph)
+    with get_spec_hashes(
+        working_dir=workflow.working_dir, config=config
+    ) as spec_hashes:
+        for target in matches:
+            logger.info("Clearing hash for %s", target)
+            spec_hashes.invalidate(target)
 
-    for target in matches:
-        # logger.info("Clearing hash for %s", target)
-        # if target.name in spec_hashes:
-        #    del spec_hashes[target.name]
+            logger.info("Deleting output files of %s", target.name)
+            for path in target.flattened_outputs():
+                if path in target.protected():
+                    logging.info(
+                        "Skipping file '%s' from target '%s' because it is protected",
+                        click.format_filename(path),
+                        target.name,
+                    )
+                    continue
 
-        logger.info("Deleting output files of %s", target.name)
-        for path in target.flattened_outputs():
-            if path in target.protected():
                 logging.info(
-                    "Skipping file '%s' from target '%s' because it is protected",
+                    'Deleting file "%s" from target "%s"',
                     click.format_filename(path),
                     target.name,
                 )
-                continue
-
-            logging.info(
-                'Deleting file "%s" from target "%s"',
-                click.format_filename(path),
-                target.name,
-            )
-            _delete_file(path)
-
-    spec_hashes.persist()
+                _delete_file(path)

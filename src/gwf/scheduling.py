@@ -1,211 +1,149 @@
 import logging
-import os.path
+from functools import partial
 
-import attrs
-
-from .core import CachedFilesystem, Target, hash_spec
-from .exceptions import WorkflowError
+from .backends.base import Status
+from .core import TargetStatus
 
 logger = logging.getLogger(__name__)
 
 
-class Reason:
-    @attrs.frozen
-    class _Base:
-        def reason(self):
-            return NotImplementedError("reason()")
-
-        def __str__(self):
-            return self.reason()
-
-    @attrs.frozen
-    class IsSink(_Base):
-        target: Target
-        scheduled: bool = True
-
-        def reason(self):
-            return "is a sink"
-
-        def long_reason(self):
-            return self.reason()
-
-    @attrs.frozen
-    class IsSource(_Base):
-        target: Target
-        scheduled: bool = False
-
-        def reason(self):
-            return "not scheduled because it is a source"
-
-        def long_reason(self):
-            return self.reason()
-
-    @attrs.frozen
-    class DependencyScheduled(_Base):
-        target: Target = attrs.field()
-        dependencies: list = attrs.field()
-        scheduled: bool = True
-
-        def reason(self):
-            return "a dependency was scheduled"
-
-        def long_reason(self):
-            return (
-                f"scheduled because the dependency {self.dependencies[0]} was scheduled"
-            )
-
-    @attrs.frozen
-    class MissingOutput(_Base):
-        target: Target = attrs.field()
-        path: str = attrs.field()
-        scheduled: bool = True
-
-        def reason(self):
-            return "an output file is missing"
-
-        def long_reason(self):
-            path = os.path.relpath(self.path)
-            return f"output file {path} is missing"
-
-    @attrs.frozen
-    class OutOfDate(_Base):
-        target: Target = attrs.field()
-        input_path: str = attrs.field()
-        output_path: str = attrs.field()
-        scheduled: bool = True
-
-        def reason(self):
-            return "is out-of-date"
-
-        def long_reason(self):
-            input_path = os.path.relpath(self.input_path)
-            output_path = os.path.relpath(self.output_path)
-            return (
-                f"scheduled because input file {input_path} is newer "
-                f"than output file {output_path}"
-            )
-
-    @attrs.frozen
-    class SpecChanged(_Base):
-        target: Target = attrs.field()
-        old_hash: str = attrs.field()
-        curr_hash: str = attrs.field()
-        scheduled: bool = True
-
-        def reason(self):
-            return "spec has changed"
-
-        def long_reason(self):
-            return self.reason()
-
-    @attrs.frozen
-    class UpToDate(_Base):
-        target: Target = attrs.field()
-        scheduled: bool = False
-
-        def reason(self):
-            return "is up-to-date"
-
-        def long_reason(self):
-            return self.reason()
+SUBMITTED_STATES = (
+    TargetStatus.SUBMITTED,
+    TargetStatus.RUNNING,
+    TargetStatus.SHOULDRUN,
+)
 
 
-def linearize_plan(plan):
-    linear_plan = []
-    visited = set()
+def should_run(target, fs, spec_hashes):
+    new_hash = spec_hashes.has_changed(target)
+    if new_hash is not None:
+        logger.debug("Target %s has a changed spec", target)
+        return True
 
-    def traverse(reason):
-        deps = list()
-        if reason.scheduled and isinstance(reason, Reason.DependencyScheduled):
-            for dep in reason.dependencies:
-                if dep.scheduled:
-                    deps.append(dep.target)
-                traverse(dep)
+    for path in target.flattened_outputs():
+        if not fs.exists(path):
+            logger.debug("Target %s is missing output file %s", target, path)
+            return True
 
-        if reason.target.name not in visited:
-            linear_plan.append((reason, deps))
-            visited.add(reason.target.name)
+    if not target.inputs:
+        logger.debug("Target %s has no inputs", target)
+        return True
 
-    traverse(plan)
-    return linear_plan
+    youngest_in_ts, youngest_in_path = max(
+        (fs.changed_at(path), path)
+        for path in target.flattened_inputs()
+        if fs.exists(path)
+    )
+
+    # If I have no outputs, but I have inputs, I should probably only run if my input
+    # changed, but I don't have any output files to compare with, so I'll just run
+    # every time.
+    if not target.outputs:
+        logger.debug("Target %s has no outputs", target)
+        return True
+
+    oldest_out_ts, oldest_out_path = min(
+        (fs.changed_at(path), path)
+        for path in target.flattened_outputs()
+        if fs.exists(path)
+    )
+    # logger.debug(
+    #     "%s is the oldest output file of %s with timestamp %s",
+    #     oldest_out_path,
+    #     target,
+    #     oldest_out_ts,
+    # )
+
+    if youngest_in_ts > oldest_out_ts:
+        logger.debug("Target %s is not up-to-date", target)
+        return True
+
+    logger.debug("Target %s is up-to-date", target)
+    return False
 
 
-def schedule_workflow(graph, fs=None, spec_hashes=None, endpoints=None):
-    if endpoints is None:
-        endpoints = graph.endpoints()
-
-    if fs is None:
-        fs = CachedFilesystem()
-
-    reasons = dict()
-
-    def get_reason(target, graph, fs, spec_hashes):
-        scheduled_deps = []
+def schedule(endpoints, graph, fs, spec_hashes, status_func, submit_func):
+    def _schedule(target):
+        submitted_deps = []
         for dep in graph.dependencies[target]:
-            reason = schedule_cached(dep)
-            if reason.scheduled:
-                scheduled_deps.append(reason)
+            status = _cached_schedule(dep)
+            if status in SUBMITTED_STATES:
+                submitted_deps.append(dep)
 
-        if scheduled_deps:
-            return Reason.DependencyScheduled(target, scheduled_deps)
+        if submitted_deps:
+            logger.debug(
+                "Target %s will be submitted because of dependency %s",
+                target,
+                submitted_deps[0],
+            )
+            submit_func(target, dependencies=submitted_deps)
+            return TargetStatus.SHOULDRUN
 
-        if spec_hashes is not None:
-            curr_hash = hash_spec(target.spec)
-            old_hash = spec_hashes.get(target.name)
-            if curr_hash != old_hash:
-                return Reason.SpecChanged(target, old_hash, curr_hash)
+        if status_func(target) == Status.SUBMITTED:
+            logger.debug("Target %s is already submitted", target)
+            return TargetStatus.SUBMITTED
 
-        # Check whether all input files actually exists are are being provided
-        # by another target. If not, it's an error.
-        for path in target.flattened_inputs():
-            if path in graph.unresolved and not fs.exists(path):
-                msg = (
-                    'File "{}" is required by "{}", but does not exist and is not '
-                    "provided by any target in the workflow."
-                ).format(path, target)
-                raise WorkflowError(msg)
+        if status_func(target) == Status.RUNNING:
+            logger.debug("Target %s is already running", target)
+            return TargetStatus.RUNNING
 
-        for path in target.flattened_outputs():
-            if not fs.exists(path):
-                return Reason.MissingOutput(target, path)
+        if should_run(target, fs, spec_hashes):
+            submit_func(target, dependencies=submitted_deps)
+            return TargetStatus.SHOULDRUN
 
-        if not target.inputs:
-            return Reason.IsSource(target)
+        return TargetStatus.COMPLETED
 
-        youngest_in_ts, youngest_in_path = max(
-            (fs.changed_at(path), path) for path in target.flattened_inputs()
-        )
-        logger.debug(
-            "%s is the youngest input file of %s with timestamp %s",
-            youngest_in_path,
-            target,
-            youngest_in_ts,
-        )
+    cache = {}
 
-        if not target.outputs:
-            return Reason.IsSink(target)
+    def _cached_schedule(target):
+        if target not in cache:
+            cache[target] = _schedule(target)
+        return cache[target]
 
-        oldest_out_ts, oldest_out_path = min(
-            (fs.changed_at(path), path) for path in target.flattened_outputs()
-        )
-        logger.debug(
-            "%s is the oldest output file of %s with timestamp %s",
-            oldest_out_path,
-            target,
-            oldest_out_ts,
-        )
+    for target in sorted(endpoints, key=lambda t: t.name):
+        _cached_schedule(target)
 
-        if youngest_in_ts > oldest_out_ts:
-            return Reason.OutOfDate(target, youngest_in_path, oldest_out_path)
-        return Reason.UpToDate(target)
+    return cache
 
-    def schedule_cached(target):
-        if target not in reasons:
-            reason = get_reason(target, graph, fs, spec_hashes)
-            reasons[target] = reason
-        return reasons[target]
 
-    for endpoint in endpoints:
-        schedule_cached(endpoint)
+def _submit_dryrun(target, dependencies):
+    logger.info("Would submit %s", target)
 
-    return reasons
+
+def submit_backend(target, dependencies, backend, spec_hashes):
+    logger.info("Submitting target %s", target)
+    backend.submit(target, dependencies)
+    spec_hashes.update(target)
+
+
+def _submit_noop(target, dependencies):
+    pass
+
+
+def submit_workflow(endpoints, graph, fs, spec_hashes, backend, dry_run=False):
+    """Submit a workflow to a backend."""
+    submit_func = (
+        _submit_dryrun
+        if dry_run
+        else partial(submit_backend, backend=backend, spec_hashes=spec_hashes)
+    )
+    schedule(
+        endpoints,
+        graph,
+        fs,
+        spec_hashes,
+        status_func=backend.status,
+        submit_func=submit_func,
+    )
+
+
+def get_status_map(graph, fs, spec_hashes, backend, endpoints=None):
+    """Get the status of each targets in the graph."""
+    return schedule(
+        endpoints if endpoints is not None else graph.endpoints(),
+        graph,
+        fs,
+        spec_hashes,
+        status_func=backend.status,
+        submit_func=_submit_noop,
+    )

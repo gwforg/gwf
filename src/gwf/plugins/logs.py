@@ -1,7 +1,7 @@
 import click
 
 from ..backends import Backend
-from ..exceptions import WorkflowError
+from ..exceptions import GWFError
 from ..workflow import Workflow
 
 
@@ -19,10 +19,12 @@ def logs(obj, target, stderr, no_pager):
     workflow = Workflow.from_config(obj)
     backend_cls = Backend.from_config(obj)
 
-    if target not in workflow.targets:
-        raise WorkflowError('Target "{}" is not found in the workflow.'.format(target))
+    try:
+        target = workflow.targets[target]
+    except KeyError as exc:
+        raise GWFError(f"Target {target} not found in the workflow.") from exc
 
-    log_file = backend_cls.logs(workflow.targets[target], stderr=stderr)
+    log_file = backend_cls.logs(target, stderr=stderr)
     log_contents = log_file.read()
     log_file.close()
 

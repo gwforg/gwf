@@ -6,11 +6,15 @@ from gwf.core import (
     CircularDependencyError,
     FileProvidedByMultipleTargetsError,
     Graph,
+    InvalidPathError,
+    NoopSpecHashes,
     Target,
+    TargetStatus,
+    UnresolvedInputError,
     _flatten,
 )
-from gwf.exceptions import NameError, WorkflowError
-from gwf.scheduling import Reason
+from gwf.exceptions import GWFError
+from gwf.scheduling import get_status_map
 
 
 @pytest.mark.parametrize(
@@ -32,50 +36,10 @@ def test_flatten(value, expected):
 
 class TestTarget(unittest.TestCase):
     def test_target_with_invalid_name_raises_exception(self):
-        with self.assertRaises(NameError):
+        with self.assertRaises(GWFError):
             Target(
                 "123abc", inputs=[], outputs=[], options={}, working_dir="/some/path"
             )
-
-    def test_target_without_outputs_is_a_sink(self):
-        target = Target(
-            name="TestTarget",
-            inputs=[],
-            outputs=[],
-            options={},
-            working_dir="/some/path",
-        )
-        self.assertTrue(target.is_sink)
-
-    def test_target_with_outputs_is_not_a_sink(self):
-        target = Target(
-            name="TestTarget",
-            inputs=[],
-            outputs=["test_output1.txt", "test_output2.txt"],
-            options={},
-            working_dir="/some/path",
-        )
-        self.assertFalse(target.is_sink)
-
-    def test_target_without_inputs_is_a_source(self):
-        target = Target(
-            name="TestTarget",
-            inputs=[],
-            outputs=[],
-            options={},
-            working_dir="/some/path",
-        )
-        self.assertTrue(target.is_source)
-
-    def test_target_with_inputs_is_not_a_source(self):
-        target = Target(
-            name="TestTarget",
-            inputs=["test_input1.txt", "test_input2.txt"],
-            outputs=[],
-            options={},
-            working_dir="/some/path",
-        )
-        self.assertFalse(target.is_source)
 
     def test_target_with_protected_outputs(self):
         target = Target(
@@ -102,17 +66,6 @@ class TestTarget(unittest.TestCase):
         self.assertIsNotNone(target.spec)
         self.assertEqual(target.spec, "this is a spec")
 
-    def test_inherit_options(self):
-        target = Target(
-            "TestTarget",
-            inputs=[],
-            outputs=[],
-            options={"cores": 8},
-            working_dir="/some/dir",
-        )
-        target.inherit_options({"cores": 4, "memory": "4g"})
-        self.assertEqual(target.options, {"cores": 8, "memory": "4g"})
-
     def test_str_on_target(self):
         target = Target(
             "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/path"
@@ -120,7 +73,7 @@ class TestTarget(unittest.TestCase):
         self.assertEqual(str(target), "TestTarget")
 
     def test_input_is_empty_string(self):
-        with self.assertRaises(WorkflowError):
+        with self.assertRaises(InvalidPathError):
             Target(
                 name="TestTarget",
                 inputs=["ab", ""],
@@ -130,7 +83,7 @@ class TestTarget(unittest.TestCase):
             )
 
     def test_output_is_empty_string(self):
-        with self.assertRaises(WorkflowError):
+        with self.assertRaises(InvalidPathError):
             Target(
                 name="TestTarget",
                 inputs=[],
@@ -140,7 +93,7 @@ class TestTarget(unittest.TestCase):
             )
 
     def test_input_contains_nonprintable(self):
-        with self.assertRaises(WorkflowError):
+        with self.assertRaises(InvalidPathError):
             Target(
                 name="TestTarget",
                 inputs=["a\nb", "ac"],
@@ -150,7 +103,7 @@ class TestTarget(unittest.TestCase):
             )
 
     def test_output_contains_nonprintable(self):
-        with self.assertRaises(WorkflowError):
+        with self.assertRaises(InvalidPathError):
             Target(
                 name="TestTarget",
                 inputs=[],
@@ -160,7 +113,7 @@ class TestTarget(unittest.TestCase):
             )
 
 
-def test_graph_construction(graph_factory):
+def test_graph_construction(filesystem):
     t1 = Target(
         name="Target1",
         inputs=["test_input1.txt", "test_input2.txt"],
@@ -193,7 +146,10 @@ def test_graph_construction(graph_factory):
         working_dir="/some/dir",
     )
 
-    graph = graph_factory([t1, t2, t3, t4])
+    filesystem.add_file("/some/dir/test_input1.txt", 0)
+    filesystem.add_file("/some/dir/test_input2.txt", 0)
+
+    graph = Graph.from_targets([t1, t2, t3, t4], filesystem)
 
     assert len(graph.targets) == 4
 
@@ -221,7 +177,7 @@ def test_graph_construction(graph_factory):
     }
 
 
-def test_graph_raises_multiple_providers_error():
+def test_graph_raises_multiple_providers_error(filesystem):
     t1 = Target(
         name="Target1",
         inputs=[],
@@ -239,10 +195,10 @@ def test_graph_raises_multiple_providers_error():
     )
 
     with pytest.raises(FileProvidedByMultipleTargetsError):
-        Graph.from_targets({"Target1": t1, "Target2": t2})
+        Graph.from_targets({"Target1": t1, "Target2": t2}, filesystem)
 
 
-def test_graph_raises_circular_dependency_error():
+def test_graph_raises_circular_dependency_error(filesystem):
     t1 = Target(
         name="Target1",
         inputs=["f1.txt"],
@@ -265,10 +221,10 @@ def test_graph_raises_circular_dependency_error():
         working_dir="/some/dir",
     )
     with pytest.raises(CircularDependencyError):
-        Graph.from_targets({"Target1": t1, "Target2": t2, "Target3": t3})
+        Graph.from_targets({"Target1": t1, "Target2": t2, "Target3": t3}, filesystem)
 
 
-def test_graph_raises_when_two_targets_output_the_same_file(graph_factory):
+def test_graph_raises_when_two_targets_output_the_same_file(filesystem):
     target1 = Target(
         "TestTarget1",
         inputs=[],
@@ -285,82 +241,122 @@ def test_graph_raises_when_two_targets_output_the_same_file(graph_factory):
     )
 
     with pytest.raises(FileProvidedByMultipleTargetsError):
-        graph_factory([target1, target2])
+        Graph.from_targets([target1, target2], filesystem)
 
 
 def test_schedule_if_one_of_its_output_files_does_not_exist(
-    diamond_graph, filesystem, schedule
+    diamond_graph,
+    filesystem,
+    backend,
 ):
     target = diamond_graph.targets["TestTarget1"]
-    reasons = schedule(diamond_graph, endpoints=[target], fs=filesystem)
-    reason = reasons[target]
-    assert isinstance(reason, Reason.MissingOutput)
-    assert reason.scheduled
+    target_states = get_status_map(
+        graph=diamond_graph,
+        endpoints=[target],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+    assert target_states[target] == TargetStatus.SHOULDRUN
 
 
-def test_schedule_if_one_of_its_dependencies_was_scheduled(diamond_graph, schedule):
-    target2 = diamond_graph.targets["TestTarget2"]
-    reasons = schedule(diamond_graph, endpoints=[target2])
-    reason = reasons[target2]
-    assert isinstance(reason, Reason.DependencyScheduled)
-    assert reason.target is target2
-    assert reason.scheduled
+def test_schedule_if_one_of_its_dependencies_was_scheduled(
+    diamond_graph, filesystem, backend
+):
+    target = diamond_graph.targets["TestTarget2"]
+    target_states = get_status_map(
+        graph=diamond_graph,
+        endpoints=[target],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+    assert target_states[target] == TargetStatus.SHOULDRUN
 
 
-@pytest.mark.skip()
-def test_schedule_if_it_is_a_sink(trivial_graph, schedule):
+def test_schedule_if_it_is_a_sink(trivial_graph, filesystem, backend):
     target = trivial_graph.targets["TestTarget"]
-    reasons = schedule(trivial_graph, endpoints=[target])
-    reason = reasons[target]
-    assert reason.scheduled
-    assert isinstance(reason, Reason.IsSink)
+    target_states = get_status_map(
+        graph=trivial_graph,
+        endpoints=[target],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+    assert target_states[target] == TargetStatus.SHOULDRUN
 
 
 def test_schedule_if_any_input_file_is_newer_than_any_output_file(
-    diamond_graph, filesystem, schedule
+    diamond_graph, filesystem, backend
 ):
     filesystem.add_file("/some/dir/test_output1.txt", changed_at=0)
     filesystem.add_file("/some/dir/test_output2.txt", changed_at=1)
     filesystem.add_file("/some/dir/test_output3.txt", changed_at=3)
     filesystem.add_file("/some/dir/final_output.txt", changed_at=2)
 
-    target4 = diamond_graph.targets["TestTarget4"]
-    reasons = schedule(diamond_graph, endpoints=[target4])
-    reason = reasons[target4]
-    assert reason.target is target4
-    assert reason.scheduled
-    assert isinstance(reason, Reason.OutOfDate)
-
-
-def test_do_not_schedule_if_it_is_a_source_and_all_outputs_exist(
-    diamond_graph, filesystem, schedule
-):
-    filesystem.add_file("/some/dir/test_output1.txt", changed_at=1)
-
-    target = diamond_graph.targets["TestTarget1"]
-    reasons = schedule(diamond_graph, endpoints=[target])
-    reason = reasons[target]
-    assert not reason.scheduled
-    assert isinstance(reason, Reason.IsSource)
-
-
-def test_do_not_schedule_if_all_outputs_are_newer_then_the_inputs(
-    diamond_graph, schedule, filesystem
-):
-    filesystem.add_file("/some/dir/test_output1.txt", changed_at=0)
-    filesystem.add_file("/some/dir/test_output2.txt", changed_at=1)
-    filesystem.add_file("/some/dir/test_output3.txt", changed_at=3)
-    filesystem.add_file("/some/dir/final_output.txt", changed_at=4)
-
     target = diamond_graph.targets["TestTarget4"]
-    reasons = schedule(diamond_graph, endpoints=[target])
-    reason = reasons[target]
-    assert not reason.scheduled
+    target_states = get_status_map(
+        graph=diamond_graph,
+        endpoints=[target],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+    assert target_states[target] == TargetStatus.SHOULDRUN
 
 
-def test_scheduler_raises_if_input_file_is_not_provided_and_does_not_exist(
-    schedule, graph_factory
-):
+def test_schedule_if_it_is_a_source(filesystem, backend):
+    target = Target(
+        name="Foo", inputs=[], outputs=["foo"], options={}, working_dir="/some/dir"
+    )
+    graph = Graph.from_targets([target], filesystem)
+
+    target_states = get_status_map(
+        graph=graph,
+        endpoints=[target],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+    assert target_states[target] == TargetStatus.SHOULDRUN
+
+    filesystem.add_file("/some/dir/foo", changed_at=1)
+    target_states = get_status_map(
+        graph=graph,
+        endpoints=[target],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+    assert target_states[target] == TargetStatus.SHOULDRUN
+
+
+def test_do_not_schedule_if_all_outputs_are_newer_then_the_inputs(backend, filesystem):
+    filesystem.add_file("/some/dir/input1", changed_at=0)
+    filesystem.add_file("/some/dir/input2", changed_at=1)
+    filesystem.add_file("/some/dir/output1", changed_at=3)
+    filesystem.add_file("/some/dir/output2", changed_at=4)
+
+    target = Target(
+        name="Foo",
+        inputs=["input1", "input2"],
+        outputs=["output1", "output2"],
+        options={},
+        working_dir="/some/dir",
+    )
+    graph = Graph.from_targets([target], filesystem)
+
+    target_states = get_status_map(
+        graph=graph,
+        endpoints=[target],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+    assert target_states[target] == TargetStatus.COMPLETED
+
+
+def test_graph_raises_if_input_file_is_not_provided_and_does_not_exist(filesystem):
     target = Target(
         "TestTarget",
         inputs=["in.txt"],
@@ -368,15 +364,12 @@ def test_scheduler_raises_if_input_file_is_not_provided_and_does_not_exist(
         options={},
         working_dir="/some/dir",
     )
-    graph = graph_factory([target])
 
-    with pytest.raises(WorkflowError):
-        schedule(graph, endpoints=[target])
+    with pytest.raises(UnresolvedInputError):
+        Graph.from_targets([target], filesystem)
 
 
-def test_scheduling_target_with_deep_deps_that_are_not_submitted(
-    schedule, graph_factory
-):
+def test_scheduling_target_with_deep_deps_that_are_not_submitted(filesystem, backend):
     target1 = Target(
         "TestTarget1",
         inputs=[],
@@ -406,16 +399,21 @@ def test_scheduling_target_with_deep_deps_that_are_not_submitted(
         working_dir="/some/dir",
     )
 
-    graph = graph_factory([target1, target2, target3, target4])
-    reasons = schedule(graph, endpoints=[target4])
+    graph = Graph.from_targets([target1, target2, target3, target4], filesystem)
+    target_states = get_status_map(
+        graph=graph,
+        endpoints=[target4],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+    assert target_states[target1] == TargetStatus.SHOULDRUN
+    assert target_states[target2] == TargetStatus.SHOULDRUN
+    assert target_states[target3] == TargetStatus.SHOULDRUN
+    assert target_states[target4] == TargetStatus.SHOULDRUN
 
-    assert reasons[target1].scheduled
-    assert reasons[target2].scheduled
-    assert reasons[target3].scheduled
-    assert reasons[target4].scheduled
 
-
-def test_scheduling_branch_and_join_structure(schedule, graph_factory):
+def test_scheduling_branch_and_join_structure(filesystem, backend):
     target1 = Target(
         "TestTarget1",
         inputs=[],
@@ -444,43 +442,58 @@ def test_scheduling_branch_and_join_structure(schedule, graph_factory):
         options={},
         working_dir="/some/dir",
     )
-    graph = graph_factory([target1, target2, target3, target4])
-    reasons = schedule(graph, endpoints=[target4])
-
-    assert reasons[target1].scheduled
-    assert reasons[target2].scheduled
-    assert reasons[target3].scheduled
-    assert reasons[target4].scheduled
-
-
-@pytest.mark.skip()
-def test_scheduling_multiple_targets(diamond_graph, schedule):
-    reasons = schedule(
-        diamond_graph,
-        endpoints=[
-            diamond_graph.targets["TestTarget3"],
-            diamond_graph.targets["TestTarget2"],
-        ],
+    graph = Graph.from_targets([target1, target2, target3, target4], filesystem)
+    target_states = get_status_map(
+        graph=graph,
+        endpoints=[target4],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
     )
-    # assert len(reasons) == 2
+    assert target_states[target1] == TargetStatus.SHOULDRUN
+    assert target_states[target2] == TargetStatus.SHOULDRUN
+    assert target_states[target3] == TargetStatus.SHOULDRUN
+    assert target_states[target4] == TargetStatus.SHOULDRUN
 
 
-def test_scheduling_when_spec_changed(diamond_graph, schedule, filesystem):
-    filesystem.add_file("/some/dir/test_output1.txt", changed_at=1)
-    target = diamond_graph.targets["TestTarget1"]
-    reasons = schedule(diamond_graph, endpoints=[target], spec_hashes={})
-    reason = reasons[target]
-    assert reason.scheduled
-    assert isinstance(reason, Reason.SpecChanged)
+def test_scheduling_with_spec_hashing(backend, spec_hashes, filesystem):
+    filesystem.add_file("/some/dir/input.txt", changed_at=1)
+    filesystem.add_file("/some/dir/output.txt", changed_at=2)
 
-
-def test_scheduling_when_spec_not_changed(diamond_graph, schedule, filesystem):
-    filesystem.add_file("/some/dir/test_output1.txt", changed_at=1)
-    target = diamond_graph.targets["TestTarget1"]
-    reasons = schedule(
-        diamond_graph,
-        endpoints=[target],
-        spec_hashes={target.name: "da39a3ee5e6b4b0d3255bfef95601890afd80709"},
+    target = Target(
+        "TestTarget",
+        inputs=["input.txt"],
+        outputs=["output.txt"],
+        options={},
+        working_dir="/some/dir",
+        spec="foo",
     )
-    reason = reasons[target]
-    assert not reason.scheduled
+    graph = Graph.from_targets([target], filesystem)
+
+    target_states = get_status_map(
+        graph=graph,
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=spec_hashes,
+    )
+    assert target_states[target] == TargetStatus.SHOULDRUN
+
+    spec_hashes.update(target)
+
+    target_states = get_status_map(
+        graph=graph,
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=spec_hashes,
+    )
+    assert target_states[target] == TargetStatus.COMPLETED
+
+    target.spec = "bar"
+
+    target_states = get_status_map(
+        graph=graph,
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=spec_hashes,
+    )
+    assert target_states[target] == TargetStatus.SHOULDRUN

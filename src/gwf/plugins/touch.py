@@ -1,8 +1,25 @@
+from functools import lru_cache
+
 import click
 
-from ..core import Graph, dump_spec_hashes
+from ..conf import config
+from ..core import CachedFilesystem, Graph, get_spec_hashes
 from ..utils import touchfile
 from ..workflow import Workflow
+
+
+def touch_workflow(graph, spec_hashes):
+    @lru_cache
+    def _visit(target):
+        for dep in graph.dependencies[target]:
+            _visit(dep)
+
+        spec_hashes.update(target)
+        for path in target.flattened_outputs():
+            touchfile(path)
+
+    for target in graph.endpoints():
+        _visit(target)
 
 
 @click.command()
@@ -12,21 +29,16 @@ def touch(obj):
 
     Running this command touches all output files in the workflow such that
     their modification timestamp is updated. Touching is performed bottom-up
-    such that, when done, all targets in the workflow will look completed.
+    such that, when done, all targets in the workflow will look completed. Spec
+    hashes will also be "touched".
 
     This is useful if one or more files were accidentially deleted, but you
     don't want to re-run the workflow to recreate them.
     """
+    filesystem = CachedFilesystem()
     workflow = Workflow.from_config(obj)
-    graph = Graph.from_targets(workflow.targets)
-
-    dump_spec_hashes(workflow.working_dir, graph)
-
-    visited = set()
-    for endpoint in graph.endpoints():
-        for target in graph.dfs(endpoint):
-            if target in visited:
-                continue
-            visited.add(target)
-            for path in target.flattened_outputs():
-                touchfile(path)
+    graph = Graph.from_targets(workflow.targets, filesystem)
+    with get_spec_hashes(
+        working_dir=workflow.working_dir, config=config
+    ) as spec_hashes:
+        touch_workflow(graph, spec_hashes)

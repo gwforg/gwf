@@ -66,7 +66,7 @@ def test(session):
         "pytest-mock",
         "pytest-runner",
     )
-    session.warn(session.virtualenv)
+
     session.run(
         "pytest",
         "--cov-config",

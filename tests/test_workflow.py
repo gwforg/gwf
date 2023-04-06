@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -33,15 +33,6 @@ def test_adding_two_targets_with_the_same_names_should_raise_an_exception():
         workflow.target("TestTarget", inputs=[], outputs=[])
 
 
-def test_target_from_template_returning_tuple():
-    def template_returning_tuple():
-        return [], [], {}, "this is the spec"
-
-    workflow = Workflow(working_dir="/some/dir")
-    workflow.target_from_template("TestTarget", template_returning_tuple())
-    assert "TestTarget" in workflow.targets
-
-
 def test_target_from_template_returning_anonymous_target():
     def template_returning_anonymous_target():
         return AnonymousTarget(
@@ -70,35 +61,22 @@ def test_target_from_template_returning_anonymous_target_without_working_dir():
     assert "TestTarget" in workflow.targets
 
 
-def test_target_from_invalid_template():
-    def invalid_template():
-        return [], []
-
-    workflow = Workflow()
-
-    with pytest.raises(TypeError):
-        workflow.target_from_template("TestTarget", 50)
-
-    with pytest.raises(TypeError):
-        workflow.target_from_template("TestTarget", invalid_template())
-
-
 def test_targets_inherit_workflow_working_dir_with_given_working_dir():
     workflow = Workflow(working_dir="/some/path")
     target = workflow.target("TestTarget", inputs=[], outputs=[])
-    target.working_dir == "/some/path"
+    assert target.working_dir == "/some/path"
 
 
 def test_targets_inherit_workflow_defaults():
     workflow = Workflow(defaults={"cores": 8, "memory": "8g"})
     target = workflow.target("TestTarget", inputs=[], outputs=[])
-    target.options == {"cores": 8, "memory": "8g"}
+    assert target.options == {"cores": 8, "memory": "8g"}
 
 
 def test_target_options_override_defaults():
     workflow = Workflow(defaults={"cores": 8, "memory": "8g"})
     target = workflow.target("TestTarget", inputs=[], outputs=[], cores=16)
-    target.options == {"cores": 16, "memory": "8g"}
+    assert target.options == {"cores": 16, "memory": "8g"}
 
 
 @patch("gwf.workflow.sys._getframe", autospec=True)

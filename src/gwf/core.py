@@ -11,7 +11,7 @@ from os import fspath
 
 import attrs
 
-from .exceptions import GWFError, NameError, WorkflowError
+from .exceptions import GWFError
 from .utils import is_valid_name, timer
 
 logger = logging.getLogger(__name__)
@@ -46,22 +46,21 @@ def _has_nonprintable_char(s):
     return None
 
 
-def _check_path(path, target_name, mode):
+class InvalidPathError(GWFError):
+    pass
+
+
+def _check_path(path):
     if not path:
-        msg = 'Target "{}" has an empty {} path.'.format(target_name, mode)
-        raise WorkflowError(msg)
+        raise InvalidPathError("Path is empty")
 
     result = _has_nonprintable_char(path)
     if result is not None:
         clean_path, char, pos = result
-        msg = (
-            'Path "{}" in target "{}" {}s contains a '
-            'non-printable character "{}" on position {}. '
-            "This is always unintentional and can cause "
-            "strange behaviour."
-        ).format(clean_path, target_name, mode, char, pos)
-        raise WorkflowError(msg)
-    return path
+        raise InvalidPathError(
+            f"Path {clean_path} contains a non-printable character '{char}' at {pos}. "
+            f"This is always unintentional and can cause strange behaviour."
+        )
 
 
 def _norm_path(working_dir, path):
@@ -79,35 +78,75 @@ def hash_spec(spec):
     return hashlib.sha1(spec.encode("utf-8")).hexdigest()
 
 
-def hash_specs(graph):
-    hashes = {}
-    for target in graph.targets.values():
-        hashes[target.name] = hash_spec(target.spec)
-    return hashes
+@attrs.define
+class NoopSpecHashes:
+    def has_changed(self, target):  # pragma: no cover
+        return None
+
+    def update(self, target):  # pragma: no cover
+        pass
+
+    def invalidate(self, target):  # pragma: no cover
+        pass
+
+    def close(self):  # pragma: no cover
+        pass
+
+    def __enter__(self):  # pragma: no cover
+        return self
+
+    def __exit__(self, *exc):  # pragma: no cover
+        self.close()
 
 
-def _get_spec_hashes_path(working_dir):
-    return os.path.join(working_dir, ".gwf", "spec-hashes.json")
+@attrs.define
+class FileSpecHashes:
+    path: str = attrs.field()
+    hashes: dict = attrs.field(factory=dict, init=False)
+
+    def __attrs_post_init__(self):
+        try:
+            with open(self.path) as hashes_file:
+                self.hashes = json.load(hashes_file)
+        except FileNotFoundError:
+            logger.debug("First run with spec hashes enabled")
+
+    def has_changed(self, target):
+        spec_hash = hash_spec(target.spec)
+        saved_hash = self.hashes.get(target.name)
+        if saved_hash is None:
+            logger.debug("No spec hash for %s exists", target)
+            return spec_hash
+        if spec_hash != saved_hash:
+            logger.debug("Spec for %s has changed", target)
+            return spec_hash
+        return None
+
+    def update(self, target):
+        self.hashes[target.name] = hash_spec(target.spec)
+
+    def invalidate(self, target):
+        try:
+            del self.hashes[target.name]
+        except KeyError:
+            pass
+
+    def close(self):
+        with open(self.path, "w") as hashes_file:
+            json.dump(self.hashes, hashes_file)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
 
 
-def load_spec_hashes(working_dir, graph):
-    path = _get_spec_hashes_path(working_dir)
-
-    # If spec-hashes.json doesn't exist, it's because this is the first time
-    # we're using spec hashes, so we'll initialize the dict with the current
-    # spec hashes.
-    if not os.path.exists(path):
-        logging.debug("First run with spec hashes enabled - computing hashes")
-        return hash_specs(graph)
-
-    with open(path) as hashes_file:
-        return json.load(hashes_file)
-
-
-def dump_spec_hashes(working_dir, graph):
-    hashes = hash_specs(graph)
-    with open(_get_spec_hashes_path(working_dir), "w") as hashes_file:
-        json.dump(hashes, hashes_file)
+def get_spec_hashes(*, working_dir, config):
+    if config.get("use_spec_hashes"):
+        return FileSpecHashes(os.path.join(working_dir, ".gwf", "spec-hashes.json"))
+    else:
+        return NoopSpecHashes()
 
 
 class TargetStatus(Enum):
@@ -119,6 +158,7 @@ class TargetStatus(Enum):
     COMPLETED = 3  #: The target has completed and should not run.
 
 
+@attrs.define(eq=False)
 class AnonymousTarget:
     """Represents an unnamed target.
 
@@ -142,85 +182,16 @@ class AnonymousTarget:
         cleaning, even if this target is not an endpoint.
     """
 
-    _creation_order = 0
-
-    def __init__(
-        self, inputs, outputs, options, working_dir=None, spec="", protect=None
-    ):
-        self.options = options
-        self.working_dir = working_dir
-        self.inputs = inputs
-        self.outputs = outputs
-        self._spec = spec
-
-        self.order = AnonymousTarget._creation_order
-        AnonymousTarget._creation_order += 1
-
-        if protect is None:
-            self.protect = set()
-        else:
-            self.protect = set(protect)
-
-    @property
-    def spec(self):
-        return self._spec
-
-    @spec.setter
-    def spec(self, value):
-        if not isinstance(value, str):
-            msg = (
-                "Target spec must be a string, not {}. Did you attempt to "
-                "assign a template to this target? This is no is not allowed "
-                "since version 1.0. Use the Workflow.target_from_template() "
-                "method instead. See the tutorial for more details."
-            )
-            raise TypeError(msg.format(type(value)))
-
-        self._spec = value
-
-    @property
-    def is_source(self):
-        """Return whether this target is a source.
-
-        A target is a source if it does not depend on any files.
-        """
-        return not self.inputs
-
-    @property
-    def is_sink(self):
-        """Return whether this target is a sink.
-
-        A target is a sink if it does not output any files.
-        """
-        return not self.outputs
-
-    def inherit_options(self, super_options):
-        options = super_options.copy()
-        options.update(self.options)
-        self.options = options
-
-    def __lshift__(self, spec):
-        self.spec = spec
-        return self
-
-    def __repr__(self):
-        return (
-            "{}(inputs={!r}, outputs={!r}, options={!r}, working_dir={!r}, "
-            "spec={!r})"
-        ).format(
-            self.__class__.__name__,
-            self.inputs,
-            self.outputs,
-            self.options,
-            self.working_dir,
-            self.spec,
-        )
-
-    def __str__(self):
-        return "{}_{}".format(self.__class__.__name__, id(self))
+    inputs: list = attrs.field()
+    outputs: list = attrs.field()
+    options: dict = attrs.field()
+    working_dir: str = attrs.field(default=".")
+    protect: set = attrs.field(factory=set, converter=set)
+    spec: str = attrs.field(default="")
 
 
-class Target(AnonymousTarget):
+@attrs.define(eq=False)
+class Target:
     """Represents a target.
 
     This class inherits from :class:`AnonymousTarget`.
@@ -273,27 +244,44 @@ class Target(AnonymousTarget):
         and *outputs* to be lists.
     """
 
-    def __init__(
-        self, name, inputs, outputs, options, working_dir=None, spec="", protect=None
-    ):
-        self.name = name
+    name: str = attrs.field()
+    inputs: list = attrs.field()
+    outputs: list = attrs.field()
+    options: dict = attrs.field()
+    working_dir: str = attrs.field(default=".")
+    protect: set = attrs.field(factory=set, converter=set)
+    spec: str = attrs.field(default="")
+    order: int = attrs.field(init=False)
+
+    _creation_order = 0
+
+    @order.default  # type: ignore
+    def _set_target_order(self):
+        order = Target._creation_order
+        Target._creation_order += 1
+        return order
+
+    @name.validator  # type: ignore
+    def _validate_name(self, attribute, value):
         if not is_valid_name(self.name):
-            raise NameError('Target defined with invalid name: "{}".'.format(self.name))
+            raise GWFError(f"Target defined with invalid name: {value}")
 
-        _check_path(working_dir, target_name=self.name, mode="working_dir")
-        for path in inputs:
-            _check_path(path, target_name=self.name, mode="input")
-        for path in outputs:
-            _check_path(path, target_name=self.name, mode="output")
+    @inputs.validator
+    @outputs.validator
+    def _validate_inputs(self, attribute, value):
+        for path in value:
+            _check_path(path)
 
-        super().__init__(
-            inputs=inputs,
-            outputs=outputs,
-            options=options,
-            working_dir=working_dir,
-            spec=spec,
-            protect=protect,
-        )
+    @working_dir.validator
+    def _validate_working_dir(self, attribute, value):
+        _check_path(value)
+
+    def __lshift__(self, spec):
+        self.spec = spec
+        return self
+
+    def __str__(self):
+        return self.name
 
     def flattened_inputs(self):
         return _norm_paths(self.working_dir, _flatten(self.inputs))
@@ -304,33 +292,16 @@ class Target(AnonymousTarget):
     def protected(self):
         return set(_norm_paths(self.working_dir, _flatten(self.protect)))
 
-    @classmethod
-    def empty(cls, name):
-        """Return a target with no inputs, outputs and options.
-
-        This is mostly useful for testing.
-        """
-        return cls(
-            name=name, inputs=[], outputs=[], options={}, working_dir=os.getcwd()
-        )
-
-    def qualname(self, namespace):
-        if namespace is not None:
-            return "{}.{}".format(namespace, self.name)
-        return self.name
-
-    def __repr__(self):
-        return "{}(name={!r})".format(self.__class__.__name__, self.name)
-
-    def __str__(self):
-        return self.name
-
 
 class CircularDependencyError(GWFError):
     pass
 
 
 class FileProvidedByMultipleTargetsError(GWFError):
+    pass
+
+
+class UnresolvedInputError(GWFError):
     pass
 
 
@@ -404,7 +375,7 @@ class Graph:
     unresolved: set
 
     @classmethod
-    def from_targets(cls, targets):
+    def from_targets(cls, targets, fs):
         """Construct a dependency graph from a set of targets.
 
         When a graph is initialized it computes all dependency relations
@@ -448,6 +419,17 @@ class Graph:
         for target, deps in dependencies.items():
             for dep in deps:
                 dependents[dep].add(target)
+
+        # Check whether all input files actually exist or are being provided
+        # by another target. If not, it's an error.
+        for target in targets:
+            for path in target.flattened_inputs():
+                if path in unresolved and not fs.exists(path):
+                    msg = (
+                        'File "{}" is required by "{}", but does not exist and is not '
+                        "provided by any target in the workflow."
+                    ).format(path, target)
+                    raise UnresolvedInputError(msg)
 
         targets = {target.name: target for target in targets}
         check_for_circular_dependencies(targets, dependencies)

@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import click
 
-from ..core import Graph
+from ..core import CachedFilesystem, Graph
 from ..filtering import filter_names
 from ..workflow import Workflow
 
@@ -76,8 +76,9 @@ FORMATS = {
 @click.pass_obj
 def info(obj, targets, format):
     """Display information about a target."""
+    fs = CachedFilesystem()
     workflow = Workflow.from_config(obj)
-    graph = Graph.from_targets(workflow.targets)
+    graph = Graph.from_targets(workflow.targets, fs)
 
     matches = iter(graph)
     if targets:

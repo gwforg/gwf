@@ -1,9 +1,9 @@
 import logging
 import os
+from importlib.metadata import entry_points
 
 import click
 from click_plugins import with_plugins
-from pkg_resources import iter_entry_points
 
 from . import __version__
 from .backends import Backend
@@ -76,7 +76,7 @@ def validate_use_spec_hashes(value):
     return _validate_bool("use_spec_hashes", value)
 
 
-@with_plugins(iter_entry_points("gwf.plugins"))
+@with_plugins(entry_points(group="gwf.plugins"))
 @click.group(context_settings={"obj": {}})
 @click.version_option(version=__version__)
 @click.option("-f", "--file", default="workflow.py:gwf", help="Workflow/obj to load.")

@@ -1,11 +1,10 @@
-import functools
 import time
 
+import attrs
 import pytest
 
 from gwf.backends.base import Backend, Status
-from gwf.core import Graph, Target
-from gwf.scheduling import schedule_workflow as _schedule_workflow
+from gwf.core import Graph, Target, hash_spec
 
 
 @pytest.fixture
@@ -42,20 +41,50 @@ class FakeBackend(Backend):
         self._tracked[target] = status
 
 
+@attrs.define
 class FakeFilesystem:
-    def __init__(self):
-        self._files = {}
+    files: dict = attrs.field(factory=dict)
 
     def add_file(self, path, changed_at):
-        self._files[path] = changed_at
+        self.files[path] = changed_at
 
     def exists(self, path):
-        return path in self._files
+        return path in self.files
 
     def changed_at(self, path):
-        if path not in self._files:
+        if path not in self.files:
             raise FileNotFoundError(path)
-        return self._files[path]
+        return self.files[path]
+
+
+@attrs.define
+class FakeSpecHashes:
+    hashes: dict = attrs.field(factory=dict)
+
+    def has_changed(self, target):
+        spec_hash = hash_spec(target.spec)
+        saved_hash = self.hashes.get(target)
+        if saved_hash is None or spec_hash != saved_hash:
+            return spec_hash
+        return None
+
+    def update(self, target):
+        self.hashes[target] = hash_spec(target.spec)
+
+    def invalidate(self, target):
+        del self.hashes[target]
+
+    def clear(self):
+        self.hashes.clear()
+
+    def close(self):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
 
 
 @pytest.fixture
@@ -70,20 +99,7 @@ def filesystem():
 
 @pytest.fixture
 def spec_hashes():
-    return None
-
-
-@pytest.fixture
-def schedule(filesystem, spec_hashes):
-    return functools.partial(_schedule_workflow, fs=filesystem, spec_hashes=spec_hashes)
-
-
-@pytest.fixture
-def graph_factory():
-    def factory(targets):
-        return Graph.from_targets(targets)
-
-    return factory
+    return FakeSpecHashes()
 
 
 @pytest.fixture
@@ -92,15 +108,15 @@ def empty_graph(graph_factory):
 
 
 @pytest.fixture
-def trivial_graph(graph_factory):
+def trivial_graph(filesystem):
     target = Target(
         "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
     )
-    return graph_factory([target])
+    return Graph.from_targets([target], filesystem)
 
 
 @pytest.fixture
-def diamond_graph(graph_factory):
+def diamond_graph(filesystem):
     target1 = Target(
         "TestTarget1",
         inputs=[],
@@ -129,4 +145,4 @@ def diamond_graph(graph_factory):
         options={},
         working_dir="/some/dir",
     )
-    return graph_factory([target1, target2, target3, target4])
+    return Graph.from_targets([target1, target2, target3, target4], filesystem)

@@ -6,14 +6,22 @@ import logging
 import os.path
 import subprocess
 import sys
-import warnings
 from glob import glob as _glob
 from glob import iglob as _iglob
 
-from .core import AnonymousTarget, Target
-from .exceptions import GWFError, TypeError, WorkflowError
+import attrs
+
+from .core import Target
+from .exceptions import GWFError, WorkflowError
 
 logger = logging.getLogger(__name__)
+
+
+def _chain(*dcts):
+    new = {}
+    for dct in dcts:
+        new.update(dct)
+    return new
 
 
 def select(lst, fields):
@@ -85,6 +93,7 @@ def collect(lst, fields, rename=None):
     return dict(selected)
 
 
+@attrs.define
 class TargetList(list):
     """A list of target objects with access to all inputs and outputs.
 
@@ -111,16 +120,8 @@ class TargetList(list):
         """
         return [target.inputs for target in self]
 
-    def __str__(self):
-        class_name = self.__class__.__name__
-        if not self:
-            return "{}(targets=[])".format(class_name)
-        return "{}(targets=[{!r}, ...])".format(class_name, self[0])
 
-    def __repr__(self):
-        return str(self)
-
-
+@attrs.define
 class Workflow:
     """Represents a workflow.
 
@@ -158,18 +159,17 @@ class Workflow:
     in `defaults`, but `Bar` overrides the `cores` option.
     """
 
-    def __init__(self, working_dir=None, defaults=None):
-        self.targets = {}
-        self.defaults = defaults or {}
+    working_dir: str = attrs.field()
+    defaults: dict = attrs.field(factory=dict)
+    targets: dict = attrs.field(factory=dict, init=False, repr=False)
 
-        if working_dir is not None:
-            self.working_dir = working_dir
-        else:
-            # Get the frame object of whatever called the Workflow.__init__
-            # and extract the path of the file which is was defined in. Then
-            # normalize the path and get the directory of the file.
-            filename = inspect.getfile(sys._getframe(1))
-            self.working_dir = os.path.dirname(os.path.realpath(filename))
+    @working_dir.default  # type: ignore
+    def _get_working_dir(self):
+        # Get the frame object of whatever called the Workflow.__init__
+        # and extract the path of the file which is was defined in. Then
+        # normalize the path and get the directory of the file.
+        filename = inspect.getfile(sys._getframe(1))
+        return os.path.dirname(os.path.realpath(filename))
 
     @classmethod
     def from_path(cls, path):
@@ -226,13 +226,9 @@ class Workflow:
         """
         return cls.from_path(config["file"])
 
-    def _add_target(self, target, namespace=None):
-        if namespace is not None:
-            target.name = target.qualname(namespace)
+    def _add_target(self, target):
         if target.name in self.targets:
-            raise WorkflowError(
-                'Target "{}" already exists in workflow.'.format(target.name)
-            )
+            raise WorkflowError(f"Target {target} already exists in workflow.")
         self.targets[target.name] = target
 
     def target(self, name, inputs, outputs, protect=None, **options):
@@ -258,16 +254,15 @@ class Workflow:
 
         Any further keyword arguments are passed to the backend.
         """
+
         new_target = Target(
             name=name,
             inputs=inputs,
             outputs=outputs,
-            protect=protect,
-            options=options,
+            protect=protect if protect else set(),
+            options=_chain(self.defaults, options),
             working_dir=self.working_dir,
         )
-        new_target.inherit_options(self.defaults)
-
         self._add_target(new_target)
         return new_target
 
@@ -295,49 +290,15 @@ class Workflow:
         Any further keyword arguments are passed to the backend and will
         override any options provided by the template.
         """
-        if isinstance(template, AnonymousTarget):
-            new_target = Target(
-                name=name,
-                inputs=template.inputs,
-                outputs=template.outputs,
-                protect=template.protect,
-                options=options,
-                working_dir=template.working_dir or self.working_dir,
-                spec=template.spec,
-            )
-
-            new_target.inherit_options(template.options)
-        elif isinstance(template, tuple):
-            warnings.warn(
-                (
-                    "Creating a target from a tuple template is deprecated, "
-                    "and will be removed in gwf 2.0. Make your template "
-                    "function return an AnonymousTarget instead."
-                ),
-                DeprecationWarning,
-            )
-
-            try:
-                inputs, outputs, template_options, spec = template
-            except ValueError:
-                raise TypeError(
-                    "Target `{}` received an invalid template.".format(name)
-                )
-
-            new_target = Target(
-                name=name,
-                inputs=inputs,
-                outputs=outputs,
-                options=options,
-                working_dir=self.working_dir,
-                spec=spec,
-            )
-
-            new_target.inherit_options(template_options)
-        else:
-            raise TypeError("Target `{}` received an invalid template.".format(name))
-
-        new_target.inherit_options(self.defaults)
+        new_target = Target(
+            name=name,
+            inputs=template.inputs,
+            outputs=template.outputs,
+            protect=template.protect,
+            options=_chain(self.defaults, template.options, options),
+            working_dir=template.working_dir or self.working_dir,
+            spec=template.spec,
+        )
         self._add_target(new_target)
         return new_target
 
@@ -496,6 +457,3 @@ class Workflow:
         return subprocess.check_output(
             *args, shell=True, cwd=self.working_dir, **kwargs
         )
-
-    def __repr__(self):
-        return "{}(working_dir={!r})".format(self.__class__.__name__, self.working_dir)
