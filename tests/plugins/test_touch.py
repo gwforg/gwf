@@ -1,12 +1,8 @@
-import multiprocessing
 import os
 import os.path
 
-multiprocessing.set_start_method("fork")
-
 import pytest
 
-# from gwf.backends.local import Server
 from gwf.cli import main
 
 SIMPLE_WORKFLOW = """from gwf import Workflow
@@ -22,28 +18,12 @@ gwf.target('Target3', inputs=['b.txt'], outputs=['c.txt'])
 def simple_workflow(tmpdir):
     workflow_file = tmpdir.join("workflow.py")
     workflow_file.write(SIMPLE_WORKFLOW)
-    return tmpdir
-
-
-@pytest.fixture(autouse=True)
-def setup(simple_workflow):
-    with simple_workflow.as_cwd():
+    with tmpdir.as_cwd():
         yield
 
 
-# @pytest.fixture
-# def local_backend():
-#     try:
-#         server = Server(port=12345, num_workers=1)
-#         server_thread = multiprocessing.Process(target=server.start)
-#         server_thread.start()
-#         yield
-#     finally:
-#         server_thread.terminate()
-
-
-def test_touch_creates_files(cli_runner):
-    cli_runner.invoke(main, ["touch"])
+def test_touch_creates_files(cli_runner, simple_workflow):
+    cli_runner.invoke(main, ["-b", "testing", "touch"])
 
     assert os.path.exists("a.txt")
     assert os.path.exists("b.txt")

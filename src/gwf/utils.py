@@ -13,18 +13,14 @@ from contextlib import ContextDecorator
 from functools import wraps
 
 if sys.version_info < (3, 10):
-    from importlib_metadata import entry_points
+    from importlib_metadata import entry_points  # noqa: E401
 else:
-    from importlib.metadata import entry_points
+    from importlib.metadata import entry_points  # noqa: F401
 
 
 import click
 
 from gwf.exceptions import GWFError
-
-UPDATE_CHECK_URL = "https://pypi.org/pypi/gwf/json"
-UPDATE_CHECK_FILE = ".gwf/update"
-UPDATE_CHECK_WAIT = 24 * 60 * 60
 
 
 logger = logging.getLogger(__name__)

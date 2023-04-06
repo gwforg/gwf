@@ -1,9 +1,9 @@
 import logging
 from enum import Enum
 
+from ..utils import PersistableDict, entry_points, retry
 from .exceptions import BackendError, DependencyError, TargetError
 from .logmanager import FileLogManager
-from ..utils import PersistableDict, retry, entry_points
 
 logger = logging.getLogger(__name__)
 
