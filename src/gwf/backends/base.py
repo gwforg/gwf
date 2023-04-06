@@ -1,16 +1,9 @@
-import sys
-
-if sys.version_info < (3, 10):
-    from importlib_metadata import entry_points
-else:
-    from importlib.metadata import entry_points
-
 import logging
 from enum import Enum
 
-from ..utils import PersistableDict, retry
 from .exceptions import BackendError, DependencyError, TargetError
 from .logmanager import FileLogManager
+from ..utils import PersistableDict, retry, entry_points
 
 logger = logging.getLogger(__name__)
 

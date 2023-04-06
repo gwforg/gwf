@@ -108,10 +108,9 @@ def status(obj, status, endpoints, format, targets):
     graph = Graph.from_targets(workflow.targets, fs)
 
     backend_cls = Backend.from_config(obj)
-    with (
-        backend_cls() as backend,
-        get_spec_hashes(working_dir=workflow.working_dir, config=config) as spec_hashes,
-    ):
+    with backend_cls() as backend, get_spec_hashes(
+        working_dir=workflow.working_dir, config=config
+    ) as spec_hashes:
         target_states = get_status_map(
             graph,
             fs,

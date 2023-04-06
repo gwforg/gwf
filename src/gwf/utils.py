@@ -12,6 +12,12 @@ from collections import UserDict
 from contextlib import ContextDecorator
 from functools import wraps
 
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
+
+
 import click
 
 from gwf.exceptions import GWFError

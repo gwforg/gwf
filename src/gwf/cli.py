@@ -1,14 +1,5 @@
 import logging
 import os
-import sys
-
-if sys.version_info < (
-    3,
-    10,
-):
-    from importlib_metadata import entry_points
-else:
-    from importlib.metadata import entry_points
 
 import click
 from click_plugins import with_plugins
@@ -17,7 +8,7 @@ from . import __version__
 from .backends import Backend
 from .conf import config
 from .exceptions import ConfigurationError
-from .utils import ColorFormatter, ensure_dir
+from .utils import ColorFormatter, ensure_dir, entry_points
 
 logger = logging.getLogger(__name__)
 
