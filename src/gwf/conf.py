@@ -1,62 +1,61 @@
 import json
 from collections import ChainMap
 
+import attrs
+
 CONFIG_DEFAULTS = {"verbose": "info", "clean_logs": True, "use_spec_hashes": True}
 
 
+@attrs.define
 class FileConfig:
-    def __init__(self, path, data, defaults=None):
-        self.path = path
-        if defaults is None:
-            defaults = {}
-        self._data = ChainMap(data, defaults)
-        self._validators = {}
+    path: str = attrs.field()
+    data: ChainMap = attrs.field()
+    validators: dict = attrs.field(init=False, factory=dict)
 
     def validator(self, key):
         """Register a configuration key validator function."""
 
         def _inner(func):
-            self._validators[key] = func
+            self.validators[key] = func
 
         return _inner
 
     def _validate_value(self, key, value):
-        if key in self._validators:
-            self._validators[key](value)
+        if key in self.validators:
+            self.validators[key](value)
 
     def get(self, key, default=None):
-        value = self._data.get(key)
-        if value is None:
+        try:
+            return self.data[key]
+        except KeyError:
             return default
-        self._validate_value(key, value)
-        return value
 
     def __getitem__(self, key):
-        value = self._data[key]
+        value = self.data[key]
         self._validate_value(key, value)
         return value
 
     def __setitem__(self, key, value):
         self._validate_value(key, value)
-        self._data[key] = value
+        self.data[key] = value
 
     def __delitem__(self, key):
-        if key in self._data:
-            del self._data[key]
+        if key in self.data:
+            del self.data[key]
 
     def __len__(self):
-        return len(self._data)
+        return len(self.data)
 
     def __iter__(self):
-        return iter(self._data)
+        return iter(self.data)
 
     def dump(self):
         """Dump the configuration to disk."""
         with open(str(self.path), "w+") as config_file:
-            json.dump(dict(self._data.maps[0]), config_file, indent=4, sort_keys=True)
+            json.dump(dict(self.data.maps[0]), config_file, indent=4, sort_keys=True)
 
     @classmethod
-    def load(cls, path, defaults=None):
+    def load(cls, path):
         """Load configuration from a file.
 
         Reads configuration from `file` and returns a :class:`Config` instance
@@ -64,18 +63,17 @@ class FileConfig:
         configuration.
 
         :param path str: Path to the configuration file.
-        :param defaults dict: A set of defaults to merge into the configuration.
         """
         try:
             with open(str(path)) as config_file:
                 data = json.load(config_file)
         except FileNotFoundError:
             data = {}
-        return cls(path=path, data=data, defaults=defaults)
+        return cls(path=path, data=ChainMap(data, CONFIG_DEFAULTS))
 
 
 def config_from_path(path):
-    return FileConfig.load(path, defaults=CONFIG_DEFAULTS)
+    return FileConfig.load(path)
 
 
 config = config_from_path(".gwfconf.json")
