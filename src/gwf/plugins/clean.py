@@ -7,7 +7,7 @@ import click
 from ..conf import config
 from ..core import CachedFilesystem, Graph, get_spec_hashes
 from ..filtering import EndpointFilter, NameFilter, filter_generic
-from ..workflow import Workflow
+
 
 logger = logging.getLogger(__name__)
 

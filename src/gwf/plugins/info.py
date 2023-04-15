@@ -5,7 +5,6 @@ import click
 
 from ..core import CachedFilesystem, Graph
 from ..filtering import filter_names
-from ..workflow import Workflow
 
 
 def _indent(s):

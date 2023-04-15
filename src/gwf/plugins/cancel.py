@@ -4,7 +4,6 @@ from ..backends import Backend, Status
 from ..backends.exceptions import UnsupportedOperationError
 from ..core import CachedFilesystem, Graph
 from ..filtering import filter_names
-from ..workflow import Workflow
 
 
 def cancel_many(backend, targets):

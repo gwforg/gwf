@@ -5,7 +5,6 @@ import click
 from ..conf import config
 from ..core import CachedFilesystem, Graph, get_spec_hashes
 from ..utils import touchfile
-from ..workflow import Workflow
 
 
 def touch_workflow(graph, spec_hashes):

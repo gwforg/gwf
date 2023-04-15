@@ -2,7 +2,6 @@ import click
 
 from ..backends import Backend
 from ..exceptions import GWFError
-from ..workflow import Workflow
 
 
 @click.command()
