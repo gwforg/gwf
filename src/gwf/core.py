@@ -368,11 +368,11 @@ class Graph:
     not raise an exception.
     """
 
-    targets: dict
-    provides: dict
-    dependencies: defaultdict
-    dependents: defaultdict
-    unresolved: set
+    targets: dict = attrs.field()
+    provides: dict = attrs.field()
+    dependencies: defaultdict = attrs.field()
+    dependents: defaultdict = attrs.field()
+    unresolved: set = attrs.field()
 
     @classmethod
     def from_targets(cls, targets, fs):
