@@ -1,35 +1,6 @@
 import pytest
 
-from gwf.utils import PersistableDict, ensure_trailing_newline, parse_path, retry
-
-
-@pytest.mark.parametrize(
-    "path,parsed_path",
-    [
-        ("/some/dir/workflow.py", ("/some/dir", "workflow", "gwf")),
-        ("/some/dir/workflow.py:other", ("/some/dir", "workflow", "other")),
-        ("/some/dir/other.py:other", ("/some/dir", "other", "other")),
-        (":other", ("", "workflow", "other")),
-    ],
-)
-def test_parse_path(path, parsed_path):
-    assert parse_path(path) == parsed_path
-
-
-@pytest.mark.parametrize(
-    "default_obj,default_file,parsed_path",
-    [
-        ("wf1", "file1.py", ("", "file1", "wf1")),
-        ("wf1", "file2.py", ("", "file2", "wf1")),
-        ("wf2", "file1.py", ("", "file1", "wf2")),
-        ("wf2", "file2.py", ("", "file2", "wf2")),
-    ],
-)
-def test_parse_path_defaults(default_obj, default_file, parsed_path):
-    assert (
-        parse_path(":", default_obj=default_obj, default_file=default_file)
-        == parsed_path
-    )
+from gwf.utils import PersistableDict, ensure_trailing_newline, retry
 
 
 def test_dict_is_empty_if_file_does_not_exist(tmpdir):

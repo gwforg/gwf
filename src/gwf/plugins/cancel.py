@@ -32,8 +32,8 @@ def cancel(obj, targets, force):
             "This will cancel all targets! Do you want to continue?", abort=True
         )
 
+    workflow = obj["workflow"]
     fs = CachedFilesystem()
-    workflow = Workflow.from_config(obj)
     graph = Graph.from_targets(workflow.targets, fs)
 
     if targets:

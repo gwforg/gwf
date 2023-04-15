@@ -45,7 +45,7 @@ def clean(obj, targets, all, force):
     ``--all`` flag.
     """
     fs = CachedFilesystem()
-    workflow = Workflow.from_config(obj)
+    workflow = obj["workflow"]
     graph = Graph.from_targets(workflow.targets, fs)
 
     filters = []

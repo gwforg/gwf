@@ -3,6 +3,7 @@ import collections.abc
 import importlib.util
 import inspect
 import logging
+import os
 import os.path
 import subprocess
 import sys
@@ -13,6 +14,7 @@ import attrs
 
 from .core import Target
 from .exceptions import GWFError, WorkflowError
+from .utils import find_workflow
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +170,7 @@ class Workflow:
         # Get the frame object of whatever called the Workflow.__init__
         # and extract the path of the file which is was defined in. Then
         # normalize the path and get the directory of the file.
-        filename = inspect.getfile(sys._getframe(1))
+        filename = inspect.getfile(sys._getframe(2))
         return os.path.dirname(os.path.realpath(filename))
 
     @classmethod
@@ -181,32 +183,12 @@ class Workflow:
         :arg str path: Path to a workflow file, optionally specifying a
             workflow object in that file.
         """
-        path, _, obj = path.partition(":")
-        obj = obj or "gwf"
-
-        import os
-        from pathlib import Path
-
-        workflow_dir = Path.cwd()
-        workflow_path = workflow_dir.joinpath(path)
-
-        if not os.path.isabs(path):
-            while True:
-                logger.debug("Looking for workflow file %s in %s", path, workflow_dir)
-                if workflow_path.exists():
-                    break
-
-                if workflow_dir == Path(workflow_dir.anchor):
-                    raise GWFError(f"The file {path} could not be found")
-
-                workflow_dir = workflow_dir.parent
-                workflow_path = workflow_dir.joinpath(path)
-
+        working_dir, workflow_path, obj = find_workflow(path)
         logger.debug("Loading workflow from %s:%s", workflow_path, obj)
 
         filename = workflow_path.name
         module_name, _ = os.path.splitext(filename)
-        sys.path.insert(0, str(workflow_dir))
+        sys.path.insert(0, str(working_dir))
         spec = importlib.util.spec_from_file_location(module_name, workflow_path)
         assert spec is not None, "Could not load workflow file"
         module = importlib.util.module_from_spec(spec)
@@ -215,8 +197,7 @@ class Workflow:
 
         if not hasattr(module, obj):
             raise GWFError(f"The module '{filename}' does not have attribute '{obj}'")
-        workflow = getattr(module, obj)
-        return workflow
+        return getattr(module, obj)
 
     @classmethod
     def from_config(cls, config):
@@ -254,7 +235,6 @@ class Workflow:
 
         Any further keyword arguments are passed to the backend.
         """
-
         new_target = Target(
             name=name,
             inputs=inputs,

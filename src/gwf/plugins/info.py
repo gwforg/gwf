@@ -77,7 +77,7 @@ FORMATS = {
 def info(obj, targets, format):
     """Display information about a target."""
     fs = CachedFilesystem()
-    workflow = Workflow.from_config(obj)
+    workflow = obj["workflow"]
     graph = Graph.from_targets(workflow.targets, fs)
 
     matches = iter(graph)

@@ -16,7 +16,7 @@ def logs(obj, target, stderr, no_pager):
     By default only standard output is shown. Supply the --stderr flag to show
     standard error instead.
     """
-    workflow = Workflow.from_config(obj)
+    workflow = obj["workflow"]
     backend_cls = Backend.from_config(obj)
 
     try:

@@ -1,4 +1,5 @@
 from collections import ChainMap
+
 import pytest
 
 from gwf.conf import FileConfig

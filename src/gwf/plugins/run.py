@@ -33,7 +33,7 @@ def clean_logs(graph, backend):
 def run(obj, targets, dry_run):
     """Run the specified workflow."""
     fs = CachedFilesystem()
-    workflow = Workflow.from_config(obj)
+    workflow = obj["workflow"]
     graph = Graph.from_targets(workflow.targets, fs)
 
     backend_cls = Backend.from_config(obj)

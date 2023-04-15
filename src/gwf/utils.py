@@ -1,5 +1,4 @@
 import copy
-import importlib
 import itertools
 import json
 import logging
@@ -11,6 +10,7 @@ import time
 from collections import UserDict
 from contextlib import ContextDecorator
 from functools import wraps
+from pathlib import Path
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points  # noqa: E401
@@ -47,42 +47,6 @@ class timer(ContextDecorator):
 def ensure_dir(path):
     """Create directory unless it already exists."""
     os.makedirs(path, exist_ok=True)
-
-
-def parse_path(path, default_obj="gwf", default_file="workflow.py"):
-    comps = path.rsplit(":")
-    if len(comps) == 2:
-        path, obj = comps[0] or default_file, comps[1] or default_obj
-    elif len(comps) == 1:
-        path, obj = comps[0], default_obj
-    else:
-        raise ValueError('Invalid path: "{}".'.format(path))
-
-    basedir, filename = os.path.split(path)
-    filename, _ = os.path.splitext(filename)
-    return basedir, filename, obj
-
-
-def load_workflow(basedir, filename, objname):
-    if not basedir:
-        basedir = os.getcwd()
-    fullpath = os.path.join(basedir, filename + ".py")
-
-    if not os.path.exists(fullpath):
-        raise GWFError('The file "{}" does not exist.'.format(fullpath))
-
-    sys.path.insert(0, os.path.join(os.getcwd(), basedir))
-    spec = importlib.util.spec_from_file_location(filename, fullpath)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    sys.path.pop(0)
-
-    try:
-        return getattr(mod, objname)
-    except AttributeError:
-        raise GWFError(
-            'Module "{}" does not declare attribute "{}".'.format(filename, objname)
-        )
 
 
 class PersistableDict(UserDict):
@@ -202,3 +166,22 @@ def retry(on_exc, max_retries=3, callback=None):
 
 
 retry.RetryError = RetryError
+
+
+def find_workflow(path_spec):
+    path, _, obj = path_spec.partition(":")
+    obj = obj or "gwf"
+
+    path = Path(path)
+    current_dir = Path.cwd()
+    workflow_path = current_dir.joinpath(path)
+    if not path.is_absolute():
+        while True:
+            logger.debug("Looking for workflow file %s in %s", path, current_dir)
+            if workflow_path.exists():
+                break
+            if current_dir == Path(current_dir.anchor):
+                raise GWFError(f"The file {path} could not be found")
+            current_dir = current_dir.parent
+            workflow_path = current_dir.joinpath(path)
+    return current_dir, workflow_path, obj

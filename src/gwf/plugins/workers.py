@@ -2,7 +2,7 @@ import multiprocessing
 
 import click
 
-from ..backends.local import Server
+from ..backends.local import Cluster
 from ..conf import config
 
 
@@ -29,5 +29,8 @@ from ..conf import config
 )
 def workers(host, port, num_workers):
     """Start workers for the local backend."""
-    server = Server(hostname=host, port=port, num_workers=num_workers)
-    server.start()
+    cluster = Cluster(hostname=host, port=port, num_workers=num_workers)
+    try:
+        cluster.start()
+    except KeyboardInterrupt:
+        cluster.shutdown()

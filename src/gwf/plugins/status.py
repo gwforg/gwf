@@ -104,7 +104,7 @@ def status(obj, status, endpoints, format, targets):
     The targets are shown in creation-order.
     """
     fs = CachedFilesystem()
-    workflow = Workflow.from_config(obj)
+    workflow = obj["workflow"]
     graph = Graph.from_targets(workflow.targets, fs)
 
     backend_cls = Backend.from_config(obj)

@@ -36,7 +36,7 @@ def touch(obj):
     don't want to re-run the workflow to recreate them.
     """
     filesystem = CachedFilesystem()
-    workflow = Workflow.from_config(obj)
+    workflow = obj["workflow"]
     graph = Graph.from_targets(workflow.targets, filesystem)
     with get_spec_hashes(
         working_dir=workflow.working_dir, config=config
