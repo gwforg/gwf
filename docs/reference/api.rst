@@ -11,7 +11,7 @@ into a :class:`~gwf.Graph` which will compute the entire dependency graph of the
 workflow, checking the workflow for inconsistencies and circular dependencies.
 
 A target in a :class:`~gwf.Graph` can be scheduled on a
-:class:`~gwf.backends.Backend` using the :class:`~gwf.Scheduler`.
+:class:`~gwf.backends.Backend` using the :class:`~gwf.scheduling.submit_workflow`.
 
 Workflow
 --------
@@ -23,7 +23,13 @@ Core
 ----
 
 .. automodule:: gwf.core
-    :members: Graph, Scheduler
+    :members: Graph
+
+Scheduling
+----------
+
+.. automodule:: gwf.scheduling
+    :members: schedule, submit_workflow, get_status_map
 
 Backends
 --------
