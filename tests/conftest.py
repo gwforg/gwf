@@ -1,9 +1,11 @@
+import threading
 import time
 
 import attrs
 import pytest
 
 from gwf.backends.base import Backend, Status
+from gwf.backends.local import Cluster
 from gwf.core import Graph, Target, hash_spec
 
 
@@ -93,6 +95,20 @@ def backend():
 
 
 @pytest.fixture
+def local_backend():
+    cluster = Cluster(num_workers=1)
+    print("Created cluster")
+    thread = threading.Thread(target=cluster.start)
+    thread.start()
+    print("Started cluster")
+    yield
+    print("Shutting down cluster")
+    cluster.shutdown()
+    thread.join()
+    print("Cluser shut down")
+
+
+@pytest.fixture
 def filesystem():
     return FakeFilesystem()
 
@@ -146,3 +162,35 @@ def diamond_graph(filesystem):
         working_dir="/some/dir",
     )
     return Graph.from_targets([target1, target2, target3, target4], filesystem)
+
+
+@pytest.fixture
+def simple_workflow(tmpdir):
+    workflow_file = tmpdir.join("workflow.py")
+    workflow_file.write(
+        """from gwf import Workflow
+
+gwf = Workflow()
+gwf.target('Target1', inputs=[], outputs=['a.txt'])
+gwf.target('Target2', inputs=['a.txt'], outputs=['b.txt'])
+gwf.target('Target3', inputs=['a.txt'], outputs=['c.txt'])
+"""
+    )
+    with tmpdir.as_cwd():
+        yield tmpdir
+
+
+@pytest.fixture
+def linear_workflow(tmpdir):
+    workflow_file = tmpdir.join("workflow.py")
+    workflow_file.write(
+        """from gwf import Workflow
+
+gwf = Workflow()
+gwf.target('Target1', inputs=['a.txt'], outputs=['b.txt'])
+gwf.target('Target2', inputs=['b.txt'], outputs=['c.txt'])
+gwf.target('Target3', inputs=['c.txt'], outputs=['d.txt'])
+"""
+    )
+    with tmpdir.as_cwd():
+        yield tmpdir

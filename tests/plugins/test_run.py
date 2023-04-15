@@ -1,45 +1,30 @@
-import pytest
+from pathlib import Path
 
 from gwf.cli import main
 
-SIMPLE_WORKFLOW = """from gwf import Workflow
 
-gwf = Workflow()
-gwf.target('Target1', inputs=[], outputs=[]) << "echo hello world"
-gwf.target('Target2', inputs=[], outputs=[]) << "echo world hello"
-"""
+def test_run_submits_targets(cli_runner, local_backend, linear_workflow):
+    Path("a.txt").touch()
 
-
-@pytest.fixture
-def simple_workflow(tmpdir):
-    workflow_file = tmpdir.join("workflow.py")
-    workflow_file.write(SIMPLE_WORKFLOW)
-    return tmpdir
+    result = cli_runner.invoke(main, ["run"])
+    assert "Submitting target Target1" in result.output
+    assert "Submitting target Target2" in result.output
+    assert "Submitting target Target3" in result.output
 
 
-@pytest.fixture(autouse=True)
-def setup(simple_workflow):
-    with simple_workflow.as_cwd():
-        yield
+def test_run_dry_submits_targets(cli_runner, local_backend, linear_workflow):
+    Path("a.txt").touch()
+
+    result = cli_runner.invoke(main, ["run", "--dry-run"])
+    assert "Would submit Target1" in result.output
+    assert "Would submit Target2" in result.output
+    assert "Would submit Target3" in result.output
 
 
-# def test_run_all_targets(cli_runner, mocker):
-#     mock_schedule_many = mocker.patch("gwf.plugins.run.Scheduler.schedule_many")
+def test_run_partially_submits_targets(cli_runner, local_backend, linear_workflow):
+    Path("a.txt").touch()
 
-#     args = ["-b", "testing", "run"]
-#     cli_runner.invoke(main, args)
-
-#     args, kwargs = mock_schedule_many.call_args
-#     assert len(args[0]) == 2
-#     assert {x.name for x in args[0]} == {"Target1", "Target2"}
-
-
-# def test_run_specified_target(cli_runner, mocker):
-#     mock_schedule_many = mocker.patch("gwf.plugins.run.Scheduler.schedule_many")
-
-#     args = ["-b", "testing", "run", "Target1"]
-#     cli_runner.invoke(main, args)
-
-#     args, kwargs = mock_schedule_many.call_args
-#     assert len(args[0]) == 1
-#     assert {x.name for x in args[0]} == {"Target1"}
+    result = cli_runner.invoke(main, ["run", "Target2"])
+    assert "Submitting target Target1" in result.output
+    assert "Submitting target Target2" in result.output
+    assert "Submitting target Target3" not in result.output
