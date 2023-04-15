@@ -10,7 +10,6 @@ from ..core import CachedFilesystem, Graph, get_spec_hashes
 from ..filtering import filter_names
 from ..scheduling import submit_workflow
 
-
 logger = logging.getLogger(__name__)
 
 

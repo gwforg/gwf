@@ -8,7 +8,6 @@ from ..conf import config
 from ..core import CachedFilesystem, Graph, get_spec_hashes
 from ..filtering import EndpointFilter, NameFilter, filter_generic
 
-
 logger = logging.getLogger(__name__)
 
 

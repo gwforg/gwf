@@ -9,7 +9,6 @@ from ..core import CachedFilesystem, Graph, TargetStatus, get_spec_hashes
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
 from ..scheduling import get_status_map
 
-
 logger = logging.getLogger(__name__)
 
 
