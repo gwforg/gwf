@@ -47,12 +47,6 @@ def should_run(target, fs, spec_hashes):
         for path in target.flattened_outputs()
         if fs.exists(path)
     )
-    # logger.debug(
-    #     "%s is the oldest output file of %s with timestamp %s",
-    #     oldest_out_path,
-    #     target,
-    #     oldest_out_ts,
-    # )
 
     if youngest_in_ts > oldest_out_ts:
         logger.debug("Target %s is not up-to-date", target)
@@ -70,6 +64,14 @@ def schedule(endpoints, graph, fs, spec_hashes, status_func, submit_func):
             if status in SUBMITTED_STATES:
                 submitted_deps.append(dep)
 
+        if status_func(target) == Status.SUBMITTED:
+            logger.debug("Target %s is already submitted", target)
+            return TargetStatus.SUBMITTED
+
+        if status_func(target) == Status.RUNNING:
+            logger.debug("Target %s is already running", target)
+            return TargetStatus.RUNNING
+
         if submitted_deps:
             logger.debug(
                 "Target %s will be submitted because of dependency %s",
@@ -78,14 +80,6 @@ def schedule(endpoints, graph, fs, spec_hashes, status_func, submit_func):
             )
             submit_func(target, dependencies=submitted_deps)
             return TargetStatus.SHOULDRUN
-
-        if status_func(target) == Status.SUBMITTED:
-            logger.debug("Target %s is already submitted", target)
-            return TargetStatus.SUBMITTED
-
-        if status_func(target) == Status.RUNNING:
-            logger.debug("Target %s is already running", target)
-            return TargetStatus.RUNNING
 
         if should_run(target, fs, spec_hashes):
             submit_func(target, dependencies=submitted_deps)
