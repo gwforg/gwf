@@ -97,15 +97,11 @@ def backend():
 @pytest.fixture
 def local_backend():
     cluster = Cluster(num_workers=1)
-    print("Created cluster")
     thread = threading.Thread(target=cluster.start)
     thread.start()
-    print("Started cluster")
     yield
-    print("Shutting down cluster")
     cluster.shutdown()
     thread.join()
-    print("Cluser shut down")
 
 
 @pytest.fixture
