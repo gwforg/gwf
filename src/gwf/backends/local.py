@@ -397,6 +397,7 @@ class Scheduler:
     def _schedule_once(self):
         failed_tasks = set()
         scheduled_tasks = set()
+        used_workers = {}
         for task_id in self._pending_tasks:
             task = self._tasks[task_id]
 
@@ -415,10 +416,12 @@ class Scheduler:
 
             for worker_id, worker in self._joined_workers.items():
                 if worker_id not in self._used_workers.values():
-                    self._used_workers[task_id] = worker_id
+                    used_workers[task_id] = worker_id
                     scheduled_tasks.add(task_id)
                     worker.run_task(task)
                     break
+
+        self._used_workers.update(used_workers)
 
         for task_id in scheduled_tasks:
             self._pending_tasks.remove(task_id)
