@@ -94,7 +94,7 @@ def backend():
     return FakeBackend()
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def local_backend():
     cluster = Cluster(num_workers=1)
     thread = threading.Thread(target=cluster.start)
