@@ -52,7 +52,6 @@
         local = "gwf.backends.local:LocalBackend"
         sge = "gwf.backends.sge:SGEBackend"
         slurm = "gwf.backends.slurm:SlurmBackend"
-        testing = "gwf.backends.testing:TestingBackend"
 
 [project.urls]
     Home = "https://gwf.app"
