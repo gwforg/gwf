@@ -30,6 +30,8 @@ class Status(Enum):
     UNKNOWN = 0
     SUBMITTED = 1
     RUNNING = 2
+    COMPLETED = 3
+    FAILED = 4
 
 
 class Backend:
@@ -51,7 +53,7 @@ class Backend:
         return set(_load_backends().keys())
 
     @classmethod
-    def from_name(cls, name):
+    def from_name(cls, name, working_dir, config):
         """Return backend class for the backend given by `name`.
 
         Returns the backend class registered with `name`. Note that the *class*
@@ -62,14 +64,9 @@ class Backend:
         :arg str name: Path to a workflow file, optionally specifying a
             workflow object in that file.
         """
-        return _load_backends()[name]
-
-    @classmethod
-    def from_config(cls, config):
-        """Return backend class for the backend specified by `config`.
-
-        See :func:`Backend.from_name` for further information."""
-        return cls.from_name(config["backend"])
+        backend_args = config.get_namespace(f"backend.{name}")
+        backend_cls = _load_backends()[name]
+        return backend_cls(working_dir=working_dir, **backend_args)
 
     def __enter__(self):
         return self

@@ -1,7 +1,9 @@
 import click
 
+from .. import Workflow
 from ..backends import Backend, Status
 from ..backends.exceptions import UnsupportedOperationError
+from ..conf import config
 from ..core import CachedFilesystem, Graph
 from ..filtering import filter_names
 
@@ -31,7 +33,7 @@ def cancel(obj, targets, force):
             "This will cancel all targets! Do you want to continue?", abort=True
         )
 
-    workflow = obj["workflow"]
+    workflow = Workflow.from_config(obj)
     fs = CachedFilesystem()
     graph = Graph.from_targets(workflow.targets, fs)
 
@@ -40,6 +42,7 @@ def cancel(obj, targets, force):
     else:
         targets = list(graph)
 
-    backend_cls = Backend.from_config(obj)
-    with backend_cls() as backend:
+    with Backend.from_name(
+        obj["backend"], working_dir=obj["working_dir"], config=config
+    ) as backend:
         cancel_many(backend, targets)

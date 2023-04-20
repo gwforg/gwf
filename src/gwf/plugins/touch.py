@@ -2,6 +2,7 @@ from functools import lru_cache
 
 import click
 
+from .. import Workflow
 from ..conf import config
 from ..core import CachedFilesystem, Graph, get_spec_hashes
 from ..utils import touchfile
@@ -34,8 +35,8 @@ def touch(obj):
     This is useful if one or more files were accidentially deleted, but you
     don't want to re-run the workflow to recreate them.
     """
+    workflow = Workflow.from_config(obj)
     filesystem = CachedFilesystem()
-    workflow = obj["workflow"]
     graph = Graph.from_targets(workflow.targets, filesystem)
     with get_spec_hashes(
         working_dir=workflow.working_dir, config=config

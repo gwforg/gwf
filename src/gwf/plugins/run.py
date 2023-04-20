@@ -3,6 +3,8 @@ from contextlib import suppress
 
 import click
 
+from gwf import Workflow
+
 from ..backends import Backend
 from ..backends.exceptions import LogError
 from ..conf import config
@@ -31,12 +33,14 @@ def clean_logs(graph, backend):
 @click.pass_obj
 def run(obj, targets, dry_run):
     """Run the specified workflow."""
+    workflow = Workflow.from_config(obj)
+
     fs = CachedFilesystem()
-    workflow = obj["workflow"]
     graph = Graph.from_targets(workflow.targets, fs)
 
-    backend_cls = Backend.from_config(obj)
-    with backend_cls() as backend, get_spec_hashes(
+    with Backend.from_name(
+        obj["backend"], working_dir=obj["working_dir"], config=config
+    ) as backend, get_spec_hashes(
         working_dir=workflow.working_dir, config=config
     ) as spec_hashes:
         if config.get("clean_logs") and not dry_run:

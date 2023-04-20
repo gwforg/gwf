@@ -72,6 +72,10 @@ def schedule(endpoints, graph, fs, spec_hashes, status_func, submit_func):
             logger.debug("Target %s is already running", target)
             return TargetStatus.RUNNING
 
+        if status_func(target) == Status.FAILED:
+            submit_func(target, dependencies=submitted_deps)
+            return TargetStatus.FAiLED
+
         if submitted_deps:
             logger.debug(
                 "Target %s will be submitted because of dependency %s",

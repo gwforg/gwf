@@ -9,12 +9,13 @@ import subprocess
 import sys
 from glob import glob as _glob
 from glob import iglob as _iglob
+from pathlib import Path
 
 import attrs
 
 from .core import Target
 from .exceptions import GWFError, WorkflowError
-from .utils import find_workflow
+from .utils import find_workflow, load_workflow
 
 logger = logging.getLogger(__name__)
 
@@ -174,6 +175,10 @@ class Workflow:
         return os.path.dirname(os.path.realpath(filename))
 
     @classmethod
+    def from_parsed_path(cls, path: Path, obj="gwf"):
+        return load_workflow(path, obj)
+
+    @classmethod
     def from_path(cls, path):
         """Return workflow object for the workflow given by `path`.
 
@@ -183,21 +188,8 @@ class Workflow:
         :arg str path: Path to a workflow file, optionally specifying a
             workflow object in that file.
         """
-        working_dir, workflow_path, obj = find_workflow(path)
-        logger.debug("Loading workflow from %s:%s", workflow_path, obj)
-
-        filename = workflow_path.name
-        module_name, _ = os.path.splitext(filename)
-        sys.path.insert(0, str(working_dir))
-        spec = importlib.util.spec_from_file_location(module_name, workflow_path)
-        assert spec is not None, "Could not load workflow file"
-        module = importlib.util.module_from_spec(spec)
-        assert module is not None, "Could not load module from workflow file"
-        spec.loader.exec_module(module)
-
-        if not hasattr(module, obj):
-            raise GWFError(f"The module '{filename}' does not have attribute '{obj}'")
-        return getattr(module, obj)
+        path, obj = find_workflow(path)
+        return cls.from_parsed_path(path, obj)
 
     @classmethod
     def from_config(cls, config):
@@ -205,7 +197,7 @@ class Workflow:
 
         See :func:`Workflow.from_path` for further information.
         """
-        return cls.from_path(config["file"])
+        return cls.from_parsed_path(config["file"], config["obj_name"])
 
     def _add_target(self, target):
         if target.name in self.targets:

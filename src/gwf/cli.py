@@ -8,7 +8,7 @@ from click_plugins import with_plugins
 from . import Workflow, __version__
 from .backends import Backend
 from .conf import VERBOSITY_LEVELS, config
-from .utils import ColorFormatter, ensure_dir, entry_points
+from .utils import ColorFormatter, ensure_dir, entry_points, find_workflow
 
 logger = logging.getLogger(__name__)
 
@@ -96,13 +96,15 @@ def main(ctx, file, backend, verbose, no_color):
         logger.debug("Found backend '%s' with priority %s", backend, score)
     logger.debug("Using '%s' backend", backend)
 
-    workflow = Workflow.from_path(file)
+    path, obj_name = find_workflow(file)
 
-    ensure_dir(os.path.join(workflow.working_dir, ".gwf"))
-    ensure_dir(os.path.join(workflow.working_dir, ".gwf", "logs"))
+    # Instantiate workflow config directory.
+    path.parent.joinpath(".gwf").mkdir(exist_ok=True)
+    path.parent.joinpath(".gwf", "logs").mkdir(exist_ok=True)
 
     ctx.obj = {
-        "file": file,
         "backend": backend,
-        "workflow": workflow,
+        "working_dir": path.parent,
+        "file": path,
+        "obj_name": obj_name,
     }

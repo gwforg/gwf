@@ -54,6 +54,16 @@ class FileConfig:
     def __iter__(self):
         return iter(self.data)
 
+    def items(self):
+        return self.data.items()
+
+    def get_namespace(self, ns):
+        res = {}
+        for k, v in self.items():
+            if k.startswith(ns):
+                res[k.lstrip(ns + ".")] = v
+        return res
+
     def dump(self):
         """Dump the configuration to disk."""
         with open(str(self.path), "w+") as config_file:

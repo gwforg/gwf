@@ -9,12 +9,11 @@ import time
 import uuid
 from enum import Enum
 from io import TextIOWrapper
+from pathlib import Path
 from threading import Lock, Thread
 
 import attrs
 
-from ..conf import config
-from ..utils import PersistableDict
 from . import Backend, Status
 from .exceptions import BackendError, DependencyError, UnsupportedOperationError
 from .logmanager import FileLogManager
@@ -30,6 +29,14 @@ logger = logging.getLogger(__name__)
 
 def _gen_task_id():
     return uuid.uuid4().hex
+
+
+class LocalStatus(Enum):
+    UNKNOWN = 0
+    SUBMITTED = 1
+    RUNNING = 2
+    FAILED = 3
+    COMPLETED = 4
 
 
 @attrs.frozen
@@ -108,6 +115,7 @@ class Client:
         self.close()
 
 
+@attrs.define
 class LocalBackend(Backend):
     """Backend that runs targets on a local cluster.
 
@@ -148,32 +156,45 @@ class LocalBackend(Backend):
     None available.
     """
 
+    option_defaults = {}
     log_manager = FileLogManager()
 
-    option_defaults = {}
+    working_dir: Path = attrs.field(repr=False)
+    host: str = attrs.field(repr=False, default=DEFAULT_HOST)
+    port: int = attrs.field(repr=False, default=DEFAULT_PORT)
 
-    def __init__(self):
-        super().__init__()
+    _client: Client = attrs.field(init=False, repr=False)
+    _status: dict = attrs.field(init=False, repr=False)
+    _tracked: dict = attrs.field(init=False, repr=False)
 
-        self._tracked = PersistableDict(os.path.join(".gwf/local-backend-tracked.json"))
-
-        host = config.get("local.host", "localhost")
-        port = config.get("local.port", 12345)
+    @_client.default
+    def _create_client(self):
         try:
-            self._client = Client.connect(host, port)
+            return Client.connect(self.host, self.port)
         except ConnectionRefusedError:
             raise BackendError(
-                f"Local backend could not connect to workers at {host} port {port}. "
+                f"Local backend could not connect to workers at {self.host} port {self.port}. "
                 f"Workers can be started by running `gwf workers`."
             )
 
-        self._status = self._client.status()
-        for target_name, task_id in list(self._tracked.items()):
-            if (
-                task_id not in self._status
-                or self._status[task_id] == LocalStatus.COMPLETED
-            ):
-                del self._tracked[target_name]
+    @_status.default
+    def _init_status(self):
+        return self._client.status()
+
+    @_tracked.default
+    def _init_tracked(self):
+        try:
+            with open(".gwf/local-backend-tracked.json") as tracked_file:
+                tracked = json.load(tracked_file)
+        except FileNotFoundError:
+            tracked = {}
+
+        return {
+            target_name: task_id
+            for target_name, task_id in tracked.items()
+            if task_id in self._status
+            and self._status[task_id] != LocalStatus.COMPLETED
+        }
 
     def submit(self, target, dependencies):
         try:
@@ -204,20 +225,13 @@ class LocalBackend(Backend):
         return Status[task_status.name]
 
     def close(self):
-        self._tracked.persist()
+        with open(".gwf/local-backend-tracked.json", "w") as tracked_file:
+            json.dump(self._tracked, tracked_file)
         self._client.close()
 
     @staticmethod
     def priority():
         return 0
-
-
-class LocalStatus(Enum):
-    UNKNOWN = 0
-    SUBMITTED = 1
-    RUNNING = 2
-    FAILED = 3
-    COMPLETED = 4
 
 
 class CustomEncoder(json.JSONEncoder):

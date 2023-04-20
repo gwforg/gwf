@@ -3,6 +3,8 @@ from collections import Counter
 
 import click
 
+from gwf import Workflow
+
 from ..backends import Backend
 from ..conf import config
 from ..core import CachedFilesystem, Graph, TargetStatus, get_spec_hashes
@@ -17,6 +19,7 @@ _STATUS_VISUALS = {
     TargetStatus.SUBMITTED: ("cyan", "-"),
     TargetStatus.RUNNING: ("blue", "↻"),
     TargetStatus.COMPLETED: ("green", "✓"),
+    TargetStatus.FAiLED: ("magenta", "⨯"),
 }
 
 
@@ -102,13 +105,15 @@ def status(obj, status, endpoints, format, targets):
 
     The targets are shown in creation-order.
     """
+    workflow = Workflow.from_config(obj)
+
     fs = CachedFilesystem()
-    workflow = obj["workflow"]
     graph = Graph.from_targets(workflow.targets, fs)
 
-    backend_cls = Backend.from_config(obj)
-    with backend_cls() as backend, get_spec_hashes(
-        working_dir=workflow.working_dir, config=config
+    with Backend.from_name(
+        obj["backend"], working_dir=obj["working_dir"], config=config
+    ) as backend, get_spec_hashes(
+        working_dir=obj["working_dir"], config=config
     ) as spec_hashes:
         target_states = get_status_map(
             graph,

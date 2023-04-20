@@ -4,6 +4,7 @@ import os.path
 
 import click
 
+from .. import Workflow
 from ..conf import config
 from ..core import CachedFilesystem, Graph, get_spec_hashes
 from ..filtering import EndpointFilter, NameFilter, filter_generic
@@ -43,8 +44,8 @@ def clean(obj, targets, all, force):
     deleted. If you want to clean up output files from endpoints too, use the
     ``--all`` flag.
     """
+    workflow = Workflow.from_config(obj)
     fs = CachedFilesystem()
-    workflow = obj["workflow"]
     graph = Graph.from_targets(workflow.targets, fs)
 
     filters = []

@@ -1,4 +1,5 @@
 import copy
+import importlib
 import itertools
 import json
 import logging
@@ -184,4 +185,18 @@ def find_workflow(path_spec):
                 raise GWFError(f"The file {path} could not be found")
             current_dir = current_dir.parent
             workflow_path = current_dir.joinpath(path)
-    return current_dir, workflow_path, obj
+    return workflow_path, obj
+
+
+def load_workflow(path: Path, obj: str):
+    logger.debug("Loading workflow from %s:%s", path, obj)
+    module_name, _ = os.path.splitext(path.name)
+    sys.path.insert(0, str(path.parent))
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    assert spec is not None, "Could not load workflow file"
+    module = importlib.util.module_from_spec(spec)
+    assert module is not None, "Could not load module from workflow file"
+    spec.loader.exec_module(module)
+    if not hasattr(module, obj):
+        raise GWFError(f"The module '{path.name}' does not have attribute '{obj}'")
+    return getattr(module, obj)
