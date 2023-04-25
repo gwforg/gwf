@@ -149,7 +149,7 @@ def get_spec_hashes(*, working_dir, config):
         return NoopSpecHashes()
 
 
-class TargetStatus(Enum):
+class Status(Enum):
     """BackendStatus of a target as computed by the Scheduler."""
 
     SHOULDRUN = 0  #: The target should run.

@@ -1,7 +1,7 @@
 import pytest
 
 from gwf import Target
-from gwf.core import TargetStatus
+from gwf.core import Status
 from gwf.filtering import EndpointFilter, NameFilter, StatusFilter
 
 
@@ -35,12 +35,12 @@ targets = [target1, target2, target3, target4, target5, target6]
 
 status_provider = make_status_provider(
     {
-        target1: TargetStatus.COMPLETED,
-        target2: TargetStatus.RUNNING,
-        target3: TargetStatus.SHOULDRUN,
-        target4: TargetStatus.SUBMITTED,
-        target5: TargetStatus.SHOULDRUN,
-        target6: TargetStatus.COMPLETED,
+        target1: Status.COMPLETED,
+        target2: Status.RUNNING,
+        target3: Status.SHOULDRUN,
+        target4: Status.SUBMITTED,
+        target5: Status.SHOULDRUN,
+        target6: Status.COMPLETED,
     }
 )
 
@@ -48,13 +48,13 @@ status_provider = make_status_provider(
 @pytest.mark.parametrize(
     "status,result",
     [
-        ([TargetStatus.COMPLETED], [target1, target6]),
-        ([TargetStatus.RUNNING], [target2]),
-        ([TargetStatus.SHOULDRUN], [target3, target5]),
-        ([TargetStatus.SUBMITTED], [target4]),
-        ([TargetStatus.SUBMITTED, TargetStatus.RUNNING], [target2, target4]),
+        ([Status.COMPLETED], [target1, target6]),
+        ([Status.RUNNING], [target2]),
+        ([Status.SHOULDRUN], [target3, target5]),
+        ([Status.SUBMITTED], [target4]),
+        ([Status.SUBMITTED, Status.RUNNING], [target2, target4]),
         (
-            [TargetStatus.COMPLETED, TargetStatus.SHOULDRUN],
+            [Status.COMPLETED, Status.SHOULDRUN],
             [target1, target6, target3, target5],
         ),
     ],

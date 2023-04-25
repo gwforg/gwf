@@ -2,15 +2,15 @@ import logging
 from functools import partial
 
 from .backends.base import BackendStatus
-from .core import TargetStatus
+from .core import Status
 
 logger = logging.getLogger(__name__)
 
 
 SUBMITTED_STATES = (
-    TargetStatus.SUBMITTED,
-    TargetStatus.RUNNING,
-    TargetStatus.SHOULDRUN,
+    Status.SUBMITTED,
+    Status.RUNNING,
+    Status.SHOULDRUN,
 )
 
 
@@ -66,15 +66,15 @@ def schedule(endpoints, graph, fs, spec_hashes, status_func, submit_func):
 
         if status_func(target) == BackendStatus.SUBMITTED:
             logger.debug("Target %s is already submitted", target)
-            return TargetStatus.SUBMITTED
+            return Status.SUBMITTED
 
         if status_func(target) == BackendStatus.RUNNING:
             logger.debug("Target %s is already running", target)
-            return TargetStatus.RUNNING
+            return Status.RUNNING
 
         if status_func(target) == BackendStatus.FAILED:
             submit_func(target, dependencies=submitted_deps)
-            return TargetStatus.FAiLED
+            return Status.FAiLED
 
         if submitted_deps:
             logger.debug(
@@ -83,13 +83,13 @@ def schedule(endpoints, graph, fs, spec_hashes, status_func, submit_func):
                 submitted_deps[0],
             )
             submit_func(target, dependencies=submitted_deps)
-            return TargetStatus.SHOULDRUN
+            return Status.SHOULDRUN
 
         if should_run(target, fs, spec_hashes):
             submit_func(target, dependencies=submitted_deps)
-            return TargetStatus.SHOULDRUN
+            return Status.SHOULDRUN
 
-        return TargetStatus.COMPLETED
+        return Status.COMPLETED
 
     cache = {}
 

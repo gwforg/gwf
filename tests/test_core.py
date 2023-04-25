@@ -9,7 +9,7 @@ from gwf.core import (
     InvalidPathError,
     NoopSpecHashes,
     Target,
-    TargetStatus,
+    Status,
     UnresolvedInputError,
     _flatten,
 )
@@ -257,7 +257,7 @@ def test_schedule_if_one_of_its_output_files_does_not_exist(
         backend=backend,
         spec_hashes=NoopSpecHashes(),
     )
-    assert target_states[target] == TargetStatus.SHOULDRUN
+    assert target_states[target] == Status.SHOULDRUN
 
 
 def test_schedule_if_one_of_its_dependencies_was_scheduled(
@@ -271,7 +271,7 @@ def test_schedule_if_one_of_its_dependencies_was_scheduled(
         backend=backend,
         spec_hashes=NoopSpecHashes(),
     )
-    assert target_states[target] == TargetStatus.SHOULDRUN
+    assert target_states[target] == Status.SHOULDRUN
 
 
 def test_schedule_if_it_is_a_sink(trivial_graph, filesystem, backend):
@@ -283,7 +283,7 @@ def test_schedule_if_it_is_a_sink(trivial_graph, filesystem, backend):
         backend=backend,
         spec_hashes=NoopSpecHashes(),
     )
-    assert target_states[target] == TargetStatus.SHOULDRUN
+    assert target_states[target] == Status.SHOULDRUN
 
 
 def test_schedule_if_any_input_file_is_newer_than_any_output_file(
@@ -302,7 +302,7 @@ def test_schedule_if_any_input_file_is_newer_than_any_output_file(
         backend=backend,
         spec_hashes=NoopSpecHashes(),
     )
-    assert target_states[target] == TargetStatus.SHOULDRUN
+    assert target_states[target] == Status.SHOULDRUN
 
 
 def test_schedule_if_it_is_a_source(filesystem, backend):
@@ -318,7 +318,7 @@ def test_schedule_if_it_is_a_source(filesystem, backend):
         backend=backend,
         spec_hashes=NoopSpecHashes(),
     )
-    assert target_states[target] == TargetStatus.SHOULDRUN
+    assert target_states[target] == Status.SHOULDRUN
 
     filesystem.add_file("/some/dir/foo", changed_at=1)
     target_states = get_status_map(
@@ -328,7 +328,7 @@ def test_schedule_if_it_is_a_source(filesystem, backend):
         backend=backend,
         spec_hashes=NoopSpecHashes(),
     )
-    assert target_states[target] == TargetStatus.SHOULDRUN
+    assert target_states[target] == Status.SHOULDRUN
 
 
 def test_do_not_schedule_if_all_outputs_are_newer_then_the_inputs(backend, filesystem):
@@ -353,7 +353,7 @@ def test_do_not_schedule_if_all_outputs_are_newer_then_the_inputs(backend, files
         backend=backend,
         spec_hashes=NoopSpecHashes(),
     )
-    assert target_states[target] == TargetStatus.COMPLETED
+    assert target_states[target] == Status.COMPLETED
 
 
 def test_graph_raises_if_input_file_is_not_provided_and_does_not_exist(filesystem):
@@ -407,10 +407,10 @@ def test_scheduling_target_with_deep_deps_that_are_not_submitted(filesystem, bac
         backend=backend,
         spec_hashes=NoopSpecHashes(),
     )
-    assert target_states[target1] == TargetStatus.SHOULDRUN
-    assert target_states[target2] == TargetStatus.SHOULDRUN
-    assert target_states[target3] == TargetStatus.SHOULDRUN
-    assert target_states[target4] == TargetStatus.SHOULDRUN
+    assert target_states[target1] == Status.SHOULDRUN
+    assert target_states[target2] == Status.SHOULDRUN
+    assert target_states[target3] == Status.SHOULDRUN
+    assert target_states[target4] == Status.SHOULDRUN
 
 
 def test_scheduling_branch_and_join_structure(filesystem, backend):
@@ -450,10 +450,10 @@ def test_scheduling_branch_and_join_structure(filesystem, backend):
         backend=backend,
         spec_hashes=NoopSpecHashes(),
     )
-    assert target_states[target1] == TargetStatus.SHOULDRUN
-    assert target_states[target2] == TargetStatus.SHOULDRUN
-    assert target_states[target3] == TargetStatus.SHOULDRUN
-    assert target_states[target4] == TargetStatus.SHOULDRUN
+    assert target_states[target1] == Status.SHOULDRUN
+    assert target_states[target2] == Status.SHOULDRUN
+    assert target_states[target3] == Status.SHOULDRUN
+    assert target_states[target4] == Status.SHOULDRUN
 
 
 def test_scheduling_with_spec_hashing(backend, spec_hashes, filesystem):
@@ -476,7 +476,7 @@ def test_scheduling_with_spec_hashing(backend, spec_hashes, filesystem):
         backend=backend,
         spec_hashes=spec_hashes,
     )
-    assert target_states[target] == TargetStatus.SHOULDRUN
+    assert target_states[target] == Status.SHOULDRUN
 
     spec_hashes.update(target)
 
@@ -486,7 +486,7 @@ def test_scheduling_with_spec_hashing(backend, spec_hashes, filesystem):
         backend=backend,
         spec_hashes=spec_hashes,
     )
-    assert target_states[target] == TargetStatus.COMPLETED
+    assert target_states[target] == Status.COMPLETED
 
     target.spec = "bar"
 
@@ -496,4 +496,4 @@ def test_scheduling_with_spec_hashing(backend, spec_hashes, filesystem):
         backend=backend,
         spec_hashes=spec_hashes,
     )
-    assert target_states[target] == TargetStatus.SHOULDRUN
+    assert target_states[target] == Status.SHOULDRUN

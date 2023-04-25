@@ -7,7 +7,7 @@ from gwf import Workflow
 
 from ..backends import Backend
 from ..conf import config
-from ..core import CachedFilesystem, Graph, TargetStatus, get_spec_hashes
+from ..core import CachedFilesystem, Graph, Status, get_spec_hashes
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
 from ..scheduling import get_status_map
 
@@ -15,16 +15,16 @@ logger = logging.getLogger(__name__)
 
 
 _STATUS_VISUALS = {
-    TargetStatus.SHOULDRUN: ("magenta", "⨯"),
-    TargetStatus.SUBMITTED: ("cyan", "-"),
-    TargetStatus.RUNNING: ("blue", "↻"),
-    TargetStatus.COMPLETED: ("green", "✓"),
-    TargetStatus.FAiLED: ("magenta", "⨯"),
+    Status.SHOULDRUN: ("magenta", "⨯"),
+    Status.SUBMITTED: ("cyan", "-"),
+    Status.RUNNING: ("blue", "↻"),
+    Status.COMPLETED: ("green", "✓"),
+    Status.FAiLED: ("magenta", "⨯"),
 }
 
 
 def _status_str_to_enum(s):
-    return TargetStatus[s.upper()]
+    return Status[s.upper()]
 
 
 def _status_strs_to_enums(iterable):
