@@ -4,7 +4,7 @@ import time
 import attrs
 import pytest
 
-from gwf.backends.base import Backend, Status
+from gwf.backends.base import Backend, BackendStatus
 from gwf.backends.local import Cluster
 from gwf.core import Graph, Target, hash_spec
 
@@ -28,13 +28,13 @@ class FakeBackend(Backend):
         self._tracked = {}
 
     def submit(self, target, dependencies):
-        self._tracked[target] = Status.SUBMITTED
+        self._tracked[target] = BackendStatus.SUBMITTED
 
     def cancel(self, target):
         del self._tracked[target]
 
     def status(self, target):
-        return self._tracked.get(target, Status.UNKNOWN)
+        return self._tracked.get(target, BackendStatus.UNKNOWN)
 
     def close(self):
         pass

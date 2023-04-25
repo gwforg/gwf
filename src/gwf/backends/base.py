@@ -8,15 +8,15 @@ from .logmanager import FileLogManager
 logger = logging.getLogger(__name__)
 
 
-__all__ = ("Backend", "Status")
+__all__ = ("Backend", "BackendStatus")
 
 
 def _load_backends():
     return {ep.name: ep.load() for ep in entry_points(group="gwf.backends")}
 
 
-class Status(Enum):
-    """Status of a target.
+class BackendStatus(Enum):
+    """BackendStatus of a target.
 
     A target is unknown to the backend if it has not been submitted or the
     target has completed and thus isn't being tracked anymore by the backend.
@@ -82,7 +82,7 @@ class Backend:
         """Return the status of `target`.
 
         :param gwf.Target target: The target to return the status of.
-        :return gwf.backends.Status: Status of `target`.
+        :return gwf.backends.BackendStatus: BackendStatus of `target`.
         """
 
     def submit_full(self, target, dependencies):
@@ -205,7 +205,7 @@ class PbsLikeBackendBase(Backend):
         try:
             return self._get_status(target)
         except KeyError:
-            return Status.UNKNOWN
+            return BackendStatus.UNKNOWN
 
     def submit(self, target, dependencies):
         script = self.compile_script(target)
@@ -245,7 +245,7 @@ class PbsLikeBackendBase(Backend):
         """
         return self._tracked[target.name]
 
-    def _add_job(self, target, job_id, initial_status=Status.SUBMITTED):
+    def _add_job(self, target, job_id, initial_status=BackendStatus.SUBMITTED):
         self._set_job_id(target, job_id)
         self._set_status(target, initial_status)
 

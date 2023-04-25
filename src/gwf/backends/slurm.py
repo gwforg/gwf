@@ -5,7 +5,7 @@ import attrs
 
 from ..conf import config
 from ..utils import ensure_trailing_newline, retry
-from .base import PbsLikeBackendBase, Status
+from .base import PbsLikeBackendBase, BackendStatus
 from .exceptions import BackendError
 from .utils import call, has_exe
 
@@ -13,33 +13,33 @@ logger = logging.getLogger(__name__)
 
 
 SLURM_RAW_STATES = {
-    "BF": Status.FAILED,  # Job terminated due to launch failure, typically due to a hardware failure (e.g. unable to boot the node or block and the job can not be requeued).
-    "CA": Status.FAILED,  # Job was explicitly cancelled by the user or system administrator. The job may or may not have been initiated.
-    "CD": Status.COMPLETED,  # Job has terminated all processes on all nodes with an exit code of zero.
-    "CF": Status.SUBMITTED,  # Job has been allocated resources, but are waiting for them to become ready for use (e.g. booting).
-    "CG": Status.RUNNING,  # Job is in the process of completing. Some processes on some nodes may still be active.
-    "DL": Status.FAILED,  # Job terminated on deadline.
-    "F": Status.FAILED,  # Job terminated with non-zero exit code or other failure condition.
-    "NF": Status.FAILED,  # Job terminated due to failure of one or more allocated nodes.
-    "OOM": Status.FAILED,  # Job experienced out of memory error.
-    "PD": Status.SUBMITTED,  # Job is awaiting resource allocation.
-    "PR": Status.FAILED,  # Job terminated due to preemption.
-    "R": Status.RUNNING,  # Job currently has an allocation.
-    "RD": Status.SUBMITTED,  # Job is being held after requested reservation was deleted.
-    "RF": Status.SUBMITTED,  # Job is being requeued by a federation.
-    "RH": Status.SUBMITTED,  # Held job is being requeued.
-    "RQ": Status.SUBMITTED,  # Completing job is being requeued.
-    "RS": Status.SUBMITTED,  # Job is about to change size.
-    "RV": Status.SUBMITTED,  # Sibling was removed from cluster due to other cluster starting the job.
-    "SE": Status.SUBMITTED,  # The job was requeued in a special state. This state can be set by users, typically in EpilogSlurmctld, if the job has terminated with a particular exit value.
-    "SO": Status.SUBMITTED,  # Job is staging out files.
-    "ST": Status.RUNNING,  # Job has an allocation, but execution has been stopped with SIGSTOP signal. CPUS have been retained by this job.
-    "S": Status.RUNNING,  # Job has an allocation, but execution has been suspended and CPUs have been released for other jobs.
-    "TO": Status.FAILED,  # Job terminated upon reaching its time limit.
+    "BF": BackendStatus.FAILED,  # Job terminated due to launch failure, typically due to a hardware failure (e.g. unable to boot the node or block and the job can not be requeued).
+    "CA": BackendStatus.FAILED,  # Job was explicitly cancelled by the user or system administrator. The job may or may not have been initiated.
+    "CD": BackendStatus.COMPLETED,  # Job has terminated all processes on all nodes with an exit code of zero.
+    "CF": BackendStatus.SUBMITTED,  # Job has been allocated resources, but are waiting for them to become ready for use (e.g. booting).
+    "CG": BackendStatus.RUNNING,  # Job is in the process of completing. Some processes on some nodes may still be active.
+    "DL": BackendStatus.FAILED,  # Job terminated on deadline.
+    "F": BackendStatus.FAILED,  # Job terminated with non-zero exit code or other failure condition.
+    "NF": BackendStatus.FAILED,  # Job terminated due to failure of one or more allocated nodes.
+    "OOM": BackendStatus.FAILED,  # Job experienced out of memory error.
+    "PD": BackendStatus.SUBMITTED,  # Job is awaiting resource allocation.
+    "PR": BackendStatus.FAILED,  # Job terminated due to preemption.
+    "R": BackendStatus.RUNNING,  # Job currently has an allocation.
+    "RD": BackendStatus.SUBMITTED,  # Job is being held after requested reservation was deleted.
+    "RF": BackendStatus.SUBMITTED,  # Job is being requeued by a federation.
+    "RH": BackendStatus.SUBMITTED,  # Held job is being requeued.
+    "RQ": BackendStatus.SUBMITTED,  # Completing job is being requeued.
+    "RS": BackendStatus.SUBMITTED,  # Job is about to change size.
+    "RV": BackendStatus.SUBMITTED,  # Sibling was removed from cluster due to other cluster starting the job.
+    "SE": BackendStatus.SUBMITTED,  # The job was requeued in a special state. This state can be set by users, typically in EpilogSlurmctld, if the job has terminated with a particular exit value.
+    "SO": BackendStatus.SUBMITTED,  # Job is staging out files.
+    "ST": BackendStatus.RUNNING,  # Job has an allocation, but execution has been stopped with SIGSTOP signal. CPUS have been retained by this job.
+    "S": BackendStatus.RUNNING,  # Job has an allocation, but execution has been suspended and CPUs have been released for other jobs.
+    "TO": BackendStatus.FAILED,  # Job terminated upon reaching its time limit.
 }
 
 
-SLURM_JOB_STATES = defaultdict(lambda: Status.UNKNOWN, SLURM_RAW_STATES)
+SLURM_JOB_STATES = defaultdict(lambda: BackendStatus.UNKNOWN, SLURM_RAW_STATES)
 
 
 @attrs.define

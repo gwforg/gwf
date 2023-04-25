@@ -1,3 +1,3 @@
-from .base import Backend, Status
+from .base import Backend, BackendStatus
 
-__all__ = ("Backend", "Status")
+__all__ = ("Backend", "BackendStatus")

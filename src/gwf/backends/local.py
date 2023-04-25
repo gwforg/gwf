@@ -14,7 +14,7 @@ from threading import Lock, Thread
 
 import attrs
 
-from . import Backend, Status
+from . import Backend, BackendStatus
 from .exceptions import BackendError, DependencyError, UnsupportedOperationError
 from .logmanager import FileLogManager
 
@@ -218,11 +218,11 @@ class LocalBackend(Backend):
     def status(self, target):
         task_id = self._tracked.get(target.name)
         if task_id is None:
-            return Status.UNKNOWN
+            return BackendStatus.UNKNOWN
         task_status = self._status.get(task_id)
         if task_status is None:
-            return Status.UNKNOWN
-        return Status[task_status.name]
+            return BackendStatus.UNKNOWN
+        return BackendStatus[task_status.name]
 
     def close(self):
         with open(".gwf/local-backend-tracked.json", "w") as tracked_file:

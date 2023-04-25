@@ -3,7 +3,7 @@ import re
 from xml.etree import ElementTree
 
 from ..utils import ensure_trailing_newline, retry
-from .base import PbsLikeBackendBase, Status
+from .base import PbsLikeBackendBase, BackendStatus
 from .exceptions import BackendError
 from .utils import call, has_exe
 
@@ -85,11 +85,11 @@ class SGEBackend(PbsLikeBackendBase):
             # Guessing job state based on
             # https://gist.github.com/cmaureir/4fa2d34bc9a1bd194af1
             if "d" in state or "E" in state:
-                job_state = Status.UNKNOWN
+                job_state = BackendStatus.UNKNOWN
             elif "r" in state or "t" in state or "s" in state:
-                job_state = Status.RUNNING
+                job_state = BackendStatus.RUNNING
             else:
-                job_state = Status.SUBMITTED
+                job_state = BackendStatus.SUBMITTED
             job_states[job_id] = job_state
         return job_states
 

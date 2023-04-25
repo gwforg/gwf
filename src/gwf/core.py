@@ -150,7 +150,7 @@ def get_spec_hashes(*, working_dir, config):
 
 
 class TargetStatus(Enum):
-    """Status of a target as computed by the Scheduler."""
+    """BackendStatus of a target as computed by the Scheduler."""
 
     SHOULDRUN = 0  #: The target should run.
     SUBMITTED = 1  #: The target has been submitted, but is not currently running.
