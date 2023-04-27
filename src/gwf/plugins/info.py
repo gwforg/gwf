@@ -4,7 +4,7 @@ from collections import OrderedDict
 import click
 
 from .. import Workflow
-from ..core import CachedFilesystem, Graph
+from ..core import CachedFilesystem, Graph, pass_context
 from ..filtering import filter_names
 
 
@@ -73,10 +73,10 @@ FORMATS = {
 @click.command()
 @click.argument("targets", nargs=-1)
 @click.option("-f", "--format", type=click.Choice(["json", "pretty"]), default="json")
-@click.pass_obj
-def info(obj, targets, format):
+@pass_context
+def info(ctx, targets, format):
     """Display information about a target."""
-    workflow = Workflow.from_config(obj)
+    workflow = Workflow.from_context(ctx)
 
     fs = CachedFilesystem()
     graph = Graph.from_targets(workflow.targets, fs)

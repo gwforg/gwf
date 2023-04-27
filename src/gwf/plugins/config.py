@@ -1,5 +1,7 @@
 import click
 
+from ..core import pass_context
+
 
 def humanbool(x):
     if x in ("true", "yes"):
@@ -26,29 +28,29 @@ def config():
 
 @config.command()
 @click.argument("key")
-@click.pass_obj
-def get(obj, key):
+@pass_context
+def get(ctx, key):
     """Get the value of KEY."""
-    click.echo(obj["config"].get(key, "<not set>"))
+    click.echo(ctx.config.get(key, "<not set>"))
 
 
 @config.command()
 @click.argument("key")
 @click.argument("value")
-@click.pass_obj
-def set(obj, key, value):
+@pass_context
+def set(ctx, key, value):
     """Set the value of KEY.
 
     The key will be created if it does not exist.
     """
-    obj["config"][key] = cast_value(value)
-    obj["config"].dump()
+    ctx.config[key] = cast_value(value)
+    ctx.config.dump()
 
 
 @config.command()
 @click.argument("key")
-@click.pass_obj
-def unset(obj, key):
+@pass_context
+def unset(ctx, key):
     """Unset KEY."""
-    del obj["config"][key]
-    obj["config"].dump()
+    del ctx.config[key]
+    ctx.config.dump()

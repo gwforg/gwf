@@ -10,6 +10,7 @@ from enum import Enum
 from os import fspath
 
 import attrs
+import click
 
 from .exceptions import GWFError
 from .utils import is_valid_name, timer
@@ -501,3 +502,23 @@ class CachedFilesystem:
         if st is None:
             raise FileNotFoundError(path)
         return st
+
+
+@attrs.frozen
+class Context:
+    working_dir = attrs.field()
+    config = attrs.field()
+    backend = attrs.field()
+    workflow_file = attrs.field()
+    workflow_obj = attrs.field()
+
+    @property
+    def config_dir(self):
+        return os.path.join(self.working_dir, ".gwf")
+
+    @property
+    def logs_dir(self):
+        return os.path.join(self.config_dir, "logs")
+
+
+pass_context = click.make_pass_decorator(Context)

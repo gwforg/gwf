@@ -5,7 +5,7 @@ import os.path
 import click
 
 from .. import Workflow
-from ..core import CachedFilesystem, Graph, get_spec_hashes
+from ..core import CachedFilesystem, Graph, get_spec_hashes, pass_context
 from ..filtering import EndpointFilter, NameFilter, filter_generic
 
 logger = logging.getLogger(__name__)
@@ -35,15 +35,15 @@ def _delete_file(path):
 @click.option(
     "-f", "--force", is_flag=True, default=False, help="Do not ask for confirmation."
 )
-@click.pass_obj
-def clean(obj, targets, all, force):
+@pass_context
+def clean(ctx, targets, all, force):
     """Clean output files of targets.
 
     By default, only targets that are not endpoints will have their output files
     deleted. If you want to clean up output files from endpoints too, use the
     ``--all`` flag.
     """
-    workflow = Workflow.from_config(obj)
+    workflow = Workflow.from_context(ctx)
     fs = CachedFilesystem()
     graph = Graph.from_targets(workflow.targets, fs)
 
@@ -74,9 +74,7 @@ def clean(obj, targets, all, force):
             abort=True,
         )
 
-    with get_spec_hashes(
-        working_dir=obj["working_dir"], config=obj["config"]
-    ) as spec_hashes:
+    with get_spec_hashes(working_dir=ctx.working_dir, config=ctx.config) as spec_hashes:
         for target in matches:
             logger.info("Clearing hash for %s", target)
             spec_hashes.invalidate(target)
@@ -84,14 +82,14 @@ def clean(obj, targets, all, force):
             logger.info("Deleting output files of %s", target.name)
             for path in target.flattened_outputs():
                 if path in target.protected():
-                    logging.info(
+                    logger.info(
                         "Skipping file '%s' from target '%s' because it is protected",
                         click.format_filename(path),
                         target.name,
                     )
                     continue
 
-                logging.info(
+                logger.info(
                     'Deleting file "%s" from target "%s"',
                     click.format_filename(path),
                     target.name,

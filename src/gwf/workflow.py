@@ -184,12 +184,12 @@ class Workflow:
         return cls.from_parsed_path(path, obj)
 
     @classmethod
-    def from_config(cls, config):
-        """Return workflow object for the workflow specified by `config`.
+    def from_context(cls, ctx):
+        """Return workflow object for the workflow specified by `ctx`.
 
         See :func:`Workflow.from_path` for further information.
         """
-        return cls.from_parsed_path(config["file"], config["obj_name"])
+        return cls.from_parsed_path(ctx.workflow_file, ctx.workflow_obj)
 
     def _add_target(self, target):
         if target.name in self.targets:

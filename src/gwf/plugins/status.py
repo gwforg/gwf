@@ -3,10 +3,9 @@ from collections import Counter
 
 import click
 
-from gwf import Workflow
-
+from .. import Workflow
 from ..backends import create_backend
-from ..core import CachedFilesystem, Graph, Status, get_spec_hashes
+from ..core import CachedFilesystem, Graph, Status, get_spec_hashes, pass_context
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
 from ..scheduling import get_status_map
 
@@ -85,8 +84,8 @@ FORMATS = {
     type=click.Choice(["shouldrun", "submitted", "running", "completed"]),
     multiple=True,
 )
-@click.pass_obj
-def status(obj, status, endpoints, format, targets):
+@pass_context
+def status(ctx, status, endpoints, format, targets):
     """
     Show the status of targets.
 
@@ -104,15 +103,15 @@ def status(obj, status, endpoints, format, targets):
 
     The targets are shown in creation-order.
     """
-    workflow = Workflow.from_config(obj)
+    workflow = Workflow.from_context(ctx)
 
     fs = CachedFilesystem()
     graph = Graph.from_targets(workflow.targets, fs)
 
     with create_backend(
-        obj["backend"], working_dir=obj["working_dir"], config=obj["config"]
+        ctx.backend, working_dir=ctx.working_dir, config=ctx.config
     ) as backend, get_spec_hashes(
-        working_dir=obj["working_dir"], config=obj["config"]
+        working_dir=ctx.working_dir, config=ctx.config
     ) as spec_hashes:
         target_states = get_status_map(
             graph,

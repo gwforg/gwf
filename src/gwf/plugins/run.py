@@ -5,10 +5,9 @@ from contextlib import suppress
 
 import click
 
-from gwf import Workflow
-
+from .. import Workflow
 from ..backends import create_backend
-from ..core import CachedFilesystem, Graph, get_spec_hashes
+from ..core import CachedFilesystem, Graph, get_spec_hashes, pass_context
 from ..filtering import filter_names
 from ..scheduling import submit_workflow
 
@@ -32,22 +31,22 @@ def clean_logs(working_dir, graph):
 @click.command()
 @click.argument("targets", nargs=-1)
 @click.option("-d", "--dry-run", is_flag=True, default=False)
-@click.pass_obj
-def run(obj, targets, dry_run):
+@pass_context
+def run(ctx, targets, dry_run):
     """Run the specified workflow."""
-    workflow = Workflow.from_config(obj)
+    workflow = Workflow.from_context(ctx)
 
     fs = CachedFilesystem()
     graph = Graph.from_targets(workflow.targets, fs)
 
-    if obj["config"].get("clean_logs") and not dry_run:
+    if ctx.config.get("clean_logs") and not dry_run:
         logger.debug("Cleaning unused log files...")
-        clean_logs(obj["working_dir"], graph)
+        clean_logs(ctx.working_dir, graph)
 
     with create_backend(
-        obj["backend"], working_dir=obj["working_dir"], config=obj["config"]
+        ctx.backend, working_dir=ctx.working_dir, config=ctx.config
     ) as backend, get_spec_hashes(
-        working_dir=obj["working_dir"], config=obj["config"]
+        working_dir=ctx.working_dir, config=ctx.config
     ) as spec_hashes:
         endpoints = filter_names(graph, targets) if targets else graph.endpoints()
         submit_workflow(

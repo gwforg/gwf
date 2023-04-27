@@ -3,7 +3,7 @@ from functools import lru_cache
 import click
 
 from .. import Workflow
-from ..core import CachedFilesystem, Graph, get_spec_hashes
+from ..core import CachedFilesystem, Graph, get_spec_hashes, pass_context
 from ..utils import touchfile
 
 
@@ -22,8 +22,8 @@ def touch_workflow(graph, spec_hashes):
 
 
 @click.command()
-@click.pass_obj
-def touch(obj):
+@pass_context
+def touch(ctx):
     """Touch output files to update timestamps.
 
     Running this command touches all output files in the workflow such that
@@ -34,10 +34,8 @@ def touch(obj):
     This is useful if one or more files were accidentially deleted, but you
     don't want to re-run the workflow to recreate them.
     """
-    workflow = Workflow.from_config(obj)
+    workflow = Workflow.from_context(ctx)
     filesystem = CachedFilesystem()
     graph = Graph.from_targets(workflow.targets, filesystem)
-    with get_spec_hashes(
-        working_dir=obj["working_dir"], config=obj["config"]
-    ) as spec_hashes:
+    with get_spec_hashes(working_dir=ctx.working_dir, config=ctx.config) as spec_hashes:
         touch_workflow(graph, spec_hashes)

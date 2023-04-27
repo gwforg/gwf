@@ -1,6 +1,6 @@
 import click
 
-from .. import Workflow
+from .. import Workflow, pass_context
 from ..backends import BackendStatus, create_backend
 from ..backends.exceptions import UnsupportedOperationError
 from ..core import CachedFilesystem, Graph
@@ -23,8 +23,8 @@ def cancel_many(backend, targets):
 @click.option(
     "-f", "--force", is_flag=True, default=False, help="Do not ask for confirmation."
 )
-@click.pass_obj
-def cancel(obj, targets, force):
+@pass_context
+def cancel(ctx, targets, force):
     """Cancel the specified targets."""
 
     if not force and not targets:
@@ -32,7 +32,7 @@ def cancel(obj, targets, force):
             "This will cancel all targets! Do you want to continue?", abort=True
         )
 
-    workflow = Workflow.from_config(obj)
+    workflow = Workflow.from_context(ctx)
     fs = CachedFilesystem()
     graph = Graph.from_targets(workflow.targets, fs)
 
@@ -42,6 +42,6 @@ def cancel(obj, targets, force):
         targets = list(graph)
 
     with create_backend(
-        obj["backend"], working_dir=obj["working_dir"], config=obj["config"]
+        ctx.backend, working_dir=ctx.working_dir, config=ctx.config
     ) as backend:
         cancel_many(backend, targets)

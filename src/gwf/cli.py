@@ -10,6 +10,7 @@ from click_plugins import with_plugins
 from . import __version__
 from .backends import guess_backend, list_backends
 from .conf import VERBOSITY_LEVELS, FileConfig
+from .core import Context
 from .exceptions import ConfigurationError
 from .utils import ColorFormatter, entry_points, find_workflow
 
@@ -203,19 +204,17 @@ def main(ctx, file, backend, verbose, no_color):
         # click and pretend that the shell is never a TTY.
         click._compat.isatty = lambda s: False
 
-    if backend is None:
-        backend = config.get("backend")
-
+    backend = backend or config.get("backend")
     if backend is None:
         logger.debug("No backend was configured, guessing a backend instead")
         score, backend = guess_backend()
         logger.debug("Found backend '%s' with priority %s", backend, score)
     logger.debug("Using '%s' backend", backend)
 
-    ctx.obj = {
-        "config": config,
-        "backend": backend,
-        "working_dir": str(working_dir),
-        "file": path,
-        "obj_name": obj_name,
-    }
+    ctx.obj = Context(
+        working_dir=str(working_dir),
+        config=config,
+        backend=backend,
+        workflow_file=path,
+        workflow_obj=obj_name,
+    )
