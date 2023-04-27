@@ -1,14 +1,11 @@
 import copy
 import importlib
-import itertools
-import json
 import logging
 import os
 import os.path
 import re
 import sys
 import time
-from collections import UserDict
 from contextlib import ContextDecorator
 from functools import wraps
 from pathlib import Path
@@ -30,6 +27,13 @@ def is_valid_name(candidate):
     return re.match(r"^[a-zA-Z_][a-zA-Z0-9._]*$", candidate) is not None
 
 
+def chain(*dcts):
+    new = {}
+    for dct in dcts:
+        new.update(dct)
+    return new
+
+
 class timer(ContextDecorator):
     def __init__(self, msg, logger=None):
         self.msg = msg
@@ -48,28 +52,6 @@ class timer(ContextDecorator):
 def ensure_dir(path):
     """Create directory unless it already exists."""
     os.makedirs(path, exist_ok=True)
-
-
-class PersistableDict(UserDict):
-    """A dictionary which can persist itself to JSON."""
-
-    def __init__(self, path):
-        super().__init__()
-
-        self.path = path
-        try:
-            with open(self.path) as fileobj:
-                self.data.update(json.load(fileobj))
-        except OSError:
-            pass
-
-    def persist(self):
-        with open(self.path + ".new", "w") as fileobj:
-            json.dump(self.data, fileobj)
-            fileobj.flush()
-            os.fsync(fileobj.fileno())
-            fileobj.close()
-        os.rename(self.path + ".new", self.path)
 
 
 class ColorFormatter(logging.Formatter):
@@ -120,55 +102,6 @@ def touchfile(path):
         os.utime(path, None)
 
 
-class RetryError(Exception):
-    """Raised when max_retries has been exceeded."""
-
-
-def retry(on_exc, max_retries=3, callback=None):
-    """Retry a function with exponentially increasing delay.
-
-    This will retry the decorated function up to `max_retries` times. A retry
-    will only be attempted if the exception raised by the wrapped function is
-    in `on_exc`.
-
-    If `callback(retries, delay)` is given, it must be a callable the number of
-    retries so far as the first argument and the current delay as the second
-    argument. Its return value is ignored.
-    """
-
-    def retry_decorator(func):
-        @wraps(func)
-        def func_wrapper(*args, **kwargs):
-            last_exc = None
-            for retries in itertools.count():  # pragma: no cover
-                if retries >= max_retries:
-                    raise RetryError(func.__name__) from last_exc
-
-                try:
-                    return func(*args, **kwargs)
-                except on_exc as exc:
-                    last_exc = exc
-
-                    delay = (2**retries) // 2
-                    if callback is not None:
-                        callback(retries, delay)
-
-                    logger.exception(exc)
-                    logger.warning(
-                        "Call to %s failed, retrying in %d seconds.",
-                        func.__name__,
-                        delay,
-                    )
-                    time.sleep(delay)
-
-        return func_wrapper
-
-    return retry_decorator
-
-
-retry.RetryError = RetryError
-
-
 def find_workflow(path_spec):
     path, _, obj = path_spec.partition(":")
     obj = obj or "gwf"
@@ -182,7 +115,7 @@ def find_workflow(path_spec):
             if workflow_path.exists():
                 break
             if current_dir == Path(current_dir.anchor):
-                raise GWFError(f"The file {path} could not be found")
+                raise FileNotFoundError(f"The file {path} could not be found")
             current_dir = current_dir.parent
             workflow_path = current_dir.joinpath(path)
     return workflow_path, obj

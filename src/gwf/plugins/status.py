@@ -5,8 +5,7 @@ import click
 
 from gwf import Workflow
 
-from ..backends import Backend
-from ..conf import config
+from ..backends import create_backend
 from ..core import CachedFilesystem, Graph, Status, get_spec_hashes
 from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
 from ..scheduling import get_status_map
@@ -110,10 +109,10 @@ def status(obj, status, endpoints, format, targets):
     fs = CachedFilesystem()
     graph = Graph.from_targets(workflow.targets, fs)
 
-    with Backend.from_name(
-        obj["backend"], working_dir=obj["working_dir"], config=config
+    with create_backend(
+        obj["backend"], working_dir=obj["working_dir"], config=obj["config"]
     ) as backend, get_spec_hashes(
-        working_dir=obj["working_dir"], config=config
+        working_dir=obj["working_dir"], config=obj["config"]
     ) as spec_hashes:
         target_states = get_status_map(
             graph,

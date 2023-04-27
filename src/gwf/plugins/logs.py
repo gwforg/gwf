@@ -1,8 +1,7 @@
 import click
 
 from .. import Workflow
-from ..backends import Backend
-from ..conf import config
+from ..backends import create_backend
 from ..exceptions import GWFError
 
 
@@ -24,8 +23,8 @@ def logs(obj, target, stderr, no_pager):
     except KeyError as exc:
         raise GWFError(f"Target {target} not found in the workflow.") from exc
 
-    with Backend.from_name(
-        obj["backend"], working_dir=obj["working_dir"], config=config
+    with create_backend(
+        obj["backend"], working_dir=obj["working_dir"], config=obj["config"]
     ) as backend:
         log_file = backend.logs(target, stderr=stderr)
         log_contents = log_file.read()

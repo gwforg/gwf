@@ -1,13 +1,13 @@
 import logging
+import os
+import os.path
 from contextlib import suppress
 
 import click
 
 from gwf import Workflow
 
-from ..backends import Backend
-from ..backends.exceptions import LogError
-from ..conf import config
+from ..backends import create_backend
 from ..core import CachedFilesystem, Graph, get_spec_hashes
 from ..filtering import filter_names
 from ..scheduling import submit_workflow
@@ -15,16 +15,18 @@ from ..scheduling import submit_workflow
 logger = logging.getLogger(__name__)
 
 
-def clean_logs(graph, backend):
+def clean_logs(working_dir, graph):
     target_set = set(graph.targets.keys())
-    log_files = set(backend.log_manager.list())
+    log_files = set(
+        os.path.splitext(os.path.basename(log_file))[0]
+        for log_file in os.listdir(os.path.join(working_dir, ".gwf", "logs"))
+    )
 
-    for target_name in log_files.difference(target_set):
-        logger.debug("Target %s does not exist, deleting log files...", target_name)
-
-        with suppress(LogError):
-            backend.log_manager.remove_stdout(target_name)
-            backend.log_manager.remove_stderr(target_name)
+    for log_name in log_files.difference(target_set):
+        logger.debug("Target %s does not exist, deleting", log_name)
+        with suppress(OSError):
+            os.remove(os.path.join(working_dir, ".gwf", "logs", log_name + ".stdout"))
+            os.remove(os.path.join(working_dir, ".gwf", "logs", log_name + ".stderr"))
 
 
 @click.command()
@@ -38,15 +40,15 @@ def run(obj, targets, dry_run):
     fs = CachedFilesystem()
     graph = Graph.from_targets(workflow.targets, fs)
 
-    with Backend.from_name(
-        obj["backend"], working_dir=obj["working_dir"], config=config
-    ) as backend, get_spec_hashes(
-        working_dir=workflow.working_dir, config=config
-    ) as spec_hashes:
-        if config.get("clean_logs") and not dry_run:
-            logger.debug("Cleaning old log files...")
-            clean_logs(graph, backend)
+    if obj["config"].get("clean_logs") and not dry_run:
+        logger.debug("Cleaning unused log files...")
+        clean_logs(obj["working_dir"], graph)
 
+    with create_backend(
+        obj["backend"], working_dir=obj["working_dir"], config=obj["config"]
+    ) as backend, get_spec_hashes(
+        working_dir=obj["working_dir"], config=obj["config"]
+    ) as spec_hashes:
         endpoints = filter_names(graph, targets) if targets else graph.endpoints()
         submit_workflow(
             endpoints,

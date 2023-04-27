@@ -5,7 +5,6 @@ import os.path
 import click
 
 from .. import Workflow
-from ..conf import config
 from ..core import CachedFilesystem, Graph, get_spec_hashes
 from ..filtering import EndpointFilter, NameFilter, filter_generic
 
@@ -76,7 +75,7 @@ def clean(obj, targets, all, force):
         )
 
     with get_spec_hashes(
-        working_dir=workflow.working_dir, config=config
+        working_dir=obj["working_dir"], config=obj["config"]
     ) as spec_hashes:
         for target in matches:
             logger.info("Clearing hash for %s", target)

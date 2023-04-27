@@ -8,8 +8,8 @@ from gwf.core import (
     Graph,
     InvalidPathError,
     NoopSpecHashes,
-    Target,
     Status,
+    Target,
     UnresolvedInputError,
     _flatten,
 )

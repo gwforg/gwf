@@ -19,3 +19,4 @@ examples/minimal-workflow-explicit-options/world.txt
 .vscode/
 .pytest_cache/
 .nox
+.venv

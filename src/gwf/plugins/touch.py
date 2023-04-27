@@ -3,7 +3,6 @@ from functools import lru_cache
 import click
 
 from .. import Workflow
-from ..conf import config
 from ..core import CachedFilesystem, Graph, get_spec_hashes
 from ..utils import touchfile
 
@@ -39,6 +38,6 @@ def touch(obj):
     filesystem = CachedFilesystem()
     graph = Graph.from_targets(workflow.targets, filesystem)
     with get_spec_hashes(
-        working_dir=workflow.working_dir, config=config
+        working_dir=obj["working_dir"], config=obj["config"]
     ) as spec_hashes:
         touch_workflow(graph, spec_hashes)

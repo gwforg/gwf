@@ -4,9 +4,11 @@ from gwf.cli import main
 
 
 def test_run_submits_targets(cli_runner, local_backend, linear_workflow):
+    print(linear_workflow)
     Path("a.txt").touch()
 
     result = cli_runner.invoke(main, ["run"])
+    print(result.exception)
     assert "Submitting target Target1" in result.output
     assert "Submitting target Target2" in result.output
     assert "Submitting target Target3" in result.output

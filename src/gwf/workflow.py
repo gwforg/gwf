@@ -1,6 +1,5 @@
 import collections
 import collections.abc
-import importlib.util
 import inspect
 import logging
 import os
@@ -14,17 +13,10 @@ from pathlib import Path
 import attrs
 
 from .core import Target
-from .exceptions import GWFError, WorkflowError
-from .utils import find_workflow, load_workflow
+from .exceptions import WorkflowError
+from .utils import chain, find_workflow, load_workflow
 
 logger = logging.getLogger(__name__)
-
-
-def _chain(*dcts):
-    new = {}
-    for dct in dcts:
-        new.update(dct)
-    return new
 
 
 def select(lst, fields):
@@ -232,7 +224,7 @@ class Workflow:
             inputs=inputs,
             outputs=outputs,
             protect=protect if protect else set(),
-            options=_chain(self.defaults, options),
+            options=chain(self.defaults, options),
             working_dir=self.working_dir,
         )
         self._add_target(new_target)
@@ -267,7 +259,7 @@ class Workflow:
             inputs=template.inputs,
             outputs=template.outputs,
             protect=template.protect,
-            options=_chain(self.defaults, template.options, options),
+            options=chain(self.defaults, template.options, options),
             working_dir=template.working_dir or self.working_dir,
             spec=template.spec,
         )

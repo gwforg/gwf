@@ -1,3 +1,42 @@
+"""Backend that runs targets on a local cluster.
+
+To use this backend you must activate the `local` backend and start a
+local cluster (with one or more workers) that the backend can submit targets
+to. To start a cluster with two workers run the command::
+
+    gwf -b local workers -n 2
+
+in the working directory of your project. The workflow file must be accessible
+to *gwf*. Thus, if your workflow file is not called `workflow.py` or the
+workflow object is not called `gwf`, you must specify this so that *gwf* can
+locate the workflow::
+
+    gwf -f myworkflow.py:wf1 -b local workers -n 2
+
+If the local backend is your default backend you can of course omit the
+``-b local`` option.
+
+If the ``-n`` option is omitted, *gwf* will detect the number of cores
+available and use all of them.
+
+To run your workflow, open another terminal and then type::
+
+    gwf -b local run
+
+To stop the pool of workers press :kbd:`Control-c`.
+
+**Backend options:**
+
+* **local.host (str):** Set the host that the workers are running on
+    (default: localhost).
+* **local.port (int):** Set the port used to connect to the workers
+    (default: 12345).
+
+**Target options:**
+
+None available.
+"""
+
 import json
 import logging
 import os
@@ -9,16 +48,14 @@ import time
 import uuid
 from enum import Enum
 from io import TextIOWrapper
-from pathlib import Path
 from threading import Lock, Thread
 
 import attrs
 
-from . import Backend, BackendStatus
-from .exceptions import BackendError, DependencyError, UnsupportedOperationError
-from .logmanager import FileLogManager
+from .base import BackendStatus, TrackingBackend
+from .exceptions import BackendError, UnsupportedOperationError
 
-__all__ = ("Client", "Server", "LocalBackend")
+__all__ = ("Client", "Server")
 
 
 DEFAULT_HOST = "localhost"
@@ -64,15 +101,14 @@ class Connection:
         self.writer.flush()
 
     def recv(self):
-        msg = json.loads(self.reader.readline().strip())
+        data = self.reader.readline().strip()
+        msg = json.loads(data)
         msg_type = msg.pop("_type")
         return msg_type, msg
 
     def close(self):
         self.send("close")
         self.sock.close()
-        self.reader.detach().close()
-        self.writer.detach().close()
 
 
 @attrs.define
@@ -116,56 +152,13 @@ class Client:
 
 
 @attrs.define
-class LocalBackend(Backend):
-    """Backend that runs targets on a local cluster.
-
-    To use this backend you must activate the `local` backend and start a
-    local cluster (with one or more workers) that the backend can submit targets
-    to. To start a cluster with two workers run the command::
-
-        gwf -b local workers -n 2
-
-    in the working directory of your project. The workflow file must be accessible
-    to *gwf*. Thus, if your workflow file is not called `workflow.py` or the
-    workflow object is not called `gwf`, you must specify this so that *gwf* can
-    locate the workflow::
-
-        gwf -f myworkflow.py:wf1 -b local workers -n 2
-
-    If the local backend is your default backend you can of course omit the
-    ``-b local`` option.
-
-    If the ``-n`` option is omitted, *gwf* will detect the number of cores
-    available and use all of them.
-
-    To run your workflow, open another terminal and then type::
-
-        gwf -b local run
-
-    To stop the pool of workers press :kbd:`Control-c`.
-
-    **Backend options:**
-
-    * **local.host (str):** Set the host that the workers are running on
-      (default: localhost).
-    * **local.port (int):** Set the port used to connect to the workers
-      (default: 12345).
-
-    **Target options:**
-
-    None available.
-    """
-
-    option_defaults = {}
-    log_manager = FileLogManager()
-
-    working_dir: Path = attrs.field(repr=False)
-    host: str = attrs.field(repr=False, default=DEFAULT_HOST)
-    port: int = attrs.field(repr=False, default=DEFAULT_PORT)
+class LocalOps:
+    working_dir: str = attrs.field()
+    host: str = attrs.field()
+    port: int = attrs.field()
+    target_defaults: dict = attrs.field()
 
     _client: Client = attrs.field(init=False, repr=False)
-    _status: dict = attrs.field(init=False, repr=False)
-    _tracked: dict = attrs.field(init=False, repr=False)
 
     @_client.default
     def _create_client(self):
@@ -177,61 +170,38 @@ class LocalBackend(Backend):
                 f"Workers can be started by running `gwf workers`."
             )
 
-    @_status.default
-    def _init_status(self):
-        return self._client.status()
-
-    @_tracked.default
-    def _init_tracked(self):
-        try:
-            with open(".gwf/local-backend-tracked.json") as tracked_file:
-                tracked = json.load(tracked_file)
-        except FileNotFoundError:
-            tracked = {}
-
+    def get_job_states(self, tracked_jobs):
         return {
-            target_name: task_id
-            for target_name, task_id in tracked.items()
-            if task_id in self._status
-            and self._status[task_id] != LocalStatus.COMPLETED
+            k: BackendStatus[v.name]
+            for k, v in self._client.status().items()
+            if k in tracked_jobs
         }
 
-    def submit(self, target, dependencies):
-        try:
-            dependency_ids = [self._tracked[dep.name] for dep in dependencies]
-        except KeyError as exc:
-            (key,) = exc.args
-            raise DependencyError(key)
-
-        task_id = self._client.submit(
+    def submit_target(self, target, dependency_ids):
+        return self._client.submit(
             target,
             deps=dependency_ids,
-            stdout_path=self.log_manager.stdout_path(target),
-            stderr_path=self.log_manager.stderr_path(target),
+            stdout_path=os.path.join(
+                self.working_dir, ".gwf", "logs", f"{target.name}.stdout"
+            ),
+            stderr_path=os.path.join(
+                self.working_dir, ".gwf", "logs", f"{target.name}.stderr"
+            ),
         )
-        self._tracked[target.name] = task_id
-        self._status[task_id] = LocalStatus.SUBMITTED
 
-    def cancel(self, target):
+    def cancel_job(self, job_id):
         raise UnsupportedOperationError("cancel")
 
-    def status(self, target):
-        task_id = self._tracked.get(target.name)
-        if task_id is None:
-            return BackendStatus.UNKNOWN
-        task_status = self._status.get(task_id)
-        if task_status is None:
-            return BackendStatus.UNKNOWN
-        return BackendStatus[task_status.name]
-
     def close(self):
-        with open(".gwf/local-backend-tracked.json", "w") as tracked_file:
-            json.dump(self._tracked, tracked_file)
         self._client.close()
 
-    @staticmethod
-    def priority():
-        return 0
+
+def create_backend(working_dir, host=DEFAULT_HOST, port=DEFAULT_PORT):
+    return TrackingBackend(
+        working_dir,
+        name="local",
+        ops=LocalOps(working_dir, host, port, target_defaults={}),
+    )
 
 
 class CustomEncoder(json.JSONEncoder):
@@ -305,7 +275,7 @@ class Worker:
                 while process.poll() is None:
                     if self._shutdown_requested:
                         raise Exception("Worker received shutdown signal")
-                    time.sleep(1)
+                    time.sleep(0.01)
 
                 process.wait(timeout=60)
                 if process.returncode != 0:
@@ -358,7 +328,7 @@ class JoinedWorker:
 
 @attrs.define
 class Scheduler:
-    sched_interval: int = attrs.field(default=1)
+    sched_interval: int = attrs.field(default=0.1)
 
     _tasks: dict = attrs.field(factory=dict, repr=False, init=False)
     _task_states: dict = attrs.field(factory=dict, repr=False, init=False)
@@ -455,8 +425,9 @@ class Scheduler:
 
     def shutdown(self):
         self._shutdown_requested = True
-        for worker in self._joined_workers.values():
-            worker.shutdown()
+        with self._lock:
+            for worker in self._joined_workers.values():
+                worker.shutdown()
 
 
 @attrs.define
@@ -465,6 +436,7 @@ class Server:
     port: int = attrs.field()
     scheduler: Scheduler = attrs.field()
 
+    _sock = attrs.field(init=False, repr=False)
     _logger: logging.Logger = attrs.field(init=False, repr=False)
     _shutdown_requested: bool = attrs.field(default=False, init=False, repr=False)
     _sel: selectors.BaseSelector = attrs.field(
@@ -517,6 +489,12 @@ class Server:
         self._sel.unregister(conn.sock)
         conn.close()
 
+    def prepare(self):
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self._sock.bind((self.hostname, self.port))
+        self._sock.listen(1024)
+
     def start(self):
         def _accept(sock):
             client, (host, port) = sock.accept()
@@ -531,12 +509,8 @@ class Server:
             msg_type, msg = conn.recv()
             getattr(self, f"handle_{msg_type}")(conn, **msg)
 
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind((self.hostname, self.port))
-        sock.listen(1024)
-        sock.setblocking(False)
-        self._sel.register(sock, selectors.EVENT_READ, _accept)
+        self._sock.setblocking(False)
+        self._sel.register(self._sock, selectors.EVENT_READ, _accept)
 
         self._logger.info(
             "Server is listening on %s port %s",
@@ -579,7 +553,9 @@ class Cluster:
 
     @server.default
     def _create_server(self):
-        return Server(self.hostname, self.port, self.scheduler)
+        server = Server(self.hostname, self.port, self.scheduler)
+        server.prepare()
+        return server
 
     @_server_thread.default
     def _create_server_thread(self):
@@ -605,3 +581,6 @@ class Cluster:
             worker_thread.join()
         self._scheduler_thread.join()
         self._server_thread.join()
+
+
+setup = (create_backend, 0)

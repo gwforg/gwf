@@ -41,7 +41,6 @@
         clean = "gwf.plugins.clean:clean"
         config = "gwf.plugins.config:config"
         info = "gwf.plugins.info:info"
-        init = "gwf.plugins.init:init"
         logs = "gwf.plugins.logs:logs"
         run = "gwf.plugins.run:run"
         status = "gwf.plugins.status:status"
@@ -49,9 +48,9 @@
         workers = "gwf.plugins.workers:workers"
 
     [project.entry-points."gwf.backends"]
-        local = "gwf.backends.local:LocalBackend"
-        sge = "gwf.backends.sge:SGEBackend"
-        slurm = "gwf.backends.slurm:SlurmBackend"
+        local = "gwf.backends.local:setup"
+        sge = "gwf.backends.sge:setup"
+        slurm = "gwf.backends.slurm:setup"
 
 [project.urls]
     Home = "https://gwf.app"

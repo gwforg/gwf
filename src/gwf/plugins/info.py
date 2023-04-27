@@ -3,8 +3,7 @@ from collections import OrderedDict
 
 import click
 
-from gwf import Workflow
-
+from .. import Workflow
 from ..core import CachedFilesystem, Graph
 from ..filtering import filter_names
 

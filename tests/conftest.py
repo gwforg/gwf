@@ -4,7 +4,7 @@ import time
 import attrs
 import pytest
 
-from gwf.backends.base import Backend, BackendStatus
+from gwf.backends.base import BackendStatus
 from gwf.backends.local import Cluster
 from gwf.core import Graph, Target, hash_spec
 
@@ -17,7 +17,7 @@ def no_sleep(request, monkeypatch):
     monkeypatch.setattr(time, "sleep", sleep)
 
 
-class FakeBackend(Backend):
+class FakeBackend:
     option_defaults = {
         "cores": 1,
         "memory": "1g",
@@ -38,9 +38,6 @@ class FakeBackend(Backend):
 
     def close(self):
         pass
-
-    def set_status(self, target, status):
-        self._tracked[target] = status
 
 
 @attrs.define
@@ -94,7 +91,7 @@ def backend():
     return FakeBackend()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def local_backend():
     cluster = Cluster(num_workers=1)
     thread = threading.Thread(target=cluster.start)

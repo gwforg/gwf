@@ -1,86 +1,88 @@
+"""Backend for Sun Grid Engine (SGE).
+
+To use this backend you must activate the `sge` backend. The backend
+currently assumes that a SGE parallel environment called "smp" is
+available. You can check which parallel environments are available on your
+system by running :command:`qconf -spl`.
+
+**Backend options:**
+
+None.
+
+**Target options:**
+
+* **cores (int):**
+    Number of cores allocated to this target (default: 1).
+* **memory (str):**
+    Memory allocated to this target (default: 1).
+* **walltime (str):**
+    Time limit for this target (default: 01:00:00).
+* **queue (str):**
+    Queue to submit the target to. To specify multiple queues, specify a
+    comma-separated list of queue names.
+* **account (str):**
+    Account to be used when running the target. Corresponds to the SGE
+    project.
+"""
+
 import logging
+import os.path
 import re
 from xml.etree import ElementTree
 
-from ..utils import ensure_trailing_newline, retry
-from .base import PbsLikeBackendBase, BackendStatus
-from .exceptions import BackendError
+import attrs
+
+from ..utils import ensure_trailing_newline
+from .base import BackendStatus, TrackingBackend
 from .utils import call, has_exe
 
 logger = logging.getLogger(__name__)
 
 
-class SGEBackend(PbsLikeBackendBase):
-    """Backend for Sun Grid Engine (SGE).
+TARGET_DEFAULTS = {
+    "cores": 1,
+    "memory": "1g",
+    "walltime": "01:00:00",
+    "queue": None,
+    "account": None,
+}
 
-    To use this backend you must activate the `sge` backend. The backend
-    currently assumes that a SGE parallel environment called "smp" is
-    available. You can check which parallel environments are available on your
-    system by running :command:`qconf -spl`.
+OPTION_FLAGS = {
+    "cores": "-pe smp ",
+    "memory": "-l h_vmem=",
+    "walltime": "-l h_rt=",
+    "queue": "-q ",
+    "account": "-P ",
+}
 
-    **Backend options:**
 
-    None.
+@attrs.define
+class SGEOps:
+    working_dir: str = attrs.field()
+    target_defaults: dict = attrs.field()
 
-    **Target options:**
-
-    * **cores (int):**
-      Number of cores allocated to this target (default: 1).
-    * **memory (str):**
-      Memory allocated to this target (default: 1).
-    * **walltime (str):**
-      Time limit for this target (default: 01:00:00).
-    * **queue (str):**
-      Queue to submit the target to. To specify multiple queues, specify a
-      comma-separated list of queue names.
-    * **account (str):**
-      Account to be used when running the target. Corresponds to the SGE
-      project.
-    """
-
-    option_defaults = {
-        "cores": 1,
-        "memory": "1g",
-        "walltime": "01:00:00",
-        "queue": None,
-        "account": None,
-    }
-
-    option_flags = {
-        "cores": "-pe smp ",
-        "memory": "-l h_vmem=",
-        "walltime": "-l h_rt=",
-        "queue": "-q ",
-        "account": "-P ",
-    }
-
-    @retry(on_exc=BackendError)
-    def call_queue_command(
-        self,
-    ):
-        return call("qstat", "-f", "-xml")
-
-    @retry(on_exc=BackendError)
-    def call_cancel_command(self, job_id):
+    def cancel_job(self, job_id):
         # The --verbose flag here is necessary, otherwise we're not able to tell
         # whether the command failed. See the comment in call() if you
         # want to know more.
         return call("qdel", job_id)
 
-    @retry(on_exc=BackendError)
-    def call_submit_command(self, script, dependencies):
+    def submit_target(self, target, dependencies):
+        script = self.compile_script(target)
         args = ["-terse"]
         if dependencies:
             args.append("-hold_jid")
             args.append(",".join(dependencies))
         return call("qsub", *args, input=script)
 
-    def parse_queue_output(self, stdout):
+    def get_job_states(self, tracked_jobs):
         job_states = {}
-        root = ElementTree.fromstring(stdout)
+        root = ElementTree.fromstring(call("qstat", "-f", "-xml"))
         for job in root.iter("job_list"):
             job_id = job.find("JB_job_number").text
             state = job.find("state").text
+            assert job_id is not None
+            assert state is not None
 
             # Guessing job state based on
             # https://gist.github.com/cmaureir/4fa2d34bc9a1bd194af1
@@ -112,10 +114,20 @@ class SGEBackend(PbsLikeBackendBase):
                 unit = re.sub(r"[0-9]+", "", option_value)
                 cores = target.options["cores"]
                 option_value = "{}{}".format(number // cores, unit)
-            out.append(option_str.format(self.option_flags[option_name], option_value))
+            out.append(option_str.format(OPTION_FLAGS[option_name], option_value))
 
-        out.append(option_str.format("-o ", self.log_manager.stdout_path(target)))
-        out.append(option_str.format("-e ", self.log_manager.stderr_path(target)))
+        out.append(
+            option_str.format(
+                "-o ",
+                os.path.join(self.working_dir, ".gwf", "logs", target.name + ".stdout"),
+            )
+        )
+        out.append(
+            option_str.format(
+                "-e ",
+                os.path.join(self.working_dir, ".gwf", "logs", target.name + ".stderr"),
+            )
+        )
 
         out.append("")
         out.append("cd {}".format(target.working_dir))
@@ -126,8 +138,19 @@ class SGEBackend(PbsLikeBackendBase):
         out.append(ensure_trailing_newline(target.spec))
         return "\n".join(out)
 
-    @staticmethod
-    def priority():
-        if has_exe("qsub") and has_exe("qdel"):
-            return 50
-        return -100
+
+def create_backend(working_dir):
+    return TrackingBackend(
+        working_dir,
+        name="sge",
+        ops=SGEOps(working_dir, target_defaults=TARGET_DEFAULTS),
+    )
+
+
+def priority():
+    if has_exe("qsub") and has_exe("qdel"):
+        return 50
+    return -100
+
+
+setup = (create_backend, priority())

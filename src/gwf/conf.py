@@ -3,9 +3,6 @@ from collections import ChainMap
 
 import attrs
 
-from .backends.base import Backend
-from .exceptions import ConfigurationError
-
 CONFIG_DEFAULTS = {"verbose": "info", "clean_logs": True, "use_spec_hashes": True}
 
 VERBOSITY_LEVELS = ["warning", "debug", "info", "error"]
@@ -85,42 +82,3 @@ class FileConfig:
         except FileNotFoundError:
             data = {}
         return cls(path=path, data=ChainMap(data, CONFIG_DEFAULTS))
-
-
-def config_from_path(path):
-    return FileConfig.load(path)
-
-
-config = config_from_path(".gwfconf.json")
-
-
-def _validate_choice(key, value, valid_values, human_values=None):
-    if value not in valid_values:
-        msg = 'Invalid value "{}" for key "{}", must be one of: {}.'
-        values = valid_values if human_values is None else human_values
-        raise ConfigurationError(msg.format(value, key, ", ".join(values)))
-
-
-def _validate_bool(key, value):
-    human_values = ("true", "yes", "false", "no")
-    return _validate_choice(key, value, (True, False), human_values)
-
-
-@config.validator("backend")
-def validate_backend(value):
-    return _validate_choice("backend", value, Backend.list())
-
-
-@config.validator("verbose")
-def validate_verbose(value):
-    return _validate_choice("verbose", value, VERBOSITY_LEVELS)
-
-
-@config.validator("no_color")
-def validate_no_color(value):
-    return _validate_bool("no_color", value)
-
-
-@config.validator("use_spec_hashes")
-def validate_use_spec_hashes(value):
-    return _validate_bool("use_spec_hashes", value)
