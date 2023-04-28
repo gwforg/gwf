@@ -1,10 +1,9 @@
 import click
 
 from .. import Workflow
-from ..core import pass_context
 from ..backends import BackendStatus, create_backend
 from ..backends.exceptions import UnsupportedOperationError
-from ..core import CachedFilesystem, Graph
+from ..core import CachedFilesystem, Graph, pass_context
 from ..filtering import filter_names
 
 

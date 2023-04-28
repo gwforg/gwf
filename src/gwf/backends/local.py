@@ -140,7 +140,7 @@ class Client:
         msg_type, response = self.conn.recv()
         assert msg_type == "task_states", "invalid response received"
         return {k: LocalStatus[v] for k, v in response["tasks"].items()}
-    
+
     def close(self):
         self.conn.close()
 
