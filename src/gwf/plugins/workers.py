@@ -1,4 +1,5 @@
 import multiprocessing
+from threading import Thread
 
 import click
 
@@ -29,7 +30,11 @@ from ..backends.local import Cluster
 def workers(host, port, num_workers):
     """Start workers for the local backend."""
     cluster = Cluster(hostname=host, port=port, num_workers=num_workers)
+    thread = Thread(target=cluster.start)
     try:
-        cluster.start()
+        thread.start()
+        while thread.is_alive():
+            thread.join(0.01)
     except KeyboardInterrupt:
         cluster.shutdown()
+        thread.join()
