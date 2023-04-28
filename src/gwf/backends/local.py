@@ -1,8 +1,8 @@
 """Backend that runs targets on a local cluster.
 
-To use this backend you must activate the `local` backend and start a
-local cluster (with one or more workers) that the backend can submit targets
-to. To start a cluster with two workers run the command::
+To use this backend you must activate the `local` backend and start a local
+cluster (with one or more workers) that the backend can submit targets to. To
+start a cluster with two workers run the command::
 
     gwf -b local workers -n 2
 
@@ -16,8 +16,8 @@ locate the workflow::
 If the local backend is your default backend you can of course omit the
 ``-b local`` option.
 
-If the ``-n`` option is omitted, *gwf* will detect the number of cores
-available and use all of them.
+If the ``-n`` option is omitted, *gwf* will detect the number of cores available
+and use all of them.
 
 To run your workflow, open another terminal and then type::
 
@@ -48,7 +48,7 @@ import time
 import uuid
 from enum import Enum
 from io import TextIOWrapper
-from threading import Lock, Thread
+from threading import Thread
 
 import attrs
 
@@ -140,7 +140,7 @@ class Client:
         msg_type, response = self.conn.recv()
         assert msg_type == "task_states", "invalid response received"
         return {k: LocalStatus[v] for k, v in response["tasks"].items()}
-
+    
     def close(self):
         self.conn.close()
 
@@ -297,18 +297,15 @@ class Worker:
         self._logger.debug("Worker is now idle")
 
     def handle_shutdown(self):
-        self.shutdown()
-        self.conn.close()
+        self._logger.debug("Shutdown requested for worker %s", self.worker_id)
+        self._shutdown_requested = True
 
     def start(self):
         while not self._shutdown_requested:
             msg_type, msg = self.conn.recv()
             getattr(self, f"handle_{msg_type}")(**msg)
-
-    def shutdown(self):
-        self._logger.debug("Shutdown requested for worker %s", self.worker_id)
         self.conn.send("leave_worker", worker_id=self.worker_id)
-        self._shutdown_requested = True
+        self.conn.close()
 
 
 @attrs.frozen
@@ -326,8 +323,114 @@ class JoinedWorker:
         return self.worker_id
 
 
+# @attrs.define
+# class Scheduler:
+#     sched_interval: int = attrs.field(default=0.1)
+
+#     _tasks: dict = attrs.field(factory=dict, repr=False, init=False)
+#     _task_states: dict = attrs.field(factory=dict, repr=False, init=False)
+#     _pending_tasks: set = attrs.field(factory=set, repr=False, init=False)
+#     _scheduled_tasks: set = attrs.field(factory=set, repr=False, init=False)
+#     _joined_workers: dict = attrs.field(factory=dict, init=False, repr=False)
+#     _used_workers: dict = attrs.field(factory=dict, init=False, repr=False)
+#     _lock: Lock = attrs.field(repr=False, init=False, factory=Lock)
+#     _logger: logging.Logger = attrs.field(init=False, repr=False)
+#     _shutdown_requested: bool = attrs.field(default=False, init=False)
+
+#     @_logger.default
+#     def _create_logger(self):
+#         return logging.getLogger(self.__class__.__name__)
+
+#     def add_worker(self, worker):
+#         with self._lock:
+#             self._joined_workers[worker.worker_id] = worker
+
+#     def remove_worker(self, worker_id):
+#         with self._lock:
+#             del self._joined_workers[worker_id]
+
+#     def submit_task(
+#         self, task_id, name, working_dir, spec, dependencies, stdout_path, stderr_path
+#     ):
+#         task = Task(
+#             name=name,
+#             working_dir=working_dir,
+#             spec=spec,
+#             dependencies=frozenset(dependencies),
+#             task_id=task_id,
+#             stdout_path=stdout_path,
+#             stderr_path=stderr_path,
+#         )
+#         with self._lock:
+#             self._tasks[task_id] = task
+#             self._task_states[task_id] = LocalStatus.SUBMITTED
+#             self._pending_tasks.add(task_id)
+
+#     def get_task_states(self):
+#         return {k: v.name for k, v in self._task_states.items()}
+
+#     def set_task_state(self, task_id, new_state):
+#         with self._lock:
+#             self._task_states[task_id] = new_state
+#             if new_state in (LocalStatus.COMPLETED, LocalStatus.FAILED):
+#                 del self._used_workers[task_id]
+
+#     def _schedule_once(self):
+#         failed_tasks = set()
+#         scheduled_tasks = set()
+#         used_workers = {}
+#         for task_id in self._pending_tasks:
+#             task = self._tasks[task_id]
+
+#             if any(
+#                 self._task_states.get(dep_id) == LocalStatus.FAILED
+#                 for dep_id in task.dependencies
+#             ):
+#                 failed_tasks.add(task_id)
+#                 continue
+
+#             if any(
+#                 self._task_states.get(dep_id) != LocalStatus.COMPLETED
+#                 for dep_id in task.dependencies
+#             ):
+#                 continue
+
+#             for worker_id, worker in self._joined_workers.items():
+#                 if worker_id not in self._used_workers.values():
+#                     used_workers[task_id] = worker_id
+#                     scheduled_tasks.add(task_id)
+#                     worker.run_task(task)
+#                     break
+
+#         self._used_workers.update(used_workers)
+
+#         for task_id in scheduled_tasks:
+#             self._pending_tasks.remove(task_id)
+
+#         for task_id in failed_tasks:
+#             self._task_states[task_id] = LocalStatus.FAILED
+#             self._pending_tasks.remove(task_id)
+
+#     def start(self):
+#         while not self._shutdown_requested:
+#             with self._lock:
+#                 try:
+#                     self._schedule_once()
+#                 except Exception as exc:
+#                     self._logger.exception(exc)
+#             time.sleep(self.sched_interval)
+
+#     def shutdown(self):
+#         self._shutdown_requested = True
+#         with self._lock:
+#             for worker in self._joined_workers.values():
+#                 worker.shutdown()
+
+
 @attrs.define
-class Scheduler:
+class Server:
+    hostname: str = attrs.field()
+    port: int = attrs.field()
     sched_interval: int = attrs.field(default=0.1)
 
     _tasks: dict = attrs.field(factory=dict, repr=False, init=False)
@@ -336,47 +439,18 @@ class Scheduler:
     _scheduled_tasks: set = attrs.field(factory=set, repr=False, init=False)
     _joined_workers: dict = attrs.field(factory=dict, init=False, repr=False)
     _used_workers: dict = attrs.field(factory=dict, init=False, repr=False)
-    _lock: Lock = attrs.field(repr=False, init=False, factory=Lock)
+
+    _sock = attrs.field(init=False, repr=False)
     _logger: logging.Logger = attrs.field(init=False, repr=False)
-    _shutdown_requested: bool = attrs.field(default=False, init=False)
+    _shutdown_requested: bool = attrs.field(default=False, init=False, repr=False)
+    _sel: selectors.BaseSelector = attrs.field(
+        factory=selectors.DefaultSelector, init=False, repr=False
+    )
+    _conns: dict = attrs.field(factory=dict, init=False, repr=False)
 
     @_logger.default
     def _create_logger(self):
         return logging.getLogger(self.__class__.__name__)
-
-    def add_worker(self, worker):
-        with self._lock:
-            self._joined_workers[worker.worker_id] = worker
-
-    def remove_worker(self, worker_id):
-        with self._lock:
-            del self._joined_workers[worker_id]
-
-    def submit_task(
-        self, task_id, name, working_dir, spec, dependencies, stdout_path, stderr_path
-    ):
-        task = Task(
-            name=name,
-            working_dir=working_dir,
-            spec=spec,
-            dependencies=frozenset(dependencies),
-            task_id=task_id,
-            stdout_path=stdout_path,
-            stderr_path=stderr_path,
-        )
-        with self._lock:
-            self._tasks[task_id] = task
-            self._task_states[task_id] = LocalStatus.SUBMITTED
-            self._pending_tasks.add(task_id)
-
-    def get_task_states(self):
-        return {k: v.name for k, v in self._task_states.items()}
-
-    def set_task_state(self, task_id, new_state):
-        with self._lock:
-            self._task_states[task_id] = new_state
-            if new_state in (LocalStatus.COMPLETED, LocalStatus.FAILED):
-                del self._used_workers[task_id]
 
     def _schedule_once(self):
         failed_tasks = set()
@@ -414,54 +488,25 @@ class Scheduler:
             self._task_states[task_id] = LocalStatus.FAILED
             self._pending_tasks.remove(task_id)
 
-    def start(self):
-        while not self._shutdown_requested:
-            with self._lock:
-                try:
-                    self._schedule_once()
-                except Exception as exc:
-                    self._logger.exception(exc)
-            time.sleep(self.sched_interval)
-
-    def shutdown(self):
-        self._shutdown_requested = True
-        with self._lock:
-            for worker in self._joined_workers.values():
-                worker.shutdown()
-
-
-@attrs.define
-class Server:
-    hostname: str = attrs.field()
-    port: int = attrs.field()
-    scheduler: Scheduler = attrs.field()
-
-    _sock = attrs.field(init=False, repr=False)
-    _logger: logging.Logger = attrs.field(init=False, repr=False)
-    _shutdown_requested: bool = attrs.field(default=False, init=False, repr=False)
-    _sel: selectors.BaseSelector = attrs.field(
-        factory=selectors.DefaultSelector, init=False, repr=False
-    )
-    _conns: dict = attrs.field(factory=dict, init=False, repr=False)
-
-    @_logger.default
-    def _create_logger(self):
-        return logging.getLogger(self.__class__.__name__)
-
     def handle_join_worker(self, conn, worker_id):
         self._logger.info("Worker %s has joined", worker_id)
-        self.scheduler.add_worker(JoinedWorker(worker_id, conn))
+        self._joined_workers[worker_id] = JoinedWorker(worker_id, conn)
+        self._schedule_once()
 
     def handle_leave_worker(self, conn, worker_id):
         self._logger.info("Worker %s is leaving", worker_id)
-        self.scheduler.remove_worker(worker_id)
+        del self._joined_workers[worker_id]
 
     def handle_update_task_state(self, conn, task_id, new_state):
         new_state = LocalStatus[new_state]
-        self.scheduler.set_task_state(task_id, new_state)
+        self._task_states[task_id] = new_state
+        if new_state in (LocalStatus.COMPLETED, LocalStatus.FAILED):
+            del self._used_workers[task_id]
+        self._schedule_once()
 
     def handle_get_task_states(self, conn):
-        conn.send("task_states", tasks=self.scheduler.get_task_states())
+        task_states = {k: v.name for k, v in self._task_states.items()}
+        conn.send("task_states", tasks=task_states)
 
     def handle_submit_task(
         self,
@@ -474,15 +519,19 @@ class Server:
         stdout_path,
         stderr_path,
     ):
-        self.scheduler.submit_task(
-            task_id=task_id,
+        task = Task(
             name=name,
             working_dir=working_dir,
             spec=spec,
             dependencies=frozenset(dependencies),
+            task_id=task_id,
             stdout_path=stdout_path,
             stderr_path=stderr_path,
         )
+        self._tasks[task_id] = task
+        self._task_states[task_id] = LocalStatus.SUBMITTED
+        self._pending_tasks.add(task_id)
+        self._schedule_once()
 
     def handle_close(self, conn):
         del self._conns[conn.sock]
@@ -494,6 +543,12 @@ class Server:
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._sock.bind((self.hostname, self.port))
         self._sock.listen(1024)
+
+        self._logger.info(
+            "Server is listening on %s port %s",
+            self.hostname,
+            self.port,
+        )
 
     def start(self):
         def _accept(sock):
@@ -511,13 +566,7 @@ class Server:
 
         self._sock.setblocking(False)
         self._sel.register(self._sock, selectors.EVENT_READ, _accept)
-
-        self._logger.info(
-            "Server is listening on %s port %s",
-            self.hostname,
-            self.port,
-        )
-        while not self._shutdown_requested:
+        while not self._shutdown_requested or self._joined_workers:
             events = self._sel.select(timeout=0.01)
             for key, _ in events:
                 callback = key.data
@@ -526,6 +575,8 @@ class Server:
         self._sel.close()
 
     def shutdown(self):
+        for _, worker in self._joined_workers.items():
+            worker.shutdown()
         self._shutdown_requested = True
 
 
@@ -536,24 +587,20 @@ class Cluster:
     hostname: str = attrs.field(default=DEFAULT_HOST)
     port: int = attrs.field(default=DEFAULT_PORT)
 
-    scheduler: Scheduler = attrs.field()
     server: Server = attrs.field()
 
-    _scheduler_thread: Thread = attrs.field(repr=False, init=False)
+    _logger: logging.Logger = attrs.field(init=False, repr=False)
     _server_thread: Thread = attrs.field(repr=False, init=False)
     _workers: list = attrs.field(factory=list, repr=False, init=False)
+    _shutdown_requested: bool = attrs.field(default=False, init=False, repr=False)
 
-    @scheduler.default
-    def _create_scheduler(self):
-        return Scheduler()
-
-    @_scheduler_thread.default
-    def _create_scheduler_thread(self):
-        return Thread(target=self.scheduler.start)
+    @_logger.default
+    def _create_logger(self):
+        return logging.getLogger(self.__class__.__name__)
 
     @server.default
     def _create_server(self):
-        server = Server(self.hostname, self.port, self.scheduler)
+        server = Server(self.hostname, self.port)
         server.prepare()
         return server
 
@@ -562,7 +609,6 @@ class Cluster:
         return Thread(target=self.server.start)
 
     def start(self):
-        self._scheduler_thread.start()
         self._server_thread.start()
         for num in range(self.num_workers):
             worker_id = f"Worker{num}"
@@ -571,16 +617,14 @@ class Cluster:
             worker_thread.start()
             self._workers.append((worker, worker_thread))
 
-    def shutdown(self):
-        self.server.shutdown()
-        self.scheduler.shutdown()
-        for worker, _ in self._workers:
-            worker.shutdown()
+        while not self._shutdown_requested:
+            time.sleep(0.01)
 
-        for _, worker_thread in self._workers:
-            worker_thread.join()
-        self._scheduler_thread.join()
+        self.server.shutdown()
         self._server_thread.join()
+
+    def shutdown(self):
+        self._shutdown_requested = True
 
 
 setup = (create_backend, 0)
