@@ -23,13 +23,13 @@ Core
 ----
 
 .. automodule:: gwf.core
-    :members: Graph
+    :members: Graph, Context, pass_context
 
 Scheduling
 ----------
 
 .. automodule:: gwf.scheduling
-    :members: schedule, submit_workflow, get_status_map
+    :members: schedule, submit_target, submit_workflow, get_status_map
 
 Backends
 --------
@@ -39,12 +39,6 @@ Backends
     :inherited-members:
     :undoc-members:
 
-
-Log Managers
-~~~~~~~~~~~~
-
-.. automodule:: gwf.backends.logmanager
-    :members: FileLogManager, MemoryLogManager
 
 Filtering
 ---------

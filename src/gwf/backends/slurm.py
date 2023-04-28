@@ -10,6 +10,10 @@ To use this backend you must activate the `slurm` backend.
     file will be written containing the combined streams. If `none`, no logs
     will be stored. (default: `full`).
 
+* **backend.slurm.accounting_enabled (str):** If enabled, will use `sacct` to
+  fetch job status from Slurm. This enables *gwf* to report when targets have
+  failed (default: true).
+
 **Target options:**
 
 * **cores (int):**

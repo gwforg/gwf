@@ -3,7 +3,7 @@ Welcome to gwf
 ==============
 
 *gwf* is a flexible, pragmatic workflow tool for building and running large,
-scientific workflows. It runs on Python 3.7+ and is developed at GenomeDK, 
+scientific workflows. It runs on Python 3.7+ and is developed at GenomeDK,
 Aarhus University.
 
 Examples
@@ -13,14 +13,6 @@ Examples
 Getting started
   To quickly get started writing workflows in *gwf* you can read the
   :ref:`tutorial`.
-
-Extending
-  We don't have the backend you need to run your workflow on your cluster?
-  See the :ref:`writing_backends` section to roll your own.
-
-Contributing
-  We aim to make *gwf* a community developed project. Learn how to
-  :doc:`contribute </development/forcontributors>`.
 
 Features
 ========
@@ -34,6 +26,31 @@ Features
 * Commands for cleaning temporary data from your workflow
 * Friendly to your system administrator!
 
+Installation
+============
+
+We'll assume that you have the Anaconda_ distribution installed and that you are
+familiar with how to install and manage packages and environments through the
+*conda* package manager.
+
+To install *gwf* via Conda::
+
+    conda config --add channels gwforg
+    conda install gwf
+
+We recommend that you install *gwf* in a project-specific environment::
+
+    conda config --add channels gwforg
+    conda create -n myproject gwf dep1 dep2 ...
+    conda activate myproject
+
+You can find the code for *gwf* `here <https://github.com/gwforg/gwf>`_. You are
+encouraged to report any issues through the
+`issue tracker <https://github.com/gwforg/gwf/issues>`_, which is also a good place
+to ask questions.
+
+.. _Anaconda: https://www.continuum.io/downloads
+
 User's Guide
 ============
 
@@ -42,22 +59,19 @@ User's Guide
 
   guide/index
 
-Development
-===========
-
-.. toctree::
-  :maxdepth: 2
-
-  development/index
-  changelog
-
-API Reference
-=============
+Extending
+=========
 
 .. toctree::
   :maxdepth: 3
 
+  plugins
   reference/index
 
+Release history
+===============
 
-.. include:: ../CONTRIBUTORS.rst
+.. toctree::
+  :maxdepth: 2
+
+  changelog

@@ -52,6 +52,3 @@ individually. See :ref:`configuration` if in doubt about how to configure *gwf*.
 * **backend (str):** Set the backend. Corresponds to the ``--backend`` flag (default: `local`).
 * **verbose (str):** Set the verbosity. Corresponds to the ``--verbose`` flag (default: `info`).
 * **no_color (bool):** If `true`, colors will not be used (default: `false`).
-* **check_updates (bool):** When `true`, *gwf* will automatically check for
-  updates at most once per day. Setting this to `false` will deactivate the
-  check completely.
