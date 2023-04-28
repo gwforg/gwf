@@ -1,5 +1,4 @@
 import threading
-import time
 
 import attrs
 import pytest
@@ -7,14 +6,6 @@ import pytest
 from gwf.backends.base import BackendStatus
 from gwf.backends.local import Cluster
 from gwf.core import Graph, Target, hash_spec
-
-
-@pytest.fixture
-def no_sleep(request, monkeypatch):
-    def sleep(seconds):
-        pass
-
-    monkeypatch.setattr(time, "sleep", sleep)
 
 
 class FakeBackend:
@@ -89,16 +80,6 @@ class FakeSpecHashes:
 @pytest.fixture
 def backend():
     return FakeBackend()
-
-
-@pytest.fixture
-def local_backend():
-    cluster = Cluster(num_workers=1)
-    thread = threading.Thread(target=cluster.start)
-    thread.start()
-    yield
-    cluster.shutdown()
-    thread.join()
 
 
 @pytest.fixture
