@@ -146,7 +146,7 @@ class SlurmOps:
         # The --verbose flag here is necessary, otherwise we're not able to tell
         # whether the command failed. See the comment in call() if you
         # want to know more.
-        return call("scancel", "--verbose", job_id)
+        call("scancel", "--verbose", job_id)
 
     def submit_target(self, target, dependencies):
         script = self.compile_script(target)
