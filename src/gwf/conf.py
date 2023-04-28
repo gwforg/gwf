@@ -58,7 +58,8 @@ class FileConfig:
         res = {}
         for k, v in self.items():
             if k.startswith(ns):
-                res[k.lstrip(ns + ".")] = v
+                new_key = k[len(ns) + 1 :]
+                res[new_key] = v
         return res
 
     def dump(self):

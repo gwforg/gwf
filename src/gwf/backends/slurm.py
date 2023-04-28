@@ -52,7 +52,7 @@ from .utils import call, has_exe
 logger = logging.getLogger(__name__)
 
 
-SLURM_RAW_STATES = {
+SLURM_SHORT_STATES = {
     "BF": BackendStatus.FAILED,  # Job terminated due to launch failure, typically due to a hardware failure (e.g. unable to boot the node or block and the job can not be requeued).
     "CA": BackendStatus.FAILED,  # Job was explicitly cancelled by the user or system administrator. The job may or may not have been initiated.
     "CD": BackendStatus.COMPLETED,  # Job has terminated all processes on all nodes with an exit code of zero.
@@ -78,8 +78,26 @@ SLURM_RAW_STATES = {
     "TO": BackendStatus.FAILED,  # Job terminated upon reaching its time limit.
 }
 
+SLURM_LONG_STATES = {
+    "BOOT_FAIL": "BF",  # Job terminated due to launch failure, typically due to a hardware failure (e.g. unable to boot the node or block and the job can not be requeued).
+    "CANCELLED": "CA",  # Job was explicitly cancelled by the user or system administrator. The job may or may not have been initiated.
+    "COMPLETED": "CD",  # Job has terminated all processes on all nodes with an exit code of zero.
+    "DEADLINE": "DL",  # Job terminated on deadline.
+    "FAILED": "F",  # Job terminated with non-zero exit code or other failure condition.
+    "NODE_FAIL": "NF",  # Job terminated due to failure of one or more allocated nodes.
+    "OUT_OF_MEMORY": "OOM",  # Job experienced out of memory error.
+    "PENDING": "PD",  # Job is awaiting resource allocation.
+    "PREEMPTED": "PR",  # Job terminated due to preemption.
+    "RUNNING": "R",  # Job currently has an allocation.
+    "REQUEUED": "RQ",  # Job was requeued.
+    "RESIZING": "RS",  # Job is about to change size.
+    "REVOKED": "RV",  # Sibling was removed from cluster due to other cluster starting the job.
+    "SUSPENDED": "S",  # Job has an allocation, but execution has been suspended and CPUs have been released for other jobs.
+    "TIMEOUT": "TO",  # Job terminated upon reaching its time limit.
+}
 
-SLURM_JOB_STATES = defaultdict(lambda: BackendStatus.UNKNOWN, SLURM_RAW_STATES)
+
+SLURM_JOB_STATES = defaultdict(lambda: BackendStatus.UNKNOWN, SLURM_SHORT_STATES)
 
 
 TARGET_DEFAULTS = {
@@ -117,6 +135,7 @@ OPTION_STR = "#SBATCH {0}{1}"
 class SlurmOps:
     working_dir: str = attrs.field()
     log_mode: str = attrs.field()
+    accounting_enabled: bool = attrs.field()
     target_defaults: dict = attrs.field()
 
     def cancel_job(self, job_id):
@@ -130,16 +149,50 @@ class SlurmOps:
         args = ["--parsable"]
         if dependencies:
             args.append("--dependency=afterok:{}".format(":".join(dependencies)))
-        return call("sbatch", *args, input=script)
+        return call("sbatch", *args, input=script).strip()
 
-    def get_job_states(self, tracked_jobs):
+    def get_job_states_from_squeue(self, tracked_jobs):
+        logger.debug("Loading job states from squeue")
         job_states = {}
         for line in call(
             "squeue", "--noheader", "--format=%i;%t", "--all"
         ).splitlines():
-            job_id, state = line.split(";")
+            job_id, state = line.strip().split(";")
             job_states[job_id] = SLURM_JOB_STATES[state]
         return job_states
+
+    def get_job_states_from_sacct(self, tracked_jobs):
+        if not tracked_jobs:
+            return {}
+
+        cmd = [
+            "sacct",
+            "--noheader",
+            "--parsable2",
+            "--format=jobid,state",
+            "--allocations",
+            "--jobs",
+            ",".join(tracked_jobs),
+        ]
+        job_states = {}
+        for line in call(*cmd).splitlines():
+            job_id, state = line.strip().split("|")
+            state = SLURM_LONG_STATES[state]
+            job_states[job_id] = SLURM_JOB_STATES[state]
+        return job_states
+
+    def get_job_states_from_sacct_batched(self, tracked_jobs, batch_size=1024):
+        logger.debug("Loading job states from sacct")
+        job_states = {}
+        for idx in range(0, len(tracked_jobs), batch_size):
+            batch = tracked_jobs[idx : idx + batch_size]
+            job_states.update(self.get_job_states_from_sacct(batch))
+        return job_states
+
+    def get_job_states(self, tracked_jobs):
+        if self.accounting_enabled:
+            return self.get_job_states_from_sacct_batched(tracked_jobs)
+        return self.get_job_states_from_squeue(tracked_jobs)
 
     def compile_script(self, target):
         out = []
@@ -189,12 +242,17 @@ class SlurmOps:
         out.append(ensure_trailing_newline(target.spec))
         return "\n".join(out)
 
+    def close(self):
+        pass
 
-def create_backend(working_dir, log_mode="full"):
+
+def create_backend(working_dir, log_mode="full", accounting_enabled=True):
     return TrackingBackend(
         working_dir,
         name="slurm",
-        ops=SlurmOps(working_dir, log_mode, target_defaults=TARGET_DEFAULTS),
+        ops=SlurmOps(
+            working_dir, log_mode, accounting_enabled, target_defaults=TARGET_DEFAULTS
+        ),
     )
 
 
