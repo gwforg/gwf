@@ -52,18 +52,6 @@ echo hello world with gwf
 '''
 
 
-def _validate_choice(key, value, valid_values, human_values=None):
-    if value not in valid_values:
-        msg = 'Invalid value "{}" for key "{}", must be one of: {}.'
-        values = valid_values if human_values is None else human_values
-        raise ConfigurationError(msg.format(value, key, ", ".join(values)))
-
-
-def _validate_bool(key, value):
-    human_values = ("true", "yes", "false", "no")
-    return _validate_choice(key, value, (True, False), human_values)
-
-
 def get_level(level):
     return getattr(logging, level.upper())
 
@@ -173,22 +161,6 @@ def main(ctx, file, backend, verbose, no_color):
     working_dir.joinpath(".gwf", "logs").mkdir(exist_ok=True)
 
     config = FileConfig.load(working_dir.joinpath(".gwfconf.json"))
-
-    @config.validator("backend")
-    def validate_backend(value):
-        return _validate_choice("backend", value, list_backends())
-
-    @config.validator("verbose")
-    def validate_verbose(value):
-        return _validate_choice("verbose", value, VERBOSITY_LEVELS)
-
-    @config.validator("no_color")
-    def validate_no_color(value):
-        return _validate_bool("no_color", value)
-
-    @config.validator("use_spec_hashes")
-    def validate_use_spec_hashes(value):
-        return _validate_bool("use_spec_hashes", value)
 
     # If the --use-color/--no-color argument is not set, get a value from the
     # configuration file. If nothing has been configured, check if the NO_COLOR

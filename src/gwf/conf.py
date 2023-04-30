@@ -8,23 +8,42 @@ CONFIG_DEFAULTS = {"verbose": "info", "clean_logs": True, "use_spec_hashes": Tru
 VERBOSITY_LEVELS = ["warning", "debug", "info", "error"]
 
 
+def try_int(value):
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+
+def try_true(value):
+    if value in ("true", "yes"):
+        return True
+    return None
+
+
+def try_false(value):
+    if value in ("false", "no"):
+        return False
+    return None
+
+
+CONVERTERS = (
+    try_int,
+    try_true,
+    try_false,
+    str,
+)
+
+
+def try_conv(value, converters):
+    values = (conv(value) for conv in converters)
+    return next(filter(lambda x: x is not None, values), None)
+
+
 @attrs.define
 class FileConfig:
     path: str = attrs.field()
     data: ChainMap = attrs.field()
-    validators: dict = attrs.field(init=False, factory=dict)
-
-    def validator(self, key):
-        """Register a configuration key validator function."""
-
-        def _inner(func):
-            self.validators[key] = func
-
-        return _inner
-
-    def _validate_value(self, key, value):
-        if key in self.validators:
-            self.validators[key](value)
 
     def get(self, key, default=None):
         try:
@@ -33,13 +52,11 @@ class FileConfig:
             return default
 
     def __getitem__(self, key):
-        value = self.data[key]
-        self._validate_value(key, value)
-        return value
+        return self.data[key]
 
     def __setitem__(self, key, value):
-        self._validate_value(key, value)
-        self.data[key] = value
+        print(try_conv(value.strip(), CONVERTERS))
+        self.data[key] = try_conv(value, CONVERTERS)
 
     def __delitem__(self, key):
         if key in self.data:
