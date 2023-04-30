@@ -1,22 +1,18 @@
-import threading
-
 import attrs
 import pytest
 
 from gwf.backends.base import BackendStatus
-from gwf.backends.local import Cluster
 from gwf.core import Graph, Target, hash_spec
 
 
+@attrs.define
 class FakeBackend:
     option_defaults = {
         "cores": 1,
         "memory": "1g",
     }
 
-    def __init__(self):
-        super().__init__()
-        self._tracked = {}
+    _tracked: dict = attrs.field(factory=dict)
 
     def submit(self, target, dependencies):
         self._tracked[target] = BackendStatus.SUBMITTED

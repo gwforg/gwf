@@ -144,8 +144,8 @@ class SlurmOps:
 
     def cancel_job(self, job_id):
         # The --verbose flag here is necessary, otherwise we're not able to tell
-        # whether the command failed. See the comment in call() if you
-        # want to know more.
+        # whether the command failed. See the comment in call() if you want to
+        # know more.
         call("scancel", "--verbose", job_id)
 
     def submit_target(self, target, dependencies):
@@ -181,6 +181,10 @@ class SlurmOps:
         job_states = {}
         for line in call(*cmd).splitlines():
             job_id, state = line.strip().split("|")
+            # Slurm sometimes returns annoying stuff like "CANCELLED by 1234",
+            # instead of a sensible, parsable value. So we do our best to clean
+            # it up here.
+            state = state.split()[0]
             state = SLURM_LONG_STATES[state]
             job_states[job_id] = SLURM_JOB_STATES[state]
         return job_states
