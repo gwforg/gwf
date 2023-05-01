@@ -11,7 +11,6 @@ from . import __version__
 from .backends import guess_backend, list_backends
 from .conf import VERBOSITY_LEVELS, FileConfig
 from .core import Context
-from .exceptions import ConfigurationError
 from .utils import ColorFormatter, entry_points, find_workflow
 
 logger = logging.getLogger(__name__)

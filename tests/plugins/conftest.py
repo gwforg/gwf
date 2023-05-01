@@ -1,5 +1,7 @@
 import threading
+
 import pytest
+
 from gwf.backends.local import Cluster
 
 
