@@ -305,7 +305,7 @@ def test_schedule_if_any_input_file_is_newer_than_any_output_file(
     assert target_states[target] == Status.SHOULDRUN
 
 
-def test_schedule_if_it_is_a_source(filesystem, backend):
+def test_schedule_if_it_is_a_source_and_has_missing_output_file(filesystem, backend):
     target = Target(
         name="Foo", inputs=[], outputs=["foo"], options={}, working_dir="/some/dir"
     )
@@ -328,7 +328,7 @@ def test_schedule_if_it_is_a_source(filesystem, backend):
         backend=backend,
         spec_hashes=NoopSpecHashes(),
     )
-    assert target_states[target] == Status.SHOULDRUN
+    assert target_states[target] == Status.COMPLETED
 
 
 def test_do_not_schedule_if_all_outputs_are_newer_then_the_inputs(backend, filesystem):

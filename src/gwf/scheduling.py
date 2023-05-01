@@ -25,27 +25,21 @@ def should_run(target, fs, spec_hashes):
             logger.debug("Target %s is missing output file %s", target, path)
             return True
 
-    if not target.inputs:
-        logger.debug("Target %s has no inputs", target)
-        return True
-
-    youngest_in_ts, youngest_in_path = max(
-        (fs.changed_at(path), path)
-        for path in target.flattened_inputs()
-        if fs.exists(path)
+    youngest_in_ts, _ = max(
+        ((fs.changed_at(path), path) for path in target.flattened_inputs()),
+        default=(float("-inf"), None),
     )
 
     # If I have no outputs, but I have inputs, I should probably only run if my input
     # changed, but I don't have any output files to compare with, so I'll just run
     # every time.
     if not target.outputs:
-        logger.debug("Target %s has no outputs", target)
+        logger.debug("Target %s has no outputs and will always be scheduled", target)
         return True
 
-    oldest_out_ts, oldest_out_path = min(
-        (fs.changed_at(path), path)
-        for path in target.flattened_outputs()
-        if fs.exists(path)
+    oldest_out_ts, _ = min(
+        ((fs.changed_at(path), path) for path in target.flattened_outputs()),
+        default=(float("inf"), None),
     )
 
     if youngest_in_ts > oldest_out_ts:
