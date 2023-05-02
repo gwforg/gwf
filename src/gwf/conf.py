@@ -3,9 +3,7 @@ from collections import ChainMap
 
 import attrs
 
-CONFIG_DEFAULTS = {"verbose": "info", "clean_logs": True, "use_spec_hashes": True}
-
-VERBOSITY_LEVELS = ["warning", "debug", "info", "error"]
+CONFIG_DEFAULTS = {"verbose": "info", "clean_logs": True, "use_spec_hashes": False}
 
 
 def try_int(value):
