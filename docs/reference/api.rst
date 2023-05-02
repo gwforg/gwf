@@ -39,7 +39,6 @@ Backends
     :inherited-members:
     :undoc-members:
 
-
 Filtering
 ---------
 
