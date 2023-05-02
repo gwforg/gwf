@@ -9,7 +9,7 @@ from click_plugins import with_plugins
 
 from . import __version__
 from .backends import guess_backend, list_backends
-from .conf import VERBOSITY_LEVELS, FileConfig
+from .conf import FileConfig
 from .core import Context
 from .utils import ColorFormatter, entry_points, find_workflow
 
@@ -124,7 +124,7 @@ def init(project_dir):
 @click.option(
     "-v",
     "--verbose",
-    type=click.Choice(VERBOSITY_LEVELS),
+    type=click.Choice(["warning", "debug", "info", "error"]),
     default="info",
     help="Verbosity level.",
 )
