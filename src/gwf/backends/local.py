@@ -466,20 +466,18 @@ class Server:
                 failed_tasks.add(task_id)
                 continue
 
-            if any(
-                self._task_states.get(dep_id) != LocalStatus.COMPLETED
+            if all(
+                self._task_states.get(dep_id) == LocalStatus.COMPLETED
                 for dep_id in task.dependencies
             ):
-                continue
+                for worker_id, worker in self._joined_workers.items():
+                    if worker_id not in self._used_workers.values():
+                        used_workers[task_id] = worker_id
+                        scheduled_tasks.add(task_id)
+                        worker.run_task(task)
+                        break
 
-            for worker_id, worker in self._joined_workers.items():
-                if worker_id not in self._used_workers.values():
-                    used_workers[task_id] = worker_id
-                    scheduled_tasks.add(task_id)
-                    worker.run_task(task)
-                    break
-
-        self._used_workers.update(used_workers)
+            self._used_workers.update(used_workers)
 
         for task_id in scheduled_tasks:
             self._pending_tasks.remove(task_id)
