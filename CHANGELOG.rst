@@ -2,13 +2,51 @@
 Change Log
 ==========
 
+Version 2.0.0
+=============
+
+This is a major release. Many internals have been changed, specifically on the scheduler,
+which is now much more robust and consistent, and to backends, which now can report whether
+a target failed or not. The local backend has also been rewritten from scratch. In the
+future it will be able to support e.g. target cancellation.
+
+Added
+-----
+
+* For supported backends (currently `slurm` and `local`), the status command can now show
+  failed targets. These will be rescheduled as if they were incomplete. If accounting is
+  not enabled in slurm, this functionality must be turned off with
+  `gwf config set backend.slurm.accounting_enabled no`.
+
+Fixed
+------
+
+* The configuration directory will now always be placed next to the workflow file in use.
+* The status command is now consistent with the output of `gwf run`n.
+* The scheduler will not re-run targets that are not "should run".
+* Targets with only outputs will now be scheduled if an output file is missing. Otherwise,
+  it will not be scheduled.
+* And many, many other tiny things!
+
+Changed
+-------
+
+* Workflows can no longer be included into each other. All namespacing has been removed.
+* Templates returning tuples are no longer supported. Templates must now return an ``AnonymousTarget``.
+* APIs for loading workflow, using the scheduler, creating and loading backends etc. have
+  been changed. This only affects plugins and custom backends.
+* The `gwf init` command has been removed. Instead, *gwf* will ask if a skeleton should be
+  created in the current directory, if it can't find an existing workflow file.
+* Spec hashing is now turned off by default since it can be confusing. It can be turned on
+  with `gwf config set use_spec_hashes yes`.
+
 Version 1.8.5
 =============
 
 Added
 -----
 
-* Spec hashes will now be computed automatically on the first run with spec 
+* Spec hashes will now be computed automatically on the first run with spec
   hashes enabled.
 * ``gwf touch`` will now also update spec hashes.
 

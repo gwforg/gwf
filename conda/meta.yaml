@@ -1,5 +1,5 @@
 {% set name = "gwf" %}
-{% set version = "1.8.5" %}
+{% set version = "2.0.0" %}
 
 package:
   name: "{{ name|lower }}"
@@ -11,15 +11,14 @@ source:
 build:
   noarch: python
   number: 0
-  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
+  script: "{{ PYTHON }} -m flit install --deps none"
 
 requirements:
   host:
+    - flit
     - attrs
     - click
     - click-plugins
-    - pip
-    - flit
     - python>=3.7
     - importlib_metadata
   run:
@@ -36,6 +35,7 @@ test:
     - gwf.plugins
   commands:
     - gwf --help
+    - gwf --version
 
 about:
   home: http://gwf.app/
