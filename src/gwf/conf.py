@@ -55,7 +55,6 @@ class FileConfig:
         return self.data[key]
 
     def __setitem__(self, key, value):
-        print(try_conv(value.strip(), CONVERTERS))
         self.data[key] = try_conv(value, CONVERTERS)
 
     def __delitem__(self, key):
