@@ -119,7 +119,6 @@ class FileSpecHashes:
             logger.debug("No spec hash for %s exists", target)
             return spec_hash
         if spec_hash != saved_hash:
-            logger.debug("Spec for %s has changed", target)
             return spec_hash
         return None
 
