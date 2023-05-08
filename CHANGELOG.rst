@@ -2,6 +2,20 @@
 Change Log
 ==========
 
+Version 2.0.1
+=============
+
+Added
+-----
+
+* You can now specify which parts of a workflow to touch with the `gwf touch` command.
+  E.g. ``gwf touch Foo`` will only touch Foo and its dependencies (and their dependencies).
+
+Fixed
+-----
+
+* Fixed loading of entrypoints on Python 3.7.
+
 Version 2.0.0
 =============
 
