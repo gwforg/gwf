@@ -1,13 +1,14 @@
 from functools import lru_cache
+from pathlib import Path
 
 import click
 
 from .. import Workflow
 from ..core import CachedFilesystem, Graph, get_spec_hashes, pass_context
-from ..utils import touchfile
+from ..filtering import filter_names
 
 
-def touch_workflow(graph, spec_hashes):
+def touch_workflow(endpoints, graph, spec_hashes):
     @lru_cache(maxsize=None)
     def _visit(target):
         for dep in graph.dependencies[target]:
@@ -15,15 +16,16 @@ def touch_workflow(graph, spec_hashes):
 
         spec_hashes.update(target)
         for path in target.flattened_outputs():
-            touchfile(path)
+            Path(path).touch(exist_ok=True)
 
-    for target in graph.endpoints():
+    for target in endpoints:
         _visit(target)
 
 
 @click.command()
+@click.argument("targets", nargs=-1)
 @pass_context
-def touch(ctx):
+def touch(ctx, targets):
     """Touch output files to update timestamps.
 
     Running this command touches all output files in the workflow such that
@@ -37,5 +39,6 @@ def touch(ctx):
     workflow = Workflow.from_context(ctx)
     filesystem = CachedFilesystem()
     graph = Graph.from_targets(workflow.targets, filesystem)
+    endpoints = filter_names(graph, targets) if targets else graph.endpoints()
     with get_spec_hashes(working_dir=ctx.working_dir, config=ctx.config) as spec_hashes:
-        touch_workflow(graph, spec_hashes)
+        touch_workflow(endpoints, graph, spec_hashes)

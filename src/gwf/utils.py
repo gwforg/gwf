@@ -97,11 +97,6 @@ def ensure_trailing_newline(s):
     return s if s[-1] == "\n" else s + "\n"
 
 
-def touchfile(path):
-    with open(path, "a"):
-        os.utime(path, None)
-
-
 def find_workflow(path_spec):
     path, _, obj = path_spec.partition(":")
     obj = obj or "gwf"
