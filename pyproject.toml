@@ -27,7 +27,7 @@
         "attrs",
         # Used to discover plugins and backends, see:
         # https://packaging.python.org/guides/creating-and-discovering-plugins/
-        "importlib_metadata; python_version<'3.10'",
+        "importlib_metadata>4.6; python_version<'3.8'",
     ]
 
     [project.optional-dependencies]

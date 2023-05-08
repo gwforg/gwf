@@ -10,16 +10,23 @@ from contextlib import ContextDecorator
 from functools import wraps
 from pathlib import Path
 
-if sys.version_info < (3, 10):
-    from importlib_metadata import entry_points  # noqa: E401
+if sys.version_info < (3, 8):
+    from importlib_metadata import entry_points as _entry_points  # noqa: E401
 else:
-    from importlib.metadata import entry_points  # noqa: F401
+    from importlib.metadata import entry_points as _entry_points  # noqa: F401
 
 import click
 
 from gwf.exceptions import GWFError
 
 logger = logging.getLogger(__name__)
+
+
+def entry_points(group=None):
+    eps = _entry_points()
+    if group is None:
+        return eps
+    return eps[group]
 
 
 def is_valid_name(candidate):

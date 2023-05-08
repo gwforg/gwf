@@ -1,5 +1,5 @@
 {% set name = "gwf" %}
-{% set version = "2.0.0" %}
+{% set version = "2.0.1" %}
 
 package:
   name: "{{ name|lower }}"
@@ -20,13 +20,13 @@ requirements:
     - click
     - click-plugins
     - python>=3.7
-    - importlib_metadata
+    - importlib_metadata>=4.6 # [py37]
   run:
     - attrs
     - click
     - click-plugins
     - python>=3.7
-    - importlib_metadata
+    - importlib_metadata>=4.6 # [py37]
 
 test:
   imports:
@@ -38,7 +38,7 @@ test:
     - gwf --version
 
 about:
-  home: http://gwf.app/
+  home: https://gwf.app/
   license: GNU General Public v3 (GPLv3)
   license_family: GPL3
   summary: A flexible, pragmatic workflow tool.
