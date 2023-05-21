@@ -78,7 +78,7 @@ FORMATS = {
 @click.option(
     "-s",
     "--status",
-    type=click.Choice(["shouldrun", "submitted", "running", "completed"]),
+    type=click.Choice(_STATUS_NAMES),
     multiple=True,
 )
 @pass_context
