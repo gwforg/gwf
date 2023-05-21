@@ -17,16 +17,14 @@ _STATUS_VISUALS = {
     Status.SUBMITTED: ("cyan", "-"),
     Status.RUNNING: ("blue", "↻"),
     Status.COMPLETED: ("green", "✓"),
-    Status.FAILED: ("magenta", "⨯"),
+    Status.FAILED: ("red", "⨯"),
 }
 
-
-def _status_str_to_enum(s):
-    return Status[s.upper()]
+_STATUS_NAMES = [s.name.lower() for s in Status]
 
 
-def _status_strs_to_enums(iterable):
-    return list(map(_status_str_to_enum, iterable))
+def _status_names_to_enums(iterable):
+    return [Status[s.upper()] for s in iterable]
 
 
 def _key_target_order(item):
@@ -52,13 +50,12 @@ def print_table(target_states):
 
 def print_summary(target_states):
     status_counts = Counter(status for status in target_states.values())
-    click.echo("{:<10}{:>10}".format("total", len(target_states)))
-    for status, count in status_counts.items():
+    _, max_count = status_counts.most_common()[0]
+    count_width = len(str(max_count)) + 4
+    for status, (color, symbol) in _STATUS_VISUALS.items():
         click.secho(
-            "{:<10}{:>10}".format(
-                status.name.lower(),
-                count,
-            )
+            f"{symbol} {status.name.lower():<10}{status_counts[status]:>{count_width}}",
+            fg=color,
         )
 
 
@@ -125,7 +122,7 @@ def status(ctx, status, endpoints, format, targets):
             filters.append(
                 StatusFilter(
                     status_provider=target_states.get,
-                    status=_status_strs_to_enums(status),
+                    status=_status_names_to_enums(status),
                 )
             )
         if targets:
