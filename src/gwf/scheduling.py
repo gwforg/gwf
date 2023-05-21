@@ -68,7 +68,7 @@ def schedule(endpoints, graph, fs, spec_hashes, status_func, submit_func):
 
         if status_func(target) == BackendStatus.FAILED:
             submit_func(target, dependencies=submitted_deps)
-            return Status.FAiLED
+            return Status.FAILED
 
         if submitted_deps:
             logger.debug(

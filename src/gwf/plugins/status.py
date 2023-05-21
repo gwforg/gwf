@@ -17,7 +17,7 @@ _STATUS_VISUALS = {
     Status.SUBMITTED: ("cyan", "-"),
     Status.RUNNING: ("blue", "↻"),
     Status.COMPLETED: ("green", "✓"),
-    Status.FAiLED: ("magenta", "⨯"),
+    Status.FAILED: ("magenta", "⨯"),
 }
 
 

@@ -156,7 +156,7 @@ class Status(Enum):
     SUBMITTED = 1  #: The target has been submitted, but is not currently running.
     RUNNING = 2  #: The target is currently running.
     COMPLETED = 3  #: The target has completed and should not run.
-    FAiLED = 4  #: The target failed and should run again.
+    FAILED = 4  #: The target failed and should run again.
 
 
 @attrs.define(eq=False)
