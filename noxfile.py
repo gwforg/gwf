@@ -54,7 +54,9 @@ def build(session):
 
 @nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11"])
 def test(session):
-    session.install("flit")
+    # urllib3 v2 came out and shows an openssl error (at least on Py37).
+    # For now we'll just force <2 to make stuff work.
+    session.install("urllib3<2", "flit")
     session.run("flit", "install", "-s", "--deps", "production")
 
     session.install(
