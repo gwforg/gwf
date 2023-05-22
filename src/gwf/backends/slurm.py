@@ -162,7 +162,8 @@ class SlurmOps:
             "squeue", "--noheader", "--format=%i;%t", "--all"
         ).splitlines():
             job_id, state = line.strip().split(";")
-            job_states[job_id] = SLURM_JOB_STATES[state]
+            if job_id in tracked_jobs:
+                job_states[job_id] = SLURM_JOB_STATES[state]
         return job_states
 
     def get_job_states_from_sacct(self, tracked_jobs):
@@ -198,9 +199,11 @@ class SlurmOps:
         return job_states
 
     def get_job_states(self, tracked_jobs):
+        job_states = {}
         if self.accounting_enabled:
-            return self.get_job_states_from_sacct_batched(tracked_jobs)
-        return self.get_job_states_from_squeue(tracked_jobs)
+            job_states.update(self.get_job_states_from_sacct_batched(tracked_jobs))
+        job_states.update(self.get_job_states_from_squeue(tracked_jobs))
+        return job_states
 
     def compile_script(self, target):
         out = []
