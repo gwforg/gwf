@@ -11,6 +11,7 @@ SUBMITTED_STATES = (
     Status.SUBMITTED,
     Status.RUNNING,
     Status.SHOULDRUN,
+    Status.FAILED,
 )
 
 
