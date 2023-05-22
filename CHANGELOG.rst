@@ -2,6 +2,27 @@
 Change Log
 ==========
 
+Version 2.0.2
+=============
+
+Added
+-----
+
+* You can now filter by "failed" status in the ``status`` command (thanks Ludvig).
+* The output of ``gwf status -f summary`` is now more consistent, has colors,
+  and shows all possible states instead of only non-zero ones (thanks, Jakob Grove).
+
+Fixed
+-----
+
+* Fixed bug where a failed target would not be included as dependency when
+  submitting an upstream target.
+* When accounting is enabled in the Slurm backend (on by default), **gwf** will
+  now requests job states from both ``squeue`` and ``sacct``, with the status
+  from squeue taking precedence. This prevents strange-looking output from ``gwf
+  status`` when a target has been submitted, but its state has not yet been
+  flushed to the database by Slurm.
+
 Version 2.0.1
 =============
 
