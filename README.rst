@@ -18,26 +18,16 @@ Getting started
   To quickly get started writing workflows in *gwf* you can read the
   `User's Guide`_.
 
-Extending
-  We don't have the backend you need to run your workflow on your cluster?
-  See the `Writing Backends`_ section to roll your own.
-
-Contributing
-  We aim to make *gwf* a community developed project. Learn how to
-  `contribute`_.
-
 .. _examples: https://github.com/gwforg/gwf/tree/master/examples
 .. _User's Guide: https://gwf.app/guide/tutorial/
-.. _Writing Backends: https://gwf.app/development/writingbackends/
-.. _contribute: https://gwf.app/development/forcontributors/
 
 
-.. |cistatus| image:: https://github.com/gwforg/gwf/workflows/Run%20tests/badge.svg
+.. |cistatus| image:: https://img.shields.io/github/actions/workflow/status/gwforg/gwf/test.yml?label=tests&style=for-the-badge
     :target: https://github.com/gwforg/gwf/actions?query=workflow%3A%22Run+tests%22
     :alt: Build status
-.. |anacondaversion| image:: https://anaconda.org/gwforg/gwf/badges/version.svg
+.. |anacondaversion| image:: https://img.shields.io/conda/v/gwforg/gwf?style=for-the-badge
     :target: https://anaconda.org/gwforg/gwf
     :alt: Version of Conda package
-.. |anacondadownloads| image:: https://anaconda.org/gwforg/gwf/badges/downloads.svg
+.. |anacondadownloads| image:: https://img.shields.io/conda/dn/gwforg/gwf?style=for-the-badge
     :target: https://anaconda.org/gwforg/gwf
     :alt: Downloads with Conda
