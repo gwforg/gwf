@@ -54,7 +54,7 @@ def should_run(target, fs, spec_hashes):
 def schedule(endpoints, graph, fs, spec_hashes, status_func, submit_func):
     def _schedule(target):
         submitted_deps = []
-        for dep in graph.dependencies[target]:
+        for dep in sorted(graph.dependencies[target], key=lambda t: t.name):
             status = _cached_schedule(dep)
             if status in SUBMITTED_STATES:
                 submitted_deps.append(dep)
