@@ -28,6 +28,7 @@ class BackendStatus(Enum):
     RUNNING = 2
     COMPLETED = 3
     FAILED = 4
+    CANCELLED = 5
 
 
 def guess_backend():

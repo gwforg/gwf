@@ -12,6 +12,7 @@ SUBMITTED_STATES = (
     Status.RUNNING,
     Status.SHOULDRUN,
     Status.FAILED,
+    Status.CANCELLED,
 )
 
 
@@ -70,6 +71,10 @@ def schedule(endpoints, graph, fs, spec_hashes, status_func, submit_func):
         if status_func(target) == BackendStatus.FAILED:
             submit_func(target, dependencies=submitted_deps)
             return Status.FAILED
+
+        if status_func(target) == BackendStatus.CANCELLED:
+            submit_func(target, dependencies=submitted_deps)
+            return Status.CANCELLED
 
         if submitted_deps:
             logger.debug(

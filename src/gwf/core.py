@@ -157,6 +157,7 @@ class Status(Enum):
     RUNNING = 2  #: The target is currently running.
     COMPLETED = 3  #: The target has completed and should not run.
     FAILED = 4  #: The target failed and should run again.
+    CANCELLED = 5  #: The target or one of its dependencies was cancelled.
 
 
 @attrs.define(eq=False)
