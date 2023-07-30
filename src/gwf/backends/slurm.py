@@ -58,7 +58,7 @@ logger = logging.getLogger(__name__)
 
 SLURM_SHORT_STATES = {
     "BF": BackendStatus.FAILED,  # Job terminated due to launch failure, typically due to a hardware failure (e.g. unable to boot the node or block and the job can not be requeued).
-    "CA": BackendStatus.FAILED,  # Job was explicitly cancelled by the user or system administrator. The job may or may not have been initiated.
+    "CA": BackendStatus.CANCELLED,  # Job was explicitly cancelled by the user or system administrator. The job may or may not have been initiated.
     "CD": BackendStatus.COMPLETED,  # Job has terminated all processes on all nodes with an exit code of zero.
     "CF": BackendStatus.SUBMITTED,  # Job has been allocated resources, but are waiting for them to become ready for use (e.g. booting).
     "CG": BackendStatus.RUNNING,  # Job is in the process of completing. Some processes on some nodes may still be active.
