@@ -30,7 +30,7 @@ def test_cancel_no_targets_specified_should_ask_for_confirmation_and_cancel_all_
     cli_runner, local_backend, long_running_workflow
 ):
     result = cli_runner.invoke(main, ["cancel"], input="y")
-    lines = result.output.strip().split("\n")
+    lines = result.stdout.strip().split("\n")
     assert len(lines) == 3
     assert "Cancelling target Target1" in lines
     assert "Cancelling target Target2" in lines
