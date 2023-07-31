@@ -85,7 +85,7 @@ class TrackingBackend:
 
     @_job_states.default
     def _init_status(self):
-        return self.ops.get_job_states(list(self._tracked_jobs.values()))
+        return self.ops.get_job_states(set(self._tracked_jobs.values()))
 
     def _get_state_path(self):
         return os.path.join(
@@ -104,10 +104,7 @@ class TrackingBackend:
 
     def cancel(self, target):
         try:
-            job_id = self._tracked_jobs[target.name]
-            self.ops.cancel_job(job_id)
-            del self._job_states[job_id]
-            del self._tracked_jobs[target.name]
+            self.ops.cancel_job(self._tracked_jobs[target.name])
         except KeyError as exc:
             raise TargetError(target.name) from exc
 
