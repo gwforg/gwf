@@ -1,9 +1,9 @@
 import multiprocessing
-from threading import Thread
 
 import click
 
-from ..backends.local import Cluster
+from ..backends.local import start_cluster
+from ..core import pass_context
 
 
 @click.command()
@@ -27,14 +27,7 @@ from ..backends.local import Cluster
     default="localhost",
     help="Host that workers will bind to.",
 )
-def workers(host, port, num_workers):
+@pass_context
+def workers(ctx, host, port, num_workers):
     """Start workers for the local backend."""
-    cluster = Cluster(hostname=host, port=port, num_workers=num_workers)
-    thread = Thread(target=cluster.start)
-    try:
-        thread.start()
-        while thread.is_alive():
-            thread.join(0.01)
-    except KeyboardInterrupt:
-        cluster.shutdown()
-        thread.join()
+    start_cluster(ctx.working_dir, num_workers, host, port)

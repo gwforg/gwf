@@ -1,66 +1,67 @@
 [build-system]
-    build-backend = "flit_core.buildapi"
-    requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+requires = ["flit_core >=3.2,<4"]
 
 [project]
-    authors = [{ name = "Dan Søndergaard", email = "das@genome.au.dk" }]
-    classifiers = [
-        "Development Status :: 5 - Production/Stable",
-        "Environment :: Console",
-        "Intended Audience :: Science/Research",
-        "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python",
-        "Topic :: System :: Distributed Computing",
-        "Topic :: Utilities",
-    ]
-    dynamic = ["version", "description"]
-    name = "gwf"
-    readme = "README.rst"
-    requires-python = ">=3.7"
+authors = [{ name = "Dan Søndergaard", email = "das@genome.au.dk" }]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python",
+    "Topic :: System :: Distributed Computing",
+    "Topic :: Utilities",
+]
+dynamic = ["version", "description"]
+name = "gwf"
+readme = "README.rst"
+requires-python = ">=3.7"
 
-    dependencies = [
-        "click",
-        "click-plugins",
-        "attrs",
-        # Used to discover plugins and backends, see:
-        # https://packaging.python.org/guides/creating-and-discovering-plugins/
-        "importlib_metadata>4.6; python_version<'3.8'",
-    ]
+dependencies = [
+    "click",
+    "click-plugins",
+    "attrs",
+    # Used to discover plugins and backends, see:
+    # https://packaging.python.org/guides/creating-and-discovering-plugins/
+    "importlib_metadata>4.6; python_version<'3.8'",
+]
 
-    [project.optional-dependencies]
-        dev = ["black", "isort", "nox"]
+[project.optional-dependencies]
+dev = ["black", "isort", "nox"]
 
-    [project.scripts]
-        gwf = "gwf.cli:main"
+[project.scripts]
+gwf = "gwf.cli:main"
 
-    [project.entry-points."gwf.plugins"]
-        cancel = "gwf.plugins.cancel:cancel"
-        clean = "gwf.plugins.clean:clean"
-        config = "gwf.plugins.config:config"
-        info = "gwf.plugins.info:info"
-        logs = "gwf.plugins.logs:logs"
-        run = "gwf.plugins.run:run"
-        status = "gwf.plugins.status:status"
-        touch = "gwf.plugins.touch:touch"
-        workers = "gwf.plugins.workers:workers"
+[project.entry-points."gwf.plugins"]
+cancel = "gwf.plugins.cancel:cancel"
+clean = "gwf.plugins.clean:clean"
+config = "gwf.plugins.config:config"
+info = "gwf.plugins.info:info"
+logs = "gwf.plugins.logs:logs"
+run = "gwf.plugins.run:run"
+status = "gwf.plugins.status:status"
+touch = "gwf.plugins.touch:touch"
+workers = "gwf.plugins.workers:workers"
 
-    [project.entry-points."gwf.backends"]
-        local = "gwf.backends.local:setup"
-        sge = "gwf.backends.sge:setup"
-        slurm = "gwf.backends.slurm:setup"
+[project.entry-points."gwf.backends"]
+local = "gwf.backends.local:setup"
+sge = "gwf.backends.sge:setup"
+slurm = "gwf.backends.slurm:setup"
 
 [project.urls]
-    Home = "https://gwf.app"
+Home = "https://gwf.app"
 
 [tool.isort]
-    profile = "black"
+profile = "black"
 
 [tool.coverage.run]
-    branch = true
-    parallel = true
+branch = true
+parallel = true
 
 [tool.coverage.report]
-    sort = "Cover"
+sort = "Cover"
+exclude_lines = ["@attrs"]

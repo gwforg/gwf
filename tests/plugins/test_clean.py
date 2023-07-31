@@ -6,7 +6,7 @@ from gwf.cli import main
 
 
 @pytest.fixture(autouse=True)
-def setup(simple_workflow, local_backend):
+def setup(simple_workflow):
     simple_workflow.join("a.txt").ensure()
     simple_workflow.join("b.txt").ensure()
     simple_workflow.join("c.txt").ensure()

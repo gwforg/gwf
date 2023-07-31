@@ -67,6 +67,7 @@ def test(session):
         "pytest-flake8",
         "pytest-mock",
         "pytest-runner",
+        "pytest-asyncio",
     )
 
     session.run(

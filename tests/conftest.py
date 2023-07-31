@@ -141,9 +141,9 @@ def simple_workflow(tmpdir):
         """from gwf import Workflow
 
 gwf = Workflow()
-gwf.target('Target1', inputs=[], outputs=['a.txt'])
-gwf.target('Target2', inputs=['a.txt'], outputs=['b.txt'])
-gwf.target('Target3', inputs=['a.txt'], outputs=['c.txt'])
+gwf.target('Target1', inputs=[], outputs=['a.txt']) << 'touch a.txt'
+gwf.target('Target2', inputs=['a.txt'], outputs=['b.txt']) << 'touch b.txt'
+gwf.target('Target3', inputs=['a.txt'], outputs=['c.txt']) << 'touch c.txt'
 """
     )
     with tmpdir.as_cwd():
@@ -157,9 +157,9 @@ def linear_workflow(tmpdir):
         """from gwf import Workflow
 
 gwf = Workflow()
-gwf.target('Target1', inputs=['a.txt'], outputs=['b.txt'])
-gwf.target('Target2', inputs=['b.txt'], outputs=['c.txt'])
-gwf.target('Target3', inputs=['c.txt'], outputs=['d.txt'])
+gwf.target('Target1', inputs=['a.txt'], outputs=['b.txt']) << 'touch b.txt'
+gwf.target('Target2', inputs=['b.txt'], outputs=['c.txt']) << 'touch c.txt'
+gwf.target('Target3', inputs=['c.txt'], outputs=['d.txt']) << 'touch d.txt'
 """
     )
     with tmpdir.as_cwd():
