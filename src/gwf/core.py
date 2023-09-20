@@ -192,6 +192,11 @@ class AnonymousTarget:
     spec: str = attrs.field(default="")
 
 
+def _validate_path(instance, attribute, value):
+    for path in _flatten(value):
+        _check_path(path)
+
+
 @attrs.define(eq=False)
 class Target:
     """Represents a target.
@@ -216,7 +221,7 @@ class Target:
         foo = Target(
             name='foo',
             inputs={'A': ['a1', 'a2'], 'B': 'b'},
-            outputs={'C': ['a1b', 'a2b], 'D': 'd},
+            outputs={'C': ['a1b', 'a2b'], 'D': 'd'},
         )
 
     This is useful for referring the outputs of a target::
@@ -247,8 +252,8 @@ class Target:
     """
 
     name: str = attrs.field()
-    inputs: list = attrs.field()
-    outputs: list = attrs.field()
+    inputs: list = attrs.field(validator=_validate_path)
+    outputs: list = attrs.field(validator=_validate_path)
     options: dict = attrs.field()
     working_dir: str = attrs.field(default=".")
     protect: set = attrs.field(factory=set, converter=set)
@@ -267,12 +272,6 @@ class Target:
     def _validate_name(self, attribute, value):
         if not is_valid_name(self.name):
             raise GWFError(f"Target defined with invalid name: {value}")
-
-    @inputs.validator
-    @outputs.validator
-    def _validate_inputs(self, attribute, value):
-        for path in value:
-            _check_path(path)
 
     @working_dir.validator
     def _validate_working_dir(self, attribute, value):
