@@ -57,47 +57,95 @@ logger = logging.getLogger(__name__)
 
 
 SLURM_SHORT_STATES = {
-    "BF": BackendStatus.FAILED,  # Job terminated due to launch failure, typically due to a hardware failure (e.g. unable to boot the node or block and the job can not be requeued).
-    "CA": BackendStatus.CANCELLED,  # Job was explicitly cancelled by the user or system administrator. The job may or may not have been initiated.
-    "CD": BackendStatus.COMPLETED,  # Job has terminated all processes on all nodes with an exit code of zero.
-    "CF": BackendStatus.SUBMITTED,  # Job has been allocated resources, but are waiting for them to become ready for use (e.g. booting).
-    "CG": BackendStatus.RUNNING,  # Job is in the process of completing. Some processes on some nodes may still be active.
-    "DL": BackendStatus.FAILED,  # Job terminated on deadline.
-    "F": BackendStatus.FAILED,  # Job terminated with non-zero exit code or other failure condition.
-    "NF": BackendStatus.FAILED,  # Job terminated due to failure of one or more allocated nodes.
-    "OOM": BackendStatus.FAILED,  # Job experienced out of memory error.
-    "PD": BackendStatus.SUBMITTED,  # Job is awaiting resource allocation.
-    "PR": BackendStatus.FAILED,  # Job terminated due to preemption.
-    "R": BackendStatus.RUNNING,  # Job currently has an allocation.
-    "RD": BackendStatus.SUBMITTED,  # Job is being held after requested reservation was deleted.
-    "RF": BackendStatus.SUBMITTED,  # Job is being requeued by a federation.
-    "RH": BackendStatus.SUBMITTED,  # Held job is being requeued.
-    "RQ": BackendStatus.SUBMITTED,  # Completing job is being requeued.
-    "RS": BackendStatus.SUBMITTED,  # Job is about to change size.
-    "RV": BackendStatus.SUBMITTED,  # Sibling was removed from cluster due to other cluster starting the job.
-    "SE": BackendStatus.SUBMITTED,  # The job was requeued in a special state. This state can be set by users, typically in EpilogSlurmctld, if the job has terminated with a particular exit value.
-    "SO": BackendStatus.SUBMITTED,  # Job is staging out files.
-    "ST": BackendStatus.RUNNING,  # Job has an allocation, but execution has been stopped with SIGSTOP signal. CPUS have been retained by this job.
-    "S": BackendStatus.RUNNING,  # Job has an allocation, but execution has been suspended and CPUs have been released for other jobs.
-    "TO": BackendStatus.FAILED,  # Job terminated upon reaching its time limit.
+    # Job terminated due to launch failure, typically due to a hardware failure (e.g.
+    # unable to boot the node or block and the job can not be requeued).
+    "BF": BackendStatus.FAILED,
+    # Job was explicitly cancelled by the user or system administrator. The job may or
+    # may not have been initiated.
+    "CA": BackendStatus.CANCELLED,
+    # Job has terminated all processes on all nodes with an exit code of zero.
+    "CD": BackendStatus.COMPLETED,
+    # Job has been allocated resources, but are waiting for them to become ready for use
+    # (e.g. booting).
+    "CF": BackendStatus.SUBMITTED,
+    # Job is in the process of completing. Some processes on some nodes may still be
+    # active.
+    "CG": BackendStatus.RUNNING,
+    # Job terminated on deadline.
+    "DL": BackendStatus.FAILED,
+    # Job terminated with non-zero exit code or other failure condition.
+    "F": BackendStatus.FAILED,
+    # Job terminated due to failure of one or more allocated nodes.
+    "NF": BackendStatus.FAILED,
+    # Job experienced out of memory error.
+    "OOM": BackendStatus.FAILED,
+    # Job is awaiting resource allocation.
+    "PD": BackendStatus.SUBMITTED,
+    # Job terminated due to preemption.D,
+    "PR": BackendStatus.FAILED,
+    # Job currently has an allocation.
+    "R": BackendStatus.RUNNING,
+    # Job is being held after requested reservation was deleted.
+    "RD": BackendStatus.SUBMITTED,
+    # Job is being requeued by a federation.
+    "RF": BackendStatus.SUBMITTED,
+    # Held job is being requeued.
+    "RH": BackendStatus.SUBMITTED,
+    # Completing job is being requeued.
+    "RQ": BackendStatus.SUBMITTED,
+    # Job is about to change size.
+    "RS": BackendStatus.SUBMITTED,
+    # Sibling was removed from cluster due to other cluster starting the job.
+    "RV": BackendStatus.SUBMITTED,
+    # The job was requeued in a special state. This state can be set by users, typically
+    # in EpilogSlurmctld, if the job has terminated with a particular exit value.
+    "SE": BackendStatus.SUBMITTED,
+    # Job is staging out files.
+    "SO": BackendStatus.SUBMITTED,
+    # Job has an allocation, but execution has been stopped with SIGSTOP signal. CPUS
+    # have been retained by this job.,
+    "ST": BackendStatus.RUNNING,
+    # Job has an allocation, but execution has been suspended and CPUs have been
+    # released for other jobs.
+    "S": BackendStatus.RUNNING,
+    # Job terminated upon reaching its time limit.
+    "TO": BackendStatus.FAILED,
 }
 
 SLURM_LONG_STATES = {
-    "BOOT_FAIL": "BF",  # Job terminated due to launch failure, typically due to a hardware failure (e.g. unable to boot the node or block and the job can not be requeued).
-    "CANCELLED": "CA",  # Job was explicitly cancelled by the user or system administrator. The job may or may not have been initiated.
-    "COMPLETED": "CD",  # Job has terminated all processes on all nodes with an exit code of zero.
-    "DEADLINE": "DL",  # Job terminated on deadline.
-    "FAILED": "F",  # Job terminated with non-zero exit code or other failure condition.
-    "NODE_FAIL": "NF",  # Job terminated due to failure of one or more allocated nodes.
-    "OUT_OF_MEMORY": "OOM",  # Job experienced out of memory error.
-    "PENDING": "PD",  # Job is awaiting resource allocation.
-    "PREEMPTED": "PR",  # Job terminated due to preemption.
-    "RUNNING": "R",  # Job currently has an allocation.
-    "REQUEUED": "RQ",  # Job was requeued.
-    "RESIZING": "RS",  # Job is about to change size.
-    "REVOKED": "RV",  # Sibling was removed from cluster due to other cluster starting the job.
-    "SUSPENDED": "S",  # Job has an allocation, but execution has been suspended and CPUs have been released for other jobs.
-    "TIMEOUT": "TO",  # Job terminated upon reaching its time limit.
+    # Job terminated due to launch failure, typically due to a hardware failure (e.g.
+    # unable to boot the node or block and the job can not be requeued).
+    "BOOT_FAIL": "BF",
+    # Job was explicitly cancelled by the user or system administrator. The job may or
+    # may not have been initiated.
+    "CANCELLED": "CA",
+    # Job has terminated all processes on all nodes with an exit code of zero.
+    "COMPLETED": "CD",
+    # Job terminated on deadline.
+    "DEADLINE": "DL",
+    # Job terminated with non-zero exit code or other failure condition.,
+    "FAILED": "F",
+    # Job terminated due to failure of one or more allocated nodes.
+    "NODE_FAIL": "NF",
+    # Job experienced out of memory error.
+    "OUT_OF_MEMORY": "OOM",
+    # Job is awaiting resource allocation.OOM",
+    "PENDING": "PD",
+    # Job terminated due to preemption.
+    "PREEMPTED": "PR",
+    # Job currently has an allocation.,
+    "RUNNING": "R",
+    # Job was requeued.
+    "REQUEUED": "RQ",
+    # Job is about to change size.
+    "RESIZING": "RS",
+    # Sibling was removed from cluster due to other cluster starting the job.
+    "REVOKED": "RV",
+    # Job has an allocation, but execution has been suspended and CPUs have been
+    # released for other jobs.
+    "SUSPENDED": "S",
+    # Job terminated upon reaching its time limit.
+    "TIMEOUT": "TO",
 }
 
 
