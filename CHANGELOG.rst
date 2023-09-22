@@ -2,6 +2,15 @@
 Change Log
 ==========
 
+Version 2.0.4
+=============
+
+Fixed
+-----
+
+* Fixed bug introduced in 2.0.3 that only affected the Slurm backend.
+* Fixed the behavior of the cancel command (can now cancel multiple target, even if cancelling one of them fails).
+
 Version 2.0.3
 =============
 
