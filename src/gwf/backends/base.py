@@ -85,7 +85,7 @@ class TrackingBackend:
 
     @_job_states.default
     def _init_status(self):
-        return self.ops.get_job_states(set(self._tracked_jobs.values()))
+        return self.ops.get_job_states(list(self._tracked_jobs.values()))
 
     def _get_state_path(self):
         return os.path.join(
