@@ -2,6 +2,19 @@
 Change Log
 ==========
 
+Version 2.0.3
+=============
+
+Fixed
+-----
+
+* Fixed path validation when using named paths (thanks, Anders!)
+
+Changed
+-------
+
+* Updated list of known Slurm states in Slurm backend.
+
 Version 2.0.2
 =============
 
