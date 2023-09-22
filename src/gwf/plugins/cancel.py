@@ -2,7 +2,7 @@ import click
 
 from .. import Workflow
 from ..backends import create_backend
-from ..backends.exceptions import TargetError, UnsupportedOperationError
+from ..backends.exceptions import BackendError, TargetError, UnsupportedOperationError
 from ..core import CachedFilesystem, Graph, pass_context
 from ..filtering import filter_names
 
@@ -15,7 +15,7 @@ def cancel_many(backend, targets):
         except UnsupportedOperationError:
             click.echo("Cancelling targets is not supported by this backend", err=True)
             raise click.Abort()
-        except TargetError:
+        except (TargetError, BackendError):
             click.echo(
                 f"Target {target.name} could not be cancelled "
                 "(maybe not running or submitted?)"
