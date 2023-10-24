@@ -2,6 +2,14 @@
 Change Log
 ==========
 
+Version 2.0.5
+=============
+
+Added
+-----
+
+* Added support for Python 3.12.
+
 Version 2.0.4
 =============
 
