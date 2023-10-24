@@ -23,10 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 def entry_points(group=None):
-    eps = _entry_points()
-    if group is None:
-        return eps
-    return eps[group]
+    return _entry_points(group=group)
 
 
 def is_valid_name(candidate):
