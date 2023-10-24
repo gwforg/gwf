@@ -52,7 +52,7 @@ def build(session):
     session.run("flit", "build", "--no-setup-py", "--format", "wheel")
 
 
-@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11"])
+@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"])
 def test(session):
     # urllib3 v2 came out and shows an openssl error (at least on Py37).
     # For now we'll just force <2 to make stuff work.
