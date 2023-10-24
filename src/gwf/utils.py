@@ -22,8 +22,11 @@ from gwf.exceptions import GWFError
 logger = logging.getLogger(__name__)
 
 
-def entry_points(group=None):
-    return _entry_points(group=group)
+def entry_points(group):
+    if sys.version_info < (3, 12):
+        return _entry_points()[group]
+    else:
+        return _entry_points(group=group)
 
 
 def is_valid_name(candidate):
