@@ -256,6 +256,7 @@ class Workflow:
         """
         new_target = Target(
             name=name,
+            group=template.group,
             inputs=template.inputs,
             outputs=template.outputs,
             protect=template.protect,

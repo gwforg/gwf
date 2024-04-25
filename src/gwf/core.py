@@ -1,4 +1,5 @@
 import hashlib
+import inspect
 import json
 import logging
 import os
@@ -175,6 +176,8 @@ class AnonymousTarget:
     :ivar dict options:
         Options such as number of cores, memory requirements etc. Options are
         backend-dependent. Backends will ignore unsupported options.
+    :ivar str group:
+        The group to which the target is assigned.
     :ivar str working_dir:
         Working directory of this target.
     :ivar str spec:
@@ -187,9 +190,17 @@ class AnonymousTarget:
     inputs: list = attrs.field()
     outputs: list = attrs.field()
     options: dict = attrs.field()
+    group: str = attrs.field(default=None)
     working_dir: str = attrs.field(default=".")
     protect: set = attrs.field(factory=set, converter=set)
     spec: str = attrs.field(default="")
+
+    def __attrs_post_init__(self):
+        if self.group is None:
+            self.group = (
+                inspect.stack()[2].function
+                or inspect.currentframe().f_back.f_code.co_name
+            )
 
 
 def _validate_path(instance, attribute, value):
@@ -246,6 +257,9 @@ class Target:
     :ivar str name:
         Name of the target.
 
+    :ivar str group:
+        The group to which the target is assigned.
+
     .. versionchanged:: 1.6.0
         Named inputs and outputs were added. Prior versions require *inputs*
         and *outputs* to be lists.
@@ -255,6 +269,7 @@ class Target:
     inputs: list = attrs.field(validator=_validate_path)
     outputs: list = attrs.field(validator=_validate_path)
     options: dict = attrs.field()
+    group: str = attrs.field(default=None)
     working_dir: str = attrs.field(default=".")
     protect: set = attrs.field(factory=set, converter=set)
     spec: str = attrs.field(default="")
