@@ -26,24 +26,20 @@ import re
 import attrs
 
 from ..utils import ensure_trailing_newline
-from .base import TrackingBackend, BackendStatus
+from .base import BackendStatus, TrackingBackend
 from .utils import call, has_exe
 
 logger = logging.getLogger(__name__)
 
-TARGET_DEFAULTS = {
-    "queue": "normal",
-    "memory": "4GB",
-    "cores": 1
-}
+TARGET_DEFAULTS = {"queue": "normal", "memory": "4GB", "cores": 1}
 
-BJOB_HEADER = '''#BSUB -M {memory}
+BJOB_HEADER = """#BSUB -M {memory}
 #BSUB -R "select[mem>{memory}] rusage[mem={memory}] span[hosts=1]"
 #BSUB -n {cores}
 #BSUB -q {queue}
 #BSUB -oo {std_out}
 #BSUB -eo {std_err}
-#BSUB -J {job_name}'''
+#BSUB -J {job_name}"""
 
 BJOB_STATES = {
     "PEND": BackendStatus.SUBMITTED,
@@ -55,7 +51,7 @@ BJOB_STATES = {
     "PSUSP": BackendStatus.FAILED,
     "USUSP": BackendStatus.FAILED,
     "SSUSP": BackendStatus.FAILED,
-    "UNKWN": BackendStatus.UNKNOWN
+    "UNKWN": BackendStatus.UNKNOWN,
 }
 
 
@@ -70,12 +66,14 @@ class LSFOps:
 
     def submit_target(self, target, dependencies):
         script = self.compile_script(target)
-        with open(os.path.join(self.working_dir, ".gwf", "logs", target.name + ".sh"), 'w') as f:
+        with open(
+            os.path.join(self.working_dir, ".gwf", "logs", target.name + ".sh"), "w"
+        ) as f:
             f.write(script)
         args = []
         if dependencies:
             args.append("-w")
-            args.append(" && ".join([f"done({job_id})" for job_id in dependencies])) 
+            args.append(" && ".join([f"done({job_id})" for job_id in dependencies]))
         logger.debug(f"Submitting job { target.name } to LSF")
         stdout = call("bsub", *args, input=script).strip()
         job_id = re.search(r"Job <(\d+)>", stdout)[1]
@@ -87,14 +85,9 @@ class LSFOps:
             return {}
         job_states = {job_id: BackendStatus.UNKNOWN for job_id in tracked_jobs}
         for job_id in tracked_jobs:
-            cmd = [
-                'bjobs',
-                '-noheader',
-                '-o', 'stat',
-                job_id
-            ]
+            cmd = ["bjobs", "-noheader", "-o", "stat", job_id]
             ret = call(*cmd).strip()
-            if ret == '':
+            if ret == "":
                 continue
             state = BJOB_STATES[ret]
             job_states[job_id] = state
@@ -133,7 +126,7 @@ def create_backend(working_dir):
     return TrackingBackend(
         working_dir,
         name="lsf",
-        ops=LSFOps(working_dir, target_defaults=TARGET_DEFAULTS)
+        ops=LSFOps(working_dir, target_defaults=TARGET_DEFAULTS),
     )
 
 
