@@ -56,9 +56,11 @@ def clean(ctx, targets, all, force):
     matches = list(filter_generic(targets=graph, filters=filters))
 
     total_size = sum(
-        os.path.getsize(path)
-        if os.path.exists(path) and path not in target.protected()
-        else 0
+        (
+            os.path.getsize(path)
+            if os.path.exists(path) and path not in target.protected()
+            else 0
+        )
         for target in matches
         for path in target.flattened_outputs()
     )
