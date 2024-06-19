@@ -138,6 +138,9 @@ class SGEOps:
         out.append(ensure_trailing_newline(target.spec))
         return "\n".join(out)
 
+    def close(self):
+        pass
+
 
 def create_backend(working_dir):
     return TrackingBackend(
