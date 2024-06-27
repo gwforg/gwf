@@ -459,7 +459,8 @@ class BackgroundCluster:
     def shutdown(self):
         with Client.connect("localhost", 12345) as c:
             c.shutdown()
-        self.process.join()
+        self.process.join(timeout=1)
+        self.process.kill()
 
     def __enter__(self):
         return self
