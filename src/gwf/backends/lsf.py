@@ -74,6 +74,7 @@ class LSFOps:
         if dependencies:
             args.append("-w")
             args.append(" && ".join([f"done({job_id})" for job_id in dependencies]))
+            args.append("-ti")
         logger.debug(f"Submitting job { target.name } to LSF")
         stdout = call("bsub", *args, input=script).strip()
         job_id = re.search(r"Job <(\d+)>", stdout)[1]
