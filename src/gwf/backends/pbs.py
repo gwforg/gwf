@@ -51,6 +51,7 @@ PBS_STATES = {
     "U": BackendStatus.UNKNOWN,
 }
 
+
 @attrs.define
 class PBSOps:
     working_dir: str = attrs.field()
@@ -62,7 +63,9 @@ class PBSOps:
 
     def submit_target(self, target, dependencies):
         script = self.compile_script(target)
-        script_path = os.path.join(self.working_dir, ".gwf", "logs", target.name + ".sh")
+        script_path = os.path.join(
+            self.working_dir, ".gwf", "logs", target.name + ".sh"
+        )
         with open(script_path, "w") as f:
             f.write(script)
         args = []
@@ -70,7 +73,7 @@ class PBSOps:
             args.append("-W depend=afterok:" + ":".join(dependencies))
         logger.debug(f"Submitting job { target.name } to PBS")
         stdout = call("qsub", *args, script_path).strip()
-        job_id = stdout.split('.')[0]  # Extract job ID from the full PBS job ID
+        job_id = stdout.split(".")[0]  # Extract job ID from the full PBS job ID
         return job_id
 
     def get_job_states(self, tracked_jobs):
