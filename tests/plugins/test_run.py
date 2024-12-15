@@ -8,9 +8,9 @@ def test_run_submits_targets(cli_runner, local_backend, linear_workflow):
     Path("a.txt").touch()
 
     result = cli_runner.invoke(main, ["run"])
-    assert "Submitting target Target1" in result.output
-    assert "Submitting target Target2" in result.output
-    assert "Submitting target Target3" in result.output
+    assert "Submitted target Target1" in result.output
+    assert "Submitted target Target2" in result.output
+    assert "Submitted target Target3" in result.output
 
     for _ in range(30):
         result = cli_runner.invoke(main, ["status", "-s", "shouldrun"])
@@ -33,6 +33,6 @@ def test_run_partially_submits_targets(cli_runner, local_backend, linear_workflo
     Path("a.txt").touch()
 
     result = cli_runner.invoke(main, ["run", "Target2"])
-    assert "Submitting target Target1" in result.output
-    assert "Submitting target Target2" in result.output
-    assert "Submitting target Target3" not in result.output
+    assert "Submitted target Target1" in result.output
+    assert "Submitted target Target2" in result.output
+    assert "Submitted target Target3" not in result.output

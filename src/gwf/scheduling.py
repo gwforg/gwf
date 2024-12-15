@@ -140,7 +140,7 @@ def submit_backend(target, dependencies, backend, spec_hashes):
     injection of option defaults.
     """
 
-    logger.info("Submitting target %s", target)
+    # logger.info("Submitting target %s", target)
 
     new_options = {}
     if hasattr(backend, "target_defaults"):
@@ -161,6 +161,15 @@ def submit_backend(target, dependencies, backend, spec_hashes):
 
     backend.submit(target, dependencies)
     spec_hashes.update(target)
+
+    if hasattr(backend, "get_tracked_id"):
+        logger.info(
+            "Submitted target %s (id: %s)",
+            target,
+            backend.get_tracked_id(target),
+        )
+    else:
+        logger.info("Submitted target %s", target)
 
 
 def submit_workflow(

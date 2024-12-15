@@ -33,23 +33,30 @@ def _key_target_order(item):
     return t.order
 
 
-def print_table(target_states):
+def print_table(target_states, backend):
     name_col_width = (
         max((len(target.name) for target in target_states.values()), default=0) + 4
     )
-    format_str = "{symbol} {name:<{name_col_width}} {status}"
+    format_str = "{symbol} {name:<{name_col_width}} {status} (id: {tracked_id})"
     for target, status in sorted(target_states.items(), key=_key_target_order):
         color, symbol = _STATUS_VISUALS[status]
+
+        if hasattr(backend, "get_tracked_id"):
+            tracked_id = backend.get_tracked_id(target)
+        else:
+            tracked_id = "none"
+
         line = format_str.format(
             symbol=symbol,
             name=target.name,
             status=status.name.lower(),
             name_col_width=name_col_width,
+            tracked_id=tracked_id,
         )
         click.secho(line, fg=color)
 
 
-def print_summary(target_states):
+def print_summary(target_states, backend):
     status_counts = Counter(status for status in target_states.values())
     _, max_count = status_counts.most_common()[0]
     count_width = len(str(max_count)) + 4
@@ -135,4 +142,4 @@ def status(ctx, status, endpoints, format, targets):
         target_states = {k: v for k, v in target_states.items() if k in matches}
 
         printer = FORMATS[format]
-        printer(target_states)
+        printer(target_states, backend)

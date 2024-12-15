@@ -102,6 +102,9 @@ class TrackingBackend:
         self._tracked_jobs[target.name] = job_id
         self._job_states[job_id] = BackendStatus.SUBMITTED
 
+    def get_tracked_id(self, target):
+        return self._tracked_jobs[target.name]
+
     def cancel(self, target):
         try:
             self.ops.cancel_job(self._tracked_jobs[target.name])
