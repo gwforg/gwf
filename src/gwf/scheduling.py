@@ -52,13 +52,29 @@ def should_run(target, fs, spec_hashes):
     return False
 
 
-def schedule(endpoints, graph, fs, spec_hashes, status_func, submit_func):
+def schedule(
+    endpoints,
+    graph,
+    fs,
+    spec_hashes,
+    status_func,
+    submit_func,
+    force=False,
+    no_deps=False,
+):
     def _schedule(target):
         submitted_deps = []
-        for dep in sorted(graph.dependencies[target], key=lambda t: t.name):
-            status = _cached_schedule(dep)
-            if status in SUBMITTED_STATES:
-                submitted_deps.append(dep)
+
+        if not no_deps:
+            for dep in sorted(graph.dependencies[target], key=lambda t: t.name):
+                status = _cached_schedule(dep)
+                if status in SUBMITTED_STATES:
+                    submitted_deps.append(dep)
+
+        if force:
+            logger.debug("Target %s is being forcibly submitted", target)
+            submit_func(target, dependencies=submitted_deps)
+            return Status.SHOULDRUN
 
         if status_func(target) == BackendStatus.SUBMITTED:
             logger.debug("Target %s is already submitted", target)
@@ -147,7 +163,16 @@ def submit_backend(target, dependencies, backend, spec_hashes):
     spec_hashes.update(target)
 
 
-def submit_workflow(endpoints, graph, fs, spec_hashes, backend, dry_run=False):
+def submit_workflow(
+    endpoints,
+    graph,
+    fs,
+    spec_hashes,
+    backend,
+    dry_run=False,
+    force=False,
+    no_deps=False,
+):
     """Submit a workflow to a backend."""
     submit_func = partial(
         _submit_dryrun if dry_run else submit_backend,
@@ -161,6 +186,8 @@ def submit_workflow(endpoints, graph, fs, spec_hashes, backend, dry_run=False):
         spec_hashes,
         status_func=backend.status,
         submit_func=submit_func,
+        force=force,
+        no_deps=no_deps,
     )
 
 

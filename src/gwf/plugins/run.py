@@ -31,8 +31,10 @@ def clean_logs(working_dir, graph):
 @click.command()
 @click.argument("targets", nargs=-1)
 @click.option("-d", "--dry-run", is_flag=True, default=False)
+@click.option("-f", "--force", is_flag=True, default=False)
+@click.option("-n", "--no-deps", is_flag=True, default=False)
 @pass_context
-def run(ctx, targets, dry_run):
+def run(ctx, targets, dry_run, force, no_deps):
     """Run the specified workflow."""
     workflow = Workflow.from_context(ctx)
 
@@ -56,4 +58,6 @@ def run(ctx, targets, dry_run):
             spec_hashes,
             backend,
             dry_run=dry_run,
+            force=force,
+            no_deps=no_deps,
         )
