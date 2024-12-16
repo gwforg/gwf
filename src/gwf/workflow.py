@@ -196,7 +196,7 @@ class Workflow:
             raise WorkflowError(f"Target {target} already exists in workflow.")
         self.targets[target.name] = target
 
-    def target(self, name, inputs, outputs, protect=None, **options):
+    def target(self, name, inputs, outputs, protect=None, group=None, **options):
         """Create a target and add it to the :class:`gwf.Workflow`.
 
         This is syntactic sugar for creating a new :class:`~gwf.Target` and
@@ -224,6 +224,7 @@ class Workflow:
             inputs=inputs,
             outputs=outputs,
             protect=protect if protect else set(),
+            group=group,
             options=chain(self.defaults, options),
             working_dir=self.working_dir,
         )
