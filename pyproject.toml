@@ -52,6 +52,7 @@ local = "gwf.backends.local:setup"
 sge = "gwf.backends.sge:setup"
 slurm = "gwf.backends.slurm:setup"
 lsf = "gwf.backends.lsf:setup"
+pbs = "gwf.backends.pbs:setup"
 
 [project.urls]
 Home = "https://gwf.app"
