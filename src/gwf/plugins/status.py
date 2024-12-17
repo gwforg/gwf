@@ -1,12 +1,18 @@
 import logging
-from collections import Counter
+from collections import Counter, defaultdict
 
 import click
 
 from .. import Workflow
 from ..backends import create_backend
 from ..core import CachedFilesystem, Graph, Status, get_spec_hashes, pass_context
-from ..filtering import EndpointFilter, NameFilter, StatusFilter, filter_generic
+from ..filtering import (
+    EndpointFilter,
+    GroupFilter,
+    NameFilter,
+    StatusFilter,
+    filter_generic,
+)
 from ..scheduling import get_status_map
 
 logger = logging.getLogger(__name__)
@@ -33,7 +39,27 @@ def _key_target_order(item):
     return t.order
 
 
-def print_table(target_states, backend):
+def print_grouped_table(target_states, backend):
+    grouped = defaultdict(list)
+    for target, target_state in target_states.items():
+        grouped[target.group or "-"].append((target, target_state))
+
+    name_col_width = max((len(group) for group in grouped), default=0) + 4
+    for group, target_states in sorted(grouped.items()):
+        click.secho(group.ljust(name_col_width), nl=False)
+        status_counts = Counter(status for _, status in target_states)
+        _, max_count = status_counts.most_common()[0]
+        count_width = len(str(max_count)) + 2
+        for status, (color, _) in _STATUS_VISUALS.items():
+            click.secho(
+                f"{status_counts[status]:>{count_width}} {status.name.lower():<10}",
+                fg=color,
+                nl=False,
+            )
+        click.secho()
+
+
+def print_flat_table(target_states, backend):
     name_col_width = (
         max((len(target.name) for target in target_states.values()), default=0) + 4
     )
@@ -69,7 +95,8 @@ def print_summary(target_states, backend):
 
 FORMATS = {
     "summary": print_summary,
-    "default": print_table,
+    "default": print_flat_table,
+    "grouped": print_grouped_table,
 }
 
 
@@ -80,7 +107,7 @@ FORMATS = {
     "-f",
     "--format",
     default="default",
-    type=click.Choice(["summary", "default"]),
+    type=click.Choice(FORMATS.keys()),
     help="How to format status output.",
 )
 @click.option(
@@ -89,22 +116,32 @@ FORMATS = {
     type=click.Choice(_STATUS_NAMES),
     multiple=True,
 )
+@click.option(
+    "-g",
+    "--group",
+    multiple=True,
+)
 @pass_context
-def status(ctx, status, endpoints, format, targets):
+def status(ctx, group, status, endpoints, format, targets):
     """
     Show the status of targets.
 
-    One target per line is shown. Each line contains the target name, the
-    status of the target itself, and the percentage of dependencies of the
-    target that are completed (including the target itself). That is, 100%
-    means that the target and all of its dependencies have been completed.
+    With the default format, one target per line is shown. Each line contains
+    the target name, the status of the target itself, and the id that identifies
+    the target in the backend (for example, the job id in the case of Slurm).
 
-    In square brackets, the number of targets that should run, have been
-    submitted, are running, and completed targets are shown, respectively.
+    The grouped format will show targets grouped according to their `group`
+    parameter. Targets where `group=None` will be grouped into the `-` group.
+    For each group the number of targets in each state is shown.
+
+    The summary format will show a short summary of the target states for the
+    entire workflow.
 
     The `-s/--status` flag can be applied multiple times to show targets that
     match either of the queries, e.g. `gwf status -s shouldrun -s completed`
     will show all targets that should run and all targets that are completed.
+    When the grouped format is used, groups containing at least one target
+    matching the filter will be shown.
 
     The targets are shown in creation-order.
     """
@@ -137,6 +174,8 @@ def status(ctx, status, endpoints, format, targets):
             filters.append(NameFilter(patterns=targets))
         if endpoints:
             filters.append(EndpointFilter(endpoints=graph.endpoints()))
+        if group:
+            filters.append(GroupFilter(patterns=group))
 
         matches = set(filter_generic(targets=graph, filters=filters))
         target_states = {k: v for k, v in target_states.items() if k in matches}

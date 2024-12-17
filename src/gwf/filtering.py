@@ -54,6 +54,14 @@ class NameFilter:
         }
 
 
+class GroupFilter(ApplyMixin):
+    def __init__(self, patterns):
+        self.patterns = patterns
+
+    def predicate(self, target):
+        return any(fnmatch.filter([target.group or "none"], p) for p in self.patterns)
+
+
 class EndpointFilter(ApplyMixin):
     def __init__(self, endpoints, mode="include"):
         self.endpoints = endpoints
