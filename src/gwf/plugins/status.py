@@ -68,7 +68,7 @@ def print_flat_table(target_states, backend):
         color, symbol = _STATUS_VISUALS[status]
 
         if hasattr(backend, "get_tracked_id"):
-            tracked_id = backend.get_tracked_id(target)
+            tracked_id = backend.get_tracked_id(target) or "none"
         else:
             tracked_id = "none"
 
