@@ -18,7 +18,7 @@ def has_exe(name):
     return shutil.which(name) is not None
 
 
-def call(executable_name, *args, input=None):
+def call(executable_name, *args, input=None, environ=None):
     executable_path = _find_exe(executable_name)
     proc = subprocess.Popen(
         [executable_path] + list(args),
@@ -26,6 +26,7 @@ def call(executable_name, *args, input=None):
         stderr=subprocess.PIPE,
         stdin=subprocess.PIPE,
         universal_newlines=True,
+        env=environ,
     )
     stdout, stderr = proc.communicate(input)
 

@@ -12,9 +12,12 @@ from pathlib import Path
 
 import attrs
 
+from .executors import Bash
+
 from .core import Target
 from .exceptions import WorkflowError
 from .utils import chain, find_workflow, load_workflow
+from gwf import executors
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +159,7 @@ class Workflow:
 
     working_dir: str = attrs.field()
     defaults: dict = attrs.field(factory=dict)
+    executor: executors.Executor = attrs.field(factory=Bash)
     targets: dict = attrs.field(factory=dict, init=False, repr=False)
 
     @working_dir.default  # type: ignore
@@ -196,7 +200,7 @@ class Workflow:
             raise WorkflowError(f"Target {target} already exists in workflow.")
         self.targets[target.name] = target
 
-    def target(self, name, inputs, outputs, protect=None, group=None, **options):
+    def target(self, name, inputs, outputs, protect=None, group=None, executor=None, **options):
         """Create a target and add it to the :class:`gwf.Workflow`.
 
         This is syntactic sugar for creating a new :class:`~gwf.Target` and
@@ -225,6 +229,7 @@ class Workflow:
             outputs=outputs,
             protect=protect if protect else set(),
             group=group,
+            executor=executor or self.executor,
             options=chain(self.defaults, options),
             working_dir=self.working_dir,
         )
@@ -257,10 +262,11 @@ class Workflow:
         """
         new_target = Target(
             name=name,
-            group=template.group,
             inputs=template.inputs,
             outputs=template.outputs,
             protect=template.protect,
+            group=template.group,
+            executor=template.executor or self.executor,
             options=chain(self.defaults, template.options, options),
             working_dir=template.working_dir or self.working_dir,
             spec=template.spec,
