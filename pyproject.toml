@@ -25,13 +25,11 @@ dependencies = [
     "click",
     "click-plugins",
     "attrs",
+    "prettyprinter",
     # Used to discover plugins and backends, see:
     # https://packaging.python.org/guides/creating-and-discovering-plugins/
     "importlib_metadata>4.6; python_version<'3.8'",
 ]
-
-[project.optional-dependencies]
-dev = ["black", "isort", "nox"]
 
 [project.scripts]
 gwf = "gwf.cli:main"
@@ -57,13 +55,36 @@ pbs = "gwf.backends.pbs:setup"
 [project.urls]
 Home = "https://gwf.app"
 
-[tool.isort]
-profile = "black"
+[tool.pixi.project]
+channels = ["conda-forge", "bioconda"]
+platforms = ["linux-64"]
 
-[tool.coverage.run]
-branch = true
-parallel = true
+[tool.pixi.pypi-dependencies]
+gwf = { path = ".", editable = true }
 
-[tool.coverage.report]
-sort = "Cover"
-exclude_lines = ["@attrs"]
+[tool.pixi.environments]
+default = { solve-group = "default" }
+dev = { features = ["dev", "test"], solve-group = "default" }
+
+[tool.pixi.feature.dev.dependencies]
+nox = ">=2024.10.9,<2025"
+ruff = ">=0.9.4,<0.10"
+sphinx = ">=8.1.3,<9"
+sphinx-autobuild = ">=2024.10.3,<2025"
+furo = ">=2024.8.6,<2025"
+
+[tool.pixi.feature.test.dependencies]
+pytest = ">=8.3.4,<9"
+pytest-click = ">=1.1.0,<2"
+pytest-mock = ">=3.14.0,<4"
+pytest-runner = ">=6.0.0,<7"
+pytest-asyncio = ">=0.25.3,<0.26"
+
+[tool.pixi.feature.dev.tasks]
+format = "ruff format $PIXI_PROJECT_ROOT/src"
+lint = "ruff check $PIXI_PROJECT_ROOT/src"
+preview-docs = "cd $PIXI_PROJECT_ROOT/docs; sphinx-autobuild --open-browser -b dirhtml . _build/dirhtml"
+build-docs = "cd $PIXI_PROJECT_ROOT/docs; sphinx-build -b dirhtml . _build/dirhtml"
+
+[tool.pixi.feature.test.tasks]
+test = "pytest tests/"

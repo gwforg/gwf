@@ -21,3 +21,7 @@ examples/minimal-workflow-explicit-options/world.txt
 .nox
 .venv
 conda-bld/
+
+# pixi environments
+.pixi
+*.egg-info
