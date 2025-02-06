@@ -8,7 +8,7 @@ import click
 from .. import Workflow
 from ..backends import create_backend
 from ..core import CachedFilesystem, Graph, get_spec_hashes, pass_context
-from ..filtering import GroupFilter, NameFilter, filter_generic, filter_names
+from ..filtering import GroupFilter, NameFilter, filter_generic
 from ..scheduling import submit_workflow
 
 logger = logging.getLogger(__name__)
