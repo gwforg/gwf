@@ -19,17 +19,7 @@ classifiers = [
 dynamic = ["version", "description"]
 name = "gwf"
 readme = "README.rst"
-requires-python = ">=3.7"
-
-dependencies = [
-    "click",
-    "click-plugins",
-    "attrs",
-    "prettyprinter",
-    # Used to discover plugins and backends, see:
-    # https://packaging.python.org/guides/creating-and-discovering-plugins/
-    "importlib_metadata>4.6; python_version<'3.8'",
-]
+requires-python = ">=3.8"
 
 [project.scripts]
 gwf = "gwf.cli:main"
@@ -56,11 +46,14 @@ pbs = "gwf.backends.pbs:setup"
 Home = "https://gwf.app"
 
 [tool.pixi.project]
-channels = ["conda-forge", "bioconda"]
+channels = ["conda-forge"]
 platforms = ["linux-64"]
 
-[tool.pixi.pypi-dependencies]
-gwf = { path = ".", editable = true }
+[tool.pixi.dependencies]
+click = "*"
+click-plugins = "*"
+attrs = "*"
+prettyprinter = "*"
 
 [tool.pixi.environments]
 default = { solve-group = "default" }

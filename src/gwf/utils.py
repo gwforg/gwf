@@ -10,10 +10,7 @@ from contextlib import ContextDecorator
 from functools import wraps
 from pathlib import Path
 
-if sys.version_info < (3, 8):
-    from importlib_metadata import entry_points as _entry_points  # noqa: E401
-else:
-    from importlib.metadata import entry_points as _entry_points  # noqa: F401
+from importlib.metadata import entry_points as _entry_points
 
 import click
 
