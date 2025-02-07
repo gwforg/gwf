@@ -3,7 +3,7 @@ Welcome to gwf
 ==============
 
 *gwf* is a flexible, pragmatic workflow tool for building and running large,
-scientific workflows. It runs on Python 3.7+ and is developed at GenomeDK,
+scientific workflows. It runs on Python 3.8+ and is developed at GenomeDK,
 Aarhus University.
 
 Examples
@@ -68,7 +68,7 @@ Extending
   :maxdepth: 3
 
   plugins
-  reference/index
+  reference
 
 Release history
 ===============
