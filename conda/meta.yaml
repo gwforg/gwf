@@ -1,5 +1,5 @@
 {% set name = "gwf" %}
-{% set version = "2.0.5" %}
+{% set version = "2.1.0" %}
 
 package:
   name: "{{ name|lower }}"
@@ -15,18 +15,14 @@ build:
 
 requirements:
   host:
+    - python>=3.8
     - flit
-    - attrs
-    - click
-    - click-plugins
-    - python>=3.7
-    - importlib_metadata>=4.6 # [py37]
   run:
     - attrs
     - click
     - click-plugins
-    - python>=3.7
-    - importlib_metadata>=4.6 # [py37]
+    - python>=3.8
+    - prettyprinter
 
 test:
   imports:
