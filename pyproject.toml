@@ -81,3 +81,6 @@ build-docs = "cd $PIXI_PROJECT_ROOT/docs; sphinx-build -b dirhtml . _build/dirht
 
 [tool.pixi.feature.test.tasks]
 test = "pytest tests/"
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
