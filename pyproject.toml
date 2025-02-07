@@ -60,11 +60,16 @@ default = { solve-group = "default" }
 dev = { features = ["dev", "test"], solve-group = "default" }
 
 [tool.pixi.feature.dev.dependencies]
-nox = ">=2024.10.9,<2025"
 ruff = ">=0.9.4,<0.10"
 sphinx = ">=8.1.3,<9"
 sphinx-autobuild = ">=2024.10.3,<2025"
 furo = ">=2024.8.6,<2025"
+flit = ">=3.10.1,<4"
+anaconda-client = ">=1.12.3,<2"
+conda-build = ">=25.1.2,<26"
+
+[tool.pixi.feature.dev.pypi-dependencies]
+gwf = { path = ".", editable = true }
 
 [tool.pixi.feature.test.dependencies]
 pytest = ">=8.3.4,<9"
@@ -76,6 +81,9 @@ pytest-asyncio = ">=0.25.3,<0.26"
 [tool.pixi.feature.dev.tasks]
 format = "ruff format $PIXI_PROJECT_ROOT/src"
 lint = "ruff check $PIXI_PROJECT_ROOT/src"
+build = "cd $PIXI_PROJECT_ROOT/conda; conda build --output-folder . ."
+publish = "cd $PIXI_PROJECT_ROOT/conda; anaconda upload --user gwforg $(conda-build --output .)"
+
 preview-docs = "cd $PIXI_PROJECT_ROOT/docs; sphinx-autobuild --open-browser -b dirhtml . _build/dirhtml"
 build-docs = "cd $PIXI_PROJECT_ROOT/docs; sphinx-build -b dirhtml . _build/dirhtml"
 
