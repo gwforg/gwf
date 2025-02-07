@@ -58,6 +58,7 @@ User's Guide
   :maxdepth: 3
 
   guide/index
+  backends
   executors
 
 Extending
