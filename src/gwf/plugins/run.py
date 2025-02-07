@@ -63,8 +63,6 @@ def run(ctx, targets, dry_run, force, no_deps, group):
             filters.append(GroupFilter(patterns=group))
 
         endpoints = set(filter_generic(targets=graph, filters=filters))
-
-        # endpoints = filter_names(graph, targets) if targets else graph.endpoints()
         submit_workflow(
             endpoints,
             graph,

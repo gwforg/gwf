@@ -201,7 +201,6 @@ class SlurmOps:
 
     def submit_target(self, target, dependencies):
         script = self.compile_script(target)
-        print(script)
         args = ["--parsable"]
         if dependencies:
             args.append("--dependency=afterok:{}".format(":".join(dependencies)))
