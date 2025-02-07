@@ -28,7 +28,7 @@ async def forward(src, dst, bufsize=2**16, flush_sec=10):
             data = await asyncio.wait_for(src.read(bufsize - buf_used), 1)
             if not data:
                 done = True
-            buf[buf_used:buf_used + len(data)] = data
+            buf[buf_used : buf_used + len(data)] = data
             buf_used += len(data)
         except TimeoutError:
             pass
@@ -47,8 +47,12 @@ async def execute_command(cmd, working_dir, environ=None):
         full_environ.update(environ)
 
     proc = await asyncio.create_subprocess_exec(
-        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-        bufsize=0, env=environ, cwd=working_dir,
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        bufsize=0,
+        env=environ,
+        cwd=working_dir,
     )
 
     stdout_task = asyncio.create_task(forward(proc.stdout, sys.stdout.buffer))
@@ -85,7 +89,9 @@ def execute_script(script_file, workflow_root, debug_mode):
         os.chmod(spec_path, stat.S_IRUSR | stat.S_IEXEC)
 
         if debug_mode:
-            logger.debug("will execute the following script:\n%s", open(spec_path).read())
+            logger.debug(
+                "will execute the following script:\n%s", open(spec_path).read()
+            )
 
         cmd = target.executor.get_command(spec_path, workflow_root)
 

@@ -58,7 +58,7 @@ class PBSOps:
     target_defaults: dict = attrs.field()
 
     def cancel_job(self, job_id):
-        logger.debug(f"Cancelling job { job_id }")
+        logger.debug(f"Cancelling job {job_id}")
         call("qdel", job_id)
 
     def submit_target(self, target, dependencies):
@@ -71,7 +71,7 @@ class PBSOps:
         args = []
         if dependencies:
             args.append("-W depend=afterok:" + ":".join(dependencies))
-        logger.debug(f"Submitting job { target.name } to PBS")
+        logger.debug(f"Submitting job {target.name} to PBS")
         stdout = call("qsub", *args, script_path).strip()
         job_id = stdout.split(".")[0]  # Extract job ID from the full PBS job ID
         return job_id

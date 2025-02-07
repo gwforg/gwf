@@ -264,10 +264,18 @@ class SlurmOps:
         with render_script(target) as buf:
             print(OPTION_STR.format("--job-name=", target.name), file=buf)
             for option_name, option_value in target.options.items():
-                print(OPTION_STR.format(OPTION_FLAGS[option_name], option_value), file=buf)
+                print(
+                    OPTION_STR.format(OPTION_FLAGS[option_name], option_value), file=buf
+                )
 
-            stdout_flag = OPTION_STR.format("--output=", os.path.join(self.working_dir, ".gwf", "logs", target.name + ".stdout"))
-            stderr_flag = OPTION_STR.format("--error=", os.path.join(self.working_dir, ".gwf", "logs", target.name + ".stderr"))
+            stdout_flag = OPTION_STR.format(
+                "--output=",
+                os.path.join(self.working_dir, ".gwf", "logs", target.name + ".stdout"),
+            )
+            stderr_flag = OPTION_STR.format(
+                "--error=",
+                os.path.join(self.working_dir, ".gwf", "logs", target.name + ".stderr"),
+            )
             devnull_flag = OPTION_STR.format("--output=", "/dev/null")
             if self.log_mode == "full":
                 print(stdout_flag, file=buf)
@@ -278,7 +286,6 @@ class SlurmOps:
                 print(devnull_flag, file=buf)
 
         return buf.getvalue()
-
 
     def close(self):
         pass
@@ -311,4 +318,3 @@ def render_script(target):
     yield buf
     print(file=buf)
     serialize(target, buf)
-

@@ -37,7 +37,15 @@ class Conda:
         if conda_exe is None:
             raise GWFError("Could not find conda installation")
         logger.debug("found conda executable at %s", conda_exe)
-        return [conda_exe, "run", "--live-stream", *debug_flags, "-n", self.env, spec_path]
+        return [
+            conda_exe,
+            "run",
+            "--live-stream",
+            *debug_flags,
+            "-n",
+            self.env,
+            spec_path,
+        ]
 
 
 @attrs.define
@@ -52,7 +60,18 @@ class Pixi:
             raise GWFError("Could not find pixi installation")
         debug_flags = ["-vvv"] if self.debug_mode else []
         manifest_path = workflow_root if self.project is None else self.project
-        return [pixi_exe, "run", "--no-install", "--frozen", *debug_flags, "-e", self.env, "--manifest-path", manifest_path, spec_path]
+        return [
+            pixi_exe,
+            "run",
+            "--no-install",
+            "--frozen",
+            *debug_flags,
+            "-e",
+            self.env,
+            "--manifest-path",
+            manifest_path,
+            spec_path,
+        ]
 
 
 @attrs.define
@@ -66,7 +85,14 @@ class Singularity:
         if singularity_exe is None:
             raise GWFError("Could not find singularity installation")
         debug_flags = ["--debug"] if self.debug_mode else []
-        return [singularity_exe, *debug_flags, "exec", *self.flags, self.image, spec_path]
+        return [
+            singularity_exe,
+            *debug_flags,
+            "exec",
+            *self.flags,
+            self.image,
+            spec_path,
+        ]
 
 
 @attrs.define
@@ -119,7 +145,7 @@ def serialize(target, file):
     data_width = 70
     pickled = base64.b64encode(pickle.dumps(target)).decode("ascii")
     for i in range(0, len(pickled), data_width):
-        print("#GWF DATA", pickled[i:i + data_width], file=file)
+        print("#GWF DATA", pickled[i : i + data_width], file=file)
     print("#GWF END", file=file)
     print(file=file)
 
@@ -131,8 +157,12 @@ def deserialize(script_file):
     script_file = consume(lambda line: line.startswith("#GWF SPEC"), script_file)
     script_file = consume(lambda line: not line.startswith("#GWF DATA"), script_file)
 
-    data_lines, script_file = take(lambda line: line.startswith("#GWF DATA"), script_file)
-    data = "".join(line.replace("#GWF DATA ", "") for line in data_lines).replace("\n", "")
+    data_lines, script_file = take(
+        lambda line: line.startswith("#GWF DATA"), script_file
+    )
+    data = "".join(line.replace("#GWF DATA ", "") for line in data_lines).replace(
+        "\n", ""
+    )
 
     script_file = consume(lambda line: line.startswith("#GWF END"), script_file)
     return pickle.loads(base64.b64decode(data))

@@ -61,7 +61,7 @@ class LSFOps:
     target_defaults: dict = attrs.field()
 
     def cancel_job(self, job_id):
-        logger.debug(f"Cancelling job { job_id }")
+        logger.debug(f"Cancelling job {job_id}")
         call("bkill", job_id)
 
     def submit_target(self, target, dependencies):
@@ -75,7 +75,7 @@ class LSFOps:
             args.append("-w")
             args.append(" && ".join([f"done({job_id})" for job_id in dependencies]))
             args.append("-ti")
-        logger.debug(f"Submitting job { target.name } to LSF")
+        logger.debug(f"Submitting job {target.name} to LSF")
         stdout = call("bsub", *args, input=script).strip()
         job_id = re.search(r"Job <(\d+)>", stdout)[1]
         return job_id
