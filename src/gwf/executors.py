@@ -22,12 +22,35 @@ class Executor(Protocol):
 
 @attrs.define
 class Bash:
+    """Executes a target directly with Bash.
+    
+    This is the default behavior and is basically the same as not using 
+    the executor mechanism. Specs will be run using a Bash shell which must be
+    available on the system.
+    """
+
     def get_command(self, spec_path: str, workflow_root: str) -> Iterable[str]:
         return [spec_path]
 
 
 @attrs.define
 class Conda:
+    """Executes a target in a Conda environment.
+    
+    This executor will run specs inside the Conda environment specified by 
+    `env`. The executor does not create or update Conda environments for you,
+    so the environment must already exist.
+
+    The `env` can either be the name of a Conda environment (that can be looked
+    up with `conda env list`) or a path to a Conda environment directory.
+
+    If `debug_mode` is set to true, the executor will print detailed debug info
+    when activating the environment and running the script.
+
+    Conda must be installed and available on the system path, or the 
+    `CONDA_EXE` environment variable must be point to a Conda installation.
+    """
+
     env: str = attrs.field()
     debug_mode: bool = attrs.field(default=False)
 
@@ -50,6 +73,25 @@ class Conda:
 
 @attrs.define
 class Pixi:
+    """Executes a target in a Pixi environment.
+    
+    This executor will run specs inside a Pixi environment in a given Pixi 
+    project, as specified by `project`. If `project` is not specified, it is
+    assumed that there's a Pixi project in the workflow root.
+    
+    The executor does not create or update Pixi environments for you, so the 
+    environment must already exist.
+
+    The `env` is the name of the environment to run in and defaults to 
+    `default`.
+
+    If `debug_mode` is set to true, the executor will print detailed debug info
+    when activating the environment and running the script.
+
+    Pixi must be installed and available on the system path, or the 
+    `PIXI_EXE` environment variable must be point to a Pixi installation.
+    """
+
     project: Optional[str] = attrs.field(default=None)
     env: str = attrs.field(default="default")
     debug_mode: bool = attrs.field(default=False)
@@ -76,6 +118,21 @@ class Pixi:
 
 @attrs.define
 class Singularity:
+    """Executes a target in a Singularity container.
+    
+    This executor will execute a target inside the Singularity container 
+    specified by `image`, which is the path to the image file (often `.sif`).
+    
+    The executor will execute the target with the `singularity exec` command.
+    Additional flags to `singularity exec` may be specified with the `flags`
+    argument.
+
+    If `debug_mode` is set to true, the executor will print detailed debug info
+    when activating the environment and running the script.
+
+    Singularity must be available on the system path.
+    """
+
     image: str = attrs.field()
     flags: Iterable[str] = attrs.field(factory=list)
     debug_mode: bool = attrs.field(default=False)
@@ -97,6 +154,21 @@ class Singularity:
 
 @attrs.define
 class Apptainer:
+    """Executes a target in a Apptainer container.
+    
+    This executor will execute a target inside the Apptainer container 
+    specified by `image`, which is the path to the image file (often `.sif`).
+    
+    The executor will execute the target with the `singularity exec` command.
+    Additional flags to `singularity exec` may be specified with the `flags`
+    argument.
+
+    If `debug_mode` is set to true, the executor will print detailed debug info
+    when activating the environment and running the script.
+
+    Apptainer must be available on the system path.
+    """
+
     image: str = attrs.field()
     flags: Iterable[str] = attrs.field(factory=list)
     debug_mode: bool = attrs.field(default=False)
