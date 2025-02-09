@@ -2,6 +2,111 @@
 Change Log
 ==========
 
+Version 2.1.0
+=============
+
+This is a pretty substantial release (but entirely backwards compatible).
+There's new functionality submitted by several new contributors, as well as a
+new component that enables nice runtime (as in, when a target is being run by
+the backend) features.
+
+Added
+-----
+
+* This release introduces the concept of *executors* which can be used to enable
+  runtime behavior for targets. This means that you can now use executors to
+  run your target inside Conda, Pixi, Apptainer, and Singularity environments:
+
+  .. code-block:: python
+
+    from gwf import Workflow
+    from gwf.executors import Conda
+
+    gwf = Workflow()
+
+    gwf.target("Test", inputs=[], outputs=[], executor=Conda("myenv")) << """
+    echo this will run inside the `myenv` Conda environment.
+    """
+
+  A default executor can also be specified for the workflow:
+
+  .. code-block:: python
+
+    from gwf import Workflow
+    from gwf.executors import Conda
+
+    gwf = Workflow(executor=Conda("myenv"))
+
+    gwf.target("Test", inputs=[], outputs=[]) <<< """
+    echo this will run inside the `myenv` Conda environment.
+    """
+
+  The available executors are documented :ref:`here <executors>`. By default,
+  the ``Bash`` executor is used, so nothing will change for existing workflows.
+
+  Executors are currently only available using the Slurm backend, but will be
+  implemented for other backends in the near future.
+* Writes to standard out and error inside the target run are now buffered. This
+  prevents overloading network filesystems when a program is doing bad IO, such
+  as printing a progress bar to standard error, which then has to be flushed to
+  the filesystem very often. The buffer is written at least every 10 seconds,
+  so progress indicators can still be used to check progress of a target in the
+  log file, but it will not overload the filesystem.
+
+  This functionality is also enabled by the new executor component.
+* A backend for IBM Spectrum Load Sharing Facilility (LSF) was contributed by
+  @gregoryleeman in PR #412 and #418.
+* A backend for the Portable Batch System (PBS) was contributed in PR #419, also
+  by  @gregoryleeman!
+* You can now specify a `group` for a target which enables grouping targets:
+
+  .. code-block:: python
+
+    from gwf import Workflow
+
+    gwf = Workflow()
+
+    gwf.target("UnzipPatient1", ..., group="patient1") << "..."
+    gwf.target("AnalyzePatient1", ..., group="patient1") << "..."
+    gwf.target("UnzipPatient2", ..., group="patient2") << "..."
+    gwf.target("AnalyzePatient2", ..., group="patient2") << "..."
+
+  You can then tell ``gwf status`` to group the targets:
+
+  .. code-block:: shell
+
+    $ gwf status -f grouped
+    patient1      0 shouldrun   1 submitted   0 running     0 completed   0 failed      1 cancelled
+    patient2      0 shouldrun   0 submitted   0 running     0 completed   0 failed      2 cancelled
+
+  This makes it easier to monitor large workflows. The feature was contributed
+  by @jakobjn in PR #414 and extended by @dansondergaard.
+* The ``gwf run`` and ``gwf status`` commands will now show an identifier that
+  identifies each target in the backend. Concretely, this means that Slurm job
+  id's are now easily obtainable:
+
+  .. code-block:: shell
+
+    $ gwf run SayHello
+    Submitted target SayHello (id: 53839420)
+    $ gwf status SayHello
+    - SayHello      submitted (id: 53839420)
+
+* Two new flags have been added to ``gwf run`` for controlling what is submitted.
+
+  If ``--force`` is given, *gwf* will submit the specified targets and their
+  dependencies no matter what.
+
+  If ``--no-deps`` is given, *gwf* will only submit the specified targets, but
+  not their dependencies. This can be combined with ``force`` to force submit
+  a list of targets, but not any of their dependencies.
+* Support for Python 3.13 has been added.
+
+Changed
+-------
+
+* Support for Python 3.7 has been dropped.
+
 Version 2.0.5
 =============
 
