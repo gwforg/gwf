@@ -38,3 +38,10 @@ IBM Spectrum Load Sharing Facility (LSF)
 
 .. automodule::
     gwf.backends.lsf
+
+
+Portable Batch System (PBS)
+---------------------------
+
+.. automodule::
+    gwf.backends.pbs
