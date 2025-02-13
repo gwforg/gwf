@@ -1,5 +1,9 @@
 {% set name = "gwf" %}
-{% set version = "2.1.0" %}
+
+{% set version_match = load_file_regex(
+  load_file="src/gwf/__init__.py",
+  regex_pattern='__version__ = "(.+)"') %}
+{% set version = version_match[1] %}
 
 package:
   name: "{{ name|lower }}"
