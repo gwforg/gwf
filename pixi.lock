@@ -746,7 +746,7 @@ packages:
 - pypi: .
   name: gwf
   version: 2.1.0
-  sha256: 6cbaa70811ea0f7a9366a7727193d7c605962d81462da1355dfc9ad94706ffbc
+  sha256: 06192fef5c147d1ff036d2bcb1aae4c959c2faf48df8f6c2557e1f674d2282fa
   requires_python: '>=3.8'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/h11-0.14.0-pyhd8ed1ab_1.conda
