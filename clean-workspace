@@ -1,0 +1,10 @@
+#!/bin/bash
+
+find . \( \
+    -name '.pytest_cache' -or \
+    -name '.ruff_cache' -or \
+    -name '.gwf' -or \
+    -name '__pycache__' -or \
+    -name '_build' -or \
+    -name 'gwf.egg-info' \
+\) -exec rm -rf {} +

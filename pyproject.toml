@@ -81,11 +81,12 @@ pytest-asyncio = ">=0.25.3,<0.26"
 [tool.pixi.feature.dev.tasks]
 format = "ruff format $PIXI_PROJECT_ROOT/src"
 lint = "ruff check $PIXI_PROJECT_ROOT/src"
-build = "cd $PIXI_PROJECT_ROOT/conda; conda build --output-folder . ."
-publish = "cd $PIXI_PROJECT_ROOT/conda; anaconda upload --user gwforg $(conda-build --output .)"
+clean = "clean-workspace"
 
-preview-docs = "cd $PIXI_PROJECT_ROOT/docs; sphinx-autobuild --open-browser -b dirhtml . _build/dirhtml"
-build-docs = "cd $PIXI_PROJECT_ROOT/docs; sphinx-build -b dirhtml . _build/dirhtml"
+build = { cmd = "conda build .", cwd = "conda/" }
+publish = { cmd = "anaconda --token ${ANACONDA_TOKEN_GWFORG} upload -u gwforg $(conda-build --output .)", cwd = "conda/" }
+build-docs = { cmd = "sphinx-build -b dirhtml . _build/dirhtml", cwd = "docs/" }
+preview-docs = { cmd = "sphinx-autobuild --open-browser -b dirhtml . _build/dirhtml", cwd = "docs/" }
 
 [tool.pixi.feature.test.tasks]
 test = "pytest tests/"
