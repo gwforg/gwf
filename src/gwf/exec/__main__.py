@@ -8,7 +8,7 @@ import time
 from gwf.executors import deserialize
 
 
-logger = logging.getLogger("gwf_exec")
+logger = logging.getLogger(__name__)
 
 
 async def forward(src, dst, bufsize=2**16, flush_sec=10):
@@ -30,13 +30,14 @@ async def forward(src, dst, bufsize=2**16, flush_sec=10):
                 done = True
             buf[buf_used : buf_used + len(data)] = data
             buf_used += len(data)
-        except TimeoutError:
+        except asyncio.TimeoutError:
             pass
 
         now = time.monotonic()
         if done or buf_used == bufsize or now - last_flush > flush_sec:
-            dst.write(buf[:buf_used])
-            dst.flush()
+            if buf_used:
+                dst.write(buf[:buf_used])
+                dst.flush()
             last_flush = now
             buf_used = 0
 
