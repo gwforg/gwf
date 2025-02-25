@@ -2,6 +2,25 @@
 Change Log
 ==========
 
+Version 2.1.1
+=============
+
+Fixed
+-----
+
+* The exec component would sometimes fail on Python 3.9 because it wasn't
+  catching the right exception.
+* The exec component would sometimes issue an empty write to stdout/stderr
+  which (at least in theory) could confuse the consumer of those streams.
+* Fixed syntax errors in the ``gwf run`` and ``gwf status`` commands such
+  that they now work in Python 3.8 again.
+
+
+Added
+-----
+
+* We now test correctly on all supported Python versions.
+
 Version 2.1.0
 =============
 
