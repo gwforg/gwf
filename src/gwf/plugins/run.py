@@ -50,26 +50,22 @@ def run(ctx, targets, dry_run, force, no_deps, group):
         logger.debug("Cleaning unused log files...")
         clean_logs(ctx.working_dir, graph)
 
-    with (
-        create_backend(
-            ctx.backend, working_dir=ctx.working_dir, config=ctx.config
-        ) as backend,
-        get_spec_hashes(working_dir=ctx.working_dir, config=ctx.config) as spec_hashes,
-    ):
-        filters = []
-        if targets:
-            filters.append(NameFilter(patterns=targets))
-        if group:
-            filters.append(GroupFilter(patterns=group))
+    with create_backend(ctx.backend, working_dir=ctx.working_dir, config=ctx.config) as backend:
+        with get_spec_hashes(working_dir=ctx.working_dir, config=ctx.config) as spec_hashes:
+            filters = []
+            if targets:
+                filters.append(NameFilter(patterns=targets))
+            if group:
+                filters.append(GroupFilter(patterns=group))
 
-        endpoints = set(filter_generic(targets=graph, filters=filters))
-        submit_workflow(
-            endpoints,
-            graph,
-            fs,
-            spec_hashes,
-            backend,
-            dry_run=dry_run,
-            force=force,
-            no_deps=no_deps,
-        )
+            endpoints = set(filter_generic(targets=graph, filters=filters))
+            submit_workflow(
+                endpoints,
+                graph,
+                fs,
+                spec_hashes,
+                backend,
+                dry_run=dry_run,
+                force=force,
+                no_deps=no_deps,
+            )

@@ -150,36 +150,32 @@ def status(ctx, group, status, endpoints, format, targets):
     fs = CachedFilesystem()
     graph = Graph.from_targets(workflow.targets, fs)
 
-    with (
-        create_backend(
-            ctx.backend, working_dir=ctx.working_dir, config=ctx.config
-        ) as backend,
-        get_spec_hashes(working_dir=ctx.working_dir, config=ctx.config) as spec_hashes,
-    ):
-        target_states = get_status_map(
-            graph,
-            fs,
-            spec_hashes,
-            backend,
-        )
-
-        filters = []
-        if status:
-            filters.append(
-                StatusFilter(
-                    status_provider=target_states.get,
-                    status=_status_names_to_enums(status),
-                )
+    with create_backend(ctx.backend, working_dir=ctx.working_dir, config=ctx.config) as backend:
+        with get_spec_hashes(working_dir=ctx.working_dir, config=ctx.config) as spec_hashes:
+            target_states = get_status_map(
+                graph,
+                fs,
+                spec_hashes,
+                backend,
             )
-        if targets:
-            filters.append(NameFilter(patterns=targets))
-        if endpoints:
-            filters.append(EndpointFilter(endpoints=graph.endpoints()))
-        if group:
-            filters.append(GroupFilter(patterns=group))
 
-        matches = set(filter_generic(targets=graph, filters=filters))
-        target_states = {k: v for k, v in target_states.items() if k in matches}
+            filters = []
+            if status:
+                filters.append(
+                    StatusFilter(
+                        status_provider=target_states.get,
+                        status=_status_names_to_enums(status),
+                    )
+                )
+            if targets:
+                filters.append(NameFilter(patterns=targets))
+            if endpoints:
+                filters.append(EndpointFilter(endpoints=graph.endpoints()))
+            if group:
+                filters.append(GroupFilter(patterns=group))
 
-        printer = FORMATS[format]
-        printer(target_states, backend)
+            matches = set(filter_generic(targets=graph, filters=filters))
+            target_states = {k: v for k, v in target_states.items() if k in matches}
+
+            printer = FORMATS[format]
+            printer(target_states, backend)
