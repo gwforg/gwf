@@ -150,8 +150,12 @@ def status(ctx, group, status, endpoints, format, targets):
     fs = CachedFilesystem()
     graph = Graph.from_targets(workflow.targets, fs)
 
-    with create_backend(ctx.backend, working_dir=ctx.working_dir, config=ctx.config) as backend:
-        with get_spec_hashes(working_dir=ctx.working_dir, config=ctx.config) as spec_hashes:
+    with create_backend(
+        ctx.backend, working_dir=ctx.working_dir, config=ctx.config
+    ) as backend:
+        with get_spec_hashes(
+            working_dir=ctx.working_dir, config=ctx.config
+        ) as spec_hashes:
             target_states = get_status_map(
                 graph,
                 fs,
