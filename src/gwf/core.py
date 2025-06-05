@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import os.path
+from typing import Optional
 import unicodedata
 from collections import defaultdict
 from collections.abc import Mapping
@@ -194,7 +195,7 @@ class AnonymousTarget:
     group: str = attrs.field(default=None)
     working_dir: str = attrs.field(default=".")
     protect: set = attrs.field(factory=set, converter=set)
-    executor: executors.Executor = attrs.field(factory=executors.Bash)
+    executor: Optional[executors.Executor] = attrs.field(default=None)
     spec: str = attrs.field(default="")
 
     def __attrs_post_init__(self):
