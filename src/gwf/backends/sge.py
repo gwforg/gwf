@@ -26,12 +26,12 @@ None.
 """
 
 import logging
-import os.path
 import re
 from xml.etree import ElementTree
 
 import attrs
 
+from ..log_storage import get_log_paths
 from ..utils import ensure_trailing_newline
 from .base import BackendStatus, TrackingBackend
 from .utils import call, has_exe
@@ -116,18 +116,9 @@ class SGEOps:
                 option_value = "{}{}".format(number // cores, unit)
             out.append(option_str.format(OPTION_FLAGS[option_name], option_value))
 
-        out.append(
-            option_str.format(
-                "-o ",
-                os.path.join(self.working_dir, ".gwf", "logs", target.name + ".stdout"),
-            )
-        )
-        out.append(
-            option_str.format(
-                "-e ",
-                os.path.join(self.working_dir, ".gwf", "logs", target.name + ".stderr"),
-            )
-        )
+        stdout_path, stderr_path = get_log_paths(self.working_dir, target.name)
+        out.append(option_str.format("-o ", stdout_path))
+        out.append(option_str.format("-e ", stderr_path))
 
         out.append("")
         out.append("cd {}".format(target.working_dir))

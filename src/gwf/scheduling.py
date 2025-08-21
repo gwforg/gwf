@@ -3,6 +3,7 @@ from functools import partial
 
 from .backends.base import BackendStatus
 from .core import Status
+from .log_storage import prepare_log_storage_for_target
 
 logger = logging.getLogger(__name__)
 
@@ -140,8 +141,6 @@ def submit_backend(target, dependencies, backend, spec_hashes):
     injection of option defaults.
     """
 
-    # logger.info("Submitting target %s", target)
-
     new_options = {}
     if hasattr(backend, "target_defaults"):
         new_options = dict(backend.target_defaults)
@@ -159,6 +158,7 @@ def submit_backend(target, dependencies, backend, spec_hashes):
             del new_options[option_name]
     target.options = new_options
 
+    prepare_log_storage_for_target(backend.working_dir, target.name)
     backend.submit(target, dependencies)
     spec_hashes.update(target)
 

@@ -43,8 +43,8 @@ To use this backend you must activate the `slurm` backend.
     request access to GPUs.
 """
 
+import os
 import logging
-import os.path
 import sys
 import io
 from collections import defaultdict
@@ -52,9 +52,10 @@ from contextlib import contextmanager
 
 import attrs
 
-from ..executors import serialize
 from .base import BackendStatus, TrackingBackend
 from .utils import call, has_exe
+from ..executors import serialize
+from ..log_storage import get_log_paths
 
 logger = logging.getLogger(__name__)
 
@@ -267,14 +268,9 @@ class SlurmOps:
                     OPTION_STR.format(OPTION_FLAGS[option_name], option_value), file=buf
                 )
 
-            stdout_flag = OPTION_STR.format(
-                "--output=",
-                os.path.join(self.working_dir, ".gwf", "logs", target.name + ".stdout"),
-            )
-            stderr_flag = OPTION_STR.format(
-                "--error=",
-                os.path.join(self.working_dir, ".gwf", "logs", target.name + ".stderr"),
-            )
+            stdout_path, stderr_path = get_log_paths(self.working_dir, target.name)
+            stdout_flag = OPTION_STR.format("--output=", stdout_path)
+            stderr_flag = OPTION_STR.format("--error=", stderr_path)
             devnull_flag = OPTION_STR.format("--output=", "/dev/null")
             if self.log_mode == "full":
                 print(stdout_flag, file=buf)

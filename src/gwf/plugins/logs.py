@@ -1,8 +1,7 @@
-import os.path
-
 import click
 
 from ..core import pass_context
+from ..log_storage import get_log_paths
 
 
 @click.command()
@@ -17,7 +16,6 @@ def logs(ctx, target, stderr, no_pager):
     standard error instead.
     """
     echo_func = click.echo if no_pager else click.echo_via_pager
-
-    log_name = target + (".stderr" if stderr else ".stdout")
-    log_path = os.path.join(ctx.logs_dir, log_name)
-    echo_func(open(log_path).read())
+    stdout_path, stderr_path = get_log_paths(ctx.working_dir, target)
+    log_path = stderr_path if stderr else stdout_path
+    echo_func(log_path.open(encoding="utf-8"))

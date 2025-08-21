@@ -25,6 +25,7 @@ import re
 
 import attrs
 
+from ..log_storage import get_log_paths
 from ..utils import ensure_trailing_newline
 from .base import BackendStatus, TrackingBackend
 from .utils import call, has_exe
@@ -92,12 +93,9 @@ class PBSOps:
 
     def compile_script(self, target):
         target_options = target.options
-        target_options["std_err"] = os.path.join(
-            self.working_dir, ".gwf", "logs", target.name + ".stderr"
-        )
-        target_options["std_out"] = os.path.join(
-            self.working_dir, ".gwf", "logs", target.name + ".stdout"
-        )
+        stdout_path, stderr_path = get_log_paths(self.working_dir, target.name)
+        target_options["std_err"] = stderr_path
+        target_options["std_out"] = stdout_path
         header = PBS_HEADER
         for name, value in target_options.items():
             header = header.replace(f"{{{name}}}", str(value))

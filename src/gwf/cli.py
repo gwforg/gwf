@@ -1,16 +1,17 @@
 import logging
 import os
-import os.path
 import shutil
 from pathlib import Path
 
 import click
 from click_plugins import with_plugins
 
+
 from . import __version__
 from .backends import guess_backend, list_backends
 from .conf import FileConfig
 from .core import Context
+from .log_storage import get_logs_dir, init_log_storage
 from .utils import ColorFormatter, entry_points, find_workflow
 
 logger = logging.getLogger(__name__)
@@ -156,10 +157,12 @@ def main(ctx, file, backend, verbose, no_color):
         init(working_dir)
 
     # Instantiate workflow config directory.
-    working_dir.joinpath(".gwf").mkdir(exist_ok=True)
-    working_dir.joinpath(".gwf", "logs").mkdir(exist_ok=True)
+    config_dir = working_dir.joinpath(".gwf")
+    config_dir.mkdir(exist_ok=True)
 
-    config = FileConfig.load(working_dir.joinpath(".gwfconf.json"))
+    config = FileConfig.load(config_dir.joinpath(".gwfconf.json"))
+
+    init_log_storage(working_dir)
 
     # If the --use-color/--no-color argument is not set, get a value from the
     # configuration file. If nothing has been configured, check if the NO_COLOR

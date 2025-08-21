@@ -4,12 +4,14 @@ import pytest
 import pytest_asyncio
 
 from gwf.backends.local import Client, LocalStatus, Scheduler
+from gwf.log_storage import init_log_storage, prepare_log_storage_for_target
 
 
 @pytest_asyncio.fixture
 async def s(tmp_path):
     tmp_path.joinpath(".gwf").mkdir()
-    tmp_path.joinpath(".gwf", "logs").mkdir()
+    init_log_storage(tmp_path)
+    prepare_log_storage_for_target(tmp_path, "foo")
     return Scheduler(working_dir=tmp_path, max_cores=1)
 
 
@@ -113,7 +115,9 @@ async def test_cancelled_task_with_dependents(s):
 async def test_task_writes_log_file(s):
     tid = await s.enqueue_task("foo", "echo hello world", ".", None, set())
     await s.wait_for({tid})
-    contents = s.working_dir.joinpath(".gwf", "logs", "foo.stdout").read_text()
+    contents = s.working_dir.joinpath(
+        ".gwf", "logs", "2", "c", "foo.stdout"
+    ).read_text()
     assert contents == "hello world\n"
 
 

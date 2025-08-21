@@ -51,6 +51,7 @@ from typing import Generator
 
 import attrs
 
+from ..log_storage import get_log_paths
 from .base import BackendStatus, TrackingBackend
 from .exceptions import BackendError
 
@@ -333,13 +334,10 @@ class Scheduler:
                 )
                 logger.debug("writing log files")
                 # TODO: This should be made streaming..
-                with open(
-                    self.working_dir.joinpath(".gwf", "logs", f"{name}.stdout"), "wb"
-                ) as log_file:
+                stdout_path, stderr_path = get_log_paths(self.working_dir, name)
+                with open(stdout_path, "wb") as log_file:
                     log_file.write(stdout)
-                with open(
-                    self.working_dir.joinpath(".gwf", "logs", f"{name}.stderr"), "wb"
-                ) as log_file:
+                with open(stderr_path, "wb") as log_file:
                     log_file.write(stderr)
                 logger.debug("wrote log files")
             except asyncio.TimeoutError:
