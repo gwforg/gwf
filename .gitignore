@@ -1,4 +1,5 @@
 __pycache__/
+.nox
 _build/
 .cache
 .coverage*
