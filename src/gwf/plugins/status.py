@@ -25,6 +25,7 @@ _STATUS_VISUALS = {
     Status.COMPLETED: ("green", "✓"),
     Status.FAILED: ("red", "⨯"),
     Status.CANCELLED: ("red", "⨯"),
+    Status.SKIPPED: ("red", "⨯"),
 }
 
 _STATUS_NAMES = [s.name.lower() for s in Status]

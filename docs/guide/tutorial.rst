@@ -684,6 +684,70 @@ You can protect output files from being cleaned up:
 
 Now, when running ``gwf clean``, the file ``d`` will not be deleted.
 
+Automatically Load Software Environments
+========================================
+
+.. note::
+
+   Executors are currently only available for the Slurm backend. Setting an 
+   executor for other backends will not have any effect. Other backends will
+   be supported in the near future.
+
+Executors are used to enable runtime behavior for targets. This means that you
+can  use executors to run your target inside Conda, Pixi, Apptainer, and
+Singularity environments:
+
+.. code-block:: python
+
+   from gwf import Workflow
+   from gwf.executors import Conda
+
+   gwf = Workflow()
+
+   gwf.target("Test", inputs=[], outputs=[], executor=Conda("myenv")) <<< """
+   echo this will run inside the `myenv` Conda environment.
+   """
+
+A default executor can also be specified for the workflow:
+
+.. code-block:: python
+
+   from gwf import Workflow
+   from gwf.executors import Conda
+
+   gwf = Workflow(executor=Conda("myenv"))
+
+   gwf.target("Test", inputs=[], outputs=[]) <<< """
+   echo this will run inside the `myenv` Conda environment.
+   """
+
+You can read more about the available executors and how they can be configured
+:ref:`here <executors>`.
+
+Partial Workflow Execution
+==========================
+
+Since version 2.2, gwf allows missing input files that are not provided
+by another target, and will simply skip targets with such input files (older 
+versions would error in such a situation).
+
+In practice this means that you can have workflows that are partially executed,
+depending on what input files are available. For example:
+
+.. code-block:: python
+
+    gwf.target("AnalyzeBlood", inputs=["blood.txt"], outputs=["levels.txt"]) << "..."
+    gwf.target("SummarizeLevels", inputs=["levels.txt"], outputs=["summary.txt"]) << "..."
+    gwf.target("AnalyzeGenome", inputs=["genome.fa", "reference.fa"], outputs=["mutations.txt"]) << "..."
+    gwf.target("BuildReport", inputs=["mutations.txt", "levels.txt"], outputs=["report.pdf"]) << "..."
+
+If ``blood.txt`` exists, but ``genome.fa`` is not available yet, only
+``AnalyzeBlood`` and its dependents (``SummarizeLevels``) will be scheduled. The
+rest of the workflow will be skipped (the targets will have ``skipped`` status
+in the ``gwf status`` output). If at some point ``genome.fa`` becomes available
+and the workflow is run, ``AnalyzeGenome`` and ``BuiltReport`` will also be
+executed.
+
 A Note About Reproducibility
 ============================
 

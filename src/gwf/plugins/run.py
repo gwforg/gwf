@@ -17,11 +17,7 @@ logger = logging.getLogger(__name__)
 @click.option("-d", "--dry-run", is_flag=True, default=False)
 @click.option("-f", "--force", is_flag=True, default=False)
 @click.option("-n", "--no-deps", is_flag=True, default=False)
-@click.option(
-    "-g",
-    "--group",
-    multiple=True,
-)
+@click.option("-g", "--group", multiple=True)
 @pass_context
 def run(ctx, targets, dry_run, force, no_deps, group):
     """Run the specified workflow."""

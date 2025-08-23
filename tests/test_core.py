@@ -356,19 +356,6 @@ def test_do_not_schedule_if_all_outputs_are_newer_then_the_inputs(backend, files
     assert target_states[target] == Status.COMPLETED
 
 
-def test_graph_raises_if_input_file_is_not_provided_and_does_not_exist(filesystem):
-    target = Target(
-        "TestTarget",
-        inputs=["in.txt"],
-        outputs=["out.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-
-    with pytest.raises(UnresolvedInputError):
-        Graph.from_targets([target], filesystem)
-
-
 def test_scheduling_target_with_deep_deps_that_are_not_submitted(filesystem, backend):
     target1 = Target(
         "TestTarget1",

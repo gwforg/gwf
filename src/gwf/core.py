@@ -162,6 +162,7 @@ class Status(Enum):
     COMPLETED = 3  #: The target has completed and should not run.
     FAILED = 4  #: The target failed and should run again.
     CANCELLED = 5  #: The target or one of its dependencies was cancelled.
+    SKIPPED = 6  #: The target has been skipped due to missing input files.
 
 
 @attrs.define(eq=False)
@@ -440,17 +441,6 @@ class Graph:
         for target, deps in dependencies.items():
             for dep in deps:
                 dependents[dep].add(target)
-
-        # Check whether all input files actually exist or are being provided
-        # by another target. If not, it's an error.
-        for target in targets:
-            for path in target.flattened_inputs():
-                if path in unresolved and not fs.exists(path):
-                    msg = (
-                        'File "{}" is required by "{}", but does not exist and is not '
-                        "provided by any target in the workflow."
-                    ).format(path, target)
-                    raise UnresolvedInputError(msg)
 
         targets = {target.name: target for target in targets}
         check_for_circular_dependencies(targets, dependencies)

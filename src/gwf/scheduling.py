@@ -2,7 +2,7 @@ import logging
 from functools import partial
 
 from .backends.base import BackendStatus
-from .core import Status
+from .core import Status, UnresolvedInputError
 from .log_storage import prepare_log_storage_for_target
 
 logger = logging.getLogger(__name__)
@@ -65,17 +65,27 @@ def schedule(
 ):
     def _schedule(target):
         submitted_deps = []
+        skipped_deps = False
 
         if not no_deps:
             for dep in sorted(graph.dependencies[target], key=lambda t: t.name):
                 status = _cached_schedule(dep)
                 if status in SUBMITTED_STATES:
                     submitted_deps.append(dep)
+                if status == Status.SKIPPED:
+                    skipped_deps = True
 
         if force:
             logger.debug("Target %s is being forcibly submitted", target)
             submit_func(target, dependencies=submitted_deps)
             return Status.SHOULDRUN
+
+        if skipped_deps:
+            return Status.SKIPPED
+
+        for path in target.flattened_inputs():
+            if not fs.exists(path) and path in graph.unresolved:
+                return Status.SKIPPED
 
         if status_func(target) == BackendStatus.SUBMITTED:
             logger.debug("Target %s is already submitted", target)
