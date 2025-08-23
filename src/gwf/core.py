@@ -55,6 +55,7 @@ class InvalidPathError(GWFError):
 
 
 def _check_path(path):
+    path = os.fspath(path)
     if not path:
         raise InvalidPathError("Path is empty")
 
