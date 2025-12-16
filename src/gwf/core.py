@@ -313,6 +313,52 @@ class Target:
         return set(_norm_paths(self.working_dir, _flatten(self.protect)))
 
 
+@attrs.define(eq=False)
+class Module:
+    """A logical grouping of targets for completion tracking."""
+
+    name: str = attrs.field()
+    targets: list = attrs.field()
+
+    @name.validator
+    def _validate_name(self, attribute, value):
+        if not is_valid_name(self.name):
+            raise GWFError(f"Module defined with invalid name: {value}")
+
+    def _iter_targets(self):
+        return (
+            self.targets.values() if isinstance(self.targets, Mapping) else self.targets
+        )
+
+    def is_complete(self, fs) -> bool:
+        """Module is complete when all non-temp outputs exist."""
+        return all(fs.exists(path) for path in self.flattened_outputs())
+
+    def all_targets(self) -> list:
+        """Recursively collect all non-Module targets."""
+        result = []
+        for target in self._iter_targets():
+            if isinstance(target, Module):
+                result.extend(target.all_targets())
+            else:
+                result.append(target)
+        return result
+
+    def flattened_outputs(self):
+        """All non-temp outputs from inner targets (recursive, normalized)."""
+        outputs = []
+        for target in self._iter_targets():
+            if isinstance(target, Module):
+                outputs.extend(target.flattened_outputs())
+            else:
+                non_temp = _flatten(target.outputs, _ignore_temp_paths=True)
+                outputs.extend(_norm_paths(target.working_dir, non_temp))
+        return outputs
+
+    def __str__(self):
+        return self.name
+
+
 class CircularDependencyError(GWFError):
     pass
 
@@ -348,6 +394,27 @@ def check_for_circular_dependencies(targets, dependencies):
     for node in nodes:
         if state[node] == fresh:
             visitor(node)
+
+
+def _targets_are_identical(target1: Target, target2: Target) -> bool:
+    """Check if two targets are identical (same spec, inputs, outputs).
+
+    Used to allow duplicate targets between subworkflows when they are identical.
+    """
+    if target1.spec != target2.spec:
+        return False
+
+    inputs1 = set(target1.flattened_inputs())
+    inputs2 = set(target2.flattened_inputs())
+    if inputs1 != inputs2:
+        return False
+
+    outputs1 = set(target1.flattened_outputs())
+    outputs2 = set(target2.flattened_outputs())
+    if outputs1 != outputs2:
+        return False
+
+    return True
 
 
 @attrs.define
@@ -393,6 +460,8 @@ class Graph:
     dependencies: defaultdict = attrs.field()
     dependents: defaultdict = attrs.field()
     unresolved: set = attrs.field()
+    modules: dict = attrs.field(factory=dict)
+    target_modules: dict = attrs.field(factory=dict)
 
     @classmethod
     def from_targets(cls, targets, fs):
@@ -413,11 +482,32 @@ class Graph:
         unresolved = set()
         dependencies = defaultdict(set)
         dependents = defaultdict(set)
+        modules = {}
+        target_modules = defaultdict(set)
+        all_targets = {}
 
-        logger.debug("Building dependency graph from %d targets", len(targets))
+        def _collect(items, parent_modules=None):
+            if parent_modules is None:
+                parent_modules = set()
 
-        if isinstance(targets, dict):
-            targets = targets.values()
+            for target in items.values() if isinstance(items, Mapping) else items:
+                if isinstance(target, Module):
+                    modules[target.name] = target
+                    _collect(target.targets, parent_modules | {target.name})
+                else:
+                    if target.name in all_targets and not _targets_are_identical(
+                        all_targets[target.name], target
+                    ):
+                        raise GWFError(
+                            f'Target "{target.name}" defined multiple times with differing specs, inputs and/or outputs.'
+                        )
+                    all_targets[target.name] = target
+                    if parent_modules:
+                        target_modules[target.name].update(parent_modules)
+
+        _collect(targets)
+
+        targets = list(all_targets.values())
 
         with timer("Built dependency graph in %.3fms", logger=logger):
             for target in targets:
@@ -460,7 +550,14 @@ class Graph:
             dependencies=dependencies,
             dependents=dependents,
             unresolved=unresolved,
+            modules=modules,
+            target_modules=dict(target_modules),
         )
+
+    def get_modules(self, target) -> list:
+        """Get all modules a target belongs to."""
+        module_names = self.target_modules.get(target.name, set())
+        return [self.modules[name] for name in module_names]
 
     def endpoints(self):
         """Return a set of all targets that are not depended on by other targets."""

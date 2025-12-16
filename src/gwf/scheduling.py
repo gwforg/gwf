@@ -16,9 +16,19 @@ SUBMITTED_STATES = (
 )
 
 
-def should_run(target, fs, spec_hashes):
-    new_hash = spec_hashes.has_changed(target)
-    if new_hash is not None:
+def should_run(target, fs, spec_hashes, graph=None, respect_modules=True):
+    if respect_modules and graph and (parent_modules := graph.get_modules(target)):
+        if all(module.is_complete(fs) for module in parent_modules):
+            logger.debug(
+                "Target %s skipped - all parent modules complete: %s",
+                target,
+                [m.name for m in parent_modules],
+            )
+            return False
+        incomplete = [m.name for m in parent_modules if not m.is_complete(fs)]
+        logger.debug("Target %s needed by incomplete modules: %s", target, incomplete)
+
+    if spec_hashes.has_changed(target) is not None:
         logger.debug("Target %s has a changed spec", target)
         return True
 
@@ -61,6 +71,7 @@ def schedule(
     submit_func,
     force=False,
     no_deps=False,
+    respect_modules=True,
 ):
     def _schedule(target):
         submitted_deps = []
@@ -101,7 +112,9 @@ def schedule(
             submit_func(target, dependencies=submitted_deps)
             return Status.SHOULDRUN
 
-        if should_run(target, fs, spec_hashes):
+        if should_run(
+            target, fs, spec_hashes, graph=graph, respect_modules=respect_modules
+        ):
             submit_func(target, dependencies=submitted_deps)
             return Status.SHOULDRUN
 
@@ -200,7 +213,9 @@ def submit_workflow(
     )
 
 
-def get_status_map(graph, fs, spec_hashes, backend, endpoints=None):
+def get_status_map(
+    graph, fs, spec_hashes, backend, endpoints=None, respect_modules=True
+):
     """Get the status of each targets in the graph."""
     submit_func = partial(_submit_noop, backend=backend, spec_hashes=spec_hashes)
     return schedule(
@@ -210,4 +225,5 @@ def get_status_map(graph, fs, spec_hashes, backend, endpoints=None):
         spec_hashes,
         status_func=backend.status,
         submit_func=submit_func,
+        respect_modules=respect_modules,
     )

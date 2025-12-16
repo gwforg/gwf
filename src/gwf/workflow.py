@@ -14,7 +14,7 @@ import attrs
 
 from .executors import Bash
 
-from .core import Target
+from .core import Module, Target
 from .exceptions import WorkflowError
 from .utils import chain, find_workflow, load_workflow
 from gwf import executors
@@ -275,6 +275,26 @@ class Workflow:
         )
         self._add_target(new_target)
         return new_target
+
+    def module(self, name, targets):
+        """Create a module and add it to the :class:`gwf.Workflow`.
+
+        :param str name: Name of the module.
+        """
+        new_module = Module(
+            name=name,
+            targets=targets,
+        )
+        self._add_target(new_module)
+        return new_module
+
+    def module_from_workflow(self, name, workflow):
+        new_module = Module(
+            name=name,
+            targets=workflow.targets.values(),
+        )
+        self._add_target(new_module)
+        return new_module
 
     def map(self, template_func, inputs, extra=None, name=None, **kwargs):
         """Add targets to the workflow given a template and a list of inputs.
