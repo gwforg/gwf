@@ -54,6 +54,10 @@ class Conda:
     env: str = attrs.field()
     debug_mode: bool = attrs.field(default=False)
 
+    @property
+    def is_path(self) -> bool:
+        return "/" in self.env or "\\" in self.env
+
     def get_command(self, spec_path: str, workflow_root: str) -> Iterable[str]:
         debug_flags = ["--debug-wrapper-scripts", "-vvv"] if self.debug_mode else []
         conda_exe = (
@@ -70,7 +74,7 @@ class Conda:
             "run",
             "--live-stream",
             *debug_flags,
-            "-n",
+            "-p" if self.is_path else "-n",
             self.env,
             spec_path,
         ]
