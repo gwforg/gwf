@@ -56,7 +56,12 @@ class Conda:
 
     def get_command(self, spec_path: str, workflow_root: str) -> Iterable[str]:
         debug_flags = ["--debug-wrapper-scripts", "-vvv"] if self.debug_mode else []
-        conda_exe = os.environ.get("CONDA_EXE", shutil.which("conda"))
+        conda_exe = (
+            os.environ.get("MAMBA_EXE")
+            or shutil.which("mamba")
+            or os.environ.get("CONDA_EXE")
+            or shutil.which("conda")
+        )
         if conda_exe is None:
             raise GWFError("Could not find conda installation")
         logger.debug("found conda executable at %s", conda_exe)
