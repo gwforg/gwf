@@ -48,14 +48,14 @@ class FakeSpecHashes:
     hashes: dict = attrs.field(factory=dict)
 
     def has_changed(self, target):
-        spec_hash = hash_spec(target.spec)
+        spec_hash = target.override_spec_hash or hash_spec(target.spec)
         saved_hash = self.hashes.get(target)
         if saved_hash is None or spec_hash != saved_hash:
             return spec_hash
         return None
 
     def update(self, target):
-        self.hashes[target] = hash_spec(target.spec)
+        self.hashes[target] = target.override_spec_hash or hash_spec(target.spec)
 
     def invalidate(self, target):
         del self.hashes[target]

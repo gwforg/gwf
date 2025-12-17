@@ -1387,3 +1387,46 @@ def test_scheduling_respects_modules_false(filesystem, backend):
         respect_modules=False,
     )
     assert target_states[target1] == Status.SHOULDRUN
+
+
+def test_override_spec_hashes(backend, spec_hashes, filesystem):
+    filesystem.add_file("/some/dir/input.txt", changed_at=1)
+    filesystem.add_file("/some/dir/output.txt", changed_at=2)
+
+    target = Target(
+        "TestTarget",
+        inputs=["input.txt"],
+        outputs=["output.txt"],
+        options={},
+        working_dir="/some/dir",
+        spec="foo",
+    )
+    graph = Graph.from_targets([target], filesystem)
+
+    target_states = get_status_map(
+        graph=graph,
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=spec_hashes,
+    )
+    assert target_states[target] == Status.SHOULDRUN
+
+    spec_hashes.update(target)
+
+    target_states = get_status_map(
+        graph=graph,
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=spec_hashes,
+    )
+    assert target_states[target] == Status.COMPLETED
+
+    target.override_spec_hash = "manual_override"
+
+    target_states = get_status_map(
+        graph=graph,
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=spec_hashes,
+    )
+    assert target_states[target] == Status.SHOULDRUN

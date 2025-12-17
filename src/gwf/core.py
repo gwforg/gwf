@@ -127,7 +127,7 @@ class FileSpecHashes:
             logger.debug("First run with spec hashes enabled")
 
     def has_changed(self, target):
-        spec_hash = hash_spec(target.spec)
+        spec_hash = target.override_spec_hash or hash_spec(target.spec)
         saved_hash = self.hashes.get(target.name)
         if saved_hash is None:
             logger.debug("No spec hash for %s exists", target)
@@ -137,7 +137,7 @@ class FileSpecHashes:
         return None
 
     def update(self, target):
-        self.hashes[target.name] = hash_spec(target.spec)
+        self.hashes[target.name] = target.override_spec_hash or hash_spec(target.spec)
 
     def invalidate(self, target):
         try:
