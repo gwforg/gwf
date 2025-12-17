@@ -17,19 +17,10 @@ import click
 
 from . import executors
 from .exceptions import GWFError
+from .temp import temp, is_temp
 from .utils import is_valid_name, timer
 
 logger = logging.getLogger(__name__)
-
-
-def temp(path: str | Path) -> str | Path:
-    """Mark a path as temporary.
-
-    Temporary paths are ignored when checking whether a module is complete
-    (all outputs exist).
-    """
-    setattr(path, "_is_temp_path", True)
-    return path
 
 
 def _flatten(t):
@@ -79,7 +70,7 @@ def _check_path(path):
 
 
 def _norm_path(working_dir, path):
-    is_temp = getattr(path, "_is_temp_path", False)
+    _is_temp = is_temp(path)
 
     if isinstance(path, Path):
         if not path.is_absolute():
@@ -89,8 +80,8 @@ def _norm_path(working_dir, path):
         if not os.path.isabs(path):
             path = os.path.abspath(os.path.join(working_dir, path))
 
-    if is_temp:
-        temp(path)
+    if _is_temp:
+        return temp(path)
     return path
 
 
@@ -379,11 +370,11 @@ class Module:
 
     def flattened_non_temp_outputs(self):
         outputs = self.flattened_outputs()
-        return [p for p in outputs if not getattr(p, "_is_temp_path", False)]
+        return [p for p in outputs if not is_temp(p)]
 
     def flattened_temp_outputs(self):
         outputs = self.flattened_outputs()
-        return [p for p in outputs if getattr(p, "_is_temp_path", False)]
+        return [p for p in outputs if is_temp(p)]
 
     def __str__(self):
         return self.name
