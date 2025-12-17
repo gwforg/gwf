@@ -11,11 +11,13 @@ from gwf.core import (
     NoopSpecHashes,
     Status,
     Target,
+    TempFileUsedOutsideModuleError,
     UnresolvedInputError,
     _flatten,
 )
 from gwf.exceptions import GWFError
 from gwf.scheduling import get_status_map
+from gwf.temp import _clear_temp_registry, is_temp, temp
 
 
 @pytest.mark.parametrize(
@@ -184,6 +186,472 @@ class TestModule(unittest.TestCase):
         assert target1 in all_targets
         assert target2 in all_targets
         assert len(all_targets) == 2
+
+
+class TestTempFunction:
+    def test_temp_marks_path_as_temporary(self):
+        path = "some/path.txt"
+        result = temp(path)
+
+        assert result is path
+        assert is_temp(result) is True
+
+        _clear_temp_registry()
+
+    def test_regular_path_is_not_temp(self):
+        path = "some/path.txt"
+
+        assert is_temp(path) is False
+
+        _clear_temp_registry()
+
+
+class TestTempFileBoundaryValidation:
+    def test_temp_chain_within_module_allowed(self, filesystem):
+        step1 = Target(
+            name="Step1",
+            inputs=[],
+            outputs=[temp("temp1.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        step2 = Target(
+            name="Step2",
+            inputs=["temp1.txt"],
+            outputs=[temp("temp2.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        step3 = Target(
+            name="Step3",
+            inputs=["temp2.txt"],
+            outputs=["final.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        module = Module(name="Pipeline", targets=[step1, step2, step3])
+
+        graph = Graph.from_targets([module], filesystem)
+        assert len(graph.targets) == 3
+
+        _clear_temp_registry()
+
+    def test_multiple_consumers_same_temp_within_module_allowed(self, filesystem):
+        producer = Target(
+            name="Producer",
+            inputs=[],
+            outputs=[temp("shared_temp.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        consumer1 = Target(
+            name="Consumer1",
+            inputs=["shared_temp.txt"],
+            outputs=["output1.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        consumer2 = Target(
+            name="Consumer2",
+            inputs=["shared_temp.txt"],
+            outputs=["output2.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        module = Module(name="TestModule", targets=[producer, consumer1, consumer2])
+
+        graph = Graph.from_targets([module], filesystem)
+        assert len(graph.targets) == 3
+
+        _clear_temp_registry()
+
+    def test_multiple_consumers_one_outside_module_raises(self, filesystem):
+        producer = Target(
+            name="Producer",
+            inputs=[],
+            outputs=[temp("shared_temp.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        consumer_inside = Target(
+            name="ConsumerInside",
+            inputs=["shared_temp.txt"],
+            outputs=["output1.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        module = Module(name="TestModule", targets=[producer, consumer_inside])
+
+        consumer_outside = Target(
+            name="ConsumerOutside",
+            inputs=["shared_temp.txt"],
+            outputs=["output2.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+
+        with pytest.raises(TempFileUsedOutsideModuleError):
+            Graph.from_targets([module, consumer_outside], filesystem)
+
+        _clear_temp_registry()
+
+    def test_diamond_dependency_with_temp_in_module_allowed(self, filesystem):
+        root = Target(
+            name="Root",
+            inputs=[],
+            outputs=[temp("root_out.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        left = Target(
+            name="Left",
+            inputs=["root_out.txt"],
+            outputs=[temp("left_out.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        right = Target(
+            name="Right",
+            inputs=["root_out.txt"],
+            outputs=[temp("right_out.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        join = Target(
+            name="Join",
+            inputs=["left_out.txt", "right_out.txt"],
+            outputs=["final.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        module = Module(name="Diamond", targets=[root, left, right, join])
+
+        graph = Graph.from_targets([module], filesystem)
+        assert len(graph.targets) == 4
+
+        _clear_temp_registry()
+
+    def test_producer_in_inner_module_consumer_in_outer_allowed(self, filesystem):
+        producer = Target(
+            name="Producer",
+            inputs=[],
+            outputs=[temp("intermediate.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        inner_module = Module(name="InnerModule", targets=[producer])
+
+        consumer = Target(
+            name="Consumer",
+            inputs=["intermediate.txt"],
+            outputs=["final.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        outer_module = Module(name="OuterModule", targets=[inner_module, consumer])
+
+        graph = Graph.from_targets([outer_module], filesystem)
+        assert len(graph.targets) == 2
+
+        _clear_temp_registry()
+
+    def test_deeply_nested_modules_temp_allowed(self, filesystem):
+        producer = Target(
+            name="Producer",
+            inputs=[],
+            outputs=[temp("deep_temp.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        consumer = Target(
+            name="Consumer",
+            inputs=["deep_temp.txt"],
+            outputs=["final.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+
+        level3 = Module(name="Level3", targets=[consumer])
+        level2 = Module(name="Level2", targets=[level3])
+        level1 = Module(name="Level1", targets=[producer, level2])
+
+        graph = Graph.from_targets([level1], filesystem)
+        assert len(graph.targets) == 2
+
+        _clear_temp_registry()
+
+    def test_separate_branches_under_parent_allowed(self, filesystem):
+        producer = Target(
+            name="Producer",
+            inputs=[],
+            outputs=[temp("branch_temp.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        branch_a = Module(name="BranchA", targets=[producer])
+
+        consumer = Target(
+            name="Consumer",
+            inputs=["branch_temp.txt"],
+            outputs=["final.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        branch_b = Module(name="BranchB", targets=[consumer])
+
+        parent = Module(name="Parent", targets=[branch_a, branch_b])
+
+        graph = Graph.from_targets([parent], filesystem)
+        assert len(graph.targets) == 2
+
+        _clear_temp_registry()
+
+    def test_multiple_temp_files_mixed_validity(self, filesystem):
+        producer1 = Target(
+            name="Producer1",
+            inputs=[],
+            outputs=[temp("temp1.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        consumer1 = Target(
+            name="Consumer1",
+            inputs=["temp1.txt"],
+            outputs=["out1.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        module_a = Module(name="ModuleA", targets=[producer1, consumer1])
+
+        producer2 = Target(
+            name="Producer2",
+            inputs=[],
+            outputs=[temp("temp2.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        module_b = Module(name="ModuleB", targets=[producer2])
+
+        consumer2 = Target(
+            name="Consumer2",
+            inputs=["temp2.txt"],
+            outputs=["out2.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+
+        with pytest.raises(TempFileUsedOutsideModuleError):
+            Graph.from_targets([module_a, module_b, consumer2], filesystem)
+
+        _clear_temp_registry()
+
+    def test_global_temp_global_consumer_not_allowed(self, filesystem):
+        producer = Target(
+            name="Producer",
+            inputs=[],
+            outputs=[temp("global_temp.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        consumer = Target(
+            name="Consumer",
+            inputs=["global_temp.txt"],
+            outputs=["final.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+
+        with pytest.raises(TempFileUsedOutsideModuleError):
+            Graph.from_targets([producer, consumer], filesystem)
+
+        _clear_temp_registry()
+
+    def test_temp_with_different_working_dirs(self, filesystem):
+        producer = Target(
+            name="Producer",
+            inputs=[],
+            outputs=[temp("output.txt")],
+            options={},
+            working_dir="/dir_a",
+        )
+        module = Module(name="TestModule", targets=[producer])
+
+        consumer = Target(
+            name="Consumer",
+            inputs=["output.txt"],
+            outputs=["final.txt"],
+            options={},
+            working_dir="/dir_b",
+        )
+        consumer_module = Module(name="ConsumerModule", targets=[consumer])
+
+        filesystem.add_file("/dir_b/output.txt", changed_at=1)
+
+        graph = Graph.from_targets([module, consumer_module], filesystem)
+        assert len(graph.targets) == 2
+
+        _clear_temp_registry()
+
+    def test_empty_module_no_error(self, filesystem):
+        empty_module = Module(name="EmptyModule", targets=[])
+        producer = Target(
+            name="Producer",
+            inputs=[],
+            outputs=[temp("temp.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        consumer = Target(
+            name="Consumer",
+            inputs=["temp.txt"],
+            outputs=["final.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        # Temp files must be in a module
+        work_module = Module(name="WorkModule", targets=[producer, consumer])
+
+        graph = Graph.from_targets([empty_module, work_module], filesystem)
+        assert len(graph.targets) == 2
+
+        _clear_temp_registry()
+
+    def test_only_regular_files_no_validation_needed(self, filesystem):
+        producer = Target(
+            name="Producer",
+            inputs=[],
+            outputs=["regular.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        module_a = Module(name="ModuleA", targets=[producer])
+
+        consumer = Target(
+            name="Consumer",
+            inputs=["regular.txt"],
+            outputs=["final.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        module_b = Module(name="ModuleB", targets=[consumer])
+
+        graph = Graph.from_targets([module_a, module_b], filesystem)
+        assert len(graph.targets) == 2
+
+        _clear_temp_registry()
+
+    def test_consumer_module_has_own_producer_allowed(self, filesystem):
+        global_producer = Target(
+            name="GlobalProducer",
+            inputs=[],
+            outputs=[temp("shared_temp.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+
+        module_producer = Target(
+            name="GlobalProducer",
+            inputs=[],
+            outputs=[temp("shared_temp.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        consumer = Target(
+            name="Consumer",
+            inputs=["shared_temp.txt"],
+            outputs=["final.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        module = Module(name="TestModule", targets=[module_producer, consumer])
+
+        graph = Graph.from_targets([global_producer, module], filesystem)
+        assert len(graph.targets) == 2
+
+        _clear_temp_registry()
+
+    def test_temp_file_module_to_global_raises(self, filesystem):
+        producer = Target(
+            name="Producer",
+            inputs=[],
+            outputs=[temp("module_temp.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        module = Module(name="TestModule", targets=[producer])
+
+        consumer = Target(
+            name="Consumer",
+            inputs=["module_temp.txt"],
+            outputs=["final.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+
+        with pytest.raises(TempFileUsedOutsideModuleError):
+            Graph.from_targets([module, consumer], filesystem)
+
+        _clear_temp_registry()
+
+    def test_global_producer_temp_not_allowed(self, filesystem):
+        producer = Target(
+            name="Producer",
+            inputs=[],
+            outputs=[temp("global_temp.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+
+        with pytest.raises(TempFileUsedOutsideModuleError):
+            Graph.from_targets([producer], filesystem)
+
+        _clear_temp_registry()
+
+    def test_complex_workflow_with_multiple_modules_and_temps(self, filesystem):
+        a_step1 = Target(
+            name="A_Step1",
+            inputs=[],
+            outputs=[temp("a_temp1.txt"), "a_output1.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        a_step2 = Target(
+            name="A_Step2",
+            inputs=["a_temp1.txt"],
+            outputs=["a_final.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        module_a = Module(name="ModuleA", targets=[a_step1, a_step2])
+
+        b_step1 = Target(
+            name="B_Step1",
+            inputs=["a_output1.txt"],
+            outputs=[temp("b_temp.txt")],
+            options={},
+            working_dir="/some/dir",
+        )
+        b_step2 = Target(
+            name="B_Step2",
+            inputs=["b_temp.txt"],
+            outputs=["b_final.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+        module_b = Module(name="ModuleB", targets=[b_step1, b_step2])
+
+        final = Target(
+            name="Final",
+            inputs=["a_final.txt", "b_final.txt"],
+            outputs=["workflow_complete.txt"],
+            options={},
+            working_dir="/some/dir",
+        )
+
+        graph = Graph.from_targets([module_a, module_b, final], filesystem)
+        assert len(graph.targets) == 5
+
+        _clear_temp_registry()
 
 
 def test_module_is_complete(filesystem):

@@ -392,6 +392,10 @@ class UnresolvedInputError(GWFError):
     pass
 
 
+class TempFileUsedOutsideModuleError(GWFError):
+    pass
+
+
 @timer("Checked for circular dependencies in %.3fms", logger=logger)
 def check_for_circular_dependencies(targets, dependencies):
     logger.debug("Checking for circular dependencies")
@@ -415,6 +419,64 @@ def check_for_circular_dependencies(targets, dependencies):
     for node in nodes:
         if state[node] == fresh:
             visitor(node)
+
+
+@timer("Validated temp file module boundaries in %.3fms", logger=logger)
+def validate_temp_file_boundaries(targets, provides, target_modules):
+    temp_output_paths = set()
+    temp_path_modules = defaultdict(set)
+    for path, producer in provides.items():
+        if is_temp(path):
+            temp_output_paths.add(path)
+            producer_modules = target_modules.get(producer.name, set())
+
+            # Temp files must be produced within a module
+            if not producer_modules:
+                raise TempFileUsedOutsideModuleError(
+                    f'Temp file "{path}" is produced by target "{producer.name}" '
+                    f"at global level. Temp files must be produced within a module."
+                )
+
+            temp_path_modules[path].update(producer_modules)
+
+    for target in targets:
+        consumer_modules = target_modules.get(target.name, set())
+
+        for input_path in target.flattened_inputs():
+            if input_path not in provides:
+                continue
+
+            if input_path not in temp_output_paths:
+                continue
+
+            producer = provides[input_path]
+            producer_modules = target_modules.get(producer.name, set())
+
+            # Consumer must be in at least one module to use temp files
+            if not consumer_modules:
+                raise TempFileUsedOutsideModuleError(
+                    f'Temp file "{input_path}" produced by target "{producer.name}" '
+                    f'(in module(s): {", ".join(sorted(producer_modules))}) '
+                    f'is used by target "{target.name}" at global level. '
+                    f"Temp files can only be consumed by targets within a module."
+                )
+
+            # Share at least one module
+            if consumer_modules & producer_modules:
+                continue
+
+            # Consumer's modules have their own producer for this path
+            if consumer_modules & temp_path_modules[input_path]:
+                continue
+
+            module_names = ", ".join(sorted(producer_modules))
+            raise TempFileUsedOutsideModuleError(
+                f'Temp file "{input_path}" produced by target "{producer.name}" '
+                f'(in module(s): {module_names}) is used by target "{target.name}" '
+                f'(in module(s): {", ".join(sorted(consumer_modules))}). '
+                f"Temp files can only be consumed by targets within the same module "
+                f"or by targets in modules that have their own producer for the same file."
+            )
 
 
 def _targets_are_identical(target1: Target, target2: Target) -> bool:
@@ -562,6 +624,9 @@ class Graph:
                     ).format(path, target)
                     raise UnresolvedInputError(msg)
 
+        target_modules = dict(target_modules)
+        validate_temp_file_boundaries(targets, provides, target_modules)
+
         targets = {target.name: target for target in targets}
         check_for_circular_dependencies(targets, dependencies)
 
@@ -572,7 +637,7 @@ class Graph:
             dependents=dependents,
             unresolved=unresolved,
             modules=modules,
-            target_modules=dict(target_modules),
+            target_modules=target_modules,
         )
 
     def get_modules(self, target) -> list:
