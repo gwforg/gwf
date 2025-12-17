@@ -10,25 +10,33 @@ from collections import defaultdict
 from collections.abc import Mapping
 from enum import Enum
 from os import fspath
+from pathlib import Path
 
 import attrs
 import click
 
 from . import executors
 from .exceptions import GWFError
-from .pathlib import TempPath
 from .utils import is_valid_name, timer
 
 logger = logging.getLogger(__name__)
 
 
-def _flatten(t, _ignore_temp_paths=False):
+def temp(path: str | Path) -> str | Path:
+    """Mark a path as temporary.
+
+    Temporary paths are ignored when checking whether a module is complete
+    (all outputs exist).
+    """
+    setattr(path, "_is_temp_path", True)
+    return path
+
+
+def _flatten(t):
     res = []
 
     def flatten_rec(g):
-        if _ignore_temp_paths and isinstance(g, TempPath):
-            return
-        elif isinstance(g, str) or hasattr(g, "__fspath__"):
+        if isinstance(g, str) or hasattr(g, "__fspath__"):
             res.append(g)
         elif isinstance(g, Mapping):
             for k, v in g.items():
@@ -71,15 +79,19 @@ def _check_path(path):
 
 
 def _norm_path(working_dir, path):
-    if isinstance(path, Path):
-        if path.is_absolute():
-            return path
-        return path.resolve(working_dir)
+    is_temp = getattr(path, "_is_temp_path", False)
 
-    path = fspath(path)
-    if os.path.isabs(path):
-        return path
-    return os.path.abspath(os.path.join(working_dir, path))
+    if isinstance(path, Path):
+        if not path.is_absolute():
+            path = path.resolve(working_dir)
+    else:
+        path = fspath(path)
+        if not os.path.isabs(path):
+            path = os.path.abspath(os.path.join(working_dir, path))
+
+    if is_temp:
+        temp(path)
+    return path
 
 
 def _norm_paths(working_dir, paths):
@@ -353,15 +365,23 @@ class Module:
         return result
 
     def flattened_outputs(self):
-        """All non-temp outputs from inner targets (recursive, normalized)."""
         outputs = []
         for target in self._iter_targets():
             if isinstance(target, Module):
                 outputs.extend(target.flattened_outputs())
             else:
-                non_temp = _flatten(target.outputs, _ignore_temp_paths=True)
-                outputs.extend(_norm_paths(target.working_dir, non_temp))
+                outputs.extend(
+                    _norm_paths(target.working_dir, _flatten(target.outputs))
+                )
         return outputs
+
+    def flattened_non_temp_outputs(self):
+        outputs = self.flattened_outputs()
+        return [p for p in outputs if not getattr(p, "_is_temp_path", False)]
+
+    def flattened_temp_outputs(self):
+        outputs = self.flattened_outputs()
+        return [p for p in outputs if getattr(p, "_is_temp_path", False)]
 
     def __str__(self):
         return self.name
