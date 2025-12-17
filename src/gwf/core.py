@@ -16,16 +16,19 @@ import click
 
 from . import executors
 from .exceptions import GWFError
+from .pathlib import TempPath
 from .utils import is_valid_name, timer
 
 logger = logging.getLogger(__name__)
 
 
-def _flatten(t):
+def _flatten(t, _ignore_temp_paths=False):
     res = []
 
     def flatten_rec(g):
-        if isinstance(g, str) or hasattr(g, "__fspath__"):
+        if _ignore_temp_paths and isinstance(g, TempPath):
+            return
+        elif isinstance(g, str) or hasattr(g, "__fspath__"):
             res.append(g)
         elif isinstance(g, Mapping):
             for k, v in g.items():
@@ -68,6 +71,11 @@ def _check_path(path):
 
 
 def _norm_path(working_dir, path):
+    if isinstance(path, Path):
+        if path.is_absolute():
+            return path
+        return path.resolve(working_dir)
+
     path = fspath(path)
     if os.path.isabs(path):
         return path
