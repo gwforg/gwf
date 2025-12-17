@@ -216,6 +216,7 @@ class AnonymousTarget:
     working_dir: str = attrs.field(default=".")
     protect: set = attrs.field(factory=set, converter=set)
     executor: Optional[executors.Executor] = attrs.field(default=None)
+    override_spec_hash: Optional[str] = attrs.field(default=None)
     spec: str = attrs.field(default="")
 
     def __attrs_post_init__(self):
@@ -296,6 +297,7 @@ class Target:
     working_dir: str = attrs.field(default=".")
     protect: set = attrs.field(factory=set, converter=set)
     executor: executors.Executor = attrs.field(factory=executors.Bash)
+    override_spec_hash: Optional[str] = attrs.field(default=None, repr=False)
     spec: str = attrs.field(default="", repr=False)
     order: int = attrs.field(init=False, repr=False)
 

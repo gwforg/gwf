@@ -201,7 +201,15 @@ class Workflow:
         self.targets[target.name] = target
 
     def target(
-        self, name, inputs, outputs, protect=None, group=None, executor=None, **options
+        self,
+        name,
+        inputs,
+        outputs,
+        protect=None,
+        group=None,
+        executor=None,
+        override_spec_hash=None,
+        **options,
     ):
         """Create a target and add it to the :class:`gwf.Workflow`.
 
@@ -233,6 +241,7 @@ class Workflow:
             group=group,
             executor=executor or self.executor,
             options=chain(self.defaults, options),
+            override_spec_hash=override_spec_hash,
             working_dir=self.working_dir,
         )
         self._add_target(new_target)
@@ -270,6 +279,7 @@ class Workflow:
             group=template.group,
             executor=template.executor or self.executor,
             options=chain(self.defaults, template.options, options),
+            override_spec_hash=template.override_spec_hash,
             working_dir=template.working_dir or self.working_dir,
             spec=template.spec,
         )
