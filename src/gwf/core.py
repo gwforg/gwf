@@ -345,7 +345,7 @@ class Module:
 
     def is_complete(self, fs) -> bool:
         """Module is complete when all non-temp outputs exist."""
-        return all(fs.exists(path) for path in self.flattened_outputs())
+        return all(fs.exists(path) for path in self.flattened_non_temp_outputs())
 
     def all_targets(self) -> list:
         """Recursively collect all non-Module targets."""
