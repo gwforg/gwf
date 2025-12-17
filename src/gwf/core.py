@@ -500,6 +500,25 @@ def _targets_are_identical(target1: Target, target2: Target) -> bool:
     return True
 
 
+def _create_cleanup_target(temp_paths):
+    """Create a cleanup target that removes all temporary files."""
+    # Generate rm commands for all temp files
+    rm_commands = []
+    for path in sorted(temp_paths):
+        # Use -f to avoid errors if file doesn't exist
+        rm_commands.append(f'rm -f "{path}"')
+
+    spec = "\n".join(rm_commands)
+
+    return Target(
+        name="_gwf_cleanup_temp_files",
+        inputs=[],
+        outputs=[],
+        options={},
+        spec=spec,
+    )
+
+
 @attrs.define
 class Graph:
     """Represents a dependency graph for a set of targets.
@@ -623,6 +642,26 @@ class Graph:
                         "provided by any target in the workflow."
                     ).format(path, target)
                     raise UnresolvedInputError(msg)
+
+        # Add cleanup target to remove temp files
+        temp_paths = [
+            path
+            for path, target in provides.items()
+            if is_temp(path)
+            and not all(
+                modules.get(m).is_complete(fs) for m in target_modules[target.name]
+            )
+        ]
+        if temp_paths:
+            cleanup_target = _create_cleanup_target(temp_paths)
+
+            # Cleanup target depends on all endpoint targets
+            endpoints = set(targets) - set(dependents.keys())
+            for endpoint in endpoints:
+                dependencies[cleanup_target].add(endpoint)
+                dependents[endpoint].add(cleanup_target)
+
+            targets.append(cleanup_target)
 
         target_modules = dict(target_modules)
         validate_temp_file_boundaries(targets, provides, target_modules)

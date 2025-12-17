@@ -232,7 +232,7 @@ class TestTempFileBoundaryValidation:
         module = Module(name="Pipeline", targets=[step1, step2, step3])
 
         graph = Graph.from_targets([module], filesystem)
-        assert len(graph.targets) == 3
+        assert len(graph.targets) == 4  # Account for cleanup target
 
         _clear_temp_registry()
 
@@ -261,7 +261,7 @@ class TestTempFileBoundaryValidation:
         module = Module(name="TestModule", targets=[producer, consumer1, consumer2])
 
         graph = Graph.from_targets([module], filesystem)
-        assert len(graph.targets) == 3
+        assert len(graph.targets) == 4  # Account for cleanup target
 
         _clear_temp_registry()
 
@@ -327,7 +327,7 @@ class TestTempFileBoundaryValidation:
         module = Module(name="Diamond", targets=[root, left, right, join])
 
         graph = Graph.from_targets([module], filesystem)
-        assert len(graph.targets) == 4
+        assert len(graph.targets) == 5  # Account for cleanup target
 
         _clear_temp_registry()
 
@@ -351,7 +351,7 @@ class TestTempFileBoundaryValidation:
         outer_module = Module(name="OuterModule", targets=[inner_module, consumer])
 
         graph = Graph.from_targets([outer_module], filesystem)
-        assert len(graph.targets) == 2
+        assert len(graph.targets) == 3  # Account for cleanup target
 
         _clear_temp_registry()
 
@@ -376,7 +376,7 @@ class TestTempFileBoundaryValidation:
         level1 = Module(name="Level1", targets=[producer, level2])
 
         graph = Graph.from_targets([level1], filesystem)
-        assert len(graph.targets) == 2
+        assert len(graph.targets) == 3  # Account for cleanup target
 
         _clear_temp_registry()
 
@@ -402,7 +402,7 @@ class TestTempFileBoundaryValidation:
         parent = Module(name="Parent", targets=[branch_a, branch_b])
 
         graph = Graph.from_targets([parent], filesystem)
-        assert len(graph.targets) == 2
+        assert len(graph.targets) == 3  # Account for cleanup target
 
         _clear_temp_registry()
 
@@ -488,7 +488,7 @@ class TestTempFileBoundaryValidation:
         filesystem.add_file("/dir_b/output.txt", changed_at=1)
 
         graph = Graph.from_targets([module, consumer_module], filesystem)
-        assert len(graph.targets) == 2
+        assert len(graph.targets) == 3  # Account for cleanup target
 
         _clear_temp_registry()
 
@@ -512,7 +512,7 @@ class TestTempFileBoundaryValidation:
         work_module = Module(name="WorkModule", targets=[producer, consumer])
 
         graph = Graph.from_targets([empty_module, work_module], filesystem)
-        assert len(graph.targets) == 2
+        assert len(graph.targets) == 3  # Account for cleanup target
 
         _clear_temp_registry()
 
@@ -566,7 +566,7 @@ class TestTempFileBoundaryValidation:
         module = Module(name="TestModule", targets=[module_producer, consumer])
 
         graph = Graph.from_targets([global_producer, module], filesystem)
-        assert len(graph.targets) == 2
+        assert len(graph.targets) == 3  # Account for cleanup target
 
         _clear_temp_registry()
 
@@ -649,7 +649,7 @@ class TestTempFileBoundaryValidation:
         )
 
         graph = Graph.from_targets([module_a, module_b, final], filesystem)
-        assert len(graph.targets) == 5
+        assert len(graph.targets) == 6  # Account for cleanup target
 
         _clear_temp_registry()
 
