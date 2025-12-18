@@ -196,10 +196,6 @@ class Workflow:
         return cls.from_parsed_path(ctx.workflow_file, ctx.workflow_obj)
 
     def _add_target(self, target):
-        if target.name == "_gwf_cleanup_temp_files":
-            raise WorkflowError(
-                "Target name '_gwf_cleanup_temp_files' is reserved for internal use."
-            )
         if target.name in self.targets:
             raise WorkflowError(f"Target {target} already exists in workflow.")
         self.targets[target.name] = target

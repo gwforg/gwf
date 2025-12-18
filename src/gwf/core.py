@@ -514,7 +514,7 @@ def _create_cleanup_target(temp_paths):
     spec = "\n".join(rm_commands)
 
     return Target(
-        name="_gwf_cleanup_temp_files",
+        name="cleanup",
         inputs=[],
         outputs=[],
         options={},
@@ -612,6 +612,7 @@ class Graph:
 
         _collect(targets)
 
+        cleanup_target = all_targets.pop("cleanup", None)
         targets = list(all_targets.values())
 
         with timer("Built dependency graph in %.3fms", logger=logger):
@@ -657,7 +658,7 @@ class Graph:
             )
         ]
         if temp_paths:
-            cleanup_target = _create_cleanup_target(temp_paths)
+            cleanup_target = cleanup_target or _create_cleanup_target(temp_paths)
 
             # Cleanup target depends on all endpoint targets
             endpoints = set(targets) - set(dependents.keys())
