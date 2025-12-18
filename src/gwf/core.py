@@ -17,7 +17,7 @@ import click
 
 from . import executors
 from .exceptions import GWFError
-from .temp import temp, is_temp
+from .temp import _temp_registry
 from .utils import is_valid_name, timer
 
 logger = logging.getLogger(__name__)
@@ -70,8 +70,6 @@ def _check_path(path):
 
 
 def _norm_path(working_dir, path):
-    _is_temp = is_temp(path)
-
     if isinstance(path, Path):
         if not path.is_absolute():
             path = path.resolve(working_dir)
@@ -79,9 +77,6 @@ def _norm_path(working_dir, path):
         path = fspath(path)
         if not os.path.isabs(path):
             path = os.path.abspath(os.path.join(working_dir, path))
-
-    if _is_temp:
-        return temp(path)
     return path
 
 
@@ -309,6 +304,15 @@ class Target:
     def _validate_working_dir(self, attribute, value):
         _check_path(value)
 
+    def __attrs_post_init__(self):
+        _temp_registry.update(
+            {
+                path: _norm_path(self.working_dir, path)
+                for path in _flatten(self.outputs)
+                if path in _temp_registry
+            }
+        )
+
     def __lshift__(self, spec):
         self.spec = spec
         return self
@@ -370,11 +374,11 @@ class Module:
 
     def flattened_non_temp_outputs(self):
         outputs = self.flattened_outputs()
-        return [p for p in outputs if not is_temp(p)]
+        return [p for p in outputs if p not in _temp_registry]
 
     def flattened_temp_outputs(self):
         outputs = self.flattened_outputs()
-        return [p for p in outputs if is_temp(p)]
+        return [p for p in outputs if p in _temp_registry]
 
     def __str__(self):
         return self.name
@@ -423,11 +427,10 @@ def check_for_circular_dependencies(targets, dependencies):
 
 @timer("Validated temp file module boundaries in %.3fms", logger=logger)
 def validate_temp_file_boundaries(targets, provides, target_modules):
-    temp_output_paths = set()
     temp_path_modules = defaultdict(set)
     for path, producer in provides.items():
-        if is_temp(path):
-            temp_output_paths.add(path)
+        path = _norm_path(producer.working_dir, path)
+        if path in _temp_registry:
             producer_modules = target_modules.get(producer.name, set())
 
             # Temp files must be produced within a module
@@ -446,7 +449,7 @@ def validate_temp_file_boundaries(targets, provides, target_modules):
             if input_path not in provides:
                 continue
 
-            if input_path not in temp_output_paths:
+            if input_path not in _temp_registry:
                 continue
 
             producer = provides[input_path]
@@ -646,8 +649,9 @@ class Graph:
         # Add cleanup target to remove temp files
         temp_paths = [
             path
-            for path, target in provides.items()
-            if is_temp(path)
+            for target in targets
+            for path in target.flattened_outputs()
+            if path in _temp_registry
             and not all(
                 modules.get(m).is_complete(fs) for m in target_modules[target.name]
             )

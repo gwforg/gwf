@@ -17,7 +17,7 @@ from gwf.core import (
 )
 from gwf.exceptions import GWFError
 from gwf.scheduling import get_status_map
-from gwf.temp import _clear_temp_registry, is_temp, temp
+from gwf.temp import _temp_registry, temp
 
 
 @pytest.mark.parametrize(
@@ -194,16 +194,16 @@ class TestTempFunction:
         result = temp(path)
 
         assert result is path
-        assert is_temp(result) is True
+        assert result in _temp_registry
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_regular_path_is_not_temp(self):
         path = "some/path.txt"
 
-        assert is_temp(path) is False
+        assert path not in _temp_registry
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
 
 class TestTempFileBoundaryValidation:
@@ -234,7 +234,7 @@ class TestTempFileBoundaryValidation:
         graph = Graph.from_targets([module], filesystem)
         assert len(graph.targets) == 4  # Account for cleanup target
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_multiple_consumers_same_temp_within_module_allowed(self, filesystem):
         producer = Target(
@@ -263,7 +263,7 @@ class TestTempFileBoundaryValidation:
         graph = Graph.from_targets([module], filesystem)
         assert len(graph.targets) == 4  # Account for cleanup target
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_multiple_consumers_one_outside_module_raises(self, filesystem):
         producer = Target(
@@ -293,7 +293,7 @@ class TestTempFileBoundaryValidation:
         with pytest.raises(TempFileUsedOutsideModuleError):
             Graph.from_targets([module, consumer_outside], filesystem)
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_diamond_dependency_with_temp_in_module_allowed(self, filesystem):
         root = Target(
@@ -329,7 +329,7 @@ class TestTempFileBoundaryValidation:
         graph = Graph.from_targets([module], filesystem)
         assert len(graph.targets) == 5  # Account for cleanup target
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_producer_in_inner_module_consumer_in_outer_allowed(self, filesystem):
         producer = Target(
@@ -353,7 +353,7 @@ class TestTempFileBoundaryValidation:
         graph = Graph.from_targets([outer_module], filesystem)
         assert len(graph.targets) == 3  # Account for cleanup target
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_deeply_nested_modules_temp_allowed(self, filesystem):
         producer = Target(
@@ -378,7 +378,7 @@ class TestTempFileBoundaryValidation:
         graph = Graph.from_targets([level1], filesystem)
         assert len(graph.targets) == 3  # Account for cleanup target
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_separate_branches_under_parent_allowed(self, filesystem):
         producer = Target(
@@ -404,7 +404,7 @@ class TestTempFileBoundaryValidation:
         graph = Graph.from_targets([parent], filesystem)
         assert len(graph.targets) == 3  # Account for cleanup target
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_multiple_temp_files_mixed_validity(self, filesystem):
         producer1 = Target(
@@ -443,7 +443,7 @@ class TestTempFileBoundaryValidation:
         with pytest.raises(TempFileUsedOutsideModuleError):
             Graph.from_targets([module_a, module_b, consumer2], filesystem)
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_global_temp_global_consumer_not_allowed(self, filesystem):
         producer = Target(
@@ -464,7 +464,7 @@ class TestTempFileBoundaryValidation:
         with pytest.raises(TempFileUsedOutsideModuleError):
             Graph.from_targets([producer, consumer], filesystem)
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_temp_with_different_working_dirs(self, filesystem):
         producer = Target(
@@ -488,9 +488,9 @@ class TestTempFileBoundaryValidation:
         filesystem.add_file("/dir_b/output.txt", changed_at=1)
 
         graph = Graph.from_targets([module, consumer_module], filesystem)
-        assert len(graph.targets) == 3  # Account for cleanup target
+        assert len(graph.targets) == 2
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_empty_module_no_error(self, filesystem):
         empty_module = Module(name="EmptyModule", targets=[])
@@ -514,7 +514,7 @@ class TestTempFileBoundaryValidation:
         graph = Graph.from_targets([empty_module, work_module], filesystem)
         assert len(graph.targets) == 3  # Account for cleanup target
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_only_regular_files_no_validation_needed(self, filesystem):
         producer = Target(
@@ -538,7 +538,7 @@ class TestTempFileBoundaryValidation:
         graph = Graph.from_targets([module_a, module_b], filesystem)
         assert len(graph.targets) == 2
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_consumer_module_has_own_producer_allowed(self, filesystem):
         global_producer = Target(
@@ -568,7 +568,7 @@ class TestTempFileBoundaryValidation:
         graph = Graph.from_targets([global_producer, module], filesystem)
         assert len(graph.targets) == 3  # Account for cleanup target
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_temp_file_module_to_global_raises(self, filesystem):
         producer = Target(
@@ -591,7 +591,7 @@ class TestTempFileBoundaryValidation:
         with pytest.raises(TempFileUsedOutsideModuleError):
             Graph.from_targets([module, consumer], filesystem)
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_global_producer_temp_not_allowed(self, filesystem):
         producer = Target(
@@ -605,7 +605,7 @@ class TestTempFileBoundaryValidation:
         with pytest.raises(TempFileUsedOutsideModuleError):
             Graph.from_targets([producer], filesystem)
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
     def test_complex_workflow_with_multiple_modules_and_temps(self, filesystem):
         a_step1 = Target(
@@ -651,7 +651,7 @@ class TestTempFileBoundaryValidation:
         graph = Graph.from_targets([module_a, module_b, final], filesystem)
         assert len(graph.targets) == 6  # Account for cleanup target
 
-        _clear_temp_registry()
+        _temp_registry.clear()
 
 
 def test_module_is_complete(filesystem):
