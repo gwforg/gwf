@@ -7,7 +7,7 @@ import os.path
 from typing import Optional
 import unicodedata
 from collections import defaultdict
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from enum import Enum
 from os import fspath
 from pathlib import Path
@@ -335,26 +335,24 @@ class Module:
     """A logical grouping of targets for completion tracking."""
 
     name: str = attrs.field()
-    targets: list = attrs.field()
+    targets: dict = attrs.field()
 
     @name.validator
     def _validate_name(self, attribute, value):
         if not is_valid_name(self.name):
             raise GWFError(f"Module defined with invalid name: {value}")
 
-    def _iter_targets(self):
-        return (
-            self.targets.values() if isinstance(self.targets, Mapping) else self.targets
-        )
+    def __attrs_post_init__(self):
+        if isinstance(self.targets, Iterable) and not isinstance(self.targets, Mapping):
+            self.targets = {target.name: target for target in self.targets}
 
-    def is_complete(self, fs) -> bool:
-        """Module is complete when all non-temp outputs exist."""
-        return all(fs.exists(path) for path in self.flattened_non_temp_outputs())
+    def __iter__(self):
+        return iter(self.targets.values())  # type: ignore
 
     def all_targets(self) -> list:
         """Recursively collect all non-Module targets."""
         result = []
-        for target in self._iter_targets():
+        for target in self:
             if isinstance(target, Module):
                 result.extend(target.all_targets())
             else:
@@ -363,7 +361,7 @@ class Module:
 
     def flattened_outputs(self):
         outputs = []
-        for target in self._iter_targets():
+        for target in self:
             if isinstance(target, Module):
                 outputs.extend(target.flattened_outputs())
             else:
