@@ -482,6 +482,11 @@ def validate_temp_file_boundaries(targets, provides, target_modules):
             )
 
 
+def module_is_complete(module, fs) -> bool:
+    """Module is complete when all non-temp outputs exist."""
+    return all(fs.exists(path) for path in module.flattened_non_temp_outputs())
+
+
 def _targets_are_identical(target1: Target, target2: Target) -> bool:
     """Check if two targets are identical (same spec, inputs, outputs).
 
@@ -654,7 +659,8 @@ class Graph:
             for path in target.flattened_outputs()
             if path in _temp_registry
             and not all(
-                modules.get(m).is_complete(fs) for m in target_modules[target.name]
+                module_is_complete(modules.get(m), fs)
+                for m in target_modules[target.name]
             )
         ]
         if temp_paths:

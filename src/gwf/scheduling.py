@@ -2,7 +2,7 @@ import logging
 from functools import partial
 
 from .backends.base import BackendStatus
-from .core import Status
+from .core import Status, module_is_complete
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +18,14 @@ SUBMITTED_STATES = (
 
 def should_run(target, fs, spec_hashes, graph=None, respect_modules=True):
     if respect_modules and graph and (parent_modules := graph.get_modules(target)):
-        if all(module.is_complete(fs) for module in parent_modules):
+        if all(module_is_complete(module, fs) for module in parent_modules):
             logger.debug(
                 "Target %s skipped - all parent modules complete: %s",
                 target,
                 [m.name for m in parent_modules],
             )
             return False
-        incomplete = [m.name for m in parent_modules if not m.is_complete(fs)]
+        incomplete = [m.name for m in parent_modules if not module_is_complete(m, fs)]
         logger.debug("Target %s needed by incomplete modules: %s", target, incomplete)
 
     if spec_hashes.has_changed(target) is not None:
