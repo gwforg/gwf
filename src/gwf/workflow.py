@@ -298,13 +298,20 @@ class Workflow:
         self._add_target(new_module)
         return new_module
 
-    def module_from_workflow(self, name, workflow):
+    def module_from_workflow(self, name, workflow, override_working_dir=True):
         new_module = Module(
             name=name,
-            targets=workflow.targets.values(),
+            targets=workflow.targets,
         )
+        if override_working_dir:
+            for target in new_module:
+                target.working_dir = self.working_dir
         self._add_target(new_module)
         return new_module
+
+    def module_from_path(self, name, path, override_working_dir=True):
+        workflow = Workflow.from_path(path)
+        return self.module_from_workflow(name, workflow, override_working_dir)
 
     def map(self, template_func, inputs, extra=None, name=None, **kwargs):
         """Add targets to the workflow given a template and a list of inputs.
