@@ -7,17 +7,15 @@ from gwf.core import (
     FileProvidedByMultipleTargetsError,
     Graph,
     InvalidPathError,
-    Module,
     NoopSpecHashes,
     Status,
     Target,
-    TempFileUsedOutsideModuleError,
     UnresolvedInputError,
     _flatten,
 )
 from gwf.exceptions import GWFError
 from gwf.scheduling import get_status_map
-from gwf.temp import _temp_registry, temp
+from gwf.path import ProtectedPath, TemporaryPath, protect, temp
 
 
 @pytest.mark.parametrize(
@@ -116,336 +114,30 @@ class TestTarget(unittest.TestCase):
             )
 
 
-class TestModule(unittest.TestCase):
-    def test_module_with_invalid_name_raises_exception(self):
-        with self.assertRaises(GWFError):
-            Module("123abc", targets=[])
-
-    def test_module_flattened_outputs(self):
-        target1 = Target(
-            name="Target1",
-            inputs=[],
-            outputs=["out1.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        target2 = Target(
-            name="Target2",
-            inputs=[],
-            outputs=["out2.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        module = Module(name="TestModule", targets=[target1, target2])
-
-        outputs = module.flattened_outputs()
-        assert "/some/dir/out1.txt" in outputs
-        assert "/some/dir/out2.txt" in outputs
-
-    def test_module_flattened_outputs_nested(self):
-        target1 = Target(
-            name="Target1",
-            inputs=[],
-            outputs=["out1.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        target2 = Target(
-            name="Target2",
-            inputs=[],
-            outputs=["out2.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        inner_module = Module(name="InnerModule", targets=[target2])
-        outer_module = Module(name="OuterModule", targets=[target1, inner_module])
-
-        outputs = outer_module.flattened_outputs()
-        assert "/some/dir/out1.txt" in outputs
-        assert "/some/dir/out2.txt" in outputs
-
-    def test_module_all_targets(self):
-        target1 = Target(
-            name="Target1",
-            inputs=[],
-            outputs=["out1.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        target2 = Target(
-            name="Target2",
-            inputs=[],
-            outputs=["out2.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        inner_module = Module(name="InnerModule", targets=[target2])
-        outer_module = Module(name="OuterModule", targets=[target1, inner_module])
-
-        all_targets = outer_module.all_targets()
-        assert target1 in all_targets
-        assert target2 in all_targets
-        assert len(all_targets) == 2
-
-
 class TestTempFunction:
-    def test_temp_marks_path_as_temporary(self):
+    def test_temp_returns_temporary_path(self):
         path = "some/path.txt"
         result = temp(path)
 
-        assert result is path
-        assert result in _temp_registry
-
-        _temp_registry.clear()
+        assert isinstance(result, TemporaryPath)
+        assert str(result) == path
 
     def test_regular_path_is_not_temp(self):
         path = "some/path.txt"
 
-        assert path not in _temp_registry
+        assert not isinstance(path, TemporaryPath)
 
-        _temp_registry.clear()
+    def test_protected_returns_protected_path(self):
+        path = "some/path.txt"
+        result = protect(path)
+
+        assert isinstance(result, ProtectedPath)
+        assert str(result) == path
 
 
 class TestTempFileBoundaryValidation:
-    def test_temp_chain_within_module_allowed(self, filesystem):
-        step1 = Target(
-            name="Step1",
-            inputs=[],
-            outputs=[temp("temp1.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        step2 = Target(
-            name="Step2",
-            inputs=["temp1.txt"],
-            outputs=[temp("temp2.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        step3 = Target(
-            name="Step3",
-            inputs=["temp2.txt"],
-            outputs=["final.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        module = Module(name="Pipeline", targets=[step1, step2, step3])
-
-        graph = Graph.from_targets([module], filesystem)
-        assert len(graph.targets) == 4  # Account for cleanup target
-
-        _temp_registry.clear()
-
-    def test_multiple_consumers_same_temp_within_module_allowed(self, filesystem):
-        producer = Target(
-            name="Producer",
-            inputs=[],
-            outputs=[temp("shared_temp.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        consumer1 = Target(
-            name="Consumer1",
-            inputs=["shared_temp.txt"],
-            outputs=["output1.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        consumer2 = Target(
-            name="Consumer2",
-            inputs=["shared_temp.txt"],
-            outputs=["output2.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        module = Module(name="TestModule", targets=[producer, consumer1, consumer2])
-
-        graph = Graph.from_targets([module], filesystem)
-        assert len(graph.targets) == 4  # Account for cleanup target
-
-        _temp_registry.clear()
-
-    def test_multiple_consumers_one_outside_module_raises(self, filesystem):
-        producer = Target(
-            name="Producer",
-            inputs=[],
-            outputs=[temp("shared_temp.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        consumer_inside = Target(
-            name="ConsumerInside",
-            inputs=["shared_temp.txt"],
-            outputs=["output1.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        module = Module(name="TestModule", targets=[producer, consumer_inside])
-
-        consumer_outside = Target(
-            name="ConsumerOutside",
-            inputs=["shared_temp.txt"],
-            outputs=["output2.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-
-        with pytest.raises(TempFileUsedOutsideModuleError):
-            Graph.from_targets([module, consumer_outside], filesystem)
-
-        _temp_registry.clear()
-
-    def test_diamond_dependency_with_temp_in_module_allowed(self, filesystem):
-        root = Target(
-            name="Root",
-            inputs=[],
-            outputs=[temp("root_out.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        left = Target(
-            name="Left",
-            inputs=["root_out.txt"],
-            outputs=[temp("left_out.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        right = Target(
-            name="Right",
-            inputs=["root_out.txt"],
-            outputs=[temp("right_out.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        join = Target(
-            name="Join",
-            inputs=["left_out.txt", "right_out.txt"],
-            outputs=["final.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        module = Module(name="Diamond", targets=[root, left, right, join])
-
-        graph = Graph.from_targets([module], filesystem)
-        assert len(graph.targets) == 5  # Account for cleanup target
-
-        _temp_registry.clear()
-
-    def test_producer_in_inner_module_consumer_in_outer_allowed(self, filesystem):
-        producer = Target(
-            name="Producer",
-            inputs=[],
-            outputs=[temp("intermediate.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        inner_module = Module(name="InnerModule", targets=[producer])
-
-        consumer = Target(
-            name="Consumer",
-            inputs=["intermediate.txt"],
-            outputs=["final.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        outer_module = Module(name="OuterModule", targets=[inner_module, consumer])
-
-        graph = Graph.from_targets([outer_module], filesystem)
-        assert len(graph.targets) == 3  # Account for cleanup target
-
-        _temp_registry.clear()
-
-    def test_deeply_nested_modules_temp_allowed(self, filesystem):
-        producer = Target(
-            name="Producer",
-            inputs=[],
-            outputs=[temp("deep_temp.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        consumer = Target(
-            name="Consumer",
-            inputs=["deep_temp.txt"],
-            outputs=["final.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-
-        level3 = Module(name="Level3", targets=[consumer])
-        level2 = Module(name="Level2", targets=[level3])
-        level1 = Module(name="Level1", targets=[producer, level2])
-
-        graph = Graph.from_targets([level1], filesystem)
-        assert len(graph.targets) == 3  # Account for cleanup target
-
-        _temp_registry.clear()
-
-    def test_separate_branches_under_parent_allowed(self, filesystem):
-        producer = Target(
-            name="Producer",
-            inputs=[],
-            outputs=[temp("branch_temp.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        branch_a = Module(name="BranchA", targets=[producer])
-
-        consumer = Target(
-            name="Consumer",
-            inputs=["branch_temp.txt"],
-            outputs=["final.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        branch_b = Module(name="BranchB", targets=[consumer])
-
-        parent = Module(name="Parent", targets=[branch_a, branch_b])
-
-        graph = Graph.from_targets([parent], filesystem)
-        assert len(graph.targets) == 3  # Account for cleanup target
-
-        _temp_registry.clear()
-
-    def test_multiple_temp_files_mixed_validity(self, filesystem):
-        producer1 = Target(
-            name="Producer1",
-            inputs=[],
-            outputs=[temp("temp1.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        consumer1 = Target(
-            name="Consumer1",
-            inputs=["temp1.txt"],
-            outputs=["out1.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        module_a = Module(name="ModuleA", targets=[producer1, consumer1])
-
-        producer2 = Target(
-            name="Producer2",
-            inputs=[],
-            outputs=[temp("temp2.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        module_b = Module(name="ModuleB", targets=[producer2])
-
-        consumer2 = Target(
-            name="Consumer2",
-            inputs=["temp2.txt"],
-            outputs=["out2.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-
-        with pytest.raises(TempFileUsedOutsideModuleError):
-            Graph.from_targets([module_a, module_b, consumer2], filesystem)
-
-        _temp_registry.clear()
-
-    def test_global_temp_global_consumer_not_allowed(self, filesystem):
+    def test_global_temp_global_consumer_allowed(self, filesystem):
+        """Temp files can now be used at global scope - this is allowed."""
         producer = Target(
             name="Producer",
             inputs=[],
@@ -461,139 +153,13 @@ class TestTempFileBoundaryValidation:
             working_dir="/some/dir",
         )
 
-        with pytest.raises(TempFileUsedOutsideModuleError):
-            Graph.from_targets([producer, consumer], filesystem)
+        graph = Graph.from_targets([producer, consumer], filesystem)
+        assert "Producer" in graph.targets
+        assert "Consumer" in graph.targets
+        assert "cleanup" in graph.targets  # Cleanup target should be added
 
-        _temp_registry.clear()
-
-    def test_temp_with_different_working_dirs(self, filesystem):
-        producer = Target(
-            name="Producer",
-            inputs=[],
-            outputs=[temp("output.txt")],
-            options={},
-            working_dir="/dir_a",
-        )
-        module = Module(name="TestModule", targets=[producer])
-
-        consumer = Target(
-            name="Consumer",
-            inputs=["output.txt"],
-            outputs=["final.txt"],
-            options={},
-            working_dir="/dir_b",
-        )
-        consumer_module = Module(name="ConsumerModule", targets=[consumer])
-
-        filesystem.add_file("/dir_b/output.txt", changed_at=1)
-
-        graph = Graph.from_targets([module, consumer_module], filesystem)
-        assert len(graph.targets) == 2
-
-        _temp_registry.clear()
-
-    def test_empty_module_no_error(self, filesystem):
-        empty_module = Module(name="EmptyModule", targets=[])
-        producer = Target(
-            name="Producer",
-            inputs=[],
-            outputs=[temp("temp.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        consumer = Target(
-            name="Consumer",
-            inputs=["temp.txt"],
-            outputs=["final.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        # Temp files must be in a module
-        work_module = Module(name="WorkModule", targets=[producer, consumer])
-
-        graph = Graph.from_targets([empty_module, work_module], filesystem)
-        assert len(graph.targets) == 3  # Account for cleanup target
-
-        _temp_registry.clear()
-
-    def test_only_regular_files_no_validation_needed(self, filesystem):
-        producer = Target(
-            name="Producer",
-            inputs=[],
-            outputs=["regular.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        module_a = Module(name="ModuleA", targets=[producer])
-
-        consumer = Target(
-            name="Consumer",
-            inputs=["regular.txt"],
-            outputs=["final.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        module_b = Module(name="ModuleB", targets=[consumer])
-
-        graph = Graph.from_targets([module_a, module_b], filesystem)
-        assert len(graph.targets) == 2
-
-        _temp_registry.clear()
-
-    def test_consumer_module_has_own_producer_allowed(self, filesystem):
-        global_producer = Target(
-            name="GlobalProducer",
-            inputs=[],
-            outputs=[temp("shared_temp.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-
-        module_producer = Target(
-            name="GlobalProducer",
-            inputs=[],
-            outputs=[temp("shared_temp.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        consumer = Target(
-            name="Consumer",
-            inputs=["shared_temp.txt"],
-            outputs=["final.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        module = Module(name="TestModule", targets=[module_producer, consumer])
-
-        graph = Graph.from_targets([global_producer, module], filesystem)
-        assert len(graph.targets) == 3  # Account for cleanup target
-
-        _temp_registry.clear()
-
-    def test_temp_file_module_to_global_raises(self, filesystem):
-        producer = Target(
-            name="Producer",
-            inputs=[],
-            outputs=[temp("module_temp.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        module = Module(name="TestModule", targets=[producer])
-
-        consumer = Target(
-            name="Consumer",
-            inputs=["module_temp.txt"],
-            outputs=["final.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-
-        with pytest.raises(TempFileUsedOutsideModuleError):
-            Graph.from_targets([module, consumer], filesystem)
-
-        _temp_registry.clear()
-
-    def test_global_producer_temp_not_allowed(self, filesystem):
+    def test_global_producer_temp_allowed(self, filesystem):
+        """Temp files can now be produced at global scope - this is allowed."""
         producer = Target(
             name="Producer",
             inputs=[],
@@ -602,72 +168,10 @@ class TestTempFileBoundaryValidation:
             working_dir="/some/dir",
         )
 
-        with pytest.raises(TempFileUsedOutsideModuleError):
-            Graph.from_targets([producer], filesystem)
-
-        _temp_registry.clear()
-
-    def test_complex_workflow_with_multiple_modules_and_temps(self, filesystem):
-        a_step1 = Target(
-            name="A_Step1",
-            inputs=[],
-            outputs=[temp("a_temp1.txt"), "a_output1.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        a_step2 = Target(
-            name="A_Step2",
-            inputs=["a_temp1.txt"],
-            outputs=["a_final.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        module_a = Module(name="ModuleA", targets=[a_step1, a_step2])
-
-        b_step1 = Target(
-            name="B_Step1",
-            inputs=["a_output1.txt"],
-            outputs=[temp("b_temp.txt")],
-            options={},
-            working_dir="/some/dir",
-        )
-        b_step2 = Target(
-            name="B_Step2",
-            inputs=["b_temp.txt"],
-            outputs=["b_final.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-        module_b = Module(name="ModuleB", targets=[b_step1, b_step2])
-
-        final = Target(
-            name="Final",
-            inputs=["a_final.txt", "b_final.txt"],
-            outputs=["workflow_complete.txt"],
-            options={},
-            working_dir="/some/dir",
-        )
-
-        graph = Graph.from_targets([module_a, module_b, final], filesystem)
-        assert len(graph.targets) == 6  # Account for cleanup target
-
-        _temp_registry.clear()
-
-
-def test_module_is_complete(filesystem):
-    target1 = Target(
-        name="Target1",
-        inputs=[],
-        outputs=["out1.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    module = Module(name="TestModule", targets=[target1])
-
-    assert module.is_complete(filesystem) is False
-
-    filesystem.add_file("/some/dir/out1.txt", changed_at=1)
-    assert module.is_complete(filesystem) is True
+        # This should succeed now - global temp producers are allowed
+        graph = Graph.from_targets([producer], filesystem)
+        assert "Producer" in graph.targets
+        assert "cleanup" in graph.targets  # Cleanup target should be added
 
 
 def test_graph_construction(filesystem):
@@ -732,163 +236,6 @@ def test_graph_construction(filesystem):
         "/some/dir/test_input1.txt",
         "/some/dir/test_input2.txt",
     }
-
-
-def test_graph_construction_with_modules(filesystem):
-    target1 = Target(
-        name="Target1",
-        inputs=["t1_input1.txt"],
-        outputs=["t1_output1.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    target2 = Target(
-        name="Target2",
-        inputs=["t1_output1.txt"],
-        outputs=["t2_output1.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    target3 = Target(
-        name="Target3",
-        inputs=["t2_output1.txt"],
-        outputs=["t3_output1.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    module2 = Module(
-        name="Module2",
-        targets=[target3],
-    )
-    module1 = Module(
-        name="Module1",
-        targets=[target2, module2],
-    )
-
-    filesystem.add_file("/some/dir/t1_input1.txt", changed_at=0)
-    graph = Graph.from_targets([target1, module1], filesystem)
-
-    assert len(graph.targets) == 3
-    assert target1 in graph.targets.values()
-    assert target2 in graph.targets.values()
-    assert target3 in graph.targets.values()
-
-    assert graph.dependencies[target1] == set()
-    assert graph.dependents[target1] == {target2}
-
-    assert graph.dependencies[target2] == {target1}
-    assert graph.dependents[target2] == {target3}
-
-    assert graph.dependencies[target3] == {target2}
-    assert graph.dependents[target3] == set()
-
-    assert "Module1" in graph.modules
-    assert "Module2" in graph.modules
-
-    assert "Module1" in graph.target_modules["Target2"]
-    assert "Module1" in graph.target_modules["Target3"]
-    assert "Module2" in graph.target_modules["Target3"]
-
-
-def test_graph_construction_with_completed_module(filesystem):
-    target1 = Target(
-        name="Target1",
-        inputs=["t1_input1.txt"],
-        outputs=["t1_output1.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    module1 = Module(
-        name="Module1",
-        targets=[target1],
-    )
-    target2 = Target(
-        name="Target2",
-        inputs=["t1_output1.txt"],
-        outputs=["t2_output1.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-
-    filesystem.add_file("/some/dir/t1_input1.txt", changed_at=0)
-    filesystem.add_file("/some/dir/t1_output1.txt", changed_at=1)
-    graph = Graph.from_targets([module1, target2], filesystem)
-
-    assert len(graph.targets) == 2
-    assert target1 in graph.targets.values()
-    assert target2 in graph.targets.values()
-
-    assert graph.dependencies[target1] == set()
-    assert graph.dependents[target1] == {target2}
-
-    assert graph.dependencies[target2] == {target1}
-    assert graph.dependents[target2] == set()
-
-    assert "Module1" in graph.modules
-    assert graph.modules["Module1"].is_complete(filesystem)
-
-    assert "Module1" in graph.target_modules["Target1"]
-
-
-def test_graph_target_in_multiple_modules(filesystem):
-    shared_target = Target(
-        name="SharedTarget",
-        inputs=["input.txt"],
-        outputs=["shared_output.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    target_a = Target(
-        name="TargetA",
-        inputs=["shared_output.txt"],
-        outputs=["output_a.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    target_b = Target(
-        name="TargetB",
-        inputs=["shared_output.txt"],
-        outputs=["output_b.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-
-    module_a = Module(name="ModuleA", targets=[shared_target, target_a])
-    module_b = Module(name="ModuleB", targets=[shared_target, target_b])
-
-    filesystem.add_file("/some/dir/input.txt", changed_at=0)
-    graph = Graph.from_targets([module_a, module_b], filesystem)
-
-    assert len(graph.targets) == 3
-    assert shared_target in graph.targets.values()
-    assert target_a in graph.targets.values()
-    assert target_b in graph.targets.values()
-
-    assert "ModuleA" in graph.target_modules["SharedTarget"]
-    assert "ModuleB" in graph.target_modules["SharedTarget"]
-
-    assert graph.target_modules["TargetA"] == {"ModuleA"}
-    assert graph.target_modules["TargetB"] == {"ModuleB"}
-
-
-def test_graph_get_modules(filesystem):
-    target1 = Target(
-        name="Target1",
-        inputs=[],
-        outputs=["out1.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    module1 = Module(name="Module1", targets=[target1])
-    module2 = Module(name="Module2", targets=[target1])
-
-    graph = Graph.from_targets([module1, module2], filesystem)
-
-    modules = graph.get_modules(target1)
-    assert len(modules) == 2
-    module_names = {m.name for m in modules}
-    assert "Module1" in module_names
-    assert "Module2" in module_names
 
 
 def test_graph_raises_multiple_providers_error(filesystem):
@@ -1213,182 +560,6 @@ def test_scheduling_with_spec_hashing(backend, spec_hashes, filesystem):
     assert target_states[target] == Status.SHOULDRUN
 
 
-def test_scheduling_skips_target_in_complete_module(filesystem, backend):
-    """Target in a complete module should not be scheduled."""
-    target1 = Target(
-        name="Target1",
-        inputs=[],
-        outputs=["out1.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    module1 = Module(name="Module1", targets=[target1])
-
-    filesystem.add_file("/some/dir/out1.txt", changed_at=1)
-
-    graph = Graph.from_targets([module1], filesystem)
-    target_states = get_status_map(
-        graph=graph,
-        endpoints=[target1],
-        fs=filesystem,
-        backend=backend,
-        spec_hashes=NoopSpecHashes(),
-    )
-
-    assert target_states[target1] == Status.COMPLETED
-
-
-def test_scheduling_runs_target_in_incomplete_module(filesystem, backend):
-    """Target in an incomplete module should be scheduled."""
-    target1 = Target(
-        name="Target1",
-        inputs=[],
-        outputs=["out1.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    module1 = Module(name="Module1", targets=[target1])
-
-    graph = Graph.from_targets([module1], filesystem)
-    target_states = get_status_map(
-        graph=graph,
-        endpoints=[target1],
-        fs=filesystem,
-        backend=backend,
-        spec_hashes=NoopSpecHashes(),
-    )
-
-    assert target_states[target1] == Status.SHOULDRUN
-
-
-def test_scheduling_target_in_multiple_modules_one_complete(filesystem, backend):
-    """Target runs if ANY parent module is incomplete."""
-    shared_target = Target(
-        name="SharedTarget",
-        inputs=[],
-        outputs=["shared.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    target_a = Target(
-        name="TargetA",
-        inputs=["shared.txt"],
-        outputs=["out_a.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    target_b = Target(
-        name="TargetB",
-        inputs=["shared.txt"],
-        outputs=["out_b.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-
-    module_a = Module(name="ModuleA", targets=[shared_target, target_a])
-    module_b = Module(name="ModuleB", targets=[shared_target, target_b])
-
-    filesystem.add_file("/some/dir/shared.txt", changed_at=1)
-    filesystem.add_file("/some/dir/out_a.txt", changed_at=2)
-
-    graph = Graph.from_targets([module_a, module_b], filesystem)
-    target_states = get_status_map(
-        graph=graph,
-        endpoints=[target_a, target_b],
-        fs=filesystem,
-        backend=backend,
-        spec_hashes=NoopSpecHashes(),
-    )
-
-    assert target_states[shared_target] == Status.COMPLETED
-
-    assert target_states[target_a] == Status.COMPLETED
-
-    assert target_states[target_b] == Status.SHOULDRUN
-
-
-def test_scheduling_target_in_multiple_modules_all_complete(filesystem, backend):
-    """Target is skipped if ALL parent modules are complete."""
-    shared_target = Target(
-        name="SharedTarget",
-        inputs=[],
-        outputs=["shared.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    target_a = Target(
-        name="TargetA",
-        inputs=["shared.txt"],
-        outputs=["out_a.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    target_b = Target(
-        name="TargetB",
-        inputs=["shared.txt"],
-        outputs=["out_b.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-
-    module_a = Module(name="ModuleA", targets=[shared_target, target_a])
-    module_b = Module(name="ModuleB", targets=[shared_target, target_b])
-
-    filesystem.add_file("/some/dir/shared.txt", changed_at=1)
-    filesystem.add_file("/some/dir/out_a.txt", changed_at=2)
-    filesystem.add_file("/some/dir/out_b.txt", changed_at=2)
-
-    graph = Graph.from_targets([module_a, module_b], filesystem)
-    target_states = get_status_map(
-        graph=graph,
-        endpoints=[target_a, target_b],
-        fs=filesystem,
-        backend=backend,
-        spec_hashes=NoopSpecHashes(),
-    )
-
-    assert target_states[shared_target] == Status.COMPLETED
-    assert target_states[target_a] == Status.COMPLETED
-    assert target_states[target_b] == Status.COMPLETED
-
-
-def test_scheduling_respects_modules_false(filesystem, backend):
-    """With respect_modules=False, module completion is ignored."""
-    target1 = Target(
-        name="Target1",
-        inputs=["input.txt"],
-        outputs=["out1.txt"],
-        options={},
-        working_dir="/some/dir",
-    )
-    module1 = Module(name="Module1", targets=[target1])
-
-    filesystem.add_file("/some/dir/input.txt", changed_at=2)
-    filesystem.add_file("/some/dir/out1.txt", changed_at=1)
-
-    graph = Graph.from_targets([module1], filesystem)
-
-    target_states = get_status_map(
-        graph=graph,
-        endpoints=[target1],
-        fs=filesystem,
-        backend=backend,
-        spec_hashes=NoopSpecHashes(),
-        respect_modules=True,
-    )
-    assert target_states[target1] == Status.COMPLETED
-
-    target_states = get_status_map(
-        graph=graph,
-        endpoints=[target1],
-        fs=filesystem,
-        backend=backend,
-        spec_hashes=NoopSpecHashes(),
-        respect_modules=False,
-    )
-    assert target_states[target1] == Status.SHOULDRUN
-
-
 def test_override_spec_hashes(backend, spec_hashes, filesystem):
     filesystem.add_file("/some/dir/input.txt", changed_at=1)
     filesystem.add_file("/some/dir/output.txt", changed_at=2)
@@ -1430,3 +601,151 @@ def test_override_spec_hashes(backend, spec_hashes, filesystem):
         spec_hashes=spec_hashes,
     )
     assert target_states[target] == Status.SHOULDRUN
+
+
+def test_target_equality_identical_targets():
+    """Identical targets should be equal."""
+    t1 = Target(
+        name="Test",
+        inputs=["in.txt"],
+        outputs=["out.txt"],
+        options={"cores": 4},
+        working_dir="/dir",
+        spec="cat in.txt > out.txt",
+    )
+    t2 = Target(
+        name="Test",
+        inputs=["in.txt"],
+        outputs=["out.txt"],
+        options={"cores": 4},
+        working_dir="/dir",
+        spec="cat in.txt > out.txt",
+    )
+    assert t1 == t2
+
+
+def test_target_equality_different_options():
+    """Targets with different options should not be equal."""
+    t1 = Target(
+        name="Test",
+        inputs=["in.txt"],
+        outputs=["out.txt"],
+        options={"cores": 4},
+        working_dir="/dir",
+        spec="cat in.txt > out.txt",
+    )
+    t2 = Target(
+        name="Test",
+        inputs=["in.txt"],
+        outputs=["out.txt"],
+        options={"cores": 8},
+        working_dir="/dir",
+        spec="cat in.txt > out.txt",
+    )
+    assert t1 != t2
+
+
+def test_target_equality_different_specs():
+    """Targets with different specs should not be equal."""
+    t1 = Target(
+        name="Test",
+        inputs=["in.txt"],
+        outputs=["out.txt"],
+        options={},
+        working_dir="/dir",
+        spec="cat in.txt > out.txt",
+    )
+    t2 = Target(
+        name="Test",
+        inputs=["in.txt"],
+        outputs=["out.txt"],
+        options={},
+        working_dir="/dir",
+        spec="head in.txt > out.txt",
+    )
+    assert t1 != t2
+
+
+def test_target_equality_different_inputs():
+    """Targets with different inputs should not be equal."""
+    t1 = Target(
+        name="Test",
+        inputs=["in1.txt"],
+        outputs=["out.txt"],
+        options={},
+        working_dir="/dir",
+        spec="cat in.txt > out.txt",
+    )
+    t2 = Target(
+        name="Test",
+        inputs=["in2.txt"],
+        outputs=["out.txt"],
+        options={},
+        working_dir="/dir",
+        spec="cat in.txt > out.txt",
+    )
+    assert t1 != t2
+
+
+def test_target_equality_different_outputs():
+    """Targets with different outputs should not be equal."""
+    t1 = Target(
+        name="Test",
+        inputs=["in.txt"],
+        outputs=["out1.txt"],
+        options={},
+        working_dir="/dir",
+        spec="cat in.txt > out.txt",
+    )
+    t2 = Target(
+        name="Test",
+        inputs=["in.txt"],
+        outputs=["out2.txt"],
+        options={},
+        working_dir="/dir",
+        spec="cat in.txt > out.txt",
+    )
+    assert t1 != t2
+
+
+def test_target_equality_different_names():
+    """Targets with different names should not be equal."""
+    t1 = Target(
+        name="Test1",
+        inputs=["in.txt"],
+        outputs=["out.txt"],
+        options={},
+        working_dir="/dir",
+        spec="cat in.txt > out.txt",
+    )
+    t2 = Target(
+        name="Test2",
+        inputs=["in.txt"],
+        outputs=["out.txt"],
+        options={},
+        working_dir="/dir",
+        spec="cat in.txt > out.txt",
+    )
+    assert t1 != t2
+
+
+def test_target_equality_ignores_order():
+    """Targets with different order should still be equal (order is excluded from equality)."""
+    t1 = Target(
+        name="Test",
+        inputs=["in.txt"],
+        outputs=["out.txt"],
+        options={},
+        working_dir="/dir",
+        spec="cat in.txt > out.txt",
+    )
+    t2 = Target(
+        name="Test",
+        inputs=["in.txt"],
+        outputs=["out.txt"],
+        options={},
+        working_dir="/dir",
+        spec="cat in.txt > out.txt",
+    )
+    assert t1.order != t2.order
+    assert t1 == t2

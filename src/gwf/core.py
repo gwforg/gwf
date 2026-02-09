@@ -17,13 +17,22 @@ import click
 
 from . import executors
 from .exceptions import GWFError
-from .temp import _temp_registry
+from .path import ProtectedPath, TemporaryPath
 from .utils import is_valid_name, timer
 
 logger = logging.getLogger(__name__)
 
 
 def _flatten(t):
+    """Flatten nested structures of paths into a flat list.
+
+    Args:
+        t: A path string, list of paths, dict of paths, or nested structure.
+
+    Returns:
+        A flat list of all paths in the structure, preserving special path types
+        (TemporaryPath, ProtectedPath).
+    """
     res = []
 
     def flatten_rec(g):
@@ -57,6 +66,9 @@ class InvalidPathError(GWFError):
 
 
 def _check_path(path):
+    if hasattr(path, "__fspath__"):
+        path = fspath(path)
+
     if not path:
         raise InvalidPathError("Path is empty")
 
@@ -169,7 +181,7 @@ class Status(Enum):
     CANCELLED = 5  #: The target or one of its dependencies was cancelled.
 
 
-@attrs.define(eq=False)
+@attrs.define(unsafe_hash=True)
 class AnonymousTarget:
     """Represents an unnamed target.
 
@@ -195,14 +207,15 @@ class AnonymousTarget:
         cleaning, even if this target is not an endpoint.
     """
 
-    inputs: list = attrs.field()
-    outputs: list = attrs.field()
-    options: dict = attrs.field()
-    group: Optional[str] = attrs.field(default=None)
+    inputs: list = attrs.field(hash=False)
+    outputs: list = attrs.field(hash=False)
+    options: dict = attrs.field(hash=False)
+    group: Optional[str] = attrs.field(default=None, hash=False)
     working_dir: str = attrs.field(default=".")
-    protect: set = attrs.field(factory=set, converter=set)
-    executor: Optional[executors.Executor] = attrs.field(default=None)
-    override_spec_hash: Optional[str] = attrs.field(default=None)
+    temp: set = attrs.field(factory=set, converter=set, hash=False)
+    protect: set = attrs.field(factory=set, converter=set, hash=False)
+    executor: Optional[executors.Executor] = attrs.field(default=None, hash=False)
+    override_spec_hash: Optional[str] = attrs.field(default=None, hash=False)
     spec: str = attrs.field(default="")
 
     def __attrs_post_init__(self):
@@ -218,7 +231,7 @@ def _validate_path(instance, attribute, value):
         _check_path(path)
 
 
-@attrs.define(eq=False)
+@attrs.define(unsafe_hash=True)
 class Target:
     """Represents a target.
 
@@ -276,16 +289,19 @@ class Target:
     """
 
     name: str = attrs.field()
-    inputs: list = attrs.field(validator=_validate_path)
-    outputs: list = attrs.field(validator=_validate_path)
-    options: dict = attrs.field()
-    group: Optional[str] = attrs.field(default=None)
+    inputs: list = attrs.field(validator=_validate_path, hash=False)
+    outputs: list = attrs.field(validator=_validate_path, hash=False)
+    options: dict = attrs.field(hash=False)
+    group: Optional[str] = attrs.field(default=None, hash=False)
     working_dir: str = attrs.field(default=".")
-    protect: set = attrs.field(factory=set, converter=set)
-    executor: executors.Executor = attrs.field(factory=executors.Bash)
-    override_spec_hash: Optional[str] = attrs.field(default=None, repr=False)
+    temp: set = attrs.field(factory=set, converter=set, hash=False)
+    protect: set = attrs.field(factory=set, converter=set, hash=False)
+    executor: executors.Executor = attrs.field(factory=executors.Bash, hash=False)
+    override_spec_hash: Optional[str] = attrs.field(
+        default=None, repr=False, hash=False
+    )
     spec: str = attrs.field(default="", repr=False)
-    order: int = attrs.field(init=False, repr=False)
+    order: int = attrs.field(init=False, repr=False, eq=False, hash=False)
 
     _creation_order = 0
 
@@ -305,13 +321,26 @@ class Target:
         _check_path(value)
 
     def __attrs_post_init__(self):
-        _temp_registry.update(
-            {
-                path: _norm_path(self.working_dir, path)
-                for path in _flatten(self.outputs)
-                if path in _temp_registry
-            }
-        )
+        def unwrap_paths(obj, add_paths: bool):
+            """Recursively unwrap paths from the inputs and outputs, while optionally
+            collecting temporary and protected paths.
+            """
+            if isinstance(obj, dict):
+                return {k: unwrap_paths(v, add_paths) for k, v in obj.items()}
+            elif isinstance(obj, list | tuple):
+                return [unwrap_paths(v, add_paths) for v in obj]
+            elif isinstance(obj, TemporaryPath):
+                if add_paths:
+                    self.temp.add(obj.path)
+                return obj.path
+            elif isinstance(obj, ProtectedPath):
+                if add_paths:
+                    self.protect.add(obj.path)
+                return obj.path
+            return obj
+
+        self.inputs = unwrap_paths(self.inputs, add_paths=False)
+        self.outputs = unwrap_paths(self.outputs, add_paths=True)
 
     def __lshift__(self, spec):
         self.spec = spec
@@ -326,60 +355,11 @@ class Target:
     def flattened_outputs(self):
         return _norm_paths(self.working_dir, _flatten(self.outputs))
 
+    def temporary(self):
+        return set(_norm_paths(self.working_dir, _flatten(self.temp)))
+
     def protected(self):
         return set(_norm_paths(self.working_dir, _flatten(self.protect)))
-
-
-@attrs.define(eq=False)
-class Module:
-    """A logical grouping of targets for completion tracking."""
-
-    name: str = attrs.field()
-    targets: dict = attrs.field()
-
-    @name.validator
-    def _validate_name(self, attribute, value):
-        if not is_valid_name(self.name):
-            raise GWFError(f"Module defined with invalid name: {value}")
-
-    def __attrs_post_init__(self):
-        if isinstance(self.targets, Iterable) and not isinstance(self.targets, Mapping):
-            self.targets = {target.name: target for target in self.targets}
-
-    def __iter__(self):
-        return iter(self.targets.values())  # type: ignore
-
-    def all_targets(self) -> list:
-        """Recursively collect all non-Module targets."""
-        result = []
-        for target in self:
-            if isinstance(target, Module):
-                result.extend(target.all_targets())
-            else:
-                result.append(target)
-        return result
-
-    def flattened_outputs(self):
-        outputs = []
-        for target in self:
-            if isinstance(target, Module):
-                outputs.extend(target.flattened_outputs())
-            else:
-                outputs.extend(
-                    _norm_paths(target.working_dir, _flatten(target.outputs))
-                )
-        return outputs
-
-    def flattened_non_temp_outputs(self):
-        outputs = self.flattened_outputs()
-        return [p for p in outputs if p not in _temp_registry]
-
-    def flattened_temp_outputs(self):
-        outputs = self.flattened_outputs()
-        return [p for p in outputs if p in _temp_registry]
-
-    def __str__(self):
-        return self.name
 
 
 class CircularDependencyError(GWFError):
@@ -391,10 +371,6 @@ class FileProvidedByMultipleTargetsError(GWFError):
 
 
 class UnresolvedInputError(GWFError):
-    pass
-
-
-class TempFileUsedOutsideModuleError(GWFError):
     pass
 
 
@@ -421,89 +397,6 @@ def check_for_circular_dependencies(targets, dependencies):
     for node in nodes:
         if state[node] == fresh:
             visitor(node)
-
-
-@timer("Validated temp file module boundaries in %.3fms", logger=logger)
-def validate_temp_file_boundaries(targets, provides, target_modules):
-    temp_path_modules = defaultdict(set)
-    for path, producer in provides.items():
-        path = _norm_path(producer.working_dir, path)
-        if path in _temp_registry:
-            producer_modules = target_modules.get(producer.name, set())
-
-            # Temp files must be produced within a module
-            if not producer_modules:
-                raise TempFileUsedOutsideModuleError(
-                    f'Temp file "{path}" is produced by target "{producer.name}" '
-                    f"at global level. Temp files must be produced within a module."
-                )
-
-            temp_path_modules[path].update(producer_modules)
-
-    for target in targets:
-        consumer_modules = target_modules.get(target.name, set())
-
-        for input_path in target.flattened_inputs():
-            if input_path not in provides:
-                continue
-
-            if input_path not in _temp_registry:
-                continue
-
-            producer = provides[input_path]
-            producer_modules = target_modules.get(producer.name, set())
-
-            # Consumer must be in at least one module to use temp files
-            if not consumer_modules:
-                raise TempFileUsedOutsideModuleError(
-                    f'Temp file "{input_path}" produced by target "{producer.name}" '
-                    f'(in module(s): {", ".join(sorted(producer_modules))}) '
-                    f'is used by target "{target.name}" at global level. '
-                    f"Temp files can only be consumed by targets within a module."
-                )
-
-            # Share at least one module
-            if consumer_modules & producer_modules:
-                continue
-
-            # Consumer's modules have their own producer for this path
-            if consumer_modules & temp_path_modules[input_path]:
-                continue
-
-            module_names = ", ".join(sorted(producer_modules))
-            raise TempFileUsedOutsideModuleError(
-                f'Temp file "{input_path}" produced by target "{producer.name}" '
-                f'(in module(s): {module_names}) is used by target "{target.name}" '
-                f'(in module(s): {", ".join(sorted(consumer_modules))}). '
-                f"Temp files can only be consumed by targets within the same module "
-                f"or by targets in modules that have their own producer for the same file."
-            )
-
-
-def module_is_complete(module, fs) -> bool:
-    """Module is complete when all non-temp outputs exist."""
-    return all(fs.exists(path) for path in module.flattened_non_temp_outputs())
-
-
-def _targets_are_identical(target1: Target, target2: Target) -> bool:
-    """Check if two targets are identical (same spec, inputs, outputs).
-
-    Used to allow duplicate targets between subworkflows when they are identical.
-    """
-    if target1.spec != target2.spec:
-        return False
-
-    inputs1 = set(target1.flattened_inputs())
-    inputs2 = set(target2.flattened_inputs())
-    if inputs1 != inputs2:
-        return False
-
-    outputs1 = set(target1.flattened_outputs())
-    outputs2 = set(target2.flattened_outputs())
-    if outputs1 != outputs2:
-        return False
-
-    return True
 
 
 def _create_cleanup_target(temp_paths):
@@ -568,8 +461,7 @@ class Graph:
     dependencies: defaultdict = attrs.field()
     dependents: defaultdict = attrs.field()
     unresolved: set = attrs.field()
-    modules: dict = attrs.field(factory=dict)
-    target_modules: dict = attrs.field(factory=dict)
+    temporary: set = attrs.field()
 
     @classmethod
     def from_targets(cls, targets, fs):
@@ -587,48 +479,28 @@ class Graph:
             Raised if the graph contains a circular dependency.
         """
         provides = {}
+        temporary = set()
         unresolved = set()
         dependencies = defaultdict(set)
         dependents = defaultdict(set)
-        modules = {}
-        target_modules = defaultdict(set)
-        all_targets = {}
 
-        def _collect(items, parent_modules=None):
-            if parent_modules is None:
-                parent_modules = set()
-
-            for target in items.values() if isinstance(items, Mapping) else items:
-                if isinstance(target, Module):
-                    modules[target.name] = target
-                    _collect(target.targets, parent_modules | {target.name})
-                else:
-                    if target.name in all_targets and not _targets_are_identical(
-                        all_targets[target.name], target
-                    ):
-                        raise GWFError(
-                            f'Target "{target.name}" defined multiple times with differing specs, inputs and/or outputs.'
-                        )
-                    all_targets[target.name] = target
-                    if parent_modules:
-                        target_modules[target.name].update(parent_modules)
-
-        _collect(targets)
-
-        cleanup_target = all_targets.pop("cleanup", None)
-        targets = list(all_targets.values())
+        if not isinstance(targets, Mapping):
+            targets = {target.name: target for target in targets}
+        cleanup_target = targets.pop("cleanup", None)
+        targets = list(targets.values())
 
         with timer("Built dependency graph in %.3fms", logger=logger):
             for target in targets:
                 for path in target.flattened_outputs():
                     if path in provides:
                         msg = 'File "{}" provided by targets "{}" and "{}".'.format(
-                            path, provides[path].name, target
+                            path, provides[path].name, target.name
                         )
                         raise FileProvidedByMultipleTargetsError(msg)
                     provides[path] = target
 
         for target in targets:
+            temporary.update(target.temporary())
             for path in target.flattened_inputs():
                 if path in provides:
                     dependencies[target].add(provides[path])
@@ -650,32 +522,21 @@ class Graph:
                     ).format(path, target)
                     raise UnresolvedInputError(msg)
 
-        # Add cleanup target to remove temp files
-        temp_paths = [
-            path
-            for target in targets
-            for path in target.flattened_outputs()
-            if path in _temp_registry
-            and not all(
-                module_is_complete(modules.get(m), fs)
-                for m in target_modules[target.name]
-            )
-        ]
-        if temp_paths:
-            cleanup_target = cleanup_target or _create_cleanup_target(temp_paths)
+        targets = {target.name: target for target in targets}
 
-            # Cleanup target depends on all endpoint targets
-            endpoints = set(targets) - set(dependents.keys())
+        # Add cleanup target to remove temporary files
+        if temporary:
+            if not cleanup_target:
+                cleanup_target = _create_cleanup_target(sorted(temporary))
+
+            # For simplicity, the cleanup target is added as a dependent of all endpoints.
+            endpoints = set(targets.values()) - set(dependents.keys())
             for endpoint in endpoints:
                 dependencies[cleanup_target].add(endpoint)
                 dependents[endpoint].add(cleanup_target)
 
-            targets.append(cleanup_target)
+            targets[cleanup_target.name] = cleanup_target
 
-        target_modules = dict(target_modules)
-        validate_temp_file_boundaries(targets, provides, target_modules)
-
-        targets = {target.name: target for target in targets}
         check_for_circular_dependencies(targets, dependencies)
 
         return cls(
@@ -684,14 +545,8 @@ class Graph:
             dependencies=dependencies,
             dependents=dependents,
             unresolved=unresolved,
-            modules=modules,
-            target_modules=target_modules,
+            temporary=temporary,
         )
-
-    def get_modules(self, target) -> list:
-        """Get all modules a target belongs to."""
-        module_names = self.target_modules.get(target.name, set())
-        return [self.modules[name] for name in module_names]
 
     def endpoints(self):
         """Return a set of all targets that are not depended on by other targets."""

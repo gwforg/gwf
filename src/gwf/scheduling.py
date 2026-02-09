@@ -2,7 +2,7 @@ import logging
 from functools import partial
 
 from .backends.base import BackendStatus
-from .core import Status, module_is_complete
+from .core import Status
 
 logger = logging.getLogger(__name__)
 
@@ -16,31 +16,10 @@ SUBMITTED_STATES = (
 )
 
 
-def should_run(target, fs, spec_hashes, graph=None, respect_modules=True):
-    if respect_modules and graph and (parent_modules := graph.get_modules(target)):
-        if all(module_is_complete(module, fs) for module in parent_modules):
-            logger.debug(
-                "Target %s skipped - all parent modules complete: %s",
-                target,
-                [m.name for m in parent_modules],
-            )
-            return False
-        incomplete = [m.name for m in parent_modules if not module_is_complete(m, fs)]
-        logger.debug("Target %s needed by incomplete modules: %s", target, incomplete)
-
+def should_run(target, graph, fs, spec_hashes):
     if spec_hashes.has_changed(target) is not None:
         logger.debug("Target %s has a changed spec", target)
         return True
-
-    for path in target.flattened_outputs():
-        if not fs.exists(path):
-            logger.debug("Target %s is missing output file %s", target, path)
-            return True
-
-    youngest_in_ts, _ = max(
-        ((fs.changed_at(path), path) for path in target.flattened_inputs()),
-        default=(float("-inf"), None),
-    )
 
     # If I have no outputs, but I have inputs, I should probably only run if my input
     # changed, but I don't have any output files to compare with, so I'll just run
@@ -49,8 +28,22 @@ def should_run(target, fs, spec_hashes, graph=None, respect_modules=True):
         logger.debug("Target %s has no outputs and will always be scheduled", target)
         return True
 
+    # Only check non-temp outputs for existence
+    non_temp_outputs = set(target.flattened_outputs()) - graph.temporary
+    for path in non_temp_outputs:
+        if not fs.exists(path):
+            logger.debug("Target %s is missing output file %s", target, path)
+            return True
+
+    # Only consider non-temp inputs for timestamp comparison
+    non_temp_inputs = set(target.flattened_inputs()) - graph.temporary
+    youngest_in_ts, _ = max(
+        ((fs.changed_at(path), path) for path in non_temp_inputs),
+        default=(float("-inf"), None),
+    )
+
     oldest_out_ts, _ = min(
-        ((fs.changed_at(path), path) for path in target.flattened_outputs()),
+        ((fs.changed_at(path), path) for path in non_temp_outputs),
         default=(float("inf"), None),
     )
 
@@ -71,8 +64,15 @@ def schedule(
     submit_func,
     force=False,
     no_deps=False,
-    respect_modules=True,
 ):
+    should_run_cache = {}
+    schedule_cache = {}
+
+    def _cached_should_run(target):
+        if target not in should_run_cache:
+            should_run_cache[target] = should_run(target, graph, fs, spec_hashes)
+        return should_run_cache[target]
+
     def _schedule(target):
         submitted_deps = []
 
@@ -112,25 +112,34 @@ def schedule(
             submit_func(target, dependencies=submitted_deps)
             return Status.SHOULDRUN
 
-        if should_run(
-            target, fs, spec_hashes, graph=graph, respect_modules=respect_modules
-        ):
+        # For targets that produce temp files, check if any dependent needs to run
+        if target.temp:
+            for dependent in graph.dependents[target]:
+                # Only peek at dependents of temporary files that haven't been scheduled yet
+                if _cached_should_run(dependent):
+                    logger.debug(
+                        "Target %s will be submitted because dependent %s needs it",
+                        target,
+                        dependent,
+                    )
+                    submit_func(target, dependencies=submitted_deps)
+                    return Status.SHOULDRUN
+
+        if _cached_should_run(target):
             submit_func(target, dependencies=submitted_deps)
             return Status.SHOULDRUN
 
         return Status.COMPLETED
 
-    cache = {}
-
     def _cached_schedule(target):
-        if target not in cache:
-            cache[target] = _schedule(target)
-        return cache[target]
+        if target not in schedule_cache:
+            schedule_cache[target] = _schedule(target)
+        return schedule_cache[target]
 
     for target in sorted(endpoints, key=lambda t: t.name):
         _cached_schedule(target)
 
-    return cache
+    return schedule_cache
 
 
 def _submit_dryrun(target, dependencies, backend, spec_hashes):
@@ -213,9 +222,7 @@ def submit_workflow(
     )
 
 
-def get_status_map(
-    graph, fs, spec_hashes, backend, endpoints=None, respect_modules=True
-):
+def get_status_map(graph, fs, spec_hashes, backend, endpoints=None):
     """Get the status of each targets in the graph."""
     submit_func = partial(_submit_noop, backend=backend, spec_hashes=spec_hashes)
     return schedule(
@@ -225,5 +232,4 @@ def get_status_map(
         spec_hashes,
         status_func=backend.status,
         submit_func=submit_func,
-        respect_modules=respect_modules,
     )
