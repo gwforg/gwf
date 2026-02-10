@@ -3,6 +3,7 @@ import pytest
 
 from gwf.backends.base import BackendStatus
 from gwf.core import Graph, Target, hash_spec
+from gwf.path import temp
 
 
 @attrs.define
@@ -33,6 +34,9 @@ class FakeFilesystem:
 
     def add_file(self, path, changed_at):
         self.files[path] = changed_at
+
+    def remove_file(self, path):
+        del self.files[path]
 
     def exists(self, path):
         return path in self.files

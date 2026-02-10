@@ -560,6 +560,168 @@ def test_scheduling_with_spec_hashing(backend, spec_hashes, filesystem):
     assert target_states[target] == Status.SHOULDRUN
 
 
+def test_scheduling_graph_with_multiple_temporary_files(filesystem, backend):
+    """Test scheduling with multiple temporary files in a diamond pattern."""
+
+    target1 = Target(
+        "TestTarget1",
+        inputs=[],
+        outputs=[temp("temp_output1.txt")],
+        options={},
+        working_dir="/some/dir",
+    )
+    target2 = Target(
+        "TestTarget2",
+        inputs=["temp_output1.txt"],
+        outputs=[temp("temp_output2.txt")],
+        options={},
+        working_dir="/some/dir",
+    )
+    target3 = Target(
+        "TestTarget3",
+        inputs=["temp_output1.txt"],
+        outputs=[temp("temp_output3.txt"), "intermediate_output1.txt"],
+        options={},
+        working_dir="/some/dir",
+    )
+    target4 = Target(
+        "TestTarget4",
+        inputs=["temp_output2.txt", "intermediate_output1.txt"],
+        outputs=["intermediate_output2.txt"],
+        options={},
+        working_dir="/some/dir",
+    )
+    target5 = Target(
+        "TestTarget5",
+        inputs=["intermediate_output1.txt", "intermediate_output2.txt"],
+        outputs=["final_output1.txt"],
+        options={},
+        working_dir="/some/dir",
+    )
+    target6 = Target(
+        "TestTarget6",
+        inputs=["temp_output3.txt", "intermediate_output2.txt"],
+        outputs=["final_output2.txt"],
+        options={},
+        working_dir="/some/dir",
+    )
+    graph = Graph.from_targets(
+        [target1, target2, target3, target4, target5, target6], filesystem
+    )
+
+    # All targets should run when nothing exists
+    target_states = get_status_map(
+        graph=graph,
+        endpoints=[target5, target6],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+    assert target_states[target1] == Status.SHOULDRUN
+    assert target_states[target2] == Status.SHOULDRUN
+    assert target_states[target3] == Status.SHOULDRUN
+    assert target_states[target4] == Status.SHOULDRUN
+    assert target_states[target5] == Status.SHOULDRUN
+    assert target_states[target6] == Status.SHOULDRUN
+
+    # Add all files
+    filesystem.add_file("/some/dir/temp_output1.txt", changed_at=0)
+    filesystem.add_file("/some/dir/temp_output2.txt", changed_at=1)
+    filesystem.add_file("/some/dir/temp_output3.txt", changed_at=2)
+    filesystem.add_file("/some/dir/intermediate_output1.txt", changed_at=2)
+    filesystem.add_file("/some/dir/intermediate_output2.txt", changed_at=3)
+
+    # All non-endpoint targets should be completed
+    target_states = get_status_map(
+        graph=graph,
+        endpoints=[target5, target6],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+    assert target_states[target1] == Status.COMPLETED
+    assert target_states[target2] == Status.COMPLETED
+    assert target_states[target3] == Status.COMPLETED
+    assert target_states[target4] == Status.COMPLETED
+    assert target_states[target5] == Status.SHOULDRUN
+    assert target_states[target6] == Status.SHOULDRUN
+
+    # Add final output file
+    filesystem.add_file("/some/dir/final_output1.txt", changed_at=4)
+    filesystem.add_file("/some/dir/final_output2.txt", changed_at=4)
+
+    # All targets should be completed
+    target_states = get_status_map(
+        graph=graph,
+        endpoints=[target5, target6],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+    assert target_states[target1] == Status.COMPLETED
+    assert target_states[target2] == Status.COMPLETED
+    assert target_states[target3] == Status.COMPLETED
+    assert target_states[target4] == Status.COMPLETED
+    assert target_states[target5] == Status.COMPLETED
+    assert target_states[target6] == Status.COMPLETED
+
+    # Remove temporary files
+    filesystem.remove_file("/some/dir/temp_output1.txt")
+    filesystem.remove_file("/some/dir/temp_output2.txt")
+    filesystem.remove_file("/some/dir/temp_output3.txt")
+
+    # All targets should be completed
+    target_states = get_status_map(
+        graph=graph,
+        endpoints=[target5, target6],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+    assert target_states[target1] == Status.COMPLETED
+    assert target_states[target2] == Status.COMPLETED
+    assert target_states[target3] == Status.COMPLETED
+    assert target_states[target4] == Status.COMPLETED
+    assert target_states[target5] == Status.COMPLETED
+    assert target_states[target6] == Status.COMPLETED
+
+    # Remove output from an endpoint target
+    filesystem.remove_file("/some/dir/final_output1.txt")
+
+    # Only target5 should run
+    target_states = get_status_map(
+        graph=graph,
+        endpoints=[target5, target6],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+    assert target_states[target1] == Status.COMPLETED
+    assert target_states[target2] == Status.COMPLETED
+    assert target_states[target3] == Status.COMPLETED
+    assert target_states[target4] == Status.COMPLETED
+    assert target_states[target5] == Status.SHOULDRUN
+    assert target_states[target6] == Status.COMPLETED
+
+    # Remove intermediate output file that all endpoint targets depend on
+    filesystem.remove_file("/some/dir/intermediate_output2.txt")
+
+    # All targets targets should run
+    target_states = get_status_map(
+        graph=graph,
+        endpoints=[target5, target6],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+    assert target_states[target1] == Status.SHOULDRUN
+    assert target_states[target2] == Status.SHOULDRUN
+    assert target_states[target3] == Status.SHOULDRUN
+    assert target_states[target4] == Status.SHOULDRUN
+    assert target_states[target5] == Status.SHOULDRUN
+    assert target_states[target6] == Status.SHOULDRUN
+
+
 def test_override_spec_hashes(backend, spec_hashes, filesystem):
     filesystem.add_file("/some/dir/input.txt", changed_at=1)
     filesystem.add_file("/some/dir/output.txt", changed_at=2)
