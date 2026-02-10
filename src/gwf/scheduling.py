@@ -14,6 +14,7 @@ SUBMITTED_STATES = (
     Status.FAILED,
     Status.CANCELLED,
 )
+DEPENDENT_SHOULDRUN_STATES = {BackendStatus.FAILED, BackendStatus.CANCELLED}
 
 
 def should_run(target, graph, fs, spec_hashes):
@@ -115,8 +116,9 @@ def schedule(
         # For targets that produce temp files, check if any dependent needs to run
         if target.temp:
             for dependent in graph.dependents[target]:
-                # Only peek at dependents of temporary files that haven't been scheduled yet
-                if _cached_should_run(dependent):
+                if status_func(
+                    dependent
+                ) in DEPENDENT_SHOULDRUN_STATES or _cached_should_run(dependent):
                     logger.debug(
                         "Target %s will be submitted because dependent %s needs it",
                         target,
