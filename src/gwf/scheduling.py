@@ -1,5 +1,5 @@
 import logging
-from functools import partial, cache
+from functools import partial, lru_cache
 
 from .backends.base import BackendStatus
 from .core import Status
@@ -39,7 +39,7 @@ def schedule(
         )
         return youngest_in > oldest_out
 
-    @cache
+    @lru_cache(maxsize=None)
     def _all_downstream_outputs_exist(target):
         if not (dependents := graph.dependents[target]):
             return False
@@ -56,7 +56,7 @@ def schedule(
                 return False
         return True
 
-    @cache
+    @lru_cache(maxsize=None)
     def _should_run(target):
         if spec_hashes.has_changed(target) is not None:
             logger.debug("Target %s has a changed spec", target)
