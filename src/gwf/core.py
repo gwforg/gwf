@@ -327,7 +327,7 @@ class Target:
             """
             if isinstance(obj, dict):
                 return {k: unwrap_paths(v, add_paths) for k, v in obj.items()}
-            elif isinstance(obj, list | tuple):
+            elif isinstance(obj, (list, tuple)):
                 return [unwrap_paths(v, add_paths) for v in obj]
             elif isinstance(obj, TemporaryPath):
                 if add_paths:
