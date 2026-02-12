@@ -399,25 +399,6 @@ def check_for_circular_dependencies(targets, dependencies):
             visitor(node)
 
 
-def _create_cleanup_target(temp_paths):
-    """Create a cleanup target that removes all temporary files."""
-    # Generate rm commands for all temp files
-    rm_commands = []
-    for path in sorted(temp_paths):
-        # Use -f to avoid errors if file doesn't exist
-        rm_commands.append(f'rm -f "{path}"')
-
-    spec = "\n".join(rm_commands)
-
-    return Target(
-        name="cleanup",
-        inputs=[],
-        outputs=[],
-        options={},
-        spec=spec,
-    )
-
-
 @attrs.define
 class Graph:
     """Represents a dependency graph for a set of targets.
@@ -524,12 +505,10 @@ class Graph:
 
         targets = {target.name: target for target in targets}
 
-        # Add cleanup target to remove temporary files
-        if temporary:
-            if not cleanup_target:
-                cleanup_target = _create_cleanup_target(sorted(temporary))
-
-            # For simplicity, the cleanup target is added as a dependent of all endpoints.
+        # If a cleanup target is provided, add it to the graph and set its dependencies to all
+        # endpoints. This ensures that the cleanup target will run after all other targets have
+        # completed, but will not affect the dependencies between the other targets.
+        if cleanup_target:
             endpoints = set(targets.values()) - set(dependents.keys())
             for endpoint in endpoints:
                 dependencies[cleanup_target].add(endpoint)

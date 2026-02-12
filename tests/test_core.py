@@ -156,7 +156,6 @@ class TestTempFileBoundaryValidation:
         graph = Graph.from_targets([producer, consumer], filesystem)
         assert "Producer" in graph.targets
         assert "Consumer" in graph.targets
-        assert "cleanup" in graph.targets  # Cleanup target should be added
 
     def test_global_producer_temp_allowed(self, filesystem):
         """Temp files can now be produced at global scope - this is allowed."""
@@ -171,7 +170,6 @@ class TestTempFileBoundaryValidation:
         # This should succeed now - global temp producers are allowed
         graph = Graph.from_targets([producer], filesystem)
         assert "Producer" in graph.targets
-        assert "cleanup" in graph.targets  # Cleanup target should be added
 
 
 def test_graph_construction(filesystem):
