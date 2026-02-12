@@ -39,12 +39,14 @@ class TemporaryPath(BasePath):
 def temp(path: str | PathLike | Path) -> TemporaryPath:
     """Mark a path as temporary.
 
-    Temporary files will be automatically cleaned up after the workflow completes.
+    Temporary files are expected to be intermediate files that are not needed after the workflow
+    has completed. Temporary files can be removed after the workflow finishes without affecting
+    the scheduling states.
 
-    Args:
-        path: The path to mark as temporary. Can be a string, PathLike, or Path object.
+    :param path:
+        The path to mark as temporary. Can be a string, PathLike, or Path object.
 
-    Returns:
+    :returns:
         A TemporaryPath instance wrapping the given path.
 
     Example:
@@ -56,13 +58,13 @@ def temp(path: str | PathLike | Path) -> TemporaryPath:
 def protect(path: str | PathLike | Path) -> ProtectedPath:
     """Mark a path as protected from cleanup.
 
-    Protected files will not be removed during cleanup operations, even if they
-    are outputs of non-endpoint targets.
+    Protected files will not be removed during cleanup operations, even if they are outputs of
+    non-endpoint targets.
 
-    Args:
-        path: The path to mark as protected. Can be a string, PathLike, or Path object.
+    :param path:
+        The path to mark as protected. Can be a string, PathLike, or Path object.
 
-    Returns:
+    :returns:
         A ProtectedPath instance wrapping the given path.
 
     Example:

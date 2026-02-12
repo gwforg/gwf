@@ -89,7 +89,8 @@ class FileConfig:
         with the configuration. The `defaults` will be merged into the
         configuration.
 
-        :param path str: Path to the configuration file.
+        :param str path:
+            Path to the configuration file.
         """
         try:
             with open(str(path)) as config_file:

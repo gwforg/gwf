@@ -26,10 +26,10 @@ logger = logging.getLogger(__name__)
 def _flatten(t):
     """Flatten nested structures of paths into a flat list.
 
-    Args:
-        t: A path string, list of paths, dict of paths, or nested structure.
+    :param t:
+        A path string, list of paths, dict of paths, or nested structure.
 
-    Returns:
+    :returns:
         A flat list of all paths in the structure, preserving special path types
         (TemporaryPath, ProtectedPath).
     """
