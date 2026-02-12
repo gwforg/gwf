@@ -3,14 +3,14 @@ from os import PathLike
 from pathlib import Path
 
 
-def _standardize_path(path: str | PathLike | Path) -> str:
+def _standardize_path(path) -> str:
     if isinstance(path, Path):
         return str(path)
     return os.fspath(path)
 
 
 class BasePath:
-    def __init__(self, path: str | PathLike | Path):
+    def __init__(self, path):
         self.path = path
 
     def __str__(self):
@@ -27,16 +27,16 @@ class BasePath:
 
 
 class ProtectedPath(BasePath):
-    def __init__(self, path: str | PathLike | Path):
+    def __init__(self, path):
         super().__init__(path)
 
 
 class TemporaryPath(BasePath):
-    def __init__(self, path: str | PathLike | Path):
+    def __init__(self, path):
         super().__init__(path)
 
 
-def temp(path: str | PathLike | Path) -> TemporaryPath:
+def temp(path) -> TemporaryPath:
     """Mark a path as temporary.
 
     Temporary files are expected to be intermediate files that are not needed after the workflow
@@ -55,7 +55,7 @@ def temp(path: str | PathLike | Path) -> TemporaryPath:
     return TemporaryPath(path)
 
 
-def protect(path: str | PathLike | Path) -> ProtectedPath:
+def protect(path) -> ProtectedPath:
     """Mark a path as protected from cleanup.
 
     Protected files will not be removed during cleanup operations, even if they are outputs of
