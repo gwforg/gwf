@@ -184,6 +184,9 @@ class AnonymousTarget:
         Working directory of this target.
     :ivar str spec:
         The specification of the target.
+    :ivar set temp:
+        An iterable of temporary files which can be removed during cleaning,
+        without affecting the scheduling status of the target.
     :ivar set protect:
         An iterable of protected files which will not be removed during
         cleaning, even if this target is not an endpoint.
@@ -194,6 +197,7 @@ class AnonymousTarget:
     options: dict = attrs.field()
     group: str = attrs.field(default=None)
     working_dir: str = attrs.field(default=".")
+    temp: set = attrs.field(factory=set, converter=set)
     protect: set = attrs.field(factory=set, converter=set)
     executor: Optional[executors.Executor] = attrs.field(default=None)
     spec: str = attrs.field(default="")
@@ -274,6 +278,7 @@ class Target:
     options: dict = attrs.field()
     group: str = attrs.field(default=None)
     working_dir: str = attrs.field(default=".")
+    temp: set = attrs.field(factory=set, converter=set)
     protect: set = attrs.field(factory=set, converter=set)
     executor: executors.Executor = attrs.field(factory=executors.Bash)
     spec: str = attrs.field(default="", repr=False)
@@ -308,6 +313,9 @@ class Target:
 
     def flattened_outputs(self):
         return _norm_paths(self.working_dir, _flatten(self.outputs))
+
+    def temporary(self):
+        return set(_norm_paths(self.working_dir, _flatten(self.temp)))
 
     def protected(self):
         return set(_norm_paths(self.working_dir, _flatten(self.protect)))
@@ -393,6 +401,7 @@ class Graph:
     dependencies: defaultdict = attrs.field()
     dependents: defaultdict = attrs.field()
     unresolved: set = attrs.field()
+    temporary: set = attrs.field()
 
     @classmethod
     def from_targets(cls, targets, fs):
@@ -410,6 +419,7 @@ class Graph:
             Raised if the graph contains a circular dependency.
         """
         provides = {}
+        temporary = set()
         unresolved = set()
         dependencies = defaultdict(set)
         dependents = defaultdict(set)
@@ -430,6 +440,7 @@ class Graph:
                     provides[path] = target
 
         for target in targets:
+            temporary.update(target.temporary())
             for path in target.flattened_inputs():
                 if path in provides:
                     dependencies[target].add(provides[path])
@@ -460,6 +471,7 @@ class Graph:
             dependencies=dependencies,
             dependents=dependents,
             unresolved=unresolved,
+            temporary=temporary,
         )
 
     def endpoints(self):

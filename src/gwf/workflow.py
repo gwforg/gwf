@@ -201,7 +201,15 @@ class Workflow:
         self.targets[target.name] = target
 
     def target(
-        self, name, inputs, outputs, protect=None, group=None, executor=None, **options
+        self,
+        name,
+        inputs,
+        outputs,
+        temp=None,
+        protect=None,
+        group=None,
+        executor=None,
+        **options,
     ):
         """Create a target and add it to the :class:`gwf.Workflow`.
 
@@ -229,6 +237,7 @@ class Workflow:
             name=name,
             inputs=inputs,
             outputs=outputs,
+            temp=temp if temp else set(),
             protect=protect if protect else set(),
             group=group,
             executor=executor or self.executor,
@@ -266,6 +275,7 @@ class Workflow:
             name=name,
             inputs=template.inputs,
             outputs=template.outputs,
+            temp=template.temp,
             protect=template.protect,
             group=template.group,
             executor=template.executor or self.executor,

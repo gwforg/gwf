@@ -1,5 +1,5 @@
 import logging
-from functools import partial
+from functools import partial, lru_cache
 
 from .backends.base import BackendStatus
 from .core import Status
@@ -16,42 +16,6 @@ SUBMITTED_STATES = (
 )
 
 
-def should_run(target, fs, spec_hashes):
-    new_hash = spec_hashes.has_changed(target)
-    if new_hash is not None:
-        logger.debug("Target %s has a changed spec", target)
-        return True
-
-    for path in target.flattened_outputs():
-        if not fs.exists(path):
-            logger.debug("Target %s is missing output file %s", target, path)
-            return True
-
-    youngest_in_ts, _ = max(
-        ((fs.changed_at(path), path) for path in target.flattened_inputs()),
-        default=(float("-inf"), None),
-    )
-
-    # If I have no outputs, but I have inputs, I should probably only run if my input
-    # changed, but I don't have any output files to compare with, so I'll just run
-    # every time.
-    if not target.outputs:
-        logger.debug("Target %s has no outputs and will always be scheduled", target)
-        return True
-
-    oldest_out_ts, _ = min(
-        ((fs.changed_at(path), path) for path in target.flattened_outputs()),
-        default=(float("inf"), None),
-    )
-
-    if youngest_in_ts > oldest_out_ts:
-        logger.debug("Target %s is not up-to-date", target)
-        return True
-
-    logger.debug("Target %s is up-to-date", target)
-    return False
-
-
 def schedule(
     endpoints,
     graph,
@@ -62,6 +26,117 @@ def schedule(
     force=False,
     no_deps=False,
 ):
+    @lru_cache(maxsize=None)
+    def _non_temp_outputs(target):
+        return frozenset(target.flattened_outputs()) - graph.temporary
+
+    @lru_cache(maxsize=None)
+    def _non_temp_inputs(target):
+        return frozenset(target.flattened_inputs()) - graph.temporary
+
+    @lru_cache(maxsize=None)
+    def _oldest_output_mtime(target):
+        outputs = _non_temp_outputs(target)
+        missing = next((p for p in outputs if not fs.exists(p)), None)
+        if missing is not None:
+            return None, missing
+        return min((fs.changed_at(p) for p in outputs), default=float("inf")), None
+
+    @lru_cache(maxsize=None)
+    def _youngest_input_mtime(target):
+        inputs = _non_temp_inputs(target)
+        first_missing = next((p for p in inputs if not fs.exists(p)), None)
+        existing = [p for p in inputs if fs.exists(p)]
+        youngest = max((fs.changed_at(p) for p in existing), default=float("-inf"))
+        return youngest, first_missing
+
+    @lru_cache(maxsize=None)
+    def _dependents_are_up_to_date(target):
+        if not (dependents := graph.dependents[target]):
+            return False
+        for dep in dependents:
+            if _non_temp_outputs(dep):
+                oldest_out, _ = _oldest_output_mtime(dep)
+                if oldest_out is None:
+                    return False
+                youngest_in, _ = _youngest_input_mtime(dep)
+                if youngest_in > oldest_out:
+                    return False
+            elif not _dependents_are_up_to_date(dep):
+                return False
+        return True
+
+    @lru_cache(maxsize=None)
+    def _should_run(target):
+        if spec_hashes.has_changed(target) is not None:
+            logger.debug("Target %s has a changed spec", target)
+            return True
+
+        # If I have no outputs, but I have inputs, I should probably only run if my input
+        # changed, but I don't have any output files to compare with, so I'll just run
+        # every time.
+        if not target.outputs:
+            logger.debug(
+                "Target %s has no outputs and will always be scheduled", target
+            )
+            return True
+
+        non_temp = _non_temp_outputs(target)
+        temp_outputs = frozenset(target.flattened_outputs()) - non_temp
+
+        # If I have non-temporary outputs, I should run if any of them are missing, or if any
+        # existing input is newer than any existing output.
+        if non_temp:
+            oldest_out, missing_out = _oldest_output_mtime(target)
+            if oldest_out is None:
+                logger.debug("Target %s is missing output file %s", target, missing_out)
+                return True
+
+            youngest_in, missing_in = _youngest_input_mtime(target)
+            if missing_in is not None:
+                logger.debug("Target %s is missing input file %s", target, missing_in)
+                return True
+
+            if youngest_in > oldest_out:
+                logger.debug("Target %s is not up-to-date", target)
+                return True
+
+            logger.debug("Target %s is up-to-date", target)
+            return False
+
+        # If I have only temporary outputs and any of them are missing, I should run if any downstream
+        # targets are missing outputs or have newer inputs, otherwise I can consider myself up-to-date.
+        missing_temp = next((p for p in temp_outputs if not fs.exists(p)), None)
+        if missing_temp is not None:
+            if _dependents_are_up_to_date(target):
+                logger.debug(
+                    "Target %s has missing temporary outputs but all downstream outputs exist and are up-to-date",
+                    target,
+                )
+                return False
+
+            logger.debug(
+                "Target %s is missing temporary output file %s",
+                target,
+                missing_temp,
+            )
+            return True
+
+        # If I have only temporary outputs and none of them are missing, I should run if any existing input
+        # is newer than any existing output.
+        oldest_temp = min(
+            (fs.changed_at(p) for p in temp_outputs), default=float("inf")
+        )
+        if any(
+            fs.exists(p) and fs.changed_at(p) > oldest_temp
+            for p in target.flattened_inputs()
+        ):
+            logger.debug("Target %s (temp outputs) is not up-to-date", target)
+            return True
+
+        logger.debug("Target %s is up-to-date", target)
+        return False
+
     def _schedule(target):
         submitted_deps = []
 
@@ -101,7 +176,7 @@ def schedule(
             submit_func(target, dependencies=submitted_deps)
             return Status.SHOULDRUN
 
-        if should_run(target, fs, spec_hashes):
+        if _should_run(target):
             submit_func(target, dependencies=submitted_deps)
             return Status.SHOULDRUN
 
