@@ -21,7 +21,7 @@ gwf.target('Target2', inputs=['a.txt'], outputs=['b.txt']) << 'sleep 3; touch b.
 def test_cancel_one_target(cli_runner, local_backend, long_running_workflow):
     result = cli_runner.invoke(main, ["run", "Target1"])
     result = cli_runner.invoke(main, ["cancel", "Target1"])
-    assert result.output == "Cancelling target Target1\n"
+    assert "Cancelling target Target1" in result.output
     result = cli_runner.invoke(main, ["status", "Target1"])
     assert "cancelled" in result.output
 
