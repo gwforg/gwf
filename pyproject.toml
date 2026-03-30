@@ -19,7 +19,7 @@ classifiers = [
 dynamic = ["version", "description"]
 name = "gwf"
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 
 [project.scripts]
 gwf = "gwf.cli:main"
@@ -47,7 +47,7 @@ Home = "https://gwf.app"
 
 [tool.pixi.project]
 channels = ["conda-forge"]
-platforms = ["linux-64", "linux-aarch64"]
+platforms = ["linux-64", "linux-aarch64", "osx-arm64"]
 
 [tool.pixi.dependencies]
 click = "*"
@@ -58,12 +58,11 @@ prettyprinter = "*"
 [tool.pixi.environments]
 default = { solve-group = "default" }
 dev = { features = ["dev", "test"], solve-group = "default" }
-test-py38 = ["py38", "test"]
-test-py39 = ["py39", "test"]
 test-py310 = ["py310", "test"]
 test-py311 = ["py311", "test"]
 test-py312 = ["py312", "test"]
 test-py313 = ["py313", "test"]
+test-py314 = ["py314", "test"]
 
 [tool.pixi.feature.dev.dependencies]
 ruff = ">=0.9.4,<0.10"
@@ -97,10 +96,6 @@ pytest-asyncio = ">=0.23,<0.26"
 [tool.pixi.feature.test.pypi-dependencies]
 gwf = { path = ".", editable = true }
 
-[tool.pixi.feature.py38.dependencies]
-python = "3.8.*"
-[tool.pixi.feature.py39.dependencies]
-python = "3.9.*"
 [tool.pixi.feature.py310.dependencies]
 python = "3.10.*"
 [tool.pixi.feature.py311.dependencies]
@@ -109,6 +104,8 @@ python = "3.11.*"
 python = "3.12.*"
 [tool.pixi.feature.py313.dependencies]
 python = "3.13.*"
+[tool.pixi.feature.py314.dependencies]
+python = "3.14.*"
 
 [tool.pixi.feature.test.tasks]
 test = "pytest tests/"

@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        environment: ["py38", "py39", "py310", "py311", "py312", "py313"]
+        environment: ["py310", "py311", "py312", "py313", "py314"]
 
     steps:
       - uses: actions/checkout@v3
