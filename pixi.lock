@@ -2794,7 +2794,7 @@ packages:
 - pypi: ./
   name: gwf
   version: 2.2.0.dev0
-  sha256: d8a744ebbe82afd6680bfd951a312cb839675d80bbed5e2e9cbf651e79067d2a
+  sha256: 35dbdf76bae6659bd9d20fd696eccc0f58538cce00563e0a376eaaacd2de909a
   requires_python: '>=3.10'
 - conda: https://conda.anaconda.org/conda-forge/noarch/h11-0.14.0-pyhd8ed1ab_1.conda
   sha256: 622516185a7c740d5c7f27016d0c15b45782c1501e5611deec63fd70344ce7c8
