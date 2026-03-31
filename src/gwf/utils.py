@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def entry_points(group):
     if sys.version_info < (3, 12):
-        return _entry_points()[group]
+        return _entry_points().select(group=group)
     else:
         return _entry_points(group=group)
 
