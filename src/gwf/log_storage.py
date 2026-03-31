@@ -1,4 +1,5 @@
 import hashlib
+import os
 from pathlib import Path
 from typing import Tuple
 
@@ -60,7 +61,8 @@ def clean_logs(working_dir: Path | str, graph):
         active_paths.add(err)
 
     emptied_dirs = set()
-    for root, dirs, files in get_logs_dir(working_dir).walk(top_down=False):
+    logs_dir = get_logs_dir(working_dir)
+    for root, dirs, files in os.walk(logs_dir, topdown=False):
         files_removed = 0
         dirs_removed = 0
 
