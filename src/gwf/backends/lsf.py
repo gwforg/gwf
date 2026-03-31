@@ -20,7 +20,6 @@ None.
 """
 
 import logging
-import os.path
 import re
 
 import attrs

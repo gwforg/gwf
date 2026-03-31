@@ -11,7 +11,7 @@ from . import __version__
 from .backends import guess_backend, list_backends
 from .conf import FileConfig
 from .core import Context
-from .log_storage import get_logs_dir, init_log_storage
+from .log_storage import init_log_storage
 from .utils import ColorFormatter, entry_points, find_workflow
 
 logger = logging.getLogger(__name__)

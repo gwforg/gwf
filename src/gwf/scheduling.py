@@ -2,7 +2,7 @@ import logging
 from functools import partial
 
 from .backends.base import BackendStatus
-from .core import Status, UnresolvedInputError
+from .core import Status
 from .log_storage import prepare_log_storage_for_target
 
 logger = logging.getLogger(__name__)

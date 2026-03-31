@@ -31,7 +31,7 @@ Scheduling
 ----------
 
 .. automodule:: gwf.scheduling
-    :members: schedule, submit_target, submit_workflow, get_status_map
+    :members: schedule, submit_backend, submit_workflow, get_status_map
 
 Backends
 --------
@@ -45,11 +45,5 @@ Filtering
 ---------
 
 .. automodule:: gwf.filtering
-    :members: filter_generic, filter_names
-    :undoc-members:
-
-Helpers for filtering:
-
-.. automodule:: gwf.filtering
-    :members: ApplyMixin
+    :members: filter_generic, filter_names, ApplyMixin
     :undoc-members:
