@@ -67,15 +67,15 @@ def clean_logs(working_dir: Path | str, graph):
         dirs_removed = 0
 
         for name in dirs:
-            path = root.joinpath(name)
+            path = os.path.join(root, name)
             if path in emptied_dirs:
-                path.rmdir()
+                Path(path).rmdir()
                 dirs_removed += 1
 
         for name in files:
-            path = root.joinpath(name)
+            path = os.path.join(root, name)
             if path not in active_paths:
-                path.unlink()
+                Path(path).unlink()
                 files_removed += 1
 
         if files_removed == len(files) and dirs_removed == len(dirs):
