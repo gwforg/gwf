@@ -28,7 +28,7 @@ def _flatten(t):
         if isinstance(g, str) or hasattr(g, "__fspath__"):
             res.append(g)
         elif isinstance(g, Mapping):
-            for k, v in g.items():
+            for v in g.values():
                 flatten_rec(v)
         else:
             for v in g:
@@ -397,7 +397,7 @@ class Graph:
     unresolved: set = attrs.field()
 
     @classmethod
-    def from_targets(cls, targets, fs):
+    def from_targets(cls, targets):
         """Construct a dependency graph from a set of targets.
 
         When a graph is initialized it computes all dependency relations
