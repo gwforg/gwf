@@ -149,7 +149,7 @@ def status(ctx, group, status, endpoints, format, targets):
     workflow = Workflow.from_context(ctx)
 
     fs = CachedFilesystem()
-    graph = Graph.from_targets(workflow.targets, fs)
+    graph = Graph.from_targets(workflow.targets)
 
     with create_backend(
         ctx.backend, working_dir=ctx.working_dir, config=ctx.config

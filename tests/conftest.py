@@ -94,15 +94,15 @@ def empty_graph(graph_factory):
 
 
 @pytest.fixture
-def trivial_graph(filesystem):
+def trivial_graph():
     target = Target(
         "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/dir"
     )
-    return Graph.from_targets([target], filesystem)
+    return Graph.from_targets([target])
 
 
 @pytest.fixture
-def diamond_graph(filesystem):
+def diamond_graph():
     target1 = Target(
         "TestTarget1",
         inputs=[],
@@ -131,7 +131,7 @@ def diamond_graph(filesystem):
         options={},
         working_dir="/some/dir",
     )
-    return Graph.from_targets([target1, target2, target3, target4], filesystem)
+    return Graph.from_targets([target1, target2, target3, target4])
 
 
 @pytest.fixture

@@ -4,7 +4,7 @@ from pathlib import Path
 import click
 
 from .. import Workflow
-from ..core import CachedFilesystem, Graph, get_spec_hashes, pass_context
+from ..core import Graph, get_spec_hashes, pass_context
 from ..filtering import filter_names
 
 
@@ -44,8 +44,7 @@ def touch(ctx, targets, create_missing):
     is given, missing files will also be created.
     """
     workflow = Workflow.from_context(ctx)
-    filesystem = CachedFilesystem()
-    graph = Graph.from_targets(workflow.targets, filesystem)
+    graph = Graph.from_targets(workflow.targets)
     endpoints = filter_names(graph, targets) if targets else graph.endpoints()
     with get_spec_hashes(working_dir=ctx.working_dir, config=ctx.config) as spec_hashes:
         touch_workflow(endpoints, graph, spec_hashes, create_missing)

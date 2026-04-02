@@ -149,7 +149,7 @@ def test_graph_construction(filesystem):
     filesystem.add_file("/some/dir/test_input1.txt", 0)
     filesystem.add_file("/some/dir/test_input2.txt", 0)
 
-    graph = Graph.from_targets([t1, t2, t3, t4], filesystem)
+    graph = Graph.from_targets([t1, t2, t3, t4])
 
     assert len(graph.targets) == 4
 
@@ -195,7 +195,7 @@ def test_graph_raises_multiple_providers_error(filesystem):
     )
 
     with pytest.raises(FileProvidedByMultipleTargetsError):
-        Graph.from_targets({"Target1": t1, "Target2": t2}, filesystem)
+        Graph.from_targets({"Target1": t1, "Target2": t2})
 
 
 def test_graph_raises_circular_dependency_error(filesystem):
@@ -221,7 +221,7 @@ def test_graph_raises_circular_dependency_error(filesystem):
         working_dir="/some/dir",
     )
     with pytest.raises(CircularDependencyError):
-        Graph.from_targets({"Target1": t1, "Target2": t2, "Target3": t3}, filesystem)
+        Graph.from_targets({"Target1": t1, "Target2": t2, "Target3": t3})
 
 
 def test_graph_raises_when_two_targets_output_the_same_file(filesystem):
@@ -241,7 +241,7 @@ def test_graph_raises_when_two_targets_output_the_same_file(filesystem):
     )
 
     with pytest.raises(FileProvidedByMultipleTargetsError):
-        Graph.from_targets([target1, target2], filesystem)
+        Graph.from_targets([target1, target2])
 
 
 def test_schedule_if_one_of_its_output_files_does_not_exist(
@@ -309,7 +309,7 @@ def test_schedule_if_it_is_a_source_and_has_missing_output_file(filesystem, back
     target = Target(
         name="Foo", inputs=[], outputs=["foo"], options={}, working_dir="/some/dir"
     )
-    graph = Graph.from_targets([target], filesystem)
+    graph = Graph.from_targets([target])
 
     target_states = get_status_map(
         graph=graph,
@@ -344,7 +344,7 @@ def test_do_not_schedule_if_all_outputs_are_newer_then_the_inputs(backend, files
         options={},
         working_dir="/some/dir",
     )
-    graph = Graph.from_targets([target], filesystem)
+    graph = Graph.from_targets([target])
 
     target_states = get_status_map(
         graph=graph,
@@ -386,7 +386,7 @@ def test_scheduling_target_with_deep_deps_that_are_not_submitted(filesystem, bac
         working_dir="/some/dir",
     )
 
-    graph = Graph.from_targets([target1, target2, target3, target4], filesystem)
+    graph = Graph.from_targets([target1, target2, target3, target4])
     target_states = get_status_map(
         graph=graph,
         endpoints=[target4],
@@ -429,7 +429,7 @@ def test_scheduling_branch_and_join_structure(filesystem, backend):
         options={},
         working_dir="/some/dir",
     )
-    graph = Graph.from_targets([target1, target2, target3, target4], filesystem)
+    graph = Graph.from_targets([target1, target2, target3, target4])
     target_states = get_status_map(
         graph=graph,
         endpoints=[target4],
@@ -455,7 +455,7 @@ def test_scheduling_with_spec_hashing(backend, spec_hashes, filesystem):
         working_dir="/some/dir",
         spec="foo",
     )
-    graph = Graph.from_targets([target], filesystem)
+    graph = Graph.from_targets([target])
 
     target_states = get_status_map(
         graph=graph,

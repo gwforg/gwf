@@ -4,7 +4,7 @@ from collections import OrderedDict
 import click
 
 from .. import Workflow
-from ..core import CachedFilesystem, Graph, pass_context
+from ..core import Graph, pass_context
 from ..filtering import filter_names
 
 
@@ -78,8 +78,7 @@ def info(ctx, targets, format):
     """Display information about a target."""
     workflow = Workflow.from_context(ctx)
 
-    fs = CachedFilesystem()
-    graph = Graph.from_targets(workflow.targets, fs)
+    graph = Graph.from_targets(workflow.targets)
 
     matches = iter(graph)
     if targets:

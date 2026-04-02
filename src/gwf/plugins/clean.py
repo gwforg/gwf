@@ -5,7 +5,7 @@ import os.path
 import click
 
 from .. import Workflow
-from ..core import CachedFilesystem, Graph, get_spec_hashes, pass_context
+from ..core import Graph, get_spec_hashes, pass_context
 from ..filtering import EndpointFilter, NameFilter, filter_generic
 
 logger = logging.getLogger(__name__)
@@ -44,8 +44,7 @@ def clean(ctx, targets, all, force):
     ``--all`` flag.
     """
     workflow = Workflow.from_context(ctx)
-    fs = CachedFilesystem()
-    graph = Graph.from_targets(workflow.targets, fs)
+    graph = Graph.from_targets(workflow.targets)
 
     filters = []
     if targets:

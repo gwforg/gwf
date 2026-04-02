@@ -3,7 +3,7 @@ import click
 from .. import Workflow
 from ..backends import create_backend
 from ..backends.exceptions import BackendError, TargetError, UnsupportedOperationError
-from ..core import CachedFilesystem, Graph, pass_context
+from ..core import Graph, pass_context
 from ..filtering import filter_names
 
 
@@ -37,8 +37,7 @@ def cancel(ctx, targets, force):
         )
 
     workflow = Workflow.from_context(ctx)
-    fs = CachedFilesystem()
-    graph = Graph.from_targets(workflow.targets, fs)
+    graph = Graph.from_targets(workflow.targets)
 
     if targets:
         targets = filter_names(graph, targets)
