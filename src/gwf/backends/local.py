@@ -133,7 +133,7 @@ class Client:
                 sock.connect((hostname, port))
                 return cls.from_socket(sock)
             except OSError:
-                retry_delay = 2**attempts_used
+                retry_delay = min(0.1 * 2**attempts_used, 10)
                 logger.warning(
                     "Could not connect, trying again in %d second(s). "
                     "Did you start workers with `gwf workers`?",
