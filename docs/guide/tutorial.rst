@@ -653,7 +653,7 @@ save disk space. In *gwf* we can use the ``gwf clean`` command for this:
 
     $ gwf clean
 
-This command only removes files produced by an endpoint target (a target which
+By default, this removes files *not* produced by an endpoint target (a target which
 no other target depends on):
 
 .. code-block:: console
@@ -669,7 +669,8 @@ no other target depends on):
     Deleting output files of UnzipGenome
     Deleting file "/Users/das/Code/gwf/examples/readmapping/ponAbe2.fa" from target "UnzipGenome"
 
-We can tell *gwf* to remove all files by running ``gwf clean --all``.
+We can tell *gwf* to remove all files by running ``gwf clean --all``, in which case
+it will also delete files produced by an endpoint target.
 
 Protecting Files From Being Cleaned Up
 ======================================
