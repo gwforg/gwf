@@ -14,8 +14,14 @@ None.
     Number of cores allocated to this target (default: 1).
 * **memory (str):**
     Memory allocated to this target (default: 4GB).
+* **walltime (str):**
+    Wall-clock time limit, ``HH:MM:SS`` (default: ``01:00:00``). Emitted as
+    ``#PBS -l walltime=...``.
 * **queue (str):**
     Queue to submit the target to (default: normal).
+* **account (str):**
+    Accounting/group string for the job (default: unset). When set, emitted
+    as ``#PBS -A <account>``; when empty the directive is omitted entirely.
 
 """
 
@@ -32,10 +38,17 @@ from .utils import call, has_exe
 
 logger = logging.getLogger(__name__)
 
-TARGET_DEFAULTS = {"queue": "normal", "memory": "4GB", "cores": 1}
+TARGET_DEFAULTS = {
+    "queue": "normal",
+    "memory": "4GB",
+    "cores": 1,
+    "walltime": "01:00:00",
+    "account": "",
+}
 
 PBS_HEADER = """#PBS -l mem={memory}
 #PBS -l nodes=1:ppn={cores}
+#PBS -l walltime={walltime}
 #PBS -q {queue}
 #PBS -o {std_out}
 #PBS -e {std_err}
@@ -100,6 +113,11 @@ class PBSOps:
         for name, value in target_options.items():
             header = header.replace(f"{{{name}}}", str(value))
         header = header.replace("{job_name}", target.name)
+        # Optional accounting directive. PBS rejects an empty argument to -A,
+        # so the line is appended only when an account is actually configured.
+        account = str(target_options.get("account", "")).strip()
+        if account:
+            header += f"\n#PBS -A {account}"
         out = []
         out.append("#!/bin/bash")
         out.append(header)
