@@ -80,14 +80,15 @@ class LSFOps:
         logger.debug("Getting job states from LSF")
         if not tracked_jobs:
             return {}
+        # Default tracked job IDs to UNKNOWN
         job_states = {job_id: BackendStatus.UNKNOWN for job_id in tracked_jobs}
-        for job_id in tracked_jobs:
-            cmd = ["bjobs", "-noheader", "-o", "stat", job_id]
-            ret = call(*cmd).strip()
-            if ret == "":
-                continue
-            state = BJOB_STATES[ret]
-            job_states[job_id] = state
+
+        # Get all current job statuses
+        for line in call("bjobs", "-noheader", "-o" , "jobid stat delimiter=','").splitlines():
+            job_id, state = line.strip().split(",")
+            # Update job status if tracked
+            if job_id in tracked_jobs:
+                job_states[job_id] = BJOB_STATES[state]
         return job_states
 
     def compile_script(self, target):
