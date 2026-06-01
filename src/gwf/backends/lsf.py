@@ -31,11 +31,10 @@ from .utils import call, has_exe
 
 logger = logging.getLogger(__name__)
 
-TARGET_DEFAULTS = {"queue": "normal", "memory": "4GB", "cores": 1, "resource": ""}
+TARGET_DEFAULTS = {"queue": "normal", "memory": "4GB", "cores": 1}
 
 BJOB_HEADER = """#BSUB -M {memory}
 #BSUB -R "select[mem>{memory}] rusage[mem={memory}] span[hosts=1]"
-#BSUB -R {resource}
 #BSUB -n {cores}
 #BSUB -q {queue}
 #BSUB -oo {std_out}
