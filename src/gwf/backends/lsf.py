@@ -16,6 +16,9 @@ None.
 * **queue (str):**
     Queue to submit the target to (default: normal).
     for different purposes or priorities.
+* **lsf_args (list[str]):**
+    Extra arguments passed directly to `bsub`. Use this for LSF options that
+    are not otherwise supported by *gwf*.
 
 """
 
@@ -31,7 +34,14 @@ from .utils import call, has_exe
 
 logger = logging.getLogger(__name__)
 
-TARGET_DEFAULTS = {"queue": "normal", "memory": "4GB", "cores": 1}
+TARGET_DEFAULTS = {
+    "queue": "normal",
+    "memory": "4GB",
+    "cores": 1,
+    "lsf_args": [],
+}
+
+SUBMISSION_ARGS_OPTION = "lsf_args"
 
 BJOB_HEADER = """#BSUB -M {memory}
 #BSUB -R "select[mem>{memory}] rusage[mem={memory}] span[hosts=1]"
@@ -71,6 +81,7 @@ class LSFOps:
             args.append("-w")
             args.append(" && ".join([f"done({job_id})" for job_id in dependencies]))
             args.append("-ti")
+        args.extend(target.options.get(SUBMISSION_ARGS_OPTION, []))
         logger.debug(f"Submitting job {target.name} to LSF")
         stdout = call("bsub", *args, input=script).strip()
         job_id = re.search(r"Job <(\d+)>", stdout)[1]

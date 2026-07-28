@@ -22,6 +22,9 @@ None.
 * **account (str):**
     Accounting/group string for the job (default: unset). When set, emitted
     as ``#PBS -A <account>``; when empty the directive is omitted entirely.
+* **pbs_args (list[str]):**
+    Extra arguments passed directly to `qsub`. Use this for PBS options that
+    are not otherwise supported by *gwf*.
 
 """
 
@@ -44,7 +47,10 @@ TARGET_DEFAULTS = {
     "cores": 1,
     "walltime": "01:00:00",
     "account": "",
+    "pbs_args": [],
 }
+
+SUBMISSION_ARGS_OPTION = "pbs_args"
 
 PBS_HEADER = """#PBS -l mem={memory}
 #PBS -l nodes=1:ppn={cores}
@@ -85,6 +91,7 @@ class PBSOps:
         args = []
         if dependencies:
             args.append("-W depend=afterok:" + ":".join(dependencies))
+        args.extend(target.options.get(SUBMISSION_ARGS_OPTION, []))
         logger.debug(f"Submitting job {target.name} to PBS")
         stdout = call("qsub", *args, script_path).strip()
         job_id = stdout.split(".")[0]  # Extract job ID from the full PBS job ID

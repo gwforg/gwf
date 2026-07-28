@@ -23,6 +23,9 @@ None.
 * **account (str):**
     Account to be used when running the target. Corresponds to the SGE
     project.
+* **sge_args (list[str]):**
+    Extra arguments passed directly to `qsub`. Use this for SGE options that
+    are not otherwise supported by *gwf*.
 """
 
 import logging
@@ -45,7 +48,10 @@ TARGET_DEFAULTS = {
     "walltime": "01:00:00",
     "queue": None,
     "account": None,
+    "sge_args": [],
 }
+
+SUBMISSION_ARGS_OPTION = "sge_args"
 
 OPTION_FLAGS = {
     "cores": "-pe smp ",
@@ -73,6 +79,7 @@ class SGEOps:
         if dependencies:
             args.append("-hold_jid")
             args.append(",".join(dependencies))
+        args.extend(target.options.get(SUBMISSION_ARGS_OPTION, []))
         return call("qsub", *args, input=script)
 
     def get_job_states(self, tracked_jobs):
@@ -108,6 +115,8 @@ class SGEOps:
         out.append("#$ -cwd")
 
         for option_name, option_value in target.options.items():
+            if option_name == SUBMISSION_ARGS_OPTION:
+                continue
             # SGE wants per-core memory, but gwf wants total memory.
             if option_name == "memory":
                 number = int(re.sub(r"[^0-9]+", "", option_value))

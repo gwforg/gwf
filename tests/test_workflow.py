@@ -79,6 +79,34 @@ def test_target_options_override_defaults():
     assert target.options == {"cores": 16, "memory": "8g"}
 
 
+@pytest.mark.parametrize(
+    "option_name", ["slurm_args", "sge_args", "lsf_args", "pbs_args"]
+)
+def test_targets_inherit_workflow_submission_argument_defaults(option_name):
+    args = ["--unsupported-option", "value"]
+    workflow = Workflow(defaults={option_name: args})
+
+    target = workflow.target("TestTarget", inputs=[], outputs=[])
+
+    assert target.options == {option_name: args}
+
+
+@pytest.mark.parametrize(
+    "option_name", ["slurm_args", "sge_args", "lsf_args", "pbs_args"]
+)
+def test_target_submission_arguments_override_workflow_defaults(option_name):
+    workflow = Workflow(defaults={option_name: ["--default-option"]})
+
+    target = workflow.target(
+        "TestTarget",
+        inputs=[],
+        outputs=[],
+        **{option_name: ["--target-option", "value"]},
+    )
+
+    assert target.options == {option_name: ["--target-option", "value"]}
+
+
 @patch("gwf.workflow.sys._getframe", autospec=True)
 @patch("gwf.workflow.inspect.getfile", return_value="/some/path/file.py", autospec=True)
 def test_workflow_computes_working_dir_when_not_initialized_with_working_dir(

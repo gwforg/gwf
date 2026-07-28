@@ -41,6 +41,9 @@ To use this backend you must activate the `slurm` backend.
 * **gres (str):**
     Equivalent to the `--gres` flog on `sbatch`. Usually used to
     request access to GPUs.
+* **slurm_args (list[str]):**
+    Extra arguments passed directly to `sbatch`. Use this for Slurm options
+    that are not otherwise supported by *gwf*.
 """
 
 import os
@@ -168,7 +171,10 @@ TARGET_DEFAULTS = {
     "mail_user": None,
     "qos": None,
     "gres": None,
+    "slurm_args": [],
 }
+
+SUBMISSION_ARGS_OPTION = "slurm_args"
 
 OPTION_FLAGS = {
     "nodes": "-N ",
@@ -205,6 +211,7 @@ class SlurmOps:
         args = ["--parsable"]
         if dependencies:
             args.append("--dependency=afterok:{}".format(":".join(dependencies)))
+        args.extend(target.options.get(SUBMISSION_ARGS_OPTION, []))
 
         environ = os.environ.copy()
         environ["GWF_EXEC_WORKFLOW_ROOT"] = self.working_dir
@@ -264,6 +271,8 @@ class SlurmOps:
         with render_script(target) as buf:
             print(OPTION_STR.format("--job-name=", target.name), file=buf)
             for option_name, option_value in target.options.items():
+                if option_name == SUBMISSION_ARGS_OPTION:
+                    continue
                 print(
                     OPTION_STR.format(OPTION_FLAGS[option_name], option_value), file=buf
                 )

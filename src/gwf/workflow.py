@@ -143,7 +143,8 @@ class Workflow:
 
     The *defaults* argument is a dictionary of option defaults for targets and
     overrides defaults provided by the backend. Targets can override the
-    defaults individually. For example::
+    defaults individually, including backend-specific options such as
+    ``slurm_args``. For example::
 
         gwf = Workflow(defaults={
             'cores': 12,
@@ -155,6 +156,13 @@ class Workflow:
 
     In this case `Foo` and `Bar` inherit the `cores` and `memory` options set
     in `defaults`, but `Bar` overrides the `cores` option.
+
+    For example, a Slurm-specific submission argument can be set for every
+    target and overridden for one target::
+
+        gwf = Workflow(defaults={'slurm_args': ['--exclusive']})
+        gwf.target('Foo', inputs=[], outputs=[])
+        gwf.target('Bar', inputs=[], outputs=[], slurm_args=['--gpus=1'])
     """
 
     working_dir: str = attrs.field()
