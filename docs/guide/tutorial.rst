@@ -688,11 +688,7 @@ Now, when running ``gwf clean``, the file ``d`` will not be deleted.
 Automatically Load Software Environments
 ========================================
 
-.. note::
-
-   Executors are currently only available for the Slurm backend. Setting an 
-   executor for other backends will not have any effect. Other backends will
-   be supported in the near future.
+Executors are supported by all built-in backends.
 
 Executors are used to enable runtime behavior for targets. This means that you
 can  use executors to run your target inside Conda, Pixi, Apptainer, and

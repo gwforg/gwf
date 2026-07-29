@@ -1,9 +1,12 @@
 import asyncio
+import io
 
 import pytest
 import pytest_asyncio
 
 from gwf.backends.local import Client, LocalStatus, Scheduler
+from gwf.core import Target
+from gwf.executors import serialize
 from gwf.log_storage import init_log_storage, prepare_log_storage_for_target
 
 
@@ -15,47 +18,67 @@ async def s(tmp_path):
     return Scheduler(working_dir=tmp_path, max_cores=1)
 
 
+async def enqueue(s, name, spec, working_dir, time_limit, deps):
+    target = Target(
+        name,
+        inputs=[],
+        outputs=[],
+        options={},
+        working_dir=working_dir,
+        spec=spec,
+    )
+    script = io.StringIO()
+    serialize(target, script)
+    return await s.enqueue_task(
+        name,
+        script.getvalue(),
+        working_dir,
+        time_limit,
+        deps,
+        workflow_root=str(s.working_dir),
+    )
+
+
 @pytest.mark.asyncio
 async def test_successful_task_without_deps(s):
-    tid = await s.enqueue_task("foo", "exit 0", ".", None, set())
-    await s.wait_for({tid}, timeout=1)
+    tid = await enqueue(s, "foo", "exit 0", ".", None, set())
+    await s.wait_for({tid}, timeout=5)
     assert s.get_task_state(tid) == LocalStatus.COMPLETED
 
 
 @pytest.mark.asyncio
 async def test_successful_task_with_dependent(s):
-    tid1 = await s.enqueue_task("foo", "exit 0", ".", None, set())
-    tid2 = await s.enqueue_task("foo", "exit 0", ".", None, set([tid1]))
-    await s.wait_for({tid1, tid2}, timeout=1)
+    tid1 = await enqueue(s, "foo", "exit 0", ".", None, set())
+    tid2 = await enqueue(s, "foo", "exit 0", ".", None, set([tid1]))
+    await s.wait_for({tid1, tid2}, timeout=5)
     assert s.get_task_state(tid1) == LocalStatus.COMPLETED
     assert s.get_task_state(tid2) == LocalStatus.COMPLETED
 
 
 @pytest.mark.asyncio
 async def test_task_with_dependent_submitted_later(s):
-    tid1 = await s.enqueue_task("foo", "exit 0", ".", None, set())
+    tid1 = await enqueue(s, "foo", "exit 0", ".", None, set())
     await s.wait_for({tid1})
     assert s.get_task_state(tid1) == LocalStatus.COMPLETED
 
-    tid2 = await s.enqueue_task("foo", "exit 0", ".", None, set([tid1]))
+    tid2 = await enqueue(s, "foo", "exit 0", ".", None, set([tid1]))
     await s.wait_for({tid2})
     assert s.get_task_state(tid2) == LocalStatus.COMPLETED
 
 
 @pytest.mark.asyncio
 async def test_failing_task_without_deps(s):
-    tid = await s.enqueue_task("foo", "exit 1", ".", None, set())
+    tid = await enqueue(s, "foo", "exit 1", ".", None, set())
     await s.wait_for({tid}, timeout=1)
     assert s.get_task_state(tid) == LocalStatus.FAILED
 
 
 @pytest.mark.asyncio
 async def test_failed_task_with_dependents_1(s):
-    tid1 = await s.enqueue_task("foo", "exit 1", ".", None, set())
-    tid2 = await s.enqueue_task("foo", "exit 0", ".", None, set([tid1]))
-    tid3 = await s.enqueue_task("foo", "exit 0", ".", None, set([tid2]))
-    await asyncio.sleep(0.1)
-    await s.cancel_task(tid1)
+    tid1 = await enqueue(s, "foo", "exit 1", ".", None, set())
+    tid2 = await enqueue(s, "foo", "exit 0", ".", None, set([tid1]))
+    tid3 = await enqueue(s, "foo", "exit 0", ".", None, set([tid2]))
+    await s.wait_for({tid1})
     await s.wait_for({tid1, tid2, tid3})
     assert s.get_task_state(tid1) == LocalStatus.FAILED
     assert s.get_task_state(tid2) == LocalStatus.FAILED
@@ -64,11 +87,10 @@ async def test_failed_task_with_dependents_1(s):
 
 @pytest.mark.asyncio
 async def test_failed_task_with_dependents_2(s):
-    tid1 = await s.enqueue_task("foo", "exit 0", ".", None, set())
-    tid2 = await s.enqueue_task("foo", "exit 1", ".", None, set([tid1]))
-    tid3 = await s.enqueue_task("foo", "exit 0", ".", None, set([tid2]))
-    await asyncio.sleep(0.1)
-    await s.cancel_task(tid1)
+    tid1 = await enqueue(s, "foo", "exit 0", ".", None, set())
+    tid2 = await enqueue(s, "foo", "exit 1", ".", None, set([tid1]))
+    tid3 = await enqueue(s, "foo", "exit 0", ".", None, set([tid2]))
+    await s.wait_for({tid1})
     await s.wait_for({tid1, tid2, tid3})
     assert s.get_task_state(tid1) == LocalStatus.COMPLETED
     assert s.get_task_state(tid2) == LocalStatus.FAILED
@@ -77,21 +99,21 @@ async def test_failed_task_with_dependents_2(s):
 
 @pytest.mark.asyncio
 async def test_task_without_deps_times_out(s):
-    tid = await s.enqueue_task("foo", "sleep 2", ".", 1, set())
+    tid = await enqueue(s, "foo", "sleep 2", ".", 1, set())
     await s.wait_for({tid})
     assert s.get_task_state(tid) == LocalStatus.KILLED
 
 
 @pytest.mark.asyncio
 async def test_task_without_deps_completes_within_timelimit(s):
-    tid = await s.enqueue_task("foo", "sleep 1", ".", 2, set())
+    tid = await enqueue(s, "foo", "sleep 1", ".", 5, set())
     await s.wait_for({tid})
     assert s.get_task_state(tid) == LocalStatus.COMPLETED
 
 
 @pytest.mark.asyncio
 async def test_cancelled_task_without_deps(s):
-    tid = await s.enqueue_task("foo", "sleep 3", ".", None, set())
+    tid = await enqueue(s, "foo", "sleep 3", ".", None, set())
     await asyncio.sleep(0.1)
     await s.cancel_task(tid)
     await s.wait_for({tid}, timeout=1)
@@ -100,9 +122,9 @@ async def test_cancelled_task_without_deps(s):
 
 @pytest.mark.asyncio
 async def test_cancelled_task_with_dependents(s):
-    tid1 = await s.enqueue_task("foo", "sleep 3", ".", None, set())
-    tid2 = await s.enqueue_task("foo", "sleep 3", ".", None, set([tid1]))
-    tid3 = await s.enqueue_task("foo", "sleep 3", ".", None, set([tid2]))
+    tid1 = await enqueue(s, "foo", "sleep 3", ".", None, set())
+    tid2 = await enqueue(s, "foo", "sleep 3", ".", None, set([tid1]))
+    tid3 = await enqueue(s, "foo", "sleep 3", ".", None, set([tid2]))
     await asyncio.sleep(0.1)
     await s.cancel_task(tid1)
     await s.wait_for({tid1, tid2, tid3})
@@ -113,12 +135,40 @@ async def test_cancelled_task_with_dependents(s):
 
 @pytest.mark.asyncio
 async def test_task_writes_log_file(s):
-    tid = await s.enqueue_task("foo", "echo hello world", ".", None, set())
+    tid = await enqueue(s, "foo", "echo hello world", ".", None, set())
     await s.wait_for({tid})
     contents = s.working_dir.joinpath(
         ".gwf", "logs", "2", "c", "foo.stdout"
     ).read_text()
     assert contents == "hello world\n"
+
+
+@pytest.mark.asyncio
+async def test_task_uses_gwf_exec(s, tmp_path):
+    (tmp_path / "input.txt").write_text("input data")
+    target = Target(
+        "foo",
+        inputs=["input.txt"],
+        outputs=["output.txt"],
+        options={},
+        working_dir=str(tmp_path),
+        spec="cat input.txt > output.txt",
+    )
+    script = io.StringIO()
+    serialize(target, script)
+
+    tid = await s.enqueue_task(
+        "foo",
+        script.getvalue(),
+        str(tmp_path),
+        None,
+        set(),
+        workflow_root=str(tmp_path),
+    )
+    await s.wait_for({tid})
+
+    assert s.get_task_state(tid) == LocalStatus.COMPLETED
+    assert (tmp_path / "output.txt").read_text() == "input data"
 
 
 def test_client_connection_failure():

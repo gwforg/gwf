@@ -39,10 +39,14 @@ None available.
 
 import asyncio
 import itertools
+import io
 import json
 import logging
 import multiprocessing
+import os
 import socket
+import sys
+import tempfile
 import time
 from enum import Enum
 from io import TextIOWrapper
@@ -52,6 +56,7 @@ from typing import Generator
 import attrs
 
 from ..log_storage import get_log_paths
+from ..executors import serialize
 from .base import BackendStatus, TrackingBackend
 from .exceptions import BackendError
 
@@ -142,11 +147,14 @@ class Client:
                 time.sleep(retry_delay)
         raise ConnectionRefusedError("Failed to connect after three failed attempts")
 
-    def submit(self, target, deps=None):
+    def submit(self, target, deps=None, workflow_root=None):
+        script = io.StringIO()
+        serialize(target, script)
         self.send(
             "enqueue_task",
             name=target.name,
-            script=target.spec,
+            script=script.getvalue(),
+            workflow_root=workflow_root or target.working_dir,
             time_limit=None,
             working_dir=target.working_dir,
             deps=deps or [],
@@ -207,6 +215,7 @@ class LocalOps:
         return self._client.submit(
             target,
             deps=dependency_ids,
+            workflow_root=self.working_dir,
         )
 
     def cancel_job(self, job_id):
@@ -222,16 +231,6 @@ def create_backend(working_dir, host=DEFAULT_HOST, port=DEFAULT_PORT):
         name="local",
         ops=LocalOps(working_dir, host, port, target_defaults={}),
     )
-
-
-@attrs.frozen
-class TaskFailedError(Exception):
-    returncode: int
-
-
-@attrs.frozen
-class TimeLimitExceededError(Exception):
-    pass
 
 
 @attrs.define
@@ -251,7 +250,15 @@ class Scheduler:
     def create_cores_ressource(self):
         return asyncio.Semaphore(self.max_cores)
 
-    async def enqueue_task(self, name, script, working_dir, time_limit, deps):
+    async def enqueue_task(
+        self,
+        name,
+        script,
+        working_dir,
+        time_limit,
+        deps,
+        workflow_root,
+    ):
         tid = next(self.tid_generator)
         worker_task = asyncio.create_task(
             self.try_handle_task(
@@ -261,6 +268,7 @@ class Scheduler:
                 working_dir,
                 time_limit,
                 deps,
+                workflow_root,
             )
         )
         self.tasks[tid] = worker_task
@@ -295,9 +303,6 @@ class Scheduler:
         await asyncio.wait(tasks, timeout=timeout)
 
     async def _gentle_kill(self, proc):
-        if proc is None:
-            return
-
         proc.kill()
         await asyncio.sleep(1)
         if proc.returncode is None:
@@ -305,8 +310,16 @@ class Scheduler:
             proc.terminate()
         await proc.wait()
 
-    async def try_handle_task(self, tid, name, script, working_dir, time_limit, deps):
-        proc = None
+    async def try_handle_task(
+        self,
+        tid,
+        name,
+        script,
+        working_dir,
+        time_limit,
+        deps,
+        workflow_root,
+    ):
         try:
             if deps:
                 await asyncio.wait(
@@ -319,44 +332,58 @@ class Scheduler:
                         return
 
             await self.cores_ressource.acquire()
-            self.task_states[tid] = LocalStatus.RUNNING
-
-            proc = await asyncio.create_subprocess_shell(
-                script,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=working_dir,
-            )
-            try:
-                logger.debug("task starting")
-                stdout, stderr = await asyncio.wait_for(
-                    proc.communicate(), timeout=time_limit
-                )
-                logger.debug("writing log files")
-                # TODO: This should be made streaming..
-                stdout_path, stderr_path = get_log_paths(self.working_dir, name)
-                with open(stdout_path, "wb") as log_file:
-                    log_file.write(stdout)
-                with open(stderr_path, "wb") as log_file:
-                    log_file.write(stderr)
-                logger.debug("wrote log files")
-            except asyncio.TimeoutError:
-                raise TimeLimitExceededError()
-
-            if proc.returncode is not None and proc.returncode != 0:
-                raise TaskFailedError(proc.returncode)
         except asyncio.CancelledError:
             logger.debug("got cancel for task")
-            await self._gentle_kill(proc)
             self.task_states[tid] = LocalStatus.CANCELLED
             logger.debug("task states after cancel: %s", self.task_states)
-        except TimeLimitExceededError:
-            await self._gentle_kill(proc)
-            self.task_states[tid] = LocalStatus.KILLED
-        except TaskFailedError:
-            self.task_states[tid] = LocalStatus.FAILED
-        else:
-            self.task_states[tid] = LocalStatus.COMPLETED
+            return
+
+        try:
+            self.task_states[tid] = LocalStatus.RUNNING
+            with tempfile.NamedTemporaryFile(mode="w", prefix="gwf_") as script_file:
+                script_file.write(script)
+                script_file.flush()
+                environ = os.environ.copy()
+                environ["GWF_EXEC_WORKFLOW_ROOT"] = workflow_root
+                proc = await asyncio.create_subprocess_exec(
+                    sys.executable,
+                    "-mgwf.exec",
+                    script_file.name,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                    cwd=working_dir,
+                    env=environ,
+                )
+                try:
+                    logger.debug("task starting")
+                    stdout, stderr = await asyncio.wait_for(
+                        proc.communicate(), timeout=time_limit
+                    )
+                    logger.debug("writing log files")
+                    # TODO: This should be made streaming..
+                    stdout_path, stderr_path = get_log_paths(self.working_dir, name)
+                    with open(stdout_path, "wb") as log_file:
+                        log_file.write(stdout)
+                    with open(stderr_path, "wb") as log_file:
+                        log_file.write(stderr)
+                    logger.debug("wrote log files")
+                except asyncio.TimeoutError:
+                    await self._gentle_kill(proc)
+                    self.task_states[tid] = LocalStatus.KILLED
+                    return
+                except asyncio.CancelledError:
+                    logger.debug("got cancel for task")
+                    await self._gentle_kill(proc)
+                    raise
+
+                if proc.returncode is not None and proc.returncode != 0:
+                    self.task_states[tid] = LocalStatus.FAILED
+                else:
+                    self.task_states[tid] = LocalStatus.COMPLETED
+        except asyncio.CancelledError:
+            logger.debug("got cancel for task")
+            self.task_states[tid] = LocalStatus.CANCELLED
+            logger.debug("task states after cancel: %s", self.task_states)
         finally:
             self.cores_ressource.release()
 
@@ -385,6 +412,7 @@ class Server:
                     time_limit=message.pop("time_limit", None),
                     working_dir=message.pop("working_dir"),
                     deps=message.pop("deps"),
+                    workflow_root=message.pop("workflow_root"),
                 )
                 await self.send_response(
                     writer,

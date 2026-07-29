@@ -1,11 +1,14 @@
 import attrs
 import base64
+import io
 import logging
 import os
 import pickle
 import prettyprinter
 import shutil
-from typing import Optional, Protocol, Iterable
+import sys
+from contextlib import contextmanager
+from typing import Iterable, Optional, Protocol
 
 from .exceptions import GWFError
 
@@ -220,6 +223,16 @@ def serialize(target, file):
         print("#GWF DATA", pickled[i : i + data_width], file=file)
     print("#GWF END", file=file)
     print(file=file)
+
+
+@contextmanager
+def render_exec_script(target):
+    """Yield a job script that is interpreted by ``gwf.exec``."""
+    buffer = io.StringIO()
+    print(f"#!{sys.executable} -mgwf.exec", file=buffer)
+    yield buffer
+    print(file=buffer)
+    serialize(target, buffer)
 
 
 def deserialize(script_file):
