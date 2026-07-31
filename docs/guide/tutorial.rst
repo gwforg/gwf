@@ -120,8 +120,8 @@ for small workflows that don't require a lot of resources.
 
         $ gwf config set backend slurm
 
-    Now that you're using the Slurm backend you don't have to start any
-    workers. That is, just skip the step below.
+    Now that you're using the Slurm backend you don't have to start the local
+    scheduler. That is, just skip the step below.
 
 First, open another terminal window and navigate to the ``myproject`` directory.
 Then run the command:
@@ -129,9 +129,11 @@ Then run the command:
 .. code-block:: console
 
     $ gwf workers
-    Started 4 workers, listening on port 12345
 
-This will start a pool of workers that *gwf* can now submit targets to.
+This starts the local scheduler with one core of capacity per detected CPU and
+the system's physical memory. Use ``--max-cores`` and ``--max-memory`` to
+choose other capacities. The scheduler communicates over a per-workflow Unix
+domain socket under ``$XDG_RUNTIME_DIR/gwf``.
 Switch back to the other terminal and then run:
 
 .. code-block:: console
@@ -140,8 +142,8 @@ Switch back to the other terminal and then run:
     Scheduling target MyTarget
     Submitting target MyTarget
 
-*gwf* schedules and then submits ``MyTarget`` to the pool of workers you started in
-the other terminal window.
+*gwf* schedules and then submits ``MyTarget`` to the local scheduler you
+started in the other terminal window.
 
 This says that *gwf* considered the target for execution and then decided to submit
 it to the backend (because the output file, ``greeting.txt``, does not
@@ -163,8 +165,8 @@ since all of the output files (only one in this case) exist.
 .. note::
 
     When you've completed this tutorial, you probably want to close the local
-    workers. To do this simply change to the terminal where you started the
-    workers and press :kbd:`Control-c`.
+    scheduler. To do this simply change to the terminal where you started it
+    and press :kbd:`Control-c`.
 
 Setting the Default Verbosity
 =============================
@@ -327,13 +329,14 @@ It's a good idea to specify the resources required by your target. Backends like
 Slurm will use these resource limits to allocate a suitable node for you,
 prioritize work, and cancel your targets if they exceed the given limits.
 
-The resources you can specify depend on the backend. For example, the `local`
-backend does not support any target options and will ignore them completely.
-The `slurm` backend supports a number of target options which are listed
-:ref:`here <slurm_backend>` under the **Target options** header.
+The resources you can specify depend on the backend. The local backend supports
+``cores``, ``memory``, and ``walltime``. It schedules targets when their
+requested cores and memory are available and stops targets that exceed their
+walltime. The Slurm backend supports these and additional target options, which
+are listed :ref:`here <slurm_backend>` under the **Target options** header.
 
-For example, if you are using the *slurm* backend you can specify that you need
-8 cores and 64 GB of memory like this:
+For example, you can specify that a target needs 8 cores and 64 GB of memory
+and may run for up to two hours like this:
 
 .. code-block:: python
 
@@ -343,10 +346,11 @@ For example, if you are using the *slurm* backend you can specify that you need
         outputs={'C': ['a1b', 'a2b'], 'D': 'd'},
         cores=8,
         memory='64gb',
+        walltime='02:00:00',
     )
 
     print(foo.options)
-    # => {'cores': 8, 'memory': '64gb'}
+    # => {'cores': 8, 'memory': '64gb', 'walltime': '02:00:00'}
 
 Some target options are global to the workflow. To request 8 cores for all
 targets in your workflow, you can give the `defaults` argument when initializing
@@ -530,7 +534,7 @@ encapsulate target creation logic. Let's walk through the example above.
     #. Activate the environment with ``source activate readmapping``.
     #. Open another terminal and navigate to the same directory.
     #. Activate the environment in this terminal too, using the same command as above.
-    #. Start a pool with two workers with ``gwf workers -n 2``.
+    #. Start the local scheduler with two cores using ``gwf workers -n 2``.
     #. Jump back to the first terminal. Configure *gwf* to use the local backend for this
        project using ``gwf config backend local``.
     #. You should now be able to run ``gwf status`` and all of the other *gwf* commands

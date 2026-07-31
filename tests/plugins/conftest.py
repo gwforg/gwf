@@ -1,14 +1,19 @@
+import tempfile
+
 import pytest
 
-from gwf.backends.local import start_cluster_in_background
 from gwf.conf import FileConfig
+from tests.local_backend import background_scheduler
 
 
 @pytest.fixture
-def local_backend(tmp_path):
-    config = FileConfig.load(tmp_path.joinpath(".gwfconf.json"))
-    config["backend"] = "local"
-    config.dump()
+def local_backend(tmp_path, monkeypatch):
+    with tempfile.TemporaryDirectory(prefix="gwf-test-", dir="/tmp") as runtime_dir:
+        monkeypatch.setenv("XDG_RUNTIME_DIR", runtime_dir)
 
-    with start_cluster_in_background(tmp_path, 1, "localhost", 12345):
-        yield
+        config = FileConfig.load(tmp_path.joinpath(".gwfconf.json"))
+        config["backend"] = "local"
+        config.dump()
+
+        with background_scheduler(tmp_path, 1):
+            yield

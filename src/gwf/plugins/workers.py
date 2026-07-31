@@ -9,25 +9,19 @@ from ..core import pass_context
 @click.command()
 @click.option(
     "-n",
-    "--num-workers",
-    type=int,
+    "--max-cores",
+    "max_cores",
+    type=click.IntRange(min=1),
     default=multiprocessing.cpu_count(),
-    help="Number of workers to spawn.",
+    help="Maximum number of cores to use.",
 )
 @click.option(
-    "-p",
-    "--port",
-    type=int,
-    default=12345,
-    help="Port that workers will listen on.",
-)
-@click.option(
-    "-h",
-    "--host",
-    default="localhost",
-    help="Host that workers will bind to.",
+    "-m",
+    "--max-memory",
+    "max_memory",
+    help="Maximum memory to use, for example 16g. Defaults to system memory.",
 )
 @pass_context
-def workers(ctx, host, port, num_workers):
-    """Start workers for the local backend."""
-    start_cluster(ctx.working_dir, num_workers, host, port)
+def workers(ctx, max_cores, max_memory):
+    """Start the local scheduler."""
+    start_cluster(ctx.working_dir, max_cores, max_memory=max_memory)

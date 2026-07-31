@@ -1,8 +1,8 @@
 """Backend that runs targets on a local cluster.
 
 To use this backend you must activate the `local` backend and start a local
-cluster (with one or more workers) that the backend can submit targets to. To
-start a cluster with two workers run the command::
+scheduler that the backend can submit targets to. To make two cores available
+to the scheduler, run the command::
 
     gwf -b local workers -n 2
 
@@ -17,41 +17,47 @@ If the local backend is your default backend you can of course omit the
 ``-b local`` option.
 
 If the ``-n`` option is omitted, *gwf* will detect the number of cores available
-and use all of them.
+and use all of them. The scheduler uses the system's physical memory by default;
+use ``--max-memory`` to set another capacity.
 
 To run your workflow, open another terminal and then type::
 
     gwf -b local run
 
-To stop the pool of workers press :kbd:`Control-c`.
+To stop the scheduler press :kbd:`Control-c`.
 
-**Backend options:**
-
-* **local.host (str):** Set the host that the workers are running on
-    (default: localhost).
-* **local.port (int):** Set the port used to connect to the workers
-    (default: 12345).
+The scheduler communicates over a per-workflow Unix domain socket under
+``$XDG_RUNTIME_DIR/gwf``. If ``XDG_RUNTIME_DIR`` is unavailable, *gwf* uses a
+private directory under the system temporary directory.
 
 **Target options:**
 
-None available.
+* **cores (int):**
+    Number of cores allocated to this target (default: 1).
+* **memory (str):**
+    Memory allocated to this target (default: 1g).
+* **walltime (str):**
+    Wall-clock time limit, ``HH:MM:SS`` (default: ``01:00:00``).
 """
 
 import asyncio
+from contextlib import contextmanager, suppress
+import fcntl
+import hashlib
 import itertools
 import io
 import json
 import logging
 import multiprocessing
 import os
+import re
+import signal
 import socket
 import sys
 import tempfile
-import time
 from enum import Enum
 from io import TextIOWrapper
 from pathlib import Path
-from typing import Generator
 
 import attrs
 
@@ -63,10 +69,89 @@ from .exceptions import BackendError
 __all__ = ("Client", "Server")
 
 
-DEFAULT_HOST = "localhost"
-DEFAULT_PORT = 12345
-
 logger = logging.getLogger(__name__)
+
+TARGET_DEFAULTS = {
+    "cores": 1,
+    "memory": "1g",
+    "walltime": "01:00:00",
+}
+
+MEMORY_UNITS = {
+    "": 1,
+    "k": 1024,
+    "m": 1024**2,
+    "g": 1024**3,
+    "t": 1024**4,
+}
+
+MEMORY_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*([kmgt]?)(?:i?b)?", re.IGNORECASE)
+
+
+def parse_memory(value):
+    match = MEMORY_PATTERN.fullmatch(str(value).strip())
+    if match is None:
+        raise ValueError(f"Invalid memory value: {value!r}")
+    amount, unit = match.groups()
+    return int(float(amount) * MEMORY_UNITS[unit.lower()])
+
+
+def format_memory(value):
+    for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
+        if value < 1024 or unit == "TiB":
+            return f"{value:.1f}{unit}"
+        value /= 1024
+
+
+def get_total_memory():
+    return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
+
+
+def parse_max_memory(value):
+    if value is None:
+        return get_total_memory()
+    return parse_memory(value)
+
+
+def parse_walltime(value):
+    if value is None:
+        return None
+    fields = str(value).split(":")
+    if len(fields) == 1:
+        return float(fields[0])
+    hours, minutes, seconds = fields
+    return int(hours) * 60 * 60 + int(minutes) * 60 + float(seconds)
+
+
+def _get_runtime_directory():
+    runtime_directory = os.environ.get("XDG_RUNTIME_DIR")
+    if runtime_directory:
+        app_runtime_directory = Path(runtime_directory) / "gwf"
+    else:
+        app_runtime_directory = (
+            Path(tempfile.gettempdir()).resolve() / f"gwf-{os.geteuid()}"
+        )
+    app_runtime_directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    return app_runtime_directory
+
+
+def get_socket_path(working_dir):
+    workflow_root = Path(working_dir).resolve()
+    workflow_hash = hashlib.sha256(os.fsencode(workflow_root)).hexdigest()[:16]
+    return _get_runtime_directory() / f"{workflow_hash}.sock"
+
+
+@contextmanager
+def _socket_lock(socket_path):
+    lock_path = socket_path.with_suffix(".lock")
+    with lock_path.open("w") as lock_file:
+        try:
+            fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise BackendError(
+                f"A local scheduler is already running at {socket_path}."
+            ) from error
+        yield
 
 
 class LocalStatus(Enum):
@@ -131,35 +216,31 @@ class Client:
         return decode(self.reader.readline())
 
     @classmethod
-    def connect(cls, hostname=DEFAULT_HOST, port=DEFAULT_PORT, attempts=20):
-        for attempts_used in range(attempts):
-            try:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.connect((hostname, port))
-                return cls.from_socket(sock)
-            except OSError:
-                retry_delay = min(0.1 * 2**attempts_used, 10)
-                logger.warning(
-                    "Could not connect, trying again in %d second(s). "
-                    "Did you start workers with `gwf workers`?",
-                    retry_delay,
-                )
-                time.sleep(retry_delay)
-        raise ConnectionRefusedError("Failed to connect after three failed attempts")
+    def connect(cls, socket_path):
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        try:
+            sock.connect(os.fspath(socket_path))
+        except OSError:
+            sock.close()
+            raise
+        return cls.from_socket(sock)
 
-    def submit(self, target, deps=None, workflow_root=None):
+    def submit(self, target, deps=None):
         script = io.StringIO()
         serialize(target, script)
         self.send(
             "enqueue_task",
             name=target.name,
             script=script.getvalue(),
-            workflow_root=workflow_root or target.working_dir,
-            time_limit=None,
+            time_limit=target.options.get("walltime", TARGET_DEFAULTS["walltime"]),
             working_dir=target.working_dir,
             deps=deps or [],
+            cores=target.options.get("cores", TARGET_DEFAULTS["cores"]),
+            memory=target.options.get("memory", TARGET_DEFAULTS["memory"]),
         )
         kind, response = self.recv()
+        if kind == "task_rejected":
+            raise BackendError(response["message"])
         assert kind == "task_enqueued"
         return response["tid"]
 
@@ -171,12 +252,23 @@ class Client:
 
     def cancel(self, job_id):
         self.send("cancel_task", tid=job_id)
+        msg_type, response = self.recv()
+        assert msg_type == "task_cancelled", "invalid response received"
+        assert response["tid"] == job_id
 
     def shutdown(self):
         self.send("shutdown")
+        msg_type, response = self.recv()
+        assert msg_type == "shutdown", "invalid response received"
+        assert not response
 
     def close(self):
-        self.send("close")
+        with suppress(OSError):
+            self.send("close")
+        with suppress(OSError):
+            self.writer.close()
+        with suppress(OSError):
+            self.reader.close()
         self.sock.close()
 
     def __enter__(self):
@@ -189,8 +281,7 @@ class Client:
 @attrs.define
 class LocalOps:
     working_dir: str = attrs.field()
-    host: str = attrs.field()
-    port: int = attrs.field()
+    socket_path: Path = attrs.field(converter=Path)
     target_defaults: dict = attrs.field()
 
     _client: Client = attrs.field(init=False, repr=False)
@@ -198,11 +289,12 @@ class LocalOps:
     @_client.default
     def _create_client(self):
         try:
-            return Client.connect(self.host, self.port)
-        except ConnectionRefusedError:
+            return Client.connect(self.socket_path)
+        except (ConnectionRefusedError, FileNotFoundError) as error:
             raise BackendError(
-                f"Local backend could not connect to workers at {self.host} port {self.port}. "
-            )
+                "Local backend could not connect to the scheduler for "
+                f"{self.working_dir} at {self.socket_path}."
+            ) from error
 
     def get_job_states(self, tracked_jobs):
         return {
@@ -212,11 +304,7 @@ class LocalOps:
         }
 
     def submit_target(self, target, dependency_ids):
-        return self._client.submit(
-            target,
-            deps=dependency_ids,
-            workflow_root=self.working_dir,
-        )
+        return self._client.submit(target, deps=dependency_ids)
 
     def cancel_job(self, job_id):
         self._client.cancel(job_id)
@@ -225,70 +313,174 @@ class LocalOps:
         self._client.close()
 
 
-def create_backend(working_dir, host=DEFAULT_HOST, port=DEFAULT_PORT):
+def create_backend(working_dir):
     return TrackingBackend(
         working_dir,
         name="local",
-        ops=LocalOps(working_dir, host, port, target_defaults={}),
+        ops=LocalOps(
+            working_dir,
+            get_socket_path(working_dir),
+            target_defaults=TARGET_DEFAULTS,
+        ),
     )
+
+
+@attrs.frozen
+class TaskFailedError(Exception):
+    returncode: int
+
+
+@attrs.frozen
+class TimeLimitExceededError(Exception):
+    pass
+
+
+class TargetLogger(logging.LoggerAdapter):
+    def process(self, message, kwargs):
+        prefix = f"Target {self.extra['name']} (id {self.extra['tid']})"
+        return f"{prefix}: {message}", kwargs
+
+
+@attrs.define
+class ScheduledTarget:
+    tid: int = attrs.field()
+    name: str = attrs.field()
+    script: str = attrs.field()
+    working_dir: str = attrs.field()
+    time_limit: float | None = attrs.field()
+    deps: tuple = attrs.field(converter=tuple)
+    cores: int = attrs.field()
+    memory: int = attrs.field()
+    done: asyncio.Future = attrs.field(repr=False)
+    execution: asyncio.Task | None = attrs.field(default=None, repr=False)
+    cancel_requested: bool = attrs.field(default=False)
+    log: TargetLogger = attrs.field(init=False, repr=False)
+
+    @log.default
+    def _create_logger(self):
+        return TargetLogger(logger, {"name": self.name, "tid": self.tid})
 
 
 @attrs.define
 class Scheduler:
     working_dir: Path = attrs.field(converter=Path)
     max_cores: int = attrs.field(default=multiprocessing.cpu_count())
+    max_memory: int = attrs.field(default=None, converter=parse_max_memory)
 
-    tid_generator: Generator = attrs.field(factory=itertools.count)
-    events: asyncio.Queue = attrs.field(factory=asyncio.Queue)
+    tid_generator: object = attrs.field(factory=itertools.count)
     task_states: dict = attrs.field(factory=dict)
     tasks: dict = attrs.field(factory=dict)
+    accepting_tasks: bool = attrs.field(default=True)
+    available_cores: int = attrs.field(init=False)
+    available_memory: int = attrs.field(init=False)
 
-    # Ressources
-    cores_ressource: asyncio.Semaphore = attrs.field()
+    @available_cores.default
+    def _init_available_cores(self):
+        return self.max_cores
 
-    @cores_ressource.default
-    def create_cores_ressource(self):
-        return asyncio.Semaphore(self.max_cores)
+    @available_memory.default
+    def _init_available_memory(self):
+        return self.max_memory
 
-    async def enqueue_task(
+    def enqueue_task(
         self,
         name,
         script,
         working_dir,
         time_limit,
         deps,
-        workflow_root,
+        cores=1,
+        memory="1g",
     ):
-        tid = next(self.tid_generator)
-        worker_task = asyncio.create_task(
-            self.try_handle_task(
-                tid,
-                name,
-                script,
-                working_dir,
-                time_limit,
-                deps,
-                workflow_root,
+        if not self.accepting_tasks:
+            raise BackendError("Local scheduler is shutting down.")
+
+        memory = parse_memory(memory)
+        time_limit = parse_walltime(time_limit)
+
+        if cores < 1:
+            raise BackendError(
+                f"Target {name} requested an invalid number of cores: {cores!r}."
             )
+        if cores > self.max_cores:
+            raise BackendError(
+                f"Target {name} requested {cores} cores, but the local "
+                f"scheduler has only {self.max_cores}."
+            )
+        if memory < 1:
+            raise BackendError(
+                f"Target {name} requested an invalid amount of memory: {memory}."
+            )
+        if memory > self.max_memory:
+            raise BackendError(
+                f"Target {name} requested {format_memory(memory)} of memory, "
+                f"but the local scheduler has only {format_memory(self.max_memory)}."
+            )
+
+        tid = next(self.tid_generator)
+        target = ScheduledTarget(
+            tid=tid,
+            name=name,
+            script=script,
+            working_dir=working_dir,
+            time_limit=time_limit,
+            deps=deps,
+            cores=cores,
+            memory=memory,
+            done=asyncio.get_running_loop().create_future(),
         )
-        self.tasks[tid] = worker_task
+        self.tasks[tid] = target
         self.task_states[tid] = LocalStatus.SUBMITTED
+        target.log.debug(
+            "queued with %d core(s), %s memory, time limit %s, "
+            "dependencies %s, working directory %s",
+            target.cores,
+            format_memory(target.memory),
+            target.time_limit,
+            list(target.deps),
+            target.working_dir,
+        )
+        self._schedule()
         return tid
 
     async def cancel_task(self, tid):
-        if self.task_states[tid] in (LocalStatus.SUBMITTED, LocalStatus.RUNNING):
-            worker_task = self.tasks[tid]
-            worker_task.cancel()
-            self.task_states[tid] = LocalStatus.CANCELLED
+        target = self.tasks[tid]
+        state = self.task_states[tid]
+        if state == LocalStatus.SUBMITTED:
+            target.log.debug("cancelling before execution")
+            target.cancel_requested = True
+            self._finish_target(target, LocalStatus.CANCELLED)
+            self._schedule()
+            return
+        if state != LocalStatus.RUNNING:
+            target.log.debug(
+                "ignoring cancellation request in state %s",
+                state.name.lower(),
+            )
+            return
+
+        if not target.cancel_requested:
+            target.log.debug("cancelling running execution")
+            target.cancel_requested = True
+            target.execution.cancel()
+        try:
+            await asyncio.shield(target.done)
+        except asyncio.CancelledError:
+            await target.done
+            raise
 
     async def kill(self):
-        for worker in self.tasks.values():
-            worker.cancel()
+        await asyncio.gather(
+            *(self.cancel_task(tid) for tid in self.tasks),
+            return_exceptions=True,
+        )
 
     async def wait(self):
-        await asyncio.wait(self.tasks.values())
+        if self.tasks:
+            await asyncio.wait({target.done for target in self.tasks.values()})
 
     async def shutdown(self):
+        self.accepting_tasks = False
         await self.kill()
         await self.wait()
 
@@ -299,204 +491,393 @@ class Scheduler:
         return dict(self.task_states)
 
     async def wait_for(self, tids, timeout=None):
-        tasks = {self.tasks[tid] for tid in tids}
-        await asyncio.wait(tasks, timeout=timeout)
+        done = {self.tasks[tid].done for tid in tids}
+        return await asyncio.wait(done, timeout=timeout)
 
-    async def _gentle_kill(self, proc):
-        proc.kill()
-        await asyncio.sleep(1)
-        if proc.returncode is None:
-            await asyncio.sleep(10)
-            proc.terminate()
-        await proc.wait()
-
-    async def try_handle_task(
-        self,
-        tid,
-        name,
-        script,
-        working_dir,
-        time_limit,
-        deps,
-        workflow_root,
-    ):
-        try:
-            if deps:
-                await asyncio.wait(
-                    {self.tasks[tid] for tid in deps},
-                    return_when=asyncio.ALL_COMPLETED,
-                )
-                for dep_tid in deps:
-                    if self.task_states[dep_tid] != LocalStatus.COMPLETED:
-                        self.task_states[tid] = self.task_states[dep_tid]
-                        return
-
-            await self.cores_ressource.acquire()
-        except asyncio.CancelledError:
-            logger.debug("got cancel for task")
-            self.task_states[tid] = LocalStatus.CANCELLED
-            logger.debug("task states after cancel: %s", self.task_states)
+    def _finish_target(self, target, state):
+        if target.done.done():
             return
+        previous_state = self.task_states[target.tid]
+        self.task_states[target.tid] = state
+        target.done.set_result(state)
+        target.log.debug(
+            "state changed from %s to %s",
+            previous_state.name.lower(),
+            state.name.lower(),
+        )
+
+    def _schedule(self):
+        for target in self.tasks.values():
+            if self.task_states[target.tid] != LocalStatus.SUBMITTED:
+                continue
+
+            try:
+                dependency_states = [
+                    self.task_states[dep_tid] for dep_tid in target.deps
+                ]
+            except KeyError:
+                target.log.exception(
+                    "cannot schedule because dependencies %s include an unknown target",
+                    list(target.deps),
+                )
+                self._finish_target(target, LocalStatus.FAILED)
+                continue
+
+            if any(
+                state in (LocalStatus.SUBMITTED, LocalStatus.RUNNING)
+                for state in dependency_states
+            ):
+                continue
+
+            failed_dependency = next(
+                (
+                    (dep_tid, state)
+                    for dep_tid, state in zip(target.deps, dependency_states)
+                    if state != LocalStatus.COMPLETED
+                ),
+                None,
+            )
+            if failed_dependency is not None:
+                dep_tid, dep_state = failed_dependency
+                target.log.debug(
+                    "will not run because dependency %d finished in state %s",
+                    dep_tid,
+                    dep_state.name.lower(),
+                )
+                self._finish_target(target, dep_state)
+                continue
+
+            if (
+                target.cores > self.available_cores
+                or target.memory > self.available_memory
+            ):
+                continue
+
+            self.available_cores -= target.cores
+            self.available_memory -= target.memory
+            self.task_states[target.tid] = LocalStatus.RUNNING
+            target.log.debug(
+                "starting with %d core(s) and %s memory; "
+                "%d of %d core(s) and %s of %s memory remain available",
+                target.cores,
+                format_memory(target.memory),
+                self.available_cores,
+                self.max_cores,
+                format_memory(self.available_memory),
+                format_memory(self.max_memory),
+            )
+            target.execution = asyncio.create_task(self._run_target(target))
+
+    async def _run_target(self, target):
+        try:
+            await self._execute_task(target)
+        except asyncio.CancelledError:
+            target.log.debug("execution was cancelled")
+            state = LocalStatus.CANCELLED
+        except TimeLimitExceededError:
+            target.log.debug("execution exceeded its time limit %s", target.time_limit)
+            state = LocalStatus.KILLED
+        except TaskFailedError as error:
+            target.log.debug(
+                "execution failed with return code %d",
+                error.returncode,
+            )
+            state = LocalStatus.FAILED
+        except Exception:
+            target.log.exception("execution failed unexpectedly")
+            state = LocalStatus.FAILED
+        else:
+            state = LocalStatus.COMPLETED
+        finally:
+            target.execution = None
+            self.available_cores += target.cores
+            self.available_memory += target.memory
+            target.log.debug(
+                "released %d core(s) and %s memory; "
+                "%d of %d core(s) and %s of %s memory are available",
+                target.cores,
+                format_memory(target.memory),
+                self.available_cores,
+                self.max_cores,
+                format_memory(self.available_memory),
+                format_memory(self.max_memory),
+            )
+
+        self._finish_target(target, state)
+        self._schedule()
+
+    async def _terminate_process_group(
+        self,
+        proc,
+        communication_task,
+        target_log,
+        grace_period=10,
+    ):
+        process_group_id = proc.pid
+        target_log.debug("sending SIGTERM to process group %d", process_group_id)
+        try:
+            os.killpg(process_group_id, signal.SIGTERM)
+        except ProcessLookupError:
+            target_log.debug("process group %d has already exited", process_group_id)
 
         try:
-            self.task_states[tid] = LocalStatus.RUNNING
-            with tempfile.NamedTemporaryFile(mode="w", prefix="gwf_") as script_file:
-                script_file.write(script)
-                script_file.flush()
-                environ = os.environ.copy()
-                environ["GWF_EXEC_WORKFLOW_ROOT"] = workflow_root
-                proc = await asyncio.create_subprocess_exec(
-                    sys.executable,
-                    "-mgwf.exec",
-                    script_file.name,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                    cwd=working_dir,
-                    env=environ,
-                )
-                try:
-                    logger.debug("task starting")
-                    stdout, stderr = await asyncio.wait_for(
-                        proc.communicate(), timeout=time_limit
-                    )
-                    logger.debug("writing log files")
-                    # TODO: This should be made streaming..
-                    stdout_path, stderr_path = get_log_paths(self.working_dir, name)
-                    with open(stdout_path, "wb") as log_file:
-                        log_file.write(stdout)
-                    with open(stderr_path, "wb") as log_file:
-                        log_file.write(stderr)
-                    logger.debug("wrote log files")
-                except asyncio.TimeoutError:
-                    await self._gentle_kill(proc)
-                    self.task_states[tid] = LocalStatus.KILLED
-                    return
-                except asyncio.CancelledError:
-                    logger.debug("got cancel for task")
-                    await self._gentle_kill(proc)
-                    raise
+            await asyncio.wait_for(
+                asyncio.shield(communication_task),
+                timeout=grace_period,
+            )
+        except asyncio.TimeoutError:
+            target_log.debug(
+                "process group %d did not exit after %d seconds",
+                process_group_id,
+                grace_period,
+            )
 
-                if proc.returncode is not None and proc.returncode != 0:
-                    self.task_states[tid] = LocalStatus.FAILED
-                else:
-                    self.task_states[tid] = LocalStatus.COMPLETED
+        target_log.debug("sending SIGKILL to process group %d", process_group_id)
+        try:
+            os.killpg(process_group_id, signal.SIGKILL)
+        except PermissionError:
+            target_log.debug(
+                "permission denied when signalling process group %d",
+                process_group_id,
+            )
+        except ProcessLookupError:
+            target_log.debug("process group %d has exited", process_group_id)
+
+        try:
+            await communication_task
+        except Exception:
+            target_log.debug("failed while draining process output", exc_info=True)
+        await proc.wait()
+        target_log.debug(
+            "process %d exited with return code %s",
+            proc.pid,
+            proc.returncode,
+        )
+
+    async def _cleanup_process(self, proc, communication_task, target_log):
+        cleanup_task = asyncio.create_task(
+            self._terminate_process_group(proc, communication_task, target_log)
+        )
+        try:
+            await asyncio.shield(cleanup_task)
         except asyncio.CancelledError:
-            logger.debug("got cancel for task")
-            self.task_states[tid] = LocalStatus.CANCELLED
-            logger.debug("task states after cancel: %s", self.task_states)
-        finally:
-            self.cores_ressource.release()
+            await cleanup_task
+            raise
+
+    async def _start_process(self, script_path, target, environ):
+        create_task = asyncio.create_task(
+            asyncio.create_subprocess_exec(
+                sys.executable,
+                "-mgwf.exec",
+                script_path,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=target.working_dir,
+                env=environ,
+                start_new_session=True,
+            )
+        )
+        try:
+            return await asyncio.shield(create_task)
+        except asyncio.CancelledError:
+            try:
+                proc = await create_task
+            except Exception:
+                pass
+            else:
+                communication_task = asyncio.create_task(proc.communicate())
+                await self._cleanup_process(proc, communication_task, target.log)
+            raise
+
+    async def _execute_task(self, target):
+        with tempfile.NamedTemporaryFile(mode="w", prefix="gwf_") as script_file:
+            script_file.write(target.script)
+            script_file.flush()
+            environ = os.environ.copy()
+            environ["GWF_EXEC_WORKFLOW_ROOT"] = str(self.working_dir)
+            proc = await self._start_process(
+                script_file.name,
+                target,
+                environ,
+            )
+            target.log.debug(
+                "started process %d in %s using script %s",
+                proc.pid,
+                target.working_dir,
+                script_file.name,
+            )
+            communication_task = asyncio.create_task(proc.communicate())
+            try:
+                if target.time_limit is None:
+                    stdout, stderr = await asyncio.shield(communication_task)
+                else:
+                    stdout, stderr = await asyncio.wait_for(
+                        asyncio.shield(communication_task),
+                        timeout=target.time_limit,
+                    )
+            except asyncio.TimeoutError:
+                await self._cleanup_process(proc, communication_task, target.log)
+                raise TimeLimitExceededError()
+            except asyncio.CancelledError:
+                await self._cleanup_process(proc, communication_task, target.log)
+                raise
+
+        # TODO: This should be made streaming..
+        stdout_path, stderr_path = get_log_paths(self.working_dir, target.name)
+        target.log.debug(
+            "writing %d stdout byte(s) to %s and %d stderr byte(s) to %s",
+            len(stdout),
+            stdout_path,
+            len(stderr),
+            stderr_path,
+        )
+        with open(stdout_path, "wb") as log_file:
+            log_file.write(stdout)
+        with open(stderr_path, "wb") as log_file:
+            log_file.write(stderr)
+
+        if proc.returncode is not None and proc.returncode != 0:
+            raise TaskFailedError(proc.returncode)
 
 
 @attrs.define
 class Server:
     scheduler: Scheduler = attrs.field()
-    server: asyncio.base_events.Server = attrs.field(default=None)
+    connections: set = attrs.field(factory=set)
+    stop_requested: asyncio.Event = attrs.field(factory=asyncio.Event)
 
     async def send_response(self, writer, kind, **kwargs):
         writer.write(encode(kind, **kwargs).encode("utf-8"))
         await writer.drain()
 
+    async def handle_message(self, kind, message):
+        close_connection = False
+        stop_server = False
+
+        if kind == "enqueue_task":
+            task = {
+                "name": message.pop("name"),
+                "script": message.pop("script"),
+                "time_limit": message.pop("time_limit", None),
+                "working_dir": message.pop("working_dir"),
+                "deps": message.pop("deps"),
+                "cores": message.pop("cores", 1),
+                "memory": message.pop("memory", "1g"),
+            }
+            try:
+                tid = self.scheduler.enqueue_task(**task)
+            except (BackendError, ValueError) as error:
+                response = ("task_rejected", {"message": str(error)})
+            else:
+                response = ("task_enqueued", {"tid": tid})
+        elif kind == "get_task_states":
+            response = (
+                "task_states",
+                {"tasks": self.scheduler.get_task_states()},
+            )
+        elif kind == "cancel_task":
+            tid = message.pop("tid")
+            await self.scheduler.cancel_task(tid)
+            response = ("task_cancelled", {"tid": tid})
+        elif kind == "shutdown":
+            await self.scheduler.shutdown()
+            response = ("shutdown", {})
+            close_connection = True
+            stop_server = True
+        elif kind == "close":
+            response = None
+            close_connection = True
+        else:
+            raise ValueError(f"Unknown message kind: {kind}")
+
+        assert not message, f"message of kind {kind} has not been fully parsed"
+        return response, close_connection, stop_server
+
     async def handle_connection(self, reader, writer):
-        while True:
-            data = await reader.readline()
-            if data is None:
-                break
-            message = json.loads(data)
-
-            kind = message.pop("__kind__")
-            if kind == "enqueue_task":
-                tid = await self.scheduler.enqueue_task(
-                    name=message.pop("name"),
-                    script=message.pop("script"),
-                    time_limit=message.pop("time_limit", None),
-                    working_dir=message.pop("working_dir"),
-                    deps=message.pop("deps"),
-                    workflow_root=message.pop("workflow_root"),
-                )
-                await self.send_response(
-                    writer,
-                    "task_enqueued",
-                    tid=tid,
-                )
-            elif kind == "get_task_state":
-                tid = message.pop("tid")
-                await self.send_response(
-                    writer, "task_state", state=self.scheduler.get_task_state(tid)
-                )
-            elif kind == "get_task_states":
-                await self.send_response(
-                    writer, "task_states", tasks=self.scheduler.get_task_states()
-                )
-            elif kind == "cancel_task":
-                tid = message.pop("tid")
-                await self.scheduler.cancel_task(tid)
-            elif kind == "shutdown":
-                self.server.close()
-                await self.server.wait_closed()
-                break
-            elif kind == "close":
-                break
-            assert not message, f"message of kind {kind} has not been fully parsed"
-
-    async def start_server(self, host=DEFAULT_HOST, port=DEFAULT_PORT):
-        self.server = await asyncio.start_server(
-            self.handle_connection,
-            host,
-            port,
-            start_serving=False,
-        )
+        stop_server = False
+        self.connections.add(writer)
         try:
-            await self.server.serve_forever()
-            addr, port = self.server.sockets[0].getsockname()
-            logger.info("Listening on %s port %s", addr, port)
-        except asyncio.CancelledError:
-            logger.info("Shutting down...")
+            while True:
+                data = await reader.readline()
+                if not data:
+                    break
+                message = json.loads(data)
+
+                kind = message.pop("__kind__")
+                response, close_connection, should_stop = await self.handle_message(
+                    kind,
+                    message,
+                )
+                stop_server = stop_server or should_stop
+                if response is not None:
+                    response_kind, response_data = response
+                    await self.send_response(
+                        writer,
+                        response_kind,
+                        **response_data,
+                    )
+                if close_connection:
+                    break
         finally:
-            logger.info("Bye!")
+            self.connections.discard(writer)
+            writer.close()
+            with suppress(ConnectionError):
+                await writer.wait_closed()
+            if stop_server:
+                self.stop_requested.set()
+
+    async def start_server(self, socket_path, ready_event=None):
+        socket_path = Path(socket_path)
+        with _socket_lock(socket_path):
+            socket_path.unlink(missing_ok=True)
+            server = await asyncio.start_unix_server(
+                self.handle_connection,
+                path=socket_path,
+            )
+            socket_path.chmod(0o600)
+            logger.info(
+                "Started local scheduler with %d core(s) and %s memory, "
+                "listening at %s",
+                self.scheduler.max_cores,
+                format_memory(self.scheduler.max_memory),
+                socket_path,
+            )
+            if ready_event is not None:
+                ready_event.set()
+            try:
+                async with server:
+                    try:
+                        await self.stop_requested.wait()
+                    except asyncio.CancelledError:
+                        logger.info("Shutting down...")
+                    finally:
+                        connections = list(self.connections)
+                        for writer in connections:
+                            writer.close()
+                        await asyncio.gather(
+                            *(writer.wait_closed() for writer in connections),
+                            return_exceptions=True,
+                        )
+            finally:
+                if not self.stop_requested.is_set():
+                    await self.scheduler.shutdown()
+                socket_path.unlink(missing_ok=True)
+                logger.info("Bye!")
 
 
-async def start_cluster_async(working_dir, max_cores, host, port):
-    scheduler = Scheduler(working_dir, max_cores)
+async def start_cluster_async(
+    working_dir,
+    max_cores,
+    max_memory=None,
+    ready_event=None,
+):
+    scheduler = Scheduler(working_dir, max_cores, max_memory)
     s = Server(scheduler)
-    await s.start_server(host, port)
+    await s.start_server(get_socket_path(working_dir), ready_event)
 
 
 def start_cluster(*args, debug=False, **kwargs):
     asyncio.run(start_cluster_async(*args, **kwargs), debug=debug)
-
-
-@attrs.frozen
-class BackgroundCluster:
-    host: str = attrs.field()
-    port: int = attrs.field()
-    process: multiprocessing.Process = attrs.field()
-
-    @classmethod
-    def start(cls, working_dir, max_cores, host, port, **kwargs):
-        proc = multiprocessing.Process(
-            target=start_cluster,
-            args=(working_dir, max_cores, host, port),
-            kwargs=kwargs,
-        )
-        proc.start()
-        return cls(host, port, proc)
-
-    def shutdown(self):
-        with Client.connect("localhost", 12345) as c:
-            c.shutdown()
-        self.process.join(timeout=1)
-        self.process.kill()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        self.shutdown()
-
-
-def start_cluster_in_background(*args, **kwargs):
-    return BackgroundCluster.start(*args, **kwargs)
 
 
 setup = (create_backend, 0)

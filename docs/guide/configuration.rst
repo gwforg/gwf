@@ -22,16 +22,17 @@ To set the value of a key (or update it, if it already exists):
 
     $ gwf config set KEY VALUE
 
-Note that a keys are often of the form `this.is.a.key`. For example, the local
-backend supports the `local.port` setting which sets the port that the workers
-are running on. To set this settings, just run:
+Keys are often of the form ``this.is.a.key``. For example, to use the Slurm
+backend, run:
 
 .. code-block:: bash
 
-    $ gwf config set local.port 4321
+    $ gwf config set backend slurm
 
-Now, when you run *gwf* with the local backend, it will try to connect workers
-on port 4321.
+The local backend has no host or port setting. Its scheduler communicates over
+a per-workflow Unix domain socket under ``$XDG_RUNTIME_DIR/gwf``. If
+``XDG_RUNTIME_DIR`` is unavailable, *gwf* uses a private directory under the
+system temporary directory.
 
 Your configuration is stored in the current working directory, which will
 usually be your project directory, in a file called ``.gwfconf.json``. This
