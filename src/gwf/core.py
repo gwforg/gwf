@@ -15,10 +15,17 @@ import attrs
 import click
 
 from . import executors
+from .exec import IsolationConfig
 from .exceptions import GWFError
 from .utils import is_valid_name, timer
 
 logger = logging.getLogger(__name__)
+
+
+def _isolation_config(value):
+    if value is True:
+        return IsolationConfig()
+    return value
 
 
 def _flatten(t):
@@ -189,6 +196,8 @@ class AnonymousTarget:
     :ivar set protect:
         An iterable of protected files which will not be removed during
         cleaning, even if this target is not an endpoint.
+    :ivar isolation:
+        Configuration for running the target in a clean temporary directory.
     """
 
     inputs: list = attrs.field()
@@ -199,6 +208,13 @@ class AnonymousTarget:
     protect: set = attrs.field(factory=set, converter=set)
     executor: Optional[executors.Executor] = attrs.field(default=None)
     spec: str = attrs.field(default="")
+    isolation: Optional[IsolationConfig] = attrs.field(
+        default=None,
+        converter=_isolation_config,
+        validator=attrs.validators.optional(
+            attrs.validators.instance_of(IsolationConfig)
+        ),
+    )
 
     def __attrs_post_init__(self):
         if self.group is None:
@@ -259,6 +275,11 @@ class Target:
     To see which options are supported by your backend of choice, see the
     documentation for the backend.
 
+    Isolation is runtime configuration rather than a backend option. When
+    enabled, the target runs in a clean temporary directory containing its
+    declared inputs, and declared outputs are copied or moved to the workflow
+    directory after it succeeds.
+
     :ivar str name:
         Name of the target.
 
@@ -279,6 +300,13 @@ class Target:
     protect: set = attrs.field(factory=set, converter=set)
     executor: executors.Executor = attrs.field(factory=executors.Bash)
     spec: str = attrs.field(default="", repr=False)
+    isolation: Optional[IsolationConfig] = attrs.field(
+        default=None,
+        converter=_isolation_config,
+        validator=attrs.validators.optional(
+            attrs.validators.instance_of(IsolationConfig)
+        ),
+    )
     order: int = attrs.field(init=False, repr=False)
 
     _creation_order = 0

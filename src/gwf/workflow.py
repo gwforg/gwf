@@ -6,6 +6,7 @@ import os
 import os.path
 import subprocess
 import sys
+from typing import Literal
 from glob import glob as _glob
 from glob import iglob as _iglob
 from pathlib import Path
@@ -15,6 +16,7 @@ import attrs
 from .executors import Bash
 
 from .core import Target
+from .exec import IsolationConfig
 from .exceptions import WorkflowError
 from .utils import chain, find_workflow, load_workflow
 from gwf import executors
@@ -134,7 +136,8 @@ class Workflow:
         All file paths used in targets added to this workflow are relative to
         the working directory.
     :ivar dict defaults:
-        A dictionary with defaults for target options.
+        A dictionary with defaults for target options and runtime
+        configuration such as isolation.
 
     By default, *working_dir* is set to the directory of the workflow file
     which initialized the workflow. However, advanced users may wish to set it
@@ -209,7 +212,15 @@ class Workflow:
         self.targets[target.name] = target
 
     def target(
-        self, name, inputs, outputs, protect=None, group=None, executor=None, **options
+        self,
+        name,
+        inputs,
+        outputs,
+        protect=None,
+        group=None,
+        executor=None,
+        isolation: IsolationConfig | Literal[True] | None = None,
+        **options,
     ):
         """Create a target and add it to the :class:`gwf.Workflow`.
 
@@ -230,9 +241,16 @@ class Workflow:
         :param str name: Name of the target.
         :param iterable inputs: List of files that this target depends on.
         :param iterable outputs: List of files that this target produces.
+        :param isolation: Optional target isolation configuration. Passing ``True``
+            uses the default :class:`~gwf.IsolationConfig`.
 
-        Any further keyword arguments are passed to the backend.
+        Further keyword arguments are passed to the backend, except
+        ``isolation``, which configures the target runtime.
         """
+        target_options = chain(self.defaults, options)
+        default_isolation = target_options.pop("isolation", None)
+        if isolation is None:
+            isolation = default_isolation
         new_target = Target(
             name=name,
             inputs=inputs,
@@ -240,13 +258,20 @@ class Workflow:
             protect=protect if protect else set(),
             group=group,
             executor=executor or self.executor,
-            options=chain(self.defaults, options),
+            options=target_options,
             working_dir=self.working_dir,
+            isolation=isolation,
         )
         self._add_target(new_target)
         return new_target
 
-    def target_from_template(self, name, template, **options):
+    def target_from_template(
+        self,
+        name,
+        template,
+        isolation: IsolationConfig | Literal[True] | None = None,
+        **options,
+    ):
         """Create a target from a template and add it to the :class:`gwf.Workflow`.
 
         This is syntactic sugar for creating a new :class:`~gwf.Target` and
@@ -266,10 +291,21 @@ class Workflow:
             Name of the target.
         :param AnonymousTarget template:
             The anonymous target which describes the template.
+        :param isolation:
+            Optional target isolation configuration. Passing ``True`` uses the
+            default :class:`~gwf.IsolationConfig`.
 
-        Any further keyword arguments are passed to the backend and will
-        override any options provided by the template.
+        Further keyword arguments are passed to the backend and override any
+        options provided by the template. The ``isolation`` keyword instead
+        configures the target runtime.
         """
+        target_options = chain(self.defaults, template.options, options)
+        default_isolation = target_options.pop("isolation", None)
+        if template.isolation is not None:
+            default_isolation = template.isolation
+        if isolation is None:
+            isolation = default_isolation
+
         new_target = Target(
             name=name,
             inputs=template.inputs,
@@ -277,9 +313,10 @@ class Workflow:
             protect=template.protect,
             group=template.group,
             executor=template.executor or self.executor,
-            options=chain(self.defaults, template.options, options),
+            options=target_options,
             working_dir=template.working_dir or self.working_dir,
             spec=template.spec,
+            isolation=isolation,
         )
         self._add_target(new_target)
         return new_target

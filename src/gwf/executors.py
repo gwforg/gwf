@@ -18,8 +18,20 @@ prettyprinter.install_extras(["attrs"])
 logger = logging.getLogger(__name__)
 
 
+def _resolve_image_path(image, working_dir):
+    image = os.fspath(image)
+    if os.path.isabs(image) or "://" in image:
+        return image
+    return os.path.abspath(os.path.join(working_dir, image))
+
+
 class Executor(Protocol):
     def get_command(self, spec_path: str, workflow_root: str) -> Iterable[str]:
+        return []
+
+    def get_isolated_command(
+        self, spec_path: str, workflow_root: str, source_working_dir: str
+    ) -> Iterable[str]:
         return []
 
 
@@ -35,6 +47,11 @@ class Bash:
     def get_command(self, spec_path: str, workflow_root: str) -> Iterable[str]:
         return [spec_path]
 
+    def get_isolated_command(
+        self, spec_path: str, workflow_root: str, source_working_dir: str
+    ) -> Iterable[str]:
+        return self.get_command(spec_path, workflow_root)
+
 
 @attrs.define
 class Conda:
@@ -44,8 +61,7 @@ class Conda:
     `env`. The executor does not create or update Conda environments for you,
     so the environment must already exist.
 
-    The `env` can either be the name of a Conda environment (that can be looked
-    up with `conda env list`) or a path to a Conda environment directory.
+    The `env` is the name of a Conda environment, as shown by `conda env list`.
 
     If `debug_mode` is set to true, the executor will print detailed debug info
     when activating the environment and running the script.
@@ -73,6 +89,11 @@ class Conda:
             spec_path,
         ]
 
+    def get_isolated_command(
+        self, spec_path: str, workflow_root: str, source_working_dir: str
+    ) -> Iterable[str]:
+        return self.get_command(spec_path, workflow_root)
+
 
 @attrs.define
 class Pixi:
@@ -88,6 +109,8 @@ class Pixi:
     The `env` is the name of the environment to run in and defaults to
     `default`.
 
+    When specified, `project` must be an absolute path.
+
     If `debug_mode` is set to true, the executor will print detailed debug info
     when activating the environment and running the script.
 
@@ -98,6 +121,11 @@ class Pixi:
     project: Optional[str] = attrs.field(default=None)
     env: str = attrs.field(default="default")
     debug_mode: bool = attrs.field(default=False)
+
+    @project.validator
+    def _validate_project(self, attribute, value):
+        if value is not None and not os.path.isabs(value):
+            raise GWFError(f"Pixi project path must be absolute, got {value!r}")
 
     def get_command(self, spec_path: str, workflow_root: str) -> Iterable[str]:
         pixi_exe = os.getenv("PIXI_EXE", shutil.which("pixi"))
@@ -117,6 +145,11 @@ class Pixi:
             manifest_path,
             spec_path,
         ]
+
+    def get_isolated_command(
+        self, spec_path: str, workflow_root: str, source_working_dir: str
+    ) -> Iterable[str]:
+        return self.get_command(spec_path, workflow_root)
 
 
 @attrs.define
@@ -154,6 +187,12 @@ class Singularity:
             spec_path,
         ]
 
+    def get_isolated_command(
+        self, spec_path: str, workflow_root: str, source_working_dir: str
+    ) -> Iterable[str]:
+        image = _resolve_image_path(self.image, source_working_dir)
+        return attrs.evolve(self, image=image).get_command(spec_path, workflow_root)
+
 
 @attrs.define
 class Apptainer:
@@ -182,6 +221,12 @@ class Apptainer:
             raise GWFError("Could not find apptainer installation")
         debug_flags = ["--debug"] if self.debug_mode else []
         return [apptainer_exe, *debug_flags, "exec", *self.flags, self.image, spec_path]
+
+    def get_isolated_command(
+        self, spec_path: str, workflow_root: str, source_working_dir: str
+    ) -> Iterable[str]:
+        image = _resolve_image_path(self.image, source_working_dir)
+        return attrs.evolve(self, image=image).get_command(spec_path, workflow_root)
 
 
 def skip_comments(script_file):

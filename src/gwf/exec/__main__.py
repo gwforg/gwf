@@ -1,11 +1,13 @@
 import asyncio
 import logging
 import os
+import signal
 import stat
 import sys
 import tempfile
 import time
 from gwf.executors import deserialize
+from gwf.exec.isolation import IsolationError, execution_context, isolate_network
 
 
 logger = logging.getLogger(__name__)
@@ -43,10 +45,6 @@ async def forward(src, dst, bufsize=2**16, flush_sec=10):
 
 
 async def execute_command(cmd, working_dir, environ=None):
-    full_environ = os.environ.copy()
-    if environ is not None:
-        full_environ.update(environ)
-
     proc = await asyncio.create_subprocess_exec(
         *cmd,
         stdout=asyncio.subprocess.PIPE,
@@ -54,59 +52,102 @@ async def execute_command(cmd, working_dir, environ=None):
         bufsize=0,
         env=environ,
         cwd=working_dir,
+        start_new_session=True,
     )
 
     stdout_task = asyncio.create_task(forward(proc.stdout, sys.stdout.buffer))
     stderr_task = asyncio.create_task(forward(proc.stderr, sys.stderr.buffer))
     proc_task = proc.wait()
 
-    await asyncio.gather(proc_task, stdout_task, stderr_task)
+    try:
+        await asyncio.gather(proc_task, stdout_task, stderr_task)
+    except BaseException:
+        try:
+            os.killpg(proc.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        if proc.returncode is None:
+            try:
+                await asyncio.wait_for(proc.wait(), timeout=5)
+            except asyncio.TimeoutError:
+                pass
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        if proc.returncode is None:
+            await proc.wait()
+        await asyncio.gather(stdout_task, stderr_task, return_exceptions=True)
+        raise
     return proc.returncode
 
 
 def execute_script(script_file, workflow_root, debug_mode):
     target = deserialize(script_file)
     logger.info("executing target %r", target)
-    spec_file, spec_path = tempfile.mkstemp(prefix="gwf_", text=True)
-
-    logger.debug("writing script with spec to %s", spec_path)
     return_code = 0
-    try:
-        spec_file = os.fdopen(spec_file, "w")
-        spec_file.write("#!/bin/bash\n\n")
-        spec_file.write("set -e\n")
+    with execution_context(target) as execution:
+        spec_file, spec_path = tempfile.mkstemp(
+            prefix="gwf_",
+            dir=execution.spec_directory,
+            text=True,
+        )
 
-        # TODO: At some point introduce a 'strict mode' setting which enables these.
-        # spec_file.write("set -u\n")
-        # spec_file.write("set -o pipefail\n")
+        logger.debug("writing script with spec to %s", spec_path)
+        try:
+            spec_file = os.fdopen(spec_file, "w")
+            spec_file.write("#!/bin/bash\n\n")
+            spec_file.write("set -e\n")
 
-        if debug_mode:
-            spec_file.write("set -x\n")
+            # TODO: At some point introduce a 'strict mode' setting which enables these.
+            # spec_file.write("set -u\n")
+            # spec_file.write("set -o pipefail\n")
 
-        spec_file.write("\n")
-        spec_file.write(target.spec)
-        spec_file.flush()
-        spec_file.close()
-        os.chmod(spec_path, stat.S_IRUSR | stat.S_IEXEC)
+            if debug_mode:
+                spec_file.write("set -x\n")
 
-        if debug_mode:
-            logger.debug(
-                "will execute the following script:\n%s", open(spec_path).read()
+            spec_file.write("\n")
+            spec_file.write(target.spec)
+            spec_file.flush()
+            spec_file.close()
+            os.chmod(spec_path, stat.S_IRUSR | stat.S_IEXEC)
+
+            if debug_mode:
+                logger.debug(
+                    "will execute the following script:\n%s",
+                    open(spec_path).read(),
+                )
+
+            if execution.isolated:
+                cmd = target.executor.get_isolated_command(
+                    spec_path,
+                    workflow_root,
+                    target.working_dir,
+                )
+            else:
+                cmd = target.executor.get_command(spec_path, workflow_root)
+
+            if execution.isolated and not target.isolation.network:
+                cmd = isolate_network(cmd, target.name)
+
+            environ = os.environ.copy()
+            environ["GWF_TARGET_NAME"] = target.name
+
+            logger.debug("running command %s", cmd)
+            # Filesystem restrictions belong at this child process boundary.
+            # The gwf.exec parent must retain access to stage inputs and publish
+            # outputs.
+            return_code = asyncio.run(
+                execute_command(cmd, execution.working_dir, environ)
             )
+            logger.debug("command finished with return code %s", return_code)
+            if return_code == 0:
+                execution.publish_outputs()
+        finally:
+            logger.debug("removing spec file at %s", spec_path)
+            os.remove(spec_path)
 
-        cmd = target.executor.get_command(spec_path, workflow_root)
-
-        environ = os.environ.copy()
-        environ["GWF_TARGET_NAME"] = target.name
-
-        logger.debug("running command %s", cmd)
-        return_code = asyncio.run(execute_command(cmd, target.working_dir, environ))
-        logger.debug("command finished with return code %s", return_code)
-    finally:
-        logger.debug("removing spec file at %s", spec_path)
-        os.remove(spec_path)
-
-    sys.exit(return_code)
+    return return_code
 
 
 def main():
@@ -116,9 +157,21 @@ def main():
     logging.basicConfig(level=logging.DEBUG if debug_mode else logging.WARNING)
     logger.info("this is gwf-exec, hello!")
 
+    def terminate(signum, frame):
+        raise SystemExit(128 + signum)
+
+    signal.signal(signal.SIGTERM, terminate)
+
     script_path = sys.argv[-1]
     with open(script_path) as script_file:
-        execute_script(script_file, workflow_root, debug_mode)
+        try:
+            return_code = execute_script(script_file, workflow_root, debug_mode)
+        except IsolationError as error:
+            if debug_mode:
+                raise
+            error.show()
+            sys.exit(error.exit_code)
+    sys.exit(return_code)
 
 
 main()
