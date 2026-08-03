@@ -794,7 +794,7 @@ You can read more about the available executors and how they can be configured
 Partial Workflow Execution
 ==========================
 
-Since version 2.2, gwf allows missing input files that are not provided
+Starting with version 3.0.0, gwf allows missing input files that are not provided
 by another target, and will simply skip targets with such input files (older
 versions would error in such a situation).
 
@@ -812,7 +812,7 @@ If ``blood.txt`` exists, but ``genome.fa`` is not available yet, only
 ``AnalyzeBlood`` and its dependents (``SummarizeLevels``) will be scheduled. The
 rest of the workflow will be skipped (the targets will have ``skipped`` status
 in the ``gwf status`` output). If at some point ``genome.fa`` becomes available
-and the workflow is run, ``AnalyzeGenome`` and ``BuiltReport`` will also be
+and the workflow is run, ``AnalyzeGenome`` and ``BuildReport`` will also be
 executed.
 
 A Note About Reproducibility
