@@ -13,11 +13,11 @@ def test_run_submits_targets(cli_runner, local_backend, linear_workflow):
     assert "Submitted target Target3" in result.output
 
     for _ in range(30):
-        result = cli_runner.invoke(main, ["status", "-s", "shouldrun"])
-        if result.output == "":
-            return
+        if Path("d.txt").exists():
+            break
         time.sleep(0.1)
-    assert False
+
+    assert Path("d.txt").exists()
 
 
 def test_run_dry_submits_targets(cli_runner, local_backend, linear_workflow):

@@ -1,5 +1,3 @@
-import pytest
-
 from gwf.conf import FileConfig
 
 

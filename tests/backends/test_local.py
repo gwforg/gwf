@@ -56,6 +56,7 @@ async def enqueue(
     cores=1,
     memory="1g",
 ):
+    prepare_log_storage_for_target(s.working_dir, name)
     target = Target(
         name,
         inputs=[],
@@ -92,9 +93,21 @@ async def wait_for_pids(path, timeout=5):
     return await asyncio.wait_for(_wait(), timeout)
 
 
-async def wait_for_task(scheduler, tid, timeout=15):
-    _, pending = await scheduler.wait_for({tid}, timeout=timeout)
+async def wait_for_path(path, timeout=5):
+    async def _wait():
+        while not path.exists():
+            await asyncio.sleep(0.01)
+
+    await asyncio.wait_for(_wait(), timeout)
+
+
+async def wait_for_tasks(scheduler, tids, timeout=15):
+    _, pending = await scheduler.wait_for(set(tids), timeout=timeout)
     assert not pending
+
+
+async def wait_for_task(scheduler, tid, timeout=15):
+    await wait_for_tasks(scheduler, {tid}, timeout=timeout)
 
 
 async def assert_process_exits(pid, timeout=5):
@@ -118,10 +131,21 @@ wait
 """
 
 
+def blocking_spec(started_path, release_path):
+    started_path = shlex.quote(str(started_path))
+    release_path = shlex.quote(str(release_path))
+    return f"""
+touch {started_path}
+while [ ! -e {release_path} ]; do
+    sleep 0.01
+done
+"""
+
+
 @pytest.mark.asyncio
 async def test_successful_task_without_deps(s):
     tid = await enqueue(s, "foo", "exit 0", ".", None, set())
-    await s.wait_for({tid}, timeout=5)
+    await wait_for_task(s, tid)
     assert s.get_task_state(tid) == LocalStatus.COMPLETED
 
 
@@ -129,7 +153,7 @@ async def test_successful_task_without_deps(s):
 async def test_successful_task_with_dependent(s):
     tid1 = await enqueue(s, "foo", "exit 0", ".", None, set())
     tid2 = await enqueue(s, "foo", "exit 0", ".", None, set([tid1]))
-    await s.wait_for({tid1, tid2}, timeout=5)
+    await wait_for_tasks(s, {tid1, tid2})
     assert s.get_task_state(tid1) == LocalStatus.COMPLETED
     assert s.get_task_state(tid2) == LocalStatus.COMPLETED
 
@@ -137,18 +161,18 @@ async def test_successful_task_with_dependent(s):
 @pytest.mark.asyncio
 async def test_task_with_dependent_submitted_later(s):
     tid1 = await enqueue(s, "foo", "exit 0", ".", None, set())
-    await s.wait_for({tid1})
+    await wait_for_task(s, tid1)
     assert s.get_task_state(tid1) == LocalStatus.COMPLETED
 
     tid2 = await enqueue(s, "foo", "exit 0", ".", None, set([tid1]))
-    await s.wait_for({tid2})
+    await wait_for_task(s, tid2)
     assert s.get_task_state(tid2) == LocalStatus.COMPLETED
 
 
 @pytest.mark.asyncio
 async def test_failing_task_without_deps(s):
     tid = await enqueue(s, "foo", "exit 1", ".", None, set())
-    await s.wait_for({tid}, timeout=1)
+    await wait_for_task(s, tid)
     assert s.get_task_state(tid) == LocalStatus.FAILED
 
 
@@ -171,79 +195,85 @@ async def test_subprocess_start_failure_releases_core(s, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_scheduler_allocates_requested_cores(tmp_path, monkeypatch):
+async def test_scheduler_allocates_requested_cores(tmp_path):
     scheduler = Scheduler(working_dir=tmp_path, max_cores=3, max_memory="8g")
-    started = asyncio.Queue()
-    releases = {
-        "first": asyncio.Event(),
-        "second": asyncio.Event(),
-        "third": asyncio.Event(),
+    started = {
+        name: tmp_path / f"{name}.started" for name in ("first", "second", "third")
     }
-
-    async def execute(self, target):
-        started.put_nowait(target.name)
-        await releases[target.name].wait()
-
-    monkeypatch.setattr(Scheduler, "_execute_task", execute)
-
-    try:
-        first = await enqueue(
-            scheduler, "first", "", str(tmp_path), None, set(), cores=2
-        )
-        second = await enqueue(
-            scheduler, "second", "", str(tmp_path), None, set(), cores=2
-        )
-        third = await enqueue(
-            scheduler, "third", "", str(tmp_path), None, set(), cores=1
-        )
-
-        assert await asyncio.wait_for(started.get(), timeout=1) == "first"
-        assert await asyncio.wait_for(started.get(), timeout=1) == "third"
-        assert scheduler.get_task_state(first) == LocalStatus.RUNNING
-        assert scheduler.get_task_state(second) == LocalStatus.SUBMITTED
-        assert scheduler.get_task_state(third) == LocalStatus.RUNNING
-        assert scheduler.available_cores == 0
-
-        releases["third"].set()
-        await wait_for_task(scheduler, third)
-        assert scheduler.get_task_state(second) == LocalStatus.SUBMITTED
-        assert scheduler.available_cores == 1
-
-        releases["first"].set()
-        assert await asyncio.wait_for(started.get(), timeout=1) == "second"
-        assert scheduler.get_task_state(second) == LocalStatus.RUNNING
-        assert scheduler.available_cores == 1
-
-        releases["second"].set()
-        await wait_for_task(scheduler, second)
-        assert scheduler.available_cores == 3
-    finally:
-        for release in releases.values():
-            release.set()
-        await scheduler.shutdown()
-
-
-@pytest.mark.asyncio
-async def test_scheduler_allocates_requested_memory(tmp_path, monkeypatch):
-    scheduler = Scheduler(working_dir=tmp_path, max_cores=3, max_memory="3g")
-    started = asyncio.Queue()
     releases = {
-        "first": asyncio.Event(),
-        "second": asyncio.Event(),
-        "third": asyncio.Event(),
+        name: tmp_path / f"{name}.release" for name in ("first", "second", "third")
     }
-
-    async def execute(self, target):
-        started.put_nowait(target.name)
-        await releases[target.name].wait()
-
-    monkeypatch.setattr(Scheduler, "_execute_task", execute)
 
     try:
         first = await enqueue(
             scheduler,
             "first",
-            "",
+            blocking_spec(started["first"], releases["first"]),
+            str(tmp_path),
+            None,
+            set(),
+            cores=2,
+        )
+        second = await enqueue(
+            scheduler,
+            "second",
+            blocking_spec(started["second"], releases["second"]),
+            str(tmp_path),
+            None,
+            set(),
+            cores=2,
+        )
+        third = await enqueue(
+            scheduler,
+            "third",
+            blocking_spec(started["third"], releases["third"]),
+            str(tmp_path),
+            None,
+            set(),
+            cores=1,
+        )
+
+        await wait_for_path(started["first"])
+        await wait_for_path(started["third"])
+        assert scheduler.get_task_state(first) == LocalStatus.RUNNING
+        assert scheduler.get_task_state(second) == LocalStatus.SUBMITTED
+        assert scheduler.get_task_state(third) == LocalStatus.RUNNING
+        assert scheduler.available_cores == 0
+
+        releases["third"].touch()
+        await wait_for_task(scheduler, third)
+        assert scheduler.get_task_state(second) == LocalStatus.SUBMITTED
+        assert scheduler.available_cores == 1
+
+        releases["first"].touch()
+        await wait_for_path(started["second"])
+        assert scheduler.get_task_state(second) == LocalStatus.RUNNING
+        assert scheduler.available_cores == 1
+
+        releases["second"].touch()
+        await wait_for_task(scheduler, second)
+        assert scheduler.available_cores == 3
+    finally:
+        for release in releases.values():
+            release.touch()
+        await scheduler.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_scheduler_allocates_requested_memory(tmp_path):
+    scheduler = Scheduler(working_dir=tmp_path, max_cores=3, max_memory="3g")
+    started = {
+        name: tmp_path / f"{name}.started" for name in ("first", "second", "third")
+    }
+    releases = {
+        name: tmp_path / f"{name}.release" for name in ("first", "second", "third")
+    }
+
+    try:
+        first = await enqueue(
+            scheduler,
+            "first",
+            blocking_spec(started["first"], releases["first"]),
             str(tmp_path),
             None,
             set(),
@@ -252,7 +282,7 @@ async def test_scheduler_allocates_requested_memory(tmp_path, monkeypatch):
         second = await enqueue(
             scheduler,
             "second",
-            "",
+            blocking_spec(started["second"], releases["second"]),
             str(tmp_path),
             None,
             set(),
@@ -261,34 +291,34 @@ async def test_scheduler_allocates_requested_memory(tmp_path, monkeypatch):
         third = await enqueue(
             scheduler,
             "third",
-            "",
+            blocking_spec(started["third"], releases["third"]),
             str(tmp_path),
             None,
             set(),
             memory="1g",
         )
 
-        assert await asyncio.wait_for(started.get(), timeout=1) == "first"
-        assert await asyncio.wait_for(started.get(), timeout=1) == "third"
+        await wait_for_path(started["first"])
+        await wait_for_path(started["third"])
         assert scheduler.get_task_state(first) == LocalStatus.RUNNING
         assert scheduler.get_task_state(second) == LocalStatus.SUBMITTED
         assert scheduler.get_task_state(third) == LocalStatus.RUNNING
         assert scheduler.available_memory == 0
 
-        releases["third"].set()
+        releases["third"].touch()
         await wait_for_task(scheduler, third)
         assert scheduler.get_task_state(second) == LocalStatus.SUBMITTED
 
-        releases["first"].set()
-        assert await asyncio.wait_for(started.get(), timeout=1) == "second"
+        releases["first"].touch()
+        await wait_for_path(started["second"])
         assert scheduler.get_task_state(second) == LocalStatus.RUNNING
 
-        releases["second"].set()
+        releases["second"].touch()
         await wait_for_task(scheduler, second)
         assert scheduler.available_memory == scheduler.max_memory
     finally:
         for release in releases.values():
-            release.set()
+            release.touch()
         await scheduler.shutdown()
 
 
@@ -349,8 +379,8 @@ async def test_failed_task_with_dependents_1(s):
     tid1 = await enqueue(s, "foo", "exit 1", ".", None, set())
     tid2 = await enqueue(s, "foo", "exit 0", ".", None, set([tid1]))
     tid3 = await enqueue(s, "foo", "exit 0", ".", None, set([tid2]))
-    await s.wait_for({tid1})
-    await s.wait_for({tid1, tid2, tid3})
+    await wait_for_task(s, tid1)
+    await wait_for_tasks(s, {tid1, tid2, tid3})
     assert s.get_task_state(tid1) == LocalStatus.FAILED
     assert s.get_task_state(tid2) == LocalStatus.FAILED
     assert s.get_task_state(tid3) == LocalStatus.FAILED
@@ -361,8 +391,8 @@ async def test_failed_task_with_dependents_2(s):
     tid1 = await enqueue(s, "foo", "exit 0", ".", None, set())
     tid2 = await enqueue(s, "foo", "exit 1", ".", None, set([tid1]))
     tid3 = await enqueue(s, "foo", "exit 0", ".", None, set([tid2]))
-    await s.wait_for({tid1})
-    await s.wait_for({tid1, tid2, tid3})
+    await wait_for_task(s, tid1)
+    await wait_for_tasks(s, {tid1, tid2, tid3})
     assert s.get_task_state(tid1) == LocalStatus.COMPLETED
     assert s.get_task_state(tid2) == LocalStatus.FAILED
     assert s.get_task_state(tid3) == LocalStatus.FAILED
@@ -390,7 +420,7 @@ async def test_task_without_deps_times_out(s, tmp_path):
 @pytest.mark.asyncio
 async def test_task_without_deps_completes_within_timelimit(s):
     tid = await enqueue(s, "foo", "sleep 1", ".", 5, set())
-    await s.wait_for({tid})
+    await wait_for_task(s, tid)
     assert s.get_task_state(tid) == LocalStatus.COMPLETED
 
 
@@ -465,7 +495,7 @@ async def test_cancelled_task_with_dependents(s):
     tid3 = await enqueue(s, "foo", "sleep 3", ".", None, set([tid2]))
     await asyncio.sleep(0.1)
     await s.cancel_task(tid1)
-    await s.wait_for({tid1, tid2, tid3})
+    await wait_for_tasks(s, {tid1, tid2, tid3})
     assert s.get_task_state(tid1) == LocalStatus.CANCELLED
     assert s.get_task_state(tid2) == LocalStatus.CANCELLED
     assert s.get_task_state(tid3) == LocalStatus.CANCELLED
@@ -474,7 +504,7 @@ async def test_cancelled_task_with_dependents(s):
 @pytest.mark.asyncio
 async def test_task_writes_log_file(s):
     tid = await enqueue(s, "foo", "echo hello world", ".", None, set())
-    await s.wait_for({tid})
+    await wait_for_task(s, tid)
     contents = s.working_dir.joinpath(
         ".gwf", "logs", "2", "c", "foo.stdout"
     ).read_text()
@@ -528,7 +558,7 @@ async def test_task_uses_gwf_exec(s, tmp_path):
         None,
         set(),
     )
-    await s.wait_for({tid})
+    await wait_for_task(s, tid)
 
     assert s.get_task_state(tid) == LocalStatus.COMPLETED
     assert (tmp_path / "output.txt").read_text() == "input data"

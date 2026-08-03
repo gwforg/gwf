@@ -27,7 +27,7 @@ def test_logs_migrated_to_new_hierarchy(cli_runner, linear_workflow):
     logs_dir.joinpath("Target1.stdout").write_text("hello")
     logs_dir.joinpath("Target1.stderr").write_text("world")
 
-    result = cli_runner.invoke(main, ["logs", "Target1"])
+    cli_runner.invoke(main, ["logs", "Target1"])
 
     # The logs should now exist in the new, hash-based location.    print(logs_dir)
     assert logs_dir.joinpath("a", "2", "Target1.stdout").exists()

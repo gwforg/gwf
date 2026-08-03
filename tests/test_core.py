@@ -1,5 +1,3 @@
-import unittest
-
 import pytest
 
 from gwf.core import (
@@ -10,7 +8,6 @@ from gwf.core import (
     NoopSpecHashes,
     Status,
     Target,
-    UnresolvedInputError,
     _flatten,
 )
 from gwf.exceptions import GWFError
@@ -34,83 +31,65 @@ def test_flatten(value, expected):
     assert set(_flatten(value)) == set(expected)
 
 
-class TestTarget(unittest.TestCase):
-    def test_target_with_invalid_name_raises_exception(self):
-        with self.assertRaises(GWFError):
-            Target(
-                "123abc", inputs=[], outputs=[], options={}, working_dir="/some/path"
-            )
+def test_target_with_invalid_name_raises_exception():
+    with pytest.raises(GWFError):
+        Target("123abc", inputs=[], outputs=[], options={}, working_dir="/some/path")
 
-    def test_target_with_protected_outputs(self):
-        target = Target(
+
+def test_target_with_protected_outputs():
+    target = Target(
+        name="TestTarget",
+        inputs=["test_input1.txt", "test_input2.txt"],
+        outputs=[],
+        options={},
+        working_dir="/some/path",
+        protect=["test_input1.txt"],
+    )
+
+    assert target.protected() == {"/some/path/test_input1.txt"}
+
+
+def test_assigning_spec_to_target_sets_spec_attribute():
+    target = (
+        Target(
             name="TestTarget",
-            inputs=["test_input1.txt", "test_input2.txt"],
+            inputs=[],
             outputs=[],
             options={},
             working_dir="/some/path",
-            protect=["test_input1.txt"],
         )
-        self.assertEqual(target.protected(), set(["/some/path/test_input1.txt"]))
+        << "this is a spec"
+    )
 
-    def test_assigning_spec_to_target_sets_spec_attribute(self):
-        target = (
-            Target(
-                name="TestTarget",
-                inputs=[],
-                outputs=[],
-                options={},
-                working_dir="/some/path",
-            )
-            << "this is a spec"
+    assert target.spec == "this is a spec"
+
+
+def test_str_on_target():
+    target = Target(
+        "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/path"
+    )
+
+    assert str(target) == "TestTarget"
+
+
+@pytest.mark.parametrize(
+    ("inputs", "outputs"),
+    [
+        (["ab", ""], []),
+        ([], ["ab", ""]),
+        (["a\nb", "ac"], []),
+        ([], ["a\nb", "ac"]),
+    ],
+)
+def test_target_rejects_invalid_paths(inputs, outputs):
+    with pytest.raises(InvalidPathError):
+        Target(
+            name="TestTarget",
+            inputs=inputs,
+            outputs=outputs,
+            options={},
+            working_dir="/some/path",
         )
-        self.assertIsNotNone(target.spec)
-        self.assertEqual(target.spec, "this is a spec")
-
-    def test_str_on_target(self):
-        target = Target(
-            "TestTarget", inputs=[], outputs=[], options={}, working_dir="/some/path"
-        )
-        self.assertEqual(str(target), "TestTarget")
-
-    def test_input_is_empty_string(self):
-        with self.assertRaises(InvalidPathError):
-            Target(
-                name="TestTarget",
-                inputs=["ab", ""],
-                outputs=[],
-                options={},
-                working_dir="/some/path",
-            )
-
-    def test_output_is_empty_string(self):
-        with self.assertRaises(InvalidPathError):
-            Target(
-                name="TestTarget",
-                inputs=[],
-                outputs=["ab", ""],
-                options={},
-                working_dir="/some/path",
-            )
-
-    def test_input_contains_nonprintable(self):
-        with self.assertRaises(InvalidPathError):
-            Target(
-                name="TestTarget",
-                inputs=["a\nb", "ac"],
-                outputs=[],
-                options={},
-                working_dir="/some/path",
-            )
-
-    def test_output_contains_nonprintable(self):
-        with self.assertRaises(InvalidPathError):
-            Target(
-                name="TestTarget",
-                inputs=[],
-                outputs=["a\nb", "ac"],
-                options={},
-                working_dir="/some/path",
-            )
 
 
 def test_graph_construction(filesystem):
