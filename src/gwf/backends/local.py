@@ -870,10 +870,13 @@ async def start_cluster_async(
     max_cores,
     max_memory=None,
     ready_event=None,
+    socket_path=None,
 ):
     scheduler = Scheduler(working_dir, max_cores, max_memory)
     s = Server(scheduler)
-    await s.start_server(get_socket_path(working_dir), ready_event)
+    if socket_path is None:
+        socket_path = get_socket_path(working_dir)
+    await s.start_server(socket_path, ready_event)
 
 
 def start_cluster(*args, debug=False, **kwargs):

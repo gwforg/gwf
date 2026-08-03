@@ -17,6 +17,7 @@ def background_scheduler(working_dir, max_cores, **kwargs):
     socket_path = get_socket_path(working_dir)
     ready_event = multiprocessing.Event()
     kwargs["ready_event"] = ready_event
+    kwargs["socket_path"] = socket_path
     process = multiprocessing.Process(
         target=start_cluster,
         args=(working_dir, max_cores),
