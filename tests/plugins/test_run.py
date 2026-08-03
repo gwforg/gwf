@@ -1,10 +1,11 @@
-import time
 from pathlib import Path
 
 from gwf.cli import main
 
 
-def test_run_submits_targets(cli_runner, local_backend, linear_workflow):
+def test_run_submits_targets(
+    cli_runner, local_backend, linear_workflow, wait_for_path
+):
     Path("a.txt").touch()
 
     result = cli_runner.invoke(main, ["run"])
@@ -12,12 +13,7 @@ def test_run_submits_targets(cli_runner, local_backend, linear_workflow):
     assert "Submitted target Target2" in result.output
     assert "Submitted target Target3" in result.output
 
-    for _ in range(30):
-        if Path("d.txt").exists():
-            break
-        time.sleep(0.1)
-
-    assert Path("d.txt").exists()
+    wait_for_path("d.txt")
 
 
 def test_run_dry_submits_targets(cli_runner, local_backend, linear_workflow):

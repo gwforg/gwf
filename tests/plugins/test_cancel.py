@@ -10,7 +10,7 @@ def long_running_workflow(tmpdir):
         """from gwf import Workflow
 
 gwf = Workflow()
-gwf.target('Target1', inputs=[], outputs=['a.txt']) << 'touch a.txt; sleep 3'
+gwf.target('Target1', inputs=[], outputs=['a.txt']) << 'touch started.txt a.txt; sleep 30'
 gwf.target('Target2', inputs=['a.txt'], outputs=['b.txt']) << 'sleep 3; touch b.txt'
 """
     )
@@ -18,10 +18,17 @@ gwf.target('Target2', inputs=['a.txt'], outputs=['b.txt']) << 'sleep 3; touch b.
         yield tmpdir
 
 
-def test_cancel_one_target(cli_runner, local_backend, long_running_workflow):
+def test_cancel_one_target(
+    cli_runner, local_backend, long_running_workflow, wait_for_path
+):
     result = cli_runner.invoke(main, ["run", "Target1"])
+    assert result.exit_code == 0, result.output
+    wait_for_path("started.txt")
+
     result = cli_runner.invoke(main, ["cancel", "Target1"])
+    assert result.exit_code == 0, result.output
     assert "Cancelling target Target1" in result.output
+
     result = cli_runner.invoke(main, ["status", "Target1"])
     assert "cancelled" in result.output
 

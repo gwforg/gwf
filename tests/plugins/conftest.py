@@ -1,4 +1,6 @@
 import tempfile
+import time
+from pathlib import Path
 
 import pytest
 
@@ -17,3 +19,16 @@ def local_backend(tmp_path, monkeypatch):
 
         with background_scheduler(tmp_path, 1):
             yield
+
+
+@pytest.fixture
+def wait_for_path():
+    def wait(path, timeout=10):
+        path = Path(path)
+        deadline = time.monotonic() + timeout
+        while not path.exists():
+            if time.monotonic() >= deadline:
+                pytest.fail(f"Timed out waiting for {path}")
+            time.sleep(0.1)
+
+    return wait
