@@ -11,7 +11,7 @@ jobs:
     name: Build and push docs
     steps:
       - name: git-checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       - uses: prefix-dev/setup-pixi@v0.10.0
         with:
