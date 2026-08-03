@@ -1,9 +1,8 @@
-============
-User's Guide
-============
+======
+Guides
+======
 
 .. toctree::
-  tutorial
   isolation
   mapping
   configuration

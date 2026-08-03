@@ -370,6 +370,72 @@ your workflow:
     # => {'cores': 8}
 
 
+Isolating Target Execution
+==========================
+
+By default, a target runs directly in the workflow directory and can access
+the network. This makes it possible for a target to accidentally depend on an
+undeclared file or download data that was not recorded as an input.
+
+Target isolation gives the target a temporary working directory containing its
+declared inputs. Network access is blocked, and only declared outputs are moved
+back to the workflow directory after the target succeeds. Other files created
+by the target are discarded with the temporary directory.
+
+Enable isolation with ``isolation=True``:
+
+.. code-block:: python
+
+    gwf.target(
+        'Analyze',
+        inputs=['data/reads.fastq'],
+        outputs=['results/report.txt'],
+        isolation=True,
+    ) << """
+    analyze data/reads.fastq > results/report.txt
+    """
+
+Isolation is intended to make targets more reproducible; it is not a security
+boundary for running untrusted software. See the :ref:`target isolation guide
+<target_isolation>` for configuration options and limitations.
+
+
+Staging Files on Compute Nodes
+==============================
+
+On a cluster, the workflow directory is often on a shared filesystem while
+compute nodes provide faster local scratch storage. Isolation can copy a
+target's inputs to this storage before execution and move its outputs back
+afterward. This reduces I/O against the shared filesystem while the target is
+running.
+
+Some clusters configure the system temporary directory to use node-local
+scratch, for example by setting ``TMPDIR`` for each job. On such a cluster,
+staging only requires ``inputs="copy"`` rather than the default symlink mode:
+
+.. code-block:: python
+
+    from gwf import IsolationConfig
+
+    gwf.target(
+        'Analyze',
+        inputs=['data/reads.fastq'],
+        outputs=['results/report.txt'],
+        isolation=IsolationConfig(inputs='copy'),
+    ) << """
+    analyze data/reads.fastq > results/report.txt
+    """
+
+If the system temporary directory is not node-local, set ``root`` explicitly,
+for example ``IsolationConfig(root='/scratch', inputs='copy')``. The configured
+scratch root must already exist and be writable on the compute node.
+
+*gwf* creates a separate temporary directory for each target, logs the file
+transfers to standard error, and removes the directory when the target
+finishes. The same configuration can be placed in ``Workflow(defaults={...})``
+to stage files for every target in a workflow.
+
+
 Observing Target Execution
 ==========================
 
@@ -543,7 +609,7 @@ encapsulate target creation logic. Let's walk through the example above.
 Our reference genome is stored in ``ponAbe2.fa.gz``, so we'll need to unzip it first.
 Let's write a template that unpacks files.
 
-.. literalinclude:: ../../examples/readmapping/workflow.py
+.. literalinclude:: ../examples/readmapping/workflow.py
    :pyobject: unzip
 
 This is just a normal Python function that returns an :class:`AnonymousTarget`.
@@ -568,7 +634,7 @@ the project directory.
 
 Let's now define another template for indexing a genome.
 
-.. literalinclude:: ../../examples/readmapping/workflow.py
+.. literalinclude:: ../examples/readmapping/workflow.py
    :pyobject: bwa_index
 
 This template looks more complicated, but really it's the same thing as before.
@@ -587,7 +653,7 @@ Let's use this template to create a target for indexing the reference genome::
 Finally, we'll create a template for actually mapping the reads to the
 reference.
 
-.. literalinclude:: ../../examples/readmapping/workflow.py
+.. literalinclude:: ../examples/readmapping/workflow.py
    :pyobject: bwa_map
 
 This is much the same as the previous template. Here's how we're going to use
@@ -729,7 +795,7 @@ Partial Workflow Execution
 ==========================
 
 Since version 2.2, gwf allows missing input files that are not provided
-by another target, and will simply skip targets with such input files (older 
+by another target, and will simply skip targets with such input files (older
 versions would error in such a situation).
 
 In practice this means that you can have workflows that are partially executed,

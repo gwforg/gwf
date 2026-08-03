@@ -51,8 +51,16 @@ to ask questions.
 
 .. _Anaconda: https://www.continuum.io/downloads
 
-User's Guide
-============
+Tutorial
+========
+
+.. toctree::
+  :maxdepth: 2
+
+  tutorial
+
+Guides and References
+=====================
 
 .. toctree::
   :maxdepth: 3
