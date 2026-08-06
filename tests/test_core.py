@@ -253,6 +253,107 @@ def test_schedule_if_one_of_its_dependencies_was_scheduled(
     assert target_states[target] == Status.SHOULDRUN
 
 
+def test_schedule_can_ignore_unneeded_dependency_outputs(filesystem, backend):
+    producer = Target(
+        "Producer",
+        inputs=[],
+        outputs=["x.txt", "y.txt"],
+        options={},
+        working_dir="/some/dir",
+    )
+    needs_x = Target(
+        "NeedsX",
+        inputs=["x.txt"],
+        outputs=["b.txt"],
+        options={},
+        working_dir="/some/dir",
+    )
+    needs_y = Target(
+        "NeedsY",
+        inputs=["y.txt"],
+        outputs=["c.txt"],
+        options={},
+        working_dir="/some/dir",
+    )
+    graph = Graph.from_targets([producer, needs_x, needs_y])
+    filesystem.add_file("/some/dir/x.txt", changed_at=1)
+
+    target_states = get_status_map(
+        graph=graph,
+        endpoints=[needs_x],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+        require_all_outputs=False,
+    )
+
+    assert target_states[producer] == Status.COMPLETED
+    assert target_states[needs_x] == Status.SHOULDRUN
+    assert needs_y not in target_states
+
+    target_states = get_status_map(
+        graph=graph,
+        endpoints=[needs_x, needs_y],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+        require_all_outputs=False,
+    )
+
+    assert target_states[producer] == Status.SHOULDRUN
+
+
+def test_schedule_requires_all_outputs_by_default(filesystem, backend):
+    producer = Target(
+        "Producer",
+        inputs=[],
+        outputs=["x.txt", "y.txt"],
+        options={},
+        working_dir="/some/dir",
+    )
+    needs_x = Target(
+        "NeedsX",
+        inputs=["x.txt"],
+        outputs=["b.txt"],
+        options={},
+        working_dir="/some/dir",
+    )
+    graph = Graph.from_targets([producer, needs_x])
+    filesystem.add_file("/some/dir/x.txt", changed_at=1)
+
+    target_states = get_status_map(
+        graph=graph,
+        endpoints=[needs_x],
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+    )
+
+    assert target_states[producer] == Status.SHOULDRUN
+
+
+def test_schedule_requires_all_outputs_for_endpoints(filesystem, backend):
+    endpoint = Target(
+        "Endpoint",
+        inputs=[],
+        outputs=["x.txt", "y.txt"],
+        options={},
+        working_dir="/some/dir",
+    )
+    graph = Graph.from_targets([endpoint])
+    filesystem.add_file("/some/dir/x.txt", changed_at=1)
+
+    target_states = get_status_map(
+        graph=graph,
+        fs=filesystem,
+        backend=backend,
+        spec_hashes=NoopSpecHashes(),
+        require_all_outputs=False,
+    )
+
+    assert target_states[endpoint] == Status.SHOULDRUN
+
+
 def test_schedule_if_it_is_a_sink(trivial_graph, filesystem, backend):
     target = trivial_graph.targets["TestTarget"]
     target_states = get_status_map(

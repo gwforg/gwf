@@ -162,6 +162,9 @@ def status(ctx, group, status, endpoints, format, targets):
                 fs,
                 spec_hashes,
                 backend,
+                require_all_outputs=ctx.config.get(
+                    "require_all_outputs"
+                ),
             )
 
             filters = []

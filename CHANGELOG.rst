@@ -2,6 +2,83 @@
 Change Log
 ==========
 
+Version 3.0.0
+=============
+
+This major release makes target execution more reproducible, extends executor
+support to every built-in backend, and substantially improves the local backend.
+
+Added
+-----
+
+* Targets can now run in an isolated temporary directory using
+  ``isolation=True`` or ``IsolationConfig``. Isolation exposes undeclared file
+  dependencies, blocks network access by default, and publishes only declared
+  outputs after a successful run. Inputs can be copied or symlinked and outputs
+  can be copied or moved.
+
+* Executors now work with all built-in backends: local, Slurm, SGE, LSF, and
+  PBS.
+
+* The local backend is now a resource-aware scheduler. It honours per-target
+  ``cores``, ``memory``, and ``walltime`` options; schedules dependent targets;
+  supports cancellation; and reports failed and timed-out tasks.
+
+* ``gwf run`` can filter submitted targets by status with
+  ``-s/--status``.
+
+* Target inputs and outputs may be ``pathlib.Path`` objects.
+
+* Every queueing-system backend now accepts backend-specific submission
+  arguments: ``slurm_args``, ``sge_args``, ``lsf_args``, and ``pbs_args``.
+
+* ``gwf touch --create-missing`` creates missing declared output files and their
+  parent directories when touching a workflow.
+
+* ``gwf run`` can now consider only the outputs required by selected targets
+  and their dependencies. See :ref:`selective-output-checks` and the
+  `partial-output example <https://github.com/gwforg/gwf/tree/master/examples/partial-outputs>`_.
+
+* PBS targets now support ``walltime`` and ``account`` options. LSF status
+  lookup now handles the currently tracked jobs more efficiently.
+
+Changed
+-------
+
+* Python 3.10 is now the minimum supported version. Python 3.8 and 3.9 are no
+  longer supported. Python 3.14 is now supported.
+
+* The local backend now communicates through a per-workflow Unix
+  domain socket instead of a TCP host and port. ``local.host``, ``local.port``,
+  and the ``gwf workers --host`` and ``--port`` options have been removed.
+  Use ``gwf workers --max-cores`` (or ``-n``) and ``--max-memory`` instead.
+  The previous ``--num-workers`` long option has been removed.
+
+* Missing inputs that are not produced by another target no
+  longer make graph construction fail. Affected targets and their dependents
+  are now shown as ``skipped`` and are not submitted until their inputs exist.
+  This allows for partial workflow execution.
+
+* ``gwf touch`` now updates only existing output files by default. Pass
+  ``--create-missing`` to retain the previous behavior of creating missing
+  outputs.
+
+* All built-in backends now execute targets through an executor, making
+  executor and isolation behavior consistent across backends.
+
+* Target log storage has been optimized. Existing log files will be migrated
+  to the new storage method automatically on the first run.
+
+Fixed
+-----
+
+* Templates that do not specify an executor now inherit the workflow's default
+  executor.
+
+* Loading backend entry points no longer relies on a deprecated Python
+  interface.
+
+
 Version 2.1.1
 =============
 

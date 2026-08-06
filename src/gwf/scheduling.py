@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from functools import partial
 
 from .backends.base import BackendStatus
@@ -17,13 +18,22 @@ SUBMITTED_STATES = (
 )
 
 
-def should_run(target, fs, spec_hashes):
+def should_run(target, fs, spec_hashes, outputs=None):
+    """Return whether ``target`` needs to be submitted.
+
+    ``outputs`` is the subset of ``target``'s output paths needed by the
+    current scheduling request. Omitting it retains the historical behavior of
+    checking every declared output.
+    """
+    if outputs is None:
+        outputs = target.flattened_outputs()
+
     new_hash = spec_hashes.has_changed(target)
     if new_hash is not None:
         logger.debug("Target %s has a changed spec", target)
         return True
 
-    for path in target.flattened_outputs():
+    for path in outputs:
         if not fs.exists(path):
             logger.debug("Target %s is missing output file %s", target, path)
             return True
@@ -36,12 +46,12 @@ def should_run(target, fs, spec_hashes):
     # If I have no outputs, but I have inputs, I should probably only run if my input
     # changed, but I don't have any output files to compare with, so I'll just run
     # every time.
-    if not target.outputs:
+    if not outputs:
         logger.debug("Target %s has no outputs and will always be scheduled", target)
         return True
 
     oldest_out_ts, _ = min(
-        ((fs.changed_at(path), path) for path in target.flattened_outputs()),
+        ((fs.changed_at(path), path) for path in outputs),
         default=(float("inf"), None),
     )
 
@@ -53,6 +63,38 @@ def should_run(target, fs, spec_hashes):
     return False
 
 
+def get_required_outputs(graph, endpoints):
+    """Return the output paths required for each target in ``endpoints``.
+
+    An explicitly requested target needs every one of its declared outputs.
+    Its dependencies only need the outputs that are declared as inputs by a
+    target on the requested dependency path. A target can be reached from more
+    than one endpoint, so its requirements are accumulated.
+    """
+    required = defaultdict(set)
+    visited = set()
+
+    def add_required_outputs(target, paths):
+        required[target].update(paths)
+
+    def visit(target):
+        if target in visited:
+            return
+        visited.add(target)
+
+        inputs = set(target.flattened_inputs())
+        for dependency in graph.dependencies[target]:
+            dependency_outputs = set(dependency.flattened_outputs())
+            add_required_outputs(dependency, dependency_outputs & inputs)
+            visit(dependency)
+
+    for endpoint in endpoints:
+        add_required_outputs(endpoint, endpoint.flattened_outputs())
+        visit(endpoint)
+
+    return dict(required)
+
+
 def schedule(
     endpoints,
     graph,
@@ -62,7 +104,12 @@ def schedule(
     submit_func,
     force=False,
     no_deps=False,
+    require_all_outputs=True,
 ):
+    required_outputs = None
+    if not require_all_outputs:
+        required_outputs = get_required_outputs(graph, endpoints)
+
     def _schedule(target):
         submitted_deps = []
         skipped_deps = False
@@ -112,7 +159,11 @@ def schedule(
             submit_func(target, dependencies=submitted_deps)
             return Status.SHOULDRUN
 
-        if should_run(target, fs, spec_hashes):
+        outputs = None
+        if required_outputs is not None:
+            outputs = required_outputs[target]
+
+        if should_run(target, fs, spec_hashes, outputs=outputs):
             submit_func(target, dependencies=submitted_deps)
             return Status.SHOULDRUN
 
@@ -191,6 +242,7 @@ def submit_workflow(
     dry_run=False,
     force=False,
     no_deps=False,
+    require_all_outputs=True,
 ):
     """Submit a workflow to a backend."""
     submit_func = partial(
@@ -207,10 +259,18 @@ def submit_workflow(
         submit_func=submit_func,
         force=force,
         no_deps=no_deps,
+        require_all_outputs=require_all_outputs,
     )
 
 
-def get_status_map(graph, fs, spec_hashes, backend, endpoints=None):
+def get_status_map(
+    graph,
+    fs,
+    spec_hashes,
+    backend,
+    endpoints=None,
+    require_all_outputs=True,
+):
     """Get the status of each targets in the graph."""
     submit_func = partial(_submit_noop, backend=backend, spec_hashes=spec_hashes)
     return schedule(
@@ -220,4 +280,5 @@ def get_status_map(graph, fs, spec_hashes, backend, endpoints=None):
         spec_hashes,
         status_func=backend.status,
         submit_func=submit_func,
+        require_all_outputs=require_all_outputs,
     )

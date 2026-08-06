@@ -815,6 +815,49 @@ in the ``gwf status`` output). If at some point ``genome.fa`` becomes available
 and the workflow is run, ``AnalyzeGenome`` and ``BuildReport`` will also be
 executed.
 
+.. _selective-output-checks:
+
+Selective output checks for targeted runs
+=========================================
+
+By default, *gwf* reruns a target if *any* of its declared outputs is missing.
+This is the conservative choice: a completed target normally means that all of
+its declared results are available.
+
+For a workflow with independently consumed outputs, this can be unnecessary
+when you deliberately run only one branch. For example:
+
+.. code-block:: python
+
+    gwf.target("ProduceInputs", inputs=[], outputs=["x.txt", "y.txt"]) << "..."
+    gwf.target("UseX", inputs=["x.txt"], outputs=["x-result.txt"]) << "..."
+    gwf.target("UseY", inputs=["y.txt"], outputs=["y-result.txt"]) << "..."
+
+If ``x.txt`` is present and current but ``y.txt`` is absent, running
+``gwf run UseX`` normally reruns ``ProduceInputs`` to recreate both outputs.
+The same applies when ``ProduceInputs`` has inputs and ``y.txt`` is older than
+one of them. To let *gwf* check only outputs needed by the named targets and
+their dependencies, set the following project configuration:
+
+.. code-block:: console
+
+    $ gwf config set require_all_outputs false
+    $ gwf run UseX
+
+With that setting, ``ProduceInputs`` is not rerun solely because ``y.txt`` is
+missing or stale; ``UseX`` only requires ``x.txt``. Running ``gwf run UseY``
+or ``gwf run UseX UseY`` still requires ``y.txt`` and therefore schedules
+``ProduceInputs`` when it is missing or stale.
+
+Use this setting when outputs are independently useful and you intentionally
+want to run a subset of the workflow after unrelated outputs have been removed
+or are unavailable. It does not change a target's execution contract: whenever
+``ProduceInputs`` is submitted, it must still create both declared outputs.
+Targets requested directly, including endpoint targets, also continue to
+require all of their own outputs before they are considered complete.
+
+Restore the default behavior with ``gwf config set require_all_outputs true``.
+
 A Note About Reproducibility
 ============================
 

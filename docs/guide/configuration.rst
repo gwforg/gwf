@@ -53,3 +53,9 @@ individually. See :ref:`configuration` if in doubt about how to configure *gwf*.
 * **backend (str):** Set the backend. Corresponds to the ``--backend`` flag (default: `local`).
 * **verbose (str):** Set the verbosity. Corresponds to the ``--verbose`` flag (default: `info`).
 * **no_color (bool):** If `true`, colors will not be used (default: `false`).
+* **require_all_outputs (bool):** If `true`, a target is rerun
+  when any declared output is missing, including outputs not needed by the
+  requested targets (default: `true`). Set it to `false` to consider only the
+  outputs needed by the requested targets and their dependencies. For example,
+  ``gwf run B`` will not rerun a dependency solely because an output used only
+  by another target is missing.

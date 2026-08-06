@@ -54,6 +54,9 @@ def run(ctx, targets, dry_run, force, no_deps, group, status):
                 fs,
                 spec_hashes,
                 backend,
+                require_all_outputs=ctx.config.get(
+                    "require_all_outputs"
+                ),
             )
 
             filters = []
@@ -83,4 +86,7 @@ def run(ctx, targets, dry_run, force, no_deps, group, status):
                 dry_run=dry_run,
                 force=force,
                 no_deps=no_deps,
+                require_all_outputs=ctx.config.get(
+                    "require_all_outputs"
+                ),
             )

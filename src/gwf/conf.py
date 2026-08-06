@@ -3,7 +3,14 @@ from collections import ChainMap
 
 import attrs
 
-CONFIG_DEFAULTS = {"verbose": "info", "clean_logs": True, "use_spec_hashes": False}
+CONFIG_DEFAULTS = {
+    "verbose": "info",
+    "clean_logs": True,
+    "use_spec_hashes": False,
+    # Keep the historical scheduler behavior unless users explicitly opt in to
+    # considering only outputs required by the targets they run.
+    "require_all_outputs": True,
+}
 
 
 def try_int(value):
