@@ -33,7 +33,20 @@ def _validate_mode(valid_modes):
 
 @attrs.frozen
 class IsolationConfig:
-    """Runtime configuration for an isolated target."""
+    """Runtime configuration for an isolated target.
+
+    :ivar str inputs:
+        Transfer declared inputs by ``"copy"`` or ``"symlink"``.
+    :ivar str outputs:
+        Publish declared outputs by ``"copy"`` or ``"move"``.
+    :ivar root:
+        Optional root directory in which to create the temporary directory.
+    :ivar bool network:
+        Whether to retain normal network access during target execution.
+
+    .. versionchanged:: 3.0.0
+        Target isolation was added.
+    """
 
     inputs: str = attrs.field(
         default="symlink", validator=_validate_mode(("copy", "symlink"))

@@ -1,5 +1,9 @@
 """Backend for Sun Grid Engine (SGE).
 
+.. versionchanged:: 3.0.0
+    ``sge_args`` was added for passing extra arguments directly to
+    :command:`qsub`, and executors are now supported.
+
 To use this backend you must activate the `sge` backend. The backend
 currently assumes that a SGE parallel environment called "smp" is
 available. You can check which parallel environments are available on your

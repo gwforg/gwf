@@ -1,5 +1,11 @@
 """Backend that runs targets on a local cluster.
 
+.. versionchanged:: 3.0.0
+    The local backend is now a resource-aware scheduler supporting target
+    dependencies, cancellation, failure and timeout reporting, executors, and
+    ``cores``, ``memory``, and ``walltime`` limits. It now communicates over a
+    per-workflow Unix domain socket instead of a configurable TCP host/port.
+
 To use this backend you must activate the `local` backend and start a local
 scheduler that the backend can submit targets to. To make two cores available
 to the scheduler, run the command::

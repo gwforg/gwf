@@ -4,6 +4,9 @@
 Isolating Target Execution
 ==========================
 
+.. versionchanged:: 3.0.0
+    Target isolation was added.
+
 Target isolation gives a target a deliberately constrained execution
 environment. Its purpose is to make workflows more reproducible by exposing
 hidden dependencies: a target should depend on its declared inputs, create its

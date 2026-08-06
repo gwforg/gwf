@@ -106,6 +106,14 @@ def schedule(
     no_deps=False,
     require_all_outputs=True,
 ):
+    """Schedule targets and their dependencies for submission.
+
+    .. versionchanged:: 3.0.0
+        Targets with missing external inputs are marked
+        :attr:`~gwf.core.Status.SKIPPED`. When ``require_all_outputs`` is
+        false, dependencies are checked using only the outputs required by the
+        selected targets.
+    """
     required_outputs = None
     if not require_all_outputs:
         required_outputs = get_required_outputs(graph, endpoints)
@@ -244,7 +252,11 @@ def submit_workflow(
     no_deps=False,
     require_all_outputs=True,
 ):
-    """Submit a workflow to a backend."""
+    """Submit a workflow to a backend.
+
+    .. versionchanged:: 3.0.0
+        ``require_all_outputs`` was added to support selective output checks.
+    """
     submit_func = partial(
         _submit_dryrun if dry_run else submit_backend,
         backend=backend,
@@ -271,7 +283,12 @@ def get_status_map(
     endpoints=None,
     require_all_outputs=True,
 ):
-    """Get the status of each targets in the graph."""
+    """Get the status of each target in the graph.
+
+    .. versionchanged:: 3.0.0
+        The status map can include :attr:`~gwf.core.Status.SKIPPED`, and
+        ``require_all_outputs`` controls selective output checks.
+    """
     submit_func = partial(_submit_noop, backend=backend, spec_hashes=spec_hashes)
     return schedule(
         endpoints if endpoints is not None else graph.endpoints(),

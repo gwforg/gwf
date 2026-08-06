@@ -19,13 +19,13 @@ Workflow
 --------
 
 .. automodule:: gwf
-    :members: Workflow, Target, AnonymousTarget, TargetList
+    :members: Workflow, Target, AnonymousTarget, TargetList, IsolationConfig
 
 Core
 ----
 
 .. automodule:: gwf.core
-    :members: Graph, Context, pass_context
+    :members: Graph, Context, Status, pass_context
 
 Scheduling
 ----------

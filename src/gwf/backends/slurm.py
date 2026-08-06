@@ -1,5 +1,9 @@
 """Backend for the Slurm workload manager.
 
+.. versionchanged:: 3.0.0
+    ``slurm_args`` was added for passing extra arguments directly to
+    :command:`sbatch`.
+
 To use this backend you must activate the `slurm` backend.
 
 **Backend options:**

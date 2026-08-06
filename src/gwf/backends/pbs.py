@@ -1,6 +1,10 @@
 """
 Backend for Portable Batch System (PBS).
 
+.. versionchanged:: 3.0.0
+    ``walltime``, ``account``, and ``pbs_args`` target options were added, and
+    executors are now supported.
+
 To use this backend, you must activate the `pbs` backend. This backend requires
 the commands `qsub` and `qstat`.
 

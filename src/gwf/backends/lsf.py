@@ -1,5 +1,9 @@
 """Backend for IBM Load Sharing Facility (LSF).
 
+.. versionchanged:: 3.0.0
+    ``lsf_args`` was added for passing extra arguments directly to
+    :command:`bsub`, and executors are now supported.
+
 To use this backend, you must activate the `lsf` backend. This backend requires
 the commands `bsub` and `bjobs`.
 

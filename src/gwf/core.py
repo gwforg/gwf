@@ -161,7 +161,12 @@ def get_spec_hashes(*, working_dir, config):
 
 
 class Status(Enum):
-    """BackendStatus of a target as computed by the Scheduler."""
+    """BackendStatus of a target as computed by the Scheduler.
+
+    .. versionchanged:: 3.0.0
+        The :attr:`SKIPPED` status was added for targets that cannot run due to
+        missing external inputs.
+    """
 
     SHOULDRUN = 0  #: The target should run.
     SUBMITTED = 1  #: The target has been submitted, but is not currently running.
@@ -198,6 +203,10 @@ class AnonymousTarget:
         cleaning, even if this target is not an endpoint.
     :ivar isolation:
         Configuration for running the target in a clean temporary directory.
+
+    .. versionchanged:: 3.0.0
+        Inputs and outputs may be :class:`pathlib.Path` objects, and
+        ``isolation`` may configure execution in a clean temporary directory.
     """
 
     inputs: list = attrs.field()
@@ -246,9 +255,10 @@ class Target:
 
         Target('Foo', inputs=[], outputs=[], options={}, working_dir='/tmp')
 
-    The *inputs* and *outputs* arguments can either be a string, a list or
-    a dictionary. If a dictionary is given, the keys act as names for the
-    files. The values may be either strings or a list of strings::
+    The *inputs* and *outputs* arguments can either be a path, a list or
+    a dictionary. Paths may be strings or :class:`pathlib.Path` objects. If a
+    dictionary is given, the keys act as names for the files. The values may
+    be either paths or a list of paths::
 
         foo = Target(
             name='foo',
@@ -289,6 +299,10 @@ class Target:
     .. versionchanged:: 1.6.0
         Named inputs and outputs were added. Prior versions require *inputs*
         and *outputs* to be lists.
+
+    .. versionchanged:: 3.0.0
+        Inputs and outputs may be :class:`pathlib.Path` objects, and targets
+        may be configured for isolated execution.
     """
 
     name: str = attrs.field()

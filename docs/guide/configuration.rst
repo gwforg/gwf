@@ -34,6 +34,10 @@ a per-workflow Unix domain socket under ``$XDG_RUNTIME_DIR/gwf``. If
 ``XDG_RUNTIME_DIR`` is unavailable, *gwf* uses a private directory under the
 system temporary directory.
 
+.. versionchanged:: 3.0.0
+    The local backend now uses a per-workflow Unix domain socket.
+    ``local.host`` and ``local.port`` have been removed.
+
 Your configuration is stored in the current working directory, which will
 usually be your project directory, in a file called ``.gwfconf.json``. This
 means that all configuration is project-specific, which helps with
@@ -49,6 +53,10 @@ Available Settings
 This page lists settings that are used by *gwf*. Backends and plugins may define
 their own settings, but these are documented for each backend/plugin
 individually. See :ref:`configuration` if in doubt about how to configure *gwf*.
+
+.. versionchanged:: 3.0.0
+    The ``require_all_outputs`` setting was added for selective output checks
+    during targeted runs.
 
 * **backend (str):** Set the backend. Corresponds to the ``--backend`` flag (default: `local`).
 * **verbose (str):** Set the verbosity. Corresponds to the ``--verbose`` flag (default: `info`).

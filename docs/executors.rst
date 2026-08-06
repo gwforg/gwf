@@ -3,6 +3,10 @@
 Executors
 =========
 
+.. versionchanged:: 3.0.0
+   Executors now work with every built-in backend. Previously, only the Slurm
+   backend supported them.
+
 Executors are supported by all built-in backends.
 
 Executors are used to enable runtime behavior for targets. This means that you

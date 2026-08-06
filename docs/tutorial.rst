@@ -131,9 +131,8 @@ Then run the command:
     $ gwf workers
 
 This starts the local scheduler with one core of capacity per detected CPU and
-the system's physical memory. Use ``--max-cores`` and ``--max-memory`` to
-choose other capacities. The scheduler communicates over a per-workflow Unix
-domain socket under ``$XDG_RUNTIME_DIR/gwf``.
+the system's physical memory.
+
 Switch back to the other terminal and then run:
 
 .. code-block:: console
@@ -297,9 +296,13 @@ Named Inputs and Outputs
 .. versionadded:: 1.6.0
     Prior versions only allow lists of inputs and outputs.
 
+.. versionchanged:: 3.0.0
+    Inputs and outputs may be :class:`pathlib.Path` objects as well as strings.
+
 The *inputs* and *outputs* arguments can either be a string, a list or a
-dictionary. If a dictionary is given, the keys act as names for the files. The
-values may be either strings or a list of strings:
+dictionary. Paths may be represented by strings or :class:`pathlib.Path`
+objects. If a dictionary is given, the keys act as names for the files. The
+values may be either paths or a list of paths:
 
 .. code-block:: python
 
@@ -324,6 +327,11 @@ associated files can be grouped and named.
 
 Specifying Target Resources
 ===========================
+
+.. versionchanged:: 3.0.0
+    The local backend now honors ``cores``, ``memory``, and ``walltime``.
+    Queueing-system backends also accept backend-specific submission argument
+    lists such as ``slurm_args``.
 
 It's a good idea to specify the resources required by your target. Backends like
 Slurm will use these resource limits to allocate a suitable node for you,
@@ -372,6 +380,10 @@ your workflow:
 
 Isolating Target Execution
 ==========================
+
+.. versionchanged:: 3.0.0
+    Targets can now run in isolated temporary directories using
+    ``isolation=True`` or :class:`~gwf.IsolationConfig`.
 
 By default, a target runs directly in the workflow directory and can access
 the network. This makes it possible for a target to accidentally depend on an
@@ -526,6 +538,10 @@ Here's a few neat things you should know about the status command:
   i.e. ``gwf status --endpoints --status running 'Align*'`` to show all
   endpoints that are running and where the name starts with `Align`.
 
+.. versionchanged:: 3.0.0
+    ``gwf run`` can now use ``-s/--status`` to submit only targets matching one
+    or more statuses, for example ``gwf run --status shouldrun``.
+
 For more details you can always refer to builtin help with ``gwf status --help``.
 
 What Happens When a Target Fails?
@@ -562,6 +578,18 @@ to run our the target is killed, *b.txt* will not exist and *gwf* will
 correctly show that `Example` should run again. If the script succeeds and the
 target is not killed, the temporary file will be renamed to *b.txt* and *gwf*
 will show the target as completed.
+
+Touching Output Timestamps
+==========================
+
+The ``gwf touch`` command updates the timestamps and spec hashes of a target's
+outputs without running it. This can be useful after restoring generated files
+from a backup or moving them between filesystems.
+
+.. versionchanged:: 3.0.0
+    ``gwf touch`` now updates only existing output files by default. Pass
+    ``--create-missing`` to create missing outputs and their parent
+    directories as well.
 
 .. _templates:
 .. _function_templates:
@@ -758,6 +786,10 @@ Now, when running ``gwf clean``, the file ``d`` will not be deleted.
 Automatically Load Software Environments
 ========================================
 
+.. versionchanged:: 3.0.0
+    Executors now work with every built-in backend, including local, Slurm,
+    SGE, LSF, and PBS.
+
 Executors are supported by all built-in backends.
 
 Executors are used to enable runtime behavior for targets. This means that you
@@ -794,9 +826,13 @@ You can read more about the available executors and how they can be configured
 Partial Workflow Execution
 ==========================
 
-Starting with version 3.0.0, gwf allows missing input files that are not provided
-by another target, and will simply skip targets with such input files (older
-versions would error in such a situation).
+.. versionchanged:: 3.0.0
+    Missing input files that are not provided by another target no longer
+    prevent graph construction. Affected targets and their dependents are
+    marked ``skipped``.
+
+*gwf* allows missing input files that are not provided by another target, and
+will simply skip targets with such input files.
 
 In practice this means that you can have workflows that are partially executed,
 depending on what input files are available. For example:
@@ -819,6 +855,11 @@ executed.
 
 Selective output checks for targeted runs
 =========================================
+
+.. versionchanged:: 3.0.0
+    Targeted runs can now check only the outputs required by the selected
+    targets and their dependencies by setting ``require_all_outputs`` to
+    ``false``.
 
 By default, *gwf* reruns a target if *any* of its declared outputs is missing.
 This is the conservative choice: a completed target normally means that all of

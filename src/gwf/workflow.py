@@ -246,6 +246,10 @@ class Workflow:
 
         Further keyword arguments are passed to the backend, except
         ``isolation``, which configures the target runtime.
+
+        .. versionchanged:: 3.0.0
+            ``inputs`` and ``outputs`` accept :class:`pathlib.Path` objects,
+            and ``isolation`` configures execution in a temporary directory.
         """
         target_options = chain(self.defaults, options)
         default_isolation = target_options.pop("isolation", None)
@@ -298,6 +302,10 @@ class Workflow:
         Further keyword arguments are passed to the backend and override any
         options provided by the template. The ``isolation`` keyword instead
         configures the target runtime.
+
+        .. versionchanged:: 3.0.0
+            The ``isolation`` argument was added. Templates without an
+            executor now inherit the workflow's default executor.
         """
         target_options = chain(self.defaults, template.options, options)
         default_isolation = target_options.pop("isolation", None)
