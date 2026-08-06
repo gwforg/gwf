@@ -56,8 +56,7 @@ attrs = ">=26.1.0,<27"
 prettyprinter = ">=0.18.0,<0.19"
 
 [tool.pixi.environments]
-default = { solve-group = "default" }
-dev = { features = ["dev", "test"], solve-group = "default" }
+default = { features = ["dev", "test"], solve-group = "default" }
 test-py310 = ["py310", "test"]
 test-py311 = ["py311", "test"]
 test-py312 = ["py312", "test"]
