@@ -1,9 +1,9 @@
 import hashlib
-import inspect
 import json
 import logging
 import os
 import os.path
+import sys
 from typing import Optional
 import unicodedata
 from collections import defaultdict
@@ -227,10 +227,7 @@ class AnonymousTarget:
 
     def __attrs_post_init__(self):
         if self.group is None:
-            self.group = (
-                inspect.stack()[2].function
-                or inspect.currentframe().f_back.f_code.co_name
-            )
+            self.group = sys._getframe(2).f_code.co_name
 
 
 def _validate_path(instance, attribute, value):
