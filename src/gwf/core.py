@@ -45,18 +45,6 @@ def _flatten(t):
     return res
 
 
-def _has_nonprintable_char(s):
-    chars = enumerate((unicodedata.category(char) == "Cc", char) for char in s)
-    for pos, (unprintable, char) in chars:
-        if unprintable:
-            return (
-                s.encode("unicode_escape").decode("utf-8"),
-                char.encode("unicode_escape").decode("utf-8"),
-                pos,
-            )
-    return None
-
-
 class InvalidPathError(GWFError):
     pass
 
@@ -66,11 +54,9 @@ def _check_path(path):
     if not path:
         raise InvalidPathError("Path is empty")
 
-    result = _has_nonprintable_char(path)
-    if result is not None:
-        clean_path, char, pos = result
+    if not path.isprintable():
         raise InvalidPathError(
-            f"Path {clean_path} contains a non-printable character '{char}' at {pos}. "
+            f"Path {repr(path)} contains a non-printable character. "
             f"This is always unintentional and can cause strange behaviour."
         )
 
