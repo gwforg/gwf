@@ -114,7 +114,7 @@ class TrackingBackend:
     def close(self):
         self.ops.close()
         with open(self._get_state_path(), "w") as state_file:
-            json.dump(self._tracked_jobs, state_file)
+            json.dump(self._tracked_jobs, state_file, indent=4)
 
     @property
     def target_defaults(self):
