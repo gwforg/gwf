@@ -30,6 +30,12 @@ class BackendStatus(Enum):
     FAILED = 4
     CANCELLED = 5
 
+    def is_final(self):
+        return (
+            self == BackendStatus.COMPLETED
+            or self == BackendStatus.FAILED
+            or self == BackendStatus.CANCELLED
+        )
 
 def guess_backend():
     max_score = -1000
@@ -83,9 +89,36 @@ class TrackingBackend:
         except FileNotFoundError:
             return {}
 
+    def _read_status_cache(self):
+        try:
+            with open(self._get_status_cache_path()) as cache_file:
+                return json.load(cache_file)
+        except FileNotFoundError:
+            return {}
+
     @_job_states.default
     def _init_status(self):
-        return self.ops.get_job_states(list(self._tracked_jobs.values()))
+        all_jobs = set(self._tracked_jobs.values())
+
+        job_states = {
+            k: BackendStatus(v) for k, v in self._read_status_cache().items()
+            if k in all_jobs
+        }
+
+        known_state = set(job_states.keys())
+        unknown_state = all_jobs - known_state
+
+        if len(unknown_state) > 0:
+            job_states.update(
+                self.ops.get_job_states(list(sorted(unknown_state)))
+            )
+
+        return job_states
+
+    def _get_status_cache_path(self):
+        return os.path.join(
+            self.working_dir, ".gwf", f"{self.name}-backend-status-cache.json"
+        )
 
     def _get_state_path(self):
         return os.path.join(
@@ -115,6 +148,11 @@ class TrackingBackend:
         self.ops.close()
         with open(self._get_state_path(), "w") as state_file:
             json.dump(self._tracked_jobs, state_file, indent=4)
+        with open(self._get_status_cache_path(), "w") as cache_file:
+            json.dump({
+                k: v.value for k,v in self._job_states.items()
+                if v.is_final()
+            }, cache_file, indent=4)
 
     @property
     def target_defaults(self):
