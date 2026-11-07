@@ -63,8 +63,9 @@ class FileConfig:
         self.data[key] = try_conv(value, CONVERTERS)
 
     def __delitem__(self, key):
-        if key in self.data:
-            del self.data[key]
+        # Only user-set values can be removed; a key that only has a default
+        # keeps its default. ChainMap raises KeyError for such keys.
+        self.data.maps[0].pop(key, None)
 
     def __len__(self):
         return len(self.data)

@@ -114,6 +114,9 @@ Fixed
 * The status column in ``gwf status`` output is now aligned when target names
   are longer than the status names.
 
+* ``gwf config unset`` no longer crashes for settings that have not been set
+  explicitly, such as ``clean_logs``.
+
 
 Version 2.1.1
 =============

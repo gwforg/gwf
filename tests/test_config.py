@@ -30,3 +30,21 @@ def test_dump_config_to_file(tmpdir):
     assert len(c2) == 6
     assert c2["baz"] == "foo"
     assert c2["foo"] == "bar"
+
+
+def test_unset_overridden_default_restores_default(tmpdir):
+    config_path = tmpdir.join(".gwfconf.json")
+    config_path.write('{"clean_logs": false}\n')
+
+    c = FileConfig.load(config_path)
+    del c["clean_logs"]
+
+    assert c["clean_logs"] is True
+
+
+def test_unset_key_with_only_a_default_keeps_default(tmpdir):
+    c = FileConfig.load(tmpdir.join(".gwfconf.json"))
+
+    del c["clean_logs"]
+
+    assert c["clean_logs"] is True
