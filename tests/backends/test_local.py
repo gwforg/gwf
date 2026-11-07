@@ -24,6 +24,7 @@ from gwf.backends.local import (
     decode,
     encode,
     get_socket_path,
+    get_total_cores,
 )
 from gwf.core import Target
 from gwf.executors import serialize
@@ -875,3 +876,16 @@ def test_runtime_directory_rejects_directory_owned_by_another_user(
 
     with pytest.raises(BackendError, match="owned by another user"):
         _get_runtime_directory()
+
+
+def test_get_total_cores_respects_process_cpu_count(monkeypatch):
+    monkeypatch.setattr(os, "process_cpu_count", lambda: 3, raising=False)
+
+    assert get_total_cores() == 3
+
+
+def test_get_total_cores_falls_back_to_cpu_affinity(monkeypatch):
+    monkeypatch.delattr(os, "process_cpu_count", raising=False)
+    monkeypatch.setattr(os, "sched_getaffinity", lambda pid: {0, 1}, raising=False)
+
+    assert get_total_cores() == 2

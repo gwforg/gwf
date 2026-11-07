@@ -54,7 +54,6 @@ import itertools
 import io
 import json
 import logging
-import multiprocessing
 import os
 import re
 import secrets
@@ -113,6 +112,19 @@ def format_memory(value):
 
 def get_total_memory():
     return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
+
+
+def get_total_cores():
+    """Return the number of cores that this process may use.
+
+    Unlike :func:`os.cpu_count`, this respects CPU affinity, e.g. inside a
+    Slurm allocation or when started with :command:`taskset`.
+    """
+    if hasattr(os, "process_cpu_count"):  # Python 3.13+
+        return os.process_cpu_count() or 1
+    if hasattr(os, "sched_getaffinity"):  # Linux
+        return len(os.sched_getaffinity(0))
+    return os.cpu_count() or 1
 
 
 def parse_max_memory(value):
@@ -396,7 +408,7 @@ class ScheduledTarget:
 @attrs.define
 class Scheduler:
     working_dir: Path = attrs.field(converter=Path)
-    max_cores: int = attrs.field(default=multiprocessing.cpu_count())
+    max_cores: int = attrs.field(factory=get_total_cores)
     max_memory: int = attrs.field(default=None, converter=parse_max_memory)
 
     # Task ids are tracked by clients across scheduler restarts, so they

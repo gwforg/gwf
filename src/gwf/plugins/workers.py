@@ -1,8 +1,6 @@
-import multiprocessing
-
 import click
 
-from ..backends.local import start_cluster
+from ..backends.local import get_total_cores, start_cluster
 from ..core import pass_context
 
 
@@ -12,7 +10,8 @@ from ..core import pass_context
     "--max-cores",
     "max_cores",
     type=click.IntRange(min=1),
-    default=multiprocessing.cpu_count(),
+    # Evaluated when the command runs, not when gwf is imported.
+    default=get_total_cores,
     help="Maximum number of cores to use.",
 )
 @click.option(
