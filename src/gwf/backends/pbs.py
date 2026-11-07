@@ -41,6 +41,7 @@ import attrs
 from ..executors import render_exec_script
 from ..log_storage import get_log_paths
 from .base import BackendStatus, TrackingBackend
+from .exceptions import BackendError
 from .utils import call, has_exe
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,10 @@ PBS_HEADER = """#PBS -l mem={memory}
 #PBS -o {std_out}
 #PBS -e {std_err}
 #PBS -N {job_name}"""
+
+# qstat fails with one of these messages for jobs that have finished and been
+# removed from the queue (Torque and PBS Pro, the latter with job history).
+FINISHED_JOB_ERRORS = re.compile(r"Unknown Job Id|Job has finished")
 
 PBS_STATES = {
     "Q": BackendStatus.SUBMITTED,
@@ -108,8 +113,13 @@ class PBSOps:
             return {}
         job_states = {job_id: BackendStatus.UNKNOWN for job_id in tracked_jobs}
         for job_id in tracked_jobs:
-            cmd = ["qstat", "-f", job_id]
-            ret = call(*cmd)
+            try:
+                ret = call("qstat", "-f", job_id)
+            except BackendError as error:
+                if FINISHED_JOB_ERRORS.search(str(error)) is None:
+                    raise
+                logger.debug("Job %s is no longer known to PBS", job_id)
+                continue
             if "job_state" not in ret:
                 continue
             state = re.search(r"job_state = (\w)", ret).group(1)

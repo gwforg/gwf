@@ -130,6 +130,9 @@ Fixed
   that did not divide evenly between cores was rounded down, e.g. to ``0g``,
   and decimal values such as ``1.5g`` were read as ``15g``.
 
+* The PBS backend no longer fails when a tracked job has finished and is no
+  longer known to ``qstat``.
+
 
 Version 2.1.1
 =============
