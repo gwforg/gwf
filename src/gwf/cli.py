@@ -160,7 +160,9 @@ def main(ctx, file, backend, verbose, no_color):
     config_dir = working_dir.joinpath(".gwf")
     config_dir.mkdir(exist_ok=True)
 
-    config = FileConfig.load(config_dir.joinpath(".gwfconf.json"))
+    # The configuration lives next to the workflow file, where `gwf init` and
+    # all released versions of gwf put it.
+    config = FileConfig.load(working_dir.joinpath(".gwfconf.json"))
 
     init_log_storage(working_dir)
 
