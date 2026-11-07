@@ -249,8 +249,11 @@ class SlurmOps:
             # instead of a sensible, parsable value. So we do our best to clean
             # it up here.
             state = state.split()[0]
-            state = SLURM_LONG_STATES[state]
-            job_states[job_id] = SLURM_JOB_STATES[state]
+            if state not in SLURM_LONG_STATES:
+                logger.warning("Job %s has unknown state %s", job_id, state)
+                job_states[job_id] = BackendStatus.UNKNOWN
+                continue
+            job_states[job_id] = SLURM_JOB_STATES[SLURM_LONG_STATES[state]]
         return job_states
 
     def get_job_states_from_sacct_batched(self, tracked_jobs, batch_size=1024):

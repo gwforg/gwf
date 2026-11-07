@@ -58,6 +58,8 @@ BJOB_HEADER = """#BSUB -M {memory}
 
 BJOB_STATES = {
     "PEND": BackendStatus.SUBMITTED,
+    # Dispatched to a power-saved host that is waking up.
+    "PROV": BackendStatus.SUBMITTED,
     "WAIT": BackendStatus.SUBMITTED,
     "RUN": BackendStatus.RUNNING,
     "ZOMBI": BackendStatus.RUNNING,
@@ -106,7 +108,9 @@ class LSFOps:
             job_id, state = line.strip().split(",")
             # Update job status if tracked
             if job_id in tracked_jobs:
-                job_states[job_id] = BJOB_STATES[state]
+                if state not in BJOB_STATES:
+                    logger.warning("Job %s has unknown state %s", job_id, state)
+                job_states[job_id] = BJOB_STATES.get(state, BackendStatus.UNKNOWN)
         return job_states
 
     def compile_script(self, target):

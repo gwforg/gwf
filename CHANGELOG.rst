@@ -143,6 +143,10 @@ Fixed
   targets that use classes defined in the workflow file, such as custom
   executors.
 
+* The Slurm and LSF backends no longer crash on job states they do not
+  recognise; such jobs are reported as unknown. LSF's ``PROV`` state is now
+  reported as submitted.
+
 
 Version 2.1.1
 =============
