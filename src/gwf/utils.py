@@ -28,7 +28,8 @@ def entry_points(group):
 
 def is_valid_name(candidate):
     """Check whether `candidate` is a valid name for a target or workflow."""
-    return re.match(r"^[a-zA-Z_][a-zA-Z0-9._]*$", candidate) is not None
+    # fullmatch, since "$" also matches just before a trailing newline.
+    return re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9._]*", candidate) is not None
 
 
 def chain(*dcts):

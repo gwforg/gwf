@@ -136,6 +136,8 @@ Fixed
 * Installing *gwf* with ``pip`` installs its dependencies again, and the conda
   package now correctly requires Python 3.10 or newer.
 
+* Target names ending in a newline are now rejected as invalid.
+
 
 Version 2.1.1
 =============
