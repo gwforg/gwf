@@ -9,6 +9,14 @@ currently assumes that a SGE parallel environment called "smp" is
 available. You can check which parallel environments are available on your
 system by running :command:`qconf -spl`.
 
+.. note::
+    Dependencies are expressed with :command:`qsub -hold_jid`, which only
+    waits for the dependencies to *finish*, not to succeed. Unlike the other
+    backends, a target may therefore start even though one of its
+    dependencies failed, and will then usually fail itself because of missing
+    input files. When several targets have failed, look for the failed target
+    furthest upstream.
+
 **Backend options:**
 
 None.
@@ -18,7 +26,8 @@ None.
 * **cores (int):**
     Number of cores allocated to this target (default: 1).
 * **memory (str):**
-    Memory allocated to this target (default: 1).
+    Total memory allocated to this target (default: 1g). *gwf* divides it
+    between the target's cores, since SGE expects memory per core.
 * **walltime (str):**
     Time limit for this target (default: 01:00:00).
 * **queue (str):**
