@@ -138,8 +138,11 @@ def schedule(
         if skipped_deps:
             return Status.SKIPPED
 
+        # Without dependencies, inputs provided by other targets will not be
+        # produced, so they must exist just like unresolved inputs.
         for path in target.flattened_inputs():
-            if not fs.exists(path) and path in graph.unresolved:
+            if not fs.exists(path) and (no_deps or path in graph.unresolved):
+                logger.debug("Target %s is missing input file %s", target, path)
                 return Status.SKIPPED
 
         if status_func(target) == BackendStatus.SUBMITTED:

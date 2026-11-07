@@ -102,6 +102,9 @@ Fixed
 * The SGE backend now records job ids without a trailing newline, so it can
   find the status of submitted jobs and pass them as dependencies.
 
+* ``gwf run --no-deps`` no longer crashes when an input produced by another
+  target is missing. Such targets are now skipped.
+
 
 Version 2.1.1
 =============

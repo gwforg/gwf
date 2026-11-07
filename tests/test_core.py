@@ -11,7 +11,7 @@ from gwf.core import (
     _flatten,
 )
 from gwf.exceptions import GWFError
-from gwf.scheduling import get_status_map
+from gwf.scheduling import get_status_map, schedule
 
 
 @pytest.mark.parametrize(
@@ -564,3 +564,60 @@ def test_scheduling_with_spec_hashing(backend, spec_hashes, filesystem):
         spec_hashes=spec_hashes,
     )
     assert target_states[target] == Status.SHOULDRUN
+
+
+def _no_deps_graph():
+    upstream = Target(
+        "Upstream",
+        inputs=[],
+        outputs=["intermediate"],
+        options={},
+        working_dir="/some/dir",
+    )
+    downstream = Target(
+        "Downstream",
+        inputs=["intermediate"],
+        outputs=["result"],
+        options={},
+        working_dir="/some/dir",
+    )
+    return upstream, downstream, Graph.from_targets([upstream, downstream])
+
+
+def _schedule_no_deps(endpoint, graph, filesystem, backend):
+    submitted = []
+    states = schedule(
+        [endpoint],
+        graph,
+        filesystem,
+        NoopSpecHashes(),
+        status_func=backend.status,
+        submit_func=lambda target, dependencies: submitted.append(target),
+        no_deps=True,
+    )
+    return states, submitted
+
+
+@pytest.mark.parametrize("output_exists", [True, False])
+def test_schedule_no_deps_skips_target_with_missing_upstream_input(
+    filesystem, backend, output_exists
+):
+    _, downstream, graph = _no_deps_graph()
+    if output_exists:
+        filesystem.add_file("/some/dir/result", changed_at=1)
+
+    states, submitted = _schedule_no_deps(downstream, graph, filesystem, backend)
+
+    assert states == {downstream: Status.SKIPPED}
+    assert submitted == []
+
+
+def test_schedule_no_deps_runs_target_with_newer_upstream_input(filesystem, backend):
+    _, downstream, graph = _no_deps_graph()
+    filesystem.add_file("/some/dir/intermediate", changed_at=2)
+    filesystem.add_file("/some/dir/result", changed_at=1)
+
+    states, submitted = _schedule_no_deps(downstream, graph, filesystem, backend)
+
+    assert states == {downstream: Status.SHOULDRUN}
+    assert submitted == [downstream]
