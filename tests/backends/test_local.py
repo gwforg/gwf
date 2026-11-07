@@ -25,7 +25,11 @@ from gwf.backends.local import (
 )
 from gwf.core import Target
 from gwf.executors import serialize
-from gwf.log_storage import init_log_storage, prepare_log_storage_for_target
+from gwf.log_storage import (
+    get_log_paths,
+    init_log_storage,
+    prepare_log_storage_for_target,
+)
 from tests.local_backend import background_scheduler
 
 
@@ -796,3 +800,35 @@ def test_client_cancel_unknown_task_raises_backend_error(tmp_path, runtime_direc
             client.cancel("does-not-exist")
         # The connection is still usable afterwards.
         assert client.status() == {}
+
+
+@pytest.mark.asyncio
+async def test_timed_out_task_writes_logs(s, tmp_path):
+    tid = await enqueue(
+        s, "foo", "echo before; echo oops >&2; sleep 30", str(tmp_path), 1, set()
+    )
+    await wait_for_task(s, tid)
+
+    assert s.get_task_state(tid) == LocalStatus.KILLED
+    stdout_path, stderr_path = get_log_paths(s.working_dir, "foo")
+    assert stdout_path.read_text() == "before\n"
+    assert "oops" in stderr_path.read_text()
+
+
+@pytest.mark.asyncio
+async def test_cancelled_task_writes_logs(s, tmp_path):
+    started_path = tmp_path / "started"
+    tid = await enqueue(
+        s,
+        "foo",
+        f"echo before; touch {shlex.quote(str(started_path))}; sleep 30",
+        str(tmp_path),
+        None,
+        set(),
+    )
+    await wait_for_path(started_path)
+    await s.cancel_task(tid)
+
+    assert s.get_task_state(tid) == LocalStatus.CANCELLED
+    stdout_path, _ = get_log_paths(s.working_dir, "foo")
+    assert stdout_path.read_text() == "before\n"

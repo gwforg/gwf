@@ -121,6 +121,11 @@ Fixed
   iterable, its ``repr`` shows its contents, and it compares equal only to
   lists with the same contents.
 
+* Output written by a target shortly before it is terminated, for example
+  because it exceeded its walltime, is no longer lost. The local backend now
+  also writes logs for timed-out and cancelled targets instead of keeping the
+  logs of the previous run.
+
 
 Version 2.1.1
 =============

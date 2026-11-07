@@ -724,20 +724,39 @@ class Scheduler:
             communication_task = asyncio.create_task(proc.communicate())
             try:
                 if target.time_limit is None:
-                    stdout, stderr = await asyncio.shield(communication_task)
+                    await asyncio.shield(communication_task)
                 else:
-                    stdout, stderr = await asyncio.wait_for(
+                    await asyncio.wait_for(
                         asyncio.shield(communication_task),
                         timeout=target.time_limit,
                     )
             except asyncio.TimeoutError:
                 await self._cleanup_process(proc, communication_task, target.log)
+                self._write_logs(target, communication_task)
                 raise TimeLimitExceededError()
             except asyncio.CancelledError:
                 await self._cleanup_process(proc, communication_task, target.log)
+                self._write_logs(target, communication_task)
                 raise
 
+        self._write_logs(target, communication_task)
+        if proc.returncode is not None and proc.returncode != 0:
+            raise TaskFailedError(proc.returncode)
+
+    def _write_logs(self, target, communication_task):
+        # Logs are written however the task ended, so that the output of a
+        # timed-out or cancelled task is kept and does not leave the logs of a
+        # previous run in place.
+        if (
+            not communication_task.done()
+            or communication_task.cancelled()
+            or communication_task.exception() is not None
+        ):
+            target.log.debug("no output was collected, not writing logs")
+            return
+
         # TODO: This should be made streaming..
+        stdout, stderr = communication_task.result()
         stdout_path, stderr_path = get_log_paths(self.working_dir, target.name)
         target.log.debug(
             "writing %d stdout byte(s) to %s and %d stderr byte(s) to %s",
@@ -750,9 +769,6 @@ class Scheduler:
             log_file.write(stdout)
         with open(stderr_path, "wb") as log_file:
             log_file.write(stderr)
-
-        if proc.returncode is not None and proc.returncode != 0:
-            raise TaskFailedError(proc.returncode)
 
 
 @attrs.define

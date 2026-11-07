@@ -25,23 +25,30 @@ async def forward(src, dst, bufsize=2**16, flush_sec=10):
 
     last_flush = time.monotonic()
     done = False
-    while not done:
-        try:
-            data = await asyncio.wait_for(src.read(bufsize - buf_used), 1)
-            if not data:
-                done = True
-            buf[buf_used : buf_used + len(data)] = data
-            buf_used += len(data)
-        except asyncio.TimeoutError:
-            pass
+    try:
+        while not done:
+            try:
+                data = await asyncio.wait_for(src.read(bufsize - buf_used), 1)
+                if not data:
+                    done = True
+                buf[buf_used : buf_used + len(data)] = data
+                buf_used += len(data)
+            except asyncio.TimeoutError:
+                pass
 
-        now = time.monotonic()
-        if done or buf_used == bufsize or now - last_flush > flush_sec:
-            if buf_used:
-                dst.write(buf[:buf_used])
-                dst.flush()
-            last_flush = now
-            buf_used = 0
+            now = time.monotonic()
+            if done or buf_used == bufsize or now - last_flush > flush_sec:
+                if buf_used:
+                    dst.write(buf[:buf_used])
+                    dst.flush()
+                last_flush = now
+                buf_used = 0
+    finally:
+        # Forwarding is cancelled when the target is terminated, e.g. on a
+        # timeout. Flush what has been buffered so that it reaches the log.
+        if buf_used:
+            dst.write(buf[:buf_used])
+            dst.flush()
 
 
 async def execute_command(cmd, working_dir, environ=None):
