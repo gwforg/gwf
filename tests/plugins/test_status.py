@@ -44,3 +44,12 @@ def test_status_shows_only_completed_targets(
     assert "Target1" in result.output
     assert "Target2" in result.output
     assert "Target3" not in result.output
+
+
+def test_status_summary_when_no_targets_match(
+    cli_runner, local_backend, simple_workflow
+):
+    result = cli_runner.invoke(main, ["status", "--format", "summary", "NoSuchTarget"])
+
+    assert result.exit_code == 0, result.output
+    assert "completed" in result.output

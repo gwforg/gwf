@@ -109,6 +109,8 @@ Fixed
   ``pathlib.Path`` objects. The pretty format now lists the files of named
   (dictionary), nested and single-path inputs and outputs.
 
+* ``gwf status --format summary`` no longer crashes when no targets match.
+
 
 Version 2.1.1
 =============

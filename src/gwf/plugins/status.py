@@ -85,7 +85,8 @@ def print_flat_table(target_states, backend):
 
 def print_summary(target_states, backend):
     status_counts = Counter(status for status in target_states.values())
-    _, max_count = status_counts.most_common()[0]
+    # No targets match when the workflow is empty or filters exclude all.
+    max_count = max(status_counts.values(), default=0)
     count_width = len(str(max_count)) + 4
     for status, (color, symbol) in _STATUS_VISUALS.items():
         click.secho(
