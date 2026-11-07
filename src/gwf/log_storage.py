@@ -1,7 +1,6 @@
 import hashlib
 import os
 from pathlib import Path
-from typing import Tuple
 
 import click
 
@@ -16,7 +15,7 @@ def _get_log_path_without_extension(working_dir: Path, name: str):
     return get_logs_dir(working_dir).joinpath(suffix)
 
 
-def get_log_paths(working_dir: Path | str, name: str) -> Tuple[Path, Path]:
+def get_log_paths(working_dir: Path | str, name: str) -> tuple[Path, Path]:
     base_path = _get_log_path_without_extension(Path(working_dir), name)
     stdout_path = base_path.with_suffix(".stdout")
     stderr_path = base_path.with_suffix(".stderr")
@@ -55,7 +54,7 @@ def clean_logs(working_dir: Path | str, graph):
     working_dir = Path(working_dir)
 
     active_paths = set()
-    for name in graph.targets.keys():
+    for name in graph.targets:
         out, err = get_log_paths(working_dir, name)
         active_paths.add(out)
         active_paths.add(err)
@@ -67,16 +66,16 @@ def clean_logs(working_dir: Path | str, graph):
         dirs_removed = 0
 
         for name in dirs:
-            path = os.path.join(root, name)
+            path = Path(root, name)
             if path in emptied_dirs:
-                Path(path).rmdir()
+                path.rmdir()
                 dirs_removed += 1
 
         for name in files:
-            path = os.path.join(root, name)
+            path = Path(root, name)
             if path not in active_paths:
-                Path(path).unlink()
+                path.unlink()
                 files_removed += 1
 
         if files_removed == len(files) and dirs_removed == len(dirs):
-            emptied_dirs.add(root)
+            emptied_dirs.add(Path(root))

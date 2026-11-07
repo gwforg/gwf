@@ -81,6 +81,9 @@ Fixed
 * ``gwf run -g/--group`` no longer submits targets outside the selected
   groups.
 
+* ``gwf run`` no longer deletes the log files of current targets when
+  cleaning up unused logs.
+
 
 Version 2.1.1
 =============
