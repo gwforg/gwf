@@ -111,6 +111,9 @@ Fixed
 
 * ``gwf status --format summary`` no longer crashes when no targets match.
 
+* The status column in ``gwf status`` output is now aligned when target names
+  are longer than the status names.
+
 
 Version 2.1.1
 =============

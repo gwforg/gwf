@@ -62,7 +62,7 @@ def print_grouped_table(target_states, backend):
 
 def print_flat_table(target_states, backend):
     name_col_width = (
-        max((len(target.name) for target in target_states.values()), default=0) + 4
+        max((len(target.name) for target in target_states), default=0) + 4
     )
     format_str = "{symbol} {name:<{name_col_width}} {status} (id: {tracked_id})"
     for target, status in sorted(target_states.items(), key=_key_target_order):

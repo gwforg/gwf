@@ -53,3 +53,24 @@ def test_status_summary_when_no_targets_match(
 
     assert result.exit_code == 0, result.output
     assert "completed" in result.output
+
+
+def test_status_aligns_status_column_to_longest_target_name(
+    cli_runner, local_backend, tmpdir
+):
+    tmpdir.join("workflow.py").write(
+        """from gwf import Workflow
+
+gwf = Workflow()
+gwf.target('A', inputs=[], outputs=['a.txt']) << 'touch a.txt'
+gwf.target('AMuchLongerTargetName', inputs=[], outputs=['b.txt']) << 'touch b.txt'
+"""
+    )
+
+    with tmpdir.as_cwd():
+        result = cli_runner.invoke(main, ["status"])
+
+    assert result.exit_code == 0, result.output
+    lines = [line for line in result.output.splitlines() if "shouldrun" in line]
+    assert len(lines) == 2
+    assert len({line.index("shouldrun") for line in lines}) == 1
