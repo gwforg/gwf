@@ -621,3 +621,23 @@ def test_schedule_no_deps_runs_target_with_newer_upstream_input(filesystem, back
 
     assert states == {downstream: Status.SHOULDRUN}
     assert submitted == [downstream]
+
+
+def test_schedule_queries_backend_status_once_per_target(filesystem, backend):
+    _, downstream, graph = _no_deps_graph()
+    queried = []
+
+    def status_func(target):
+        queried.append(target.name)
+        return backend.status(target)
+
+    schedule(
+        [downstream],
+        graph,
+        filesystem,
+        NoopSpecHashes(),
+        status_func=status_func,
+        submit_func=lambda target, dependencies: None,
+    )
+
+    assert sorted(queried) == ["Downstream", "Upstream"]

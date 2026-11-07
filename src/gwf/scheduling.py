@@ -145,19 +145,21 @@ def schedule(
                 logger.debug("Target %s is missing input file %s", target, path)
                 return Status.SKIPPED
 
-        if status_func(target) == BackendStatus.SUBMITTED:
+        backend_status = status_func(target)
+
+        if backend_status == BackendStatus.SUBMITTED:
             logger.debug("Target %s is already submitted", target)
             return Status.SUBMITTED
 
-        if status_func(target) == BackendStatus.RUNNING:
+        if backend_status == BackendStatus.RUNNING:
             logger.debug("Target %s is already running", target)
             return Status.RUNNING
 
-        if status_func(target) == BackendStatus.FAILED:
+        if backend_status == BackendStatus.FAILED:
             submit_func(target, dependencies=submitted_deps)
             return Status.FAILED
 
-        if status_func(target) == BackendStatus.CANCELLED:
+        if backend_status == BackendStatus.CANCELLED:
             submit_func(target, dependencies=submitted_deps)
             return Status.CANCELLED
 
