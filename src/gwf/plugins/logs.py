@@ -15,7 +15,21 @@ def logs(ctx, target, stderr, no_pager):
     By default only standard output is shown. Supply the --stderr flag to show
     standard error instead.
     """
-    echo_func = click.echo if no_pager else click.echo_via_pager
     stdout_path, stderr_path = get_log_paths(ctx.working_dir, target)
     log_path = stderr_path if stderr else stdout_path
-    echo_func(log_path.open(encoding="utf-8"))
+    try:
+        # Targets may write output that is not valid UTF-8.
+        log_file = log_path.open(encoding="utf-8", errors="replace")
+    except FileNotFoundError:
+        stream = "standard error" if stderr else "standard output"
+        raise click.ClickException(
+            f"No {stream} log found for target {target}. "
+            "Maybe the target has not run yet?"
+        ) from None
+
+    with log_file:
+        if no_pager:
+            for line in log_file:
+                click.echo(line, nl=False)
+        else:
+            click.echo_via_pager(log_file)

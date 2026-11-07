@@ -158,6 +158,11 @@ Fixed
   whose name starts with the same letters, e.g. ``backend.slurmfoo.*`` for
   the ``slurm`` backend.
 
+* ``gwf logs --no-pager`` now shows the log instead of a description of the
+  log file. ``gwf logs`` reports a missing log with a short error message
+  instead of a traceback, and no longer fails on output that is not valid
+  UTF-8.
+
 
 Version 2.1.1
 =============
