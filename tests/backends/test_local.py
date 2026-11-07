@@ -11,12 +11,14 @@ import time
 import pytest
 import pytest_asyncio
 
+from gwf.backends.base import BackendStatus
 from gwf.backends.exceptions import BackendError
 from gwf.backends.local import (
     Client,
     LocalStatus,
     Scheduler,
     Server,
+    create_backend,
     decode,
     encode,
     get_socket_path,
@@ -523,7 +525,7 @@ async def test_task_debug_logs_include_target_context(s, caplog):
         if record.name == "gwf.backends.local"
     ]
     target_messages = [
-        message for message in messages if message.startswith("Target foo (id 0):")
+        message for message in messages if message.startswith(f"Target foo (id {tid}):")
     ]
 
     assert len(target_messages) >= 5
@@ -743,3 +745,54 @@ async def test_server_rejects_tasks_after_shutdown_starts(
 def test_client_connection_failure(tmp_path, runtime_directory):
     with pytest.raises(FileNotFoundError):
         Client.connect(get_socket_path(tmp_path))
+
+
+def test_task_ids_are_not_reused_after_scheduler_restart(tmp_path, runtime_directory):
+    tmp_path.joinpath(".gwf").mkdir()
+    init_log_storage(tmp_path)
+    targets = {}
+    for name, spec in (("first", "exit 0"), ("second", "exit 1")):
+        prepare_log_storage_for_target(tmp_path, name)
+        targets[name] = Target(
+            name,
+            inputs=[],
+            outputs=[],
+            options={},
+            working_dir=str(tmp_path),
+            spec=spec,
+        )
+
+    with background_scheduler(tmp_path, 1), create_backend(str(tmp_path)) as backend:
+        backend.submit(targets["first"], dependencies=[])
+
+    # A new scheduler session runs an unrelated target that fails.
+    with background_scheduler(tmp_path, 1) as socket_path:
+        with create_backend(str(tmp_path)) as backend:
+            backend.submit(targets["second"], dependencies=[])
+            second_id = backend.get_tracked_id(targets["second"])
+
+        with Client.connect(socket_path) as client:
+            deadline = time.monotonic() + 5
+            while client.status().get(str(second_id)) != LocalStatus.FAILED:
+                assert time.monotonic() < deadline
+                time.sleep(0.05)
+
+        with create_backend(str(tmp_path)) as backend:
+            # The first target's id is from the previous session and must not
+            # pick up the state of the unrelated second target.
+            assert backend.status(targets["first"]) == BackendStatus.UNKNOWN
+            assert backend.status(targets["second"]) == BackendStatus.FAILED
+
+
+def test_client_cancel_unknown_task_raises_backend_error(tmp_path, runtime_directory):
+    tmp_path.joinpath(".gwf").mkdir()
+    init_log_storage(tmp_path)
+
+    with (
+        background_scheduler(tmp_path, 1) as socket_path,
+        Client.connect(socket_path) as client,
+    ):
+        with pytest.raises(BackendError, match="Unknown task"):
+            client.cancel("does-not-exist")
+        # The connection is still usable afterwards.
+        assert client.status() == {}

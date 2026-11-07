@@ -57,6 +57,7 @@ import logging
 import multiprocessing
 import os
 import re
+import secrets
 import signal
 import socket
 import sys
@@ -259,6 +260,8 @@ class Client:
     def cancel(self, job_id):
         self.send("cancel_task", tid=job_id)
         msg_type, response = self.recv()
+        if msg_type == "cancel_rejected":
+            raise BackendError(response["message"])
         assert msg_type == "task_cancelled", "invalid response received"
         assert response["tid"] == job_id
 
@@ -303,10 +306,11 @@ class LocalOps:
             ) from error
 
     def get_job_states(self, tracked_jobs):
+        tracked_jobs = set(tracked_jobs)
         return {
-            int(k): STATUS_MAP[v]
+            k: STATUS_MAP[v]
             for k, v in self._client.status().items()
-            if int(k) in tracked_jobs
+            if k in tracked_jobs
         }
 
     def submit_target(self, target, dependency_ids):
@@ -349,7 +353,7 @@ class TargetLogger(logging.LoggerAdapter):
 
 @attrs.define
 class ScheduledTarget:
-    tid: int = attrs.field()
+    tid: str = attrs.field()
     name: str = attrs.field()
     script: str = attrs.field()
     working_dir: str = attrs.field()
@@ -373,6 +377,9 @@ class Scheduler:
     max_cores: int = attrs.field(default=multiprocessing.cpu_count())
     max_memory: int = attrs.field(default=None, converter=parse_max_memory)
 
+    # Task ids are tracked by clients across scheduler restarts, so they
+    # must not be reused by a later scheduler session.
+    session_id: str = attrs.field(factory=lambda: secrets.token_hex(4))
     tid_generator: object = attrs.field(factory=itertools.count)
     task_states: dict = attrs.field(factory=dict)
     tasks: dict = attrs.field(factory=dict)
@@ -423,7 +430,7 @@ class Scheduler:
                 f"but the local scheduler has only {format_memory(self.max_memory)}."
             )
 
-        tid = next(self.tid_generator)
+        tid = f"{self.session_id}.{next(self.tid_generator)}"
         target = ScheduledTarget(
             tid=tid,
             name=name,
@@ -450,6 +457,8 @@ class Scheduler:
         return tid
 
     async def cancel_task(self, tid):
+        if tid not in self.tasks:
+            raise BackendError(f"Unknown task {tid}.")
         target = self.tasks[tid]
         state = self.task_states[tid]
         if state == LocalStatus.SUBMITTED:
@@ -546,7 +555,7 @@ class Scheduler:
             if failed_dependency is not None:
                 dep_tid, dep_state = failed_dependency
                 target.log.debug(
-                    "will not run because dependency %d finished in state %s",
+                    "will not run because dependency %s finished in state %s",
                     dep_tid,
                     dep_state.name.lower(),
                 )
@@ -783,8 +792,12 @@ class Server:
             )
         elif kind == "cancel_task":
             tid = message.pop("tid")
-            await self.scheduler.cancel_task(tid)
-            response = ("task_cancelled", {"tid": tid})
+            try:
+                await self.scheduler.cancel_task(tid)
+            except BackendError as error:
+                response = ("cancel_rejected", {"message": str(error)})
+            else:
+                response = ("task_cancelled", {"tid": tid})
         elif kind == "shutdown":
             await self.scheduler.shutdown()
             response = ("shutdown", {})

@@ -93,6 +93,12 @@ Fixed
   discards the job ids and spec hashes recorded by ``gwf run``, which could
   cause targets to be submitted twice.
 
+* The local backend no longer reuses task ids after ``gwf workers`` is
+  restarted. Previously, a target could report the status of an unrelated
+  task from the new session, and ``gwf cancel`` could cancel the wrong task.
+  Cancelling a task unknown to the scheduler now reports an error instead of
+  crashing.
+
 
 Version 2.1.1
 =============
