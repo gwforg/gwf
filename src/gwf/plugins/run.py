@@ -6,7 +6,7 @@ from .. import Workflow
 from ..backends import create_backend
 from ..log_storage import clean_logs
 from ..core import CachedFilesystem, Graph, Status, get_spec_hashes, pass_context
-from ..filtering import GroupFilter, NameFilter, StatusFilter, filter_generic
+from ..filtering import GroupFilter, StatusFilter, filter_generic, filter_names
 from ..scheduling import get_status_map, submit_workflow
 
 logger = logging.getLogger(__name__)
@@ -60,11 +60,6 @@ def run(ctx, targets, dry_run, force, no_deps, group, status):
             )
 
             filters = []
-            if targets:
-                filters.append(NameFilter(patterns=targets))
-            endpoints = set(filter_generic(targets=graph, filters=filters))
-
-            filters = []
             if status:
                 filters.append(
                     StatusFilter(
@@ -76,6 +71,14 @@ def run(ctx, targets, dry_run, force, no_deps, group, status):
                 filters.append(GroupFilter(patterns=group))
             filtered_targets = set(filter_generic(targets=graph, filters=filters))
             filtered_graph = Graph.from_targets(filtered_targets)
+
+            # Endpoints must come from the filtered graph. Otherwise targets
+            # excluded by --status/--group would still be scheduled, and
+            # without their dependencies since those are missing from the
+            # filtered graph.
+            endpoints = set(filtered_graph)
+            if targets:
+                endpoints = filter_names(endpoints, targets)
 
             submit_workflow(
                 endpoints,

@@ -56,3 +56,43 @@ gwf.target('NeedsY', inputs=['y.txt'], outputs=['c.txt']) << 'touch c.txt'
     assert result.exit_code == 0, result.output
     assert "Would submit Producer" not in result.output
     assert "Would submit NeedsX" in result.output
+
+
+GROUPED_WORKFLOW = """from gwf import Workflow
+
+gwf = Workflow()
+gwf.target('A', inputs=[], outputs=['a.txt'], group='first') << 'touch a.txt'
+gwf.target('B', inputs=['a.txt'], outputs=['b.txt'], group='second') << 'touch b.txt'
+"""
+
+
+def test_run_group_only_submits_targets_in_group(cli_runner, local_backend, tmpdir):
+    tmpdir.join("workflow.py").write(GROUPED_WORKFLOW)
+
+    with tmpdir.as_cwd():
+        result = cli_runner.invoke(main, ["run", "--dry-run", "-g", "first"])
+
+    assert result.exit_code == 0, result.output
+    assert "Would submit A" in result.output
+    assert "Would submit B" not in result.output
+
+
+def test_run_status_only_submits_targets_with_status(cli_runner, local_backend, tmpdir):
+    tmpdir.join("workflow.py").write(GROUPED_WORKFLOW)
+
+    with tmpdir.as_cwd():
+        Path("a.txt").touch()
+        result = cli_runner.invoke(main, ["run", "--dry-run", "-s", "completed"])
+
+    assert result.exit_code == 0, result.output
+    assert "Would submit" not in result.output
+
+
+def test_run_names_and_group_must_both_match(cli_runner, local_backend, tmpdir):
+    tmpdir.join("workflow.py").write(GROUPED_WORKFLOW)
+
+    with tmpdir.as_cwd():
+        result = cli_runner.invoke(main, ["run", "--dry-run", "-g", "first", "B"])
+
+    assert result.exit_code == 0, result.output
+    assert "Would submit" not in result.output

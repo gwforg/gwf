@@ -78,6 +78,9 @@ Fixed
 * Loading backend entry points no longer relies on a deprecated Python
   interface.
 
+* ``gwf run -g/--group`` no longer submits targets outside the selected
+  groups.
+
 
 Version 2.1.1
 =============
