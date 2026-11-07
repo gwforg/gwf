@@ -19,14 +19,15 @@ build:
 
 requirements:
   host:
-    - python>=3.8
+    - python>=3.10
     - flit
+  # Keep in sync with the dependencies in pyproject.toml.
   run:
-    - attrs
-    - click
-    - click-plugins
-    - python>=3.8
-    - prettyprinter
+    - attrs>=21.3
+    - click>=8
+    - click-plugins>=1.1
+    - python>=3.10
+    - prettyprinter>=0.18
 
 test:
   imports:

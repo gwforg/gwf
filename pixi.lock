@@ -9357,4 +9357,9 @@ packages:
   timestamp: 1764777166076
 - pypi: ./
   name: gwf
+  requires_dist:
+  - attrs>=21.3
+  - click>=8
+  - click-plugins>=1.1
+  - prettyprinter>=0.18
   requires_python: '>=3.10'

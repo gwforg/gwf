@@ -133,6 +133,9 @@ Fixed
 * The PBS backend no longer fails when a tracked job has finished and is no
   longer known to ``qstat``.
 
+* Installing *gwf* with ``pip`` installs its dependencies again, and the conda
+  package now correctly requires Python 3.10 or newer.
+
 
 Version 2.1.1
 =============

@@ -20,6 +20,13 @@ dynamic = ["version", "description"]
 name = "gwf"
 readme = "README.rst"
 requires-python = ">=3.10"
+# Keep in sync with conda/meta.yaml and [tool.pixi.dependencies].
+dependencies = [
+    "attrs>=21.3",
+    "click>=8",
+    "click-plugins>=1.1",
+    "prettyprinter>=0.18",
+]
 
 [project.scripts]
 gwf = "gwf.cli:main"
