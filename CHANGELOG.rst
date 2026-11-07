@@ -84,6 +84,11 @@ Fixed
 * ``gwf run`` no longer deletes the log files of current targets when
   cleaning up unused logs.
 
+* Targets created from templates now resolve paths relative to the workflow
+  directory instead of the directory ``gwf`` was run from. A relative
+  ``working_dir`` in a template is likewise resolved against the workflow
+  directory.
+
 
 Version 2.1.1
 =============

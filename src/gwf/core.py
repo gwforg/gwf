@@ -181,7 +181,9 @@ class AnonymousTarget:
     :ivar str group:
         The group to which the target is assigned.
     :ivar str working_dir:
-        Working directory of this target.
+        Working directory of this target. When the template is added to a
+        workflow, a relative path is resolved against the workflow's working
+        directory. Defaults to the workflow's working directory.
     :ivar str spec:
         The specification of the target.
     :ivar set protect:

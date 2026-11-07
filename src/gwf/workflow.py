@@ -322,7 +322,11 @@ class Workflow:
             group=template.group,
             executor=template.executor or self.executor,
             options=target_options,
-            working_dir=template.working_dir or self.working_dir,
+            # Template working directories (default ".") are relative to the
+            # workflow, not to the directory gwf happens to be invoked from.
+            working_dir=os.path.normpath(
+                os.path.join(self.working_dir, os.fspath(template.working_dir or "."))
+            ),
             spec=template.spec,
             isolation=isolation,
         )

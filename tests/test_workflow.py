@@ -61,6 +61,43 @@ def test_target_from_template_returning_anonymous_target_without_working_dir():
     assert "TestTarget" in workflow.targets
 
 
+@pytest.mark.parametrize(
+    "template_working_dir, expected",
+    [
+        (".", "/some/dir"),
+        ("sub", "/some/dir/sub"),
+        (Path("sub"), "/some/dir/sub"),
+        ("/other/dir", "/other/dir"),
+    ],
+)
+def test_target_from_template_resolves_working_dir_against_workflow(
+    template_working_dir, expected
+):
+    template = AnonymousTarget(
+        inputs=["in.txt"],
+        outputs=["out.txt"],
+        options={},
+        working_dir=template_working_dir,
+    )
+
+    workflow = Workflow(working_dir="/some/dir")
+    target = workflow.target_from_template("TestTarget", template)
+
+    assert target.working_dir == expected
+    assert target.flattened_inputs() == [f"{expected}/in.txt"]
+    assert target.flattened_outputs() == [f"{expected}/out.txt"]
+
+
+def test_target_from_template_default_working_dir_ignores_cwd(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    template = AnonymousTarget(inputs=[], outputs=["out.txt"], options={})
+
+    workflow = Workflow(working_dir="/some/dir")
+    target = workflow.target_from_template("TestTarget", template)
+
+    assert target.flattened_outputs() == ["/some/dir/out.txt"]
+
+
 def test_targets_inherit_workflow_working_dir_with_given_working_dir():
     workflow = Workflow(working_dir="/some/path")
     target = workflow.target("TestTarget", inputs=[], outputs=[])
