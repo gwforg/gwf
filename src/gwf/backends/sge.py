@@ -87,7 +87,8 @@ class SGEOps:
         args.extend(target.options.get(SUBMISSION_ARGS_OPTION, []))
         environ = os.environ.copy()
         environ["GWF_EXEC_WORKFLOW_ROOT"] = self.working_dir
-        return call("qsub", *args, input=script, environ=environ)
+        # `qsub -terse` prints the job id followed by a newline.
+        return call("qsub", *args, input=script, environ=environ).strip()
 
     def get_job_states(self, tracked_jobs):
         job_states = {}
