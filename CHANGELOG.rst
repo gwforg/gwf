@@ -126,6 +126,10 @@ Fixed
   also writes logs for timed-out and cancelled targets instead of keeping the
   logs of the previous run.
 
+* The SGE backend now computes per-core memory correctly. Previously, memory
+  that did not divide evenly between cores was rounded down, e.g. to ``0g``,
+  and decimal values such as ``1.5g`` were read as ``15g``.
+
 
 Version 2.1.1
 =============

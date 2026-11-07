@@ -3,6 +3,7 @@ import pytest
 from gwf import Target
 from gwf.backends import sge
 from gwf.backends.base import BackendStatus
+from gwf.backends.exceptions import BackendError
 
 QSTAT_XML = """<?xml version='1.0'?>
 <job_info>
@@ -66,3 +67,33 @@ def test_dependency_ids_are_passed_without_newlines(tmp_path, fake_sge):
 
     _, args = [call for call in fake_sge if call[0] == "qsub"][-1]
     assert args[args.index("-hold_jid") + 1] == "1234"
+
+
+@pytest.mark.parametrize(
+    "memory, cores, expected",
+    [
+        ("8g", 4, "2g"),
+        ("1g", 4, "250m"),
+        ("1.5g", 1, "1500m"),
+        ("4GB", 1, "4G"),
+        ("1G", 4, "256M"),
+        ("1g", 3, "333333334"),
+    ],
+)
+def test_per_core_memory(memory, cores, expected):
+    assert sge.per_core_memory(memory, cores) == expected
+
+
+def test_per_core_memory_rejects_invalid_values():
+    with pytest.raises(BackendError, match="Invalid memory value"):
+        sge.per_core_memory("lots", 1)
+
+
+def test_script_requests_memory_per_core(tmp_path):
+    target = _target("Foo")
+    target.options.update(memory="1g", cores=4)
+    ops = sge.SGEOps(str(tmp_path), target_defaults=sge.TARGET_DEFAULTS)
+
+    script = ops.compile_script(target)
+
+    assert "#$ -l h_vmem=250m" in script.splitlines()

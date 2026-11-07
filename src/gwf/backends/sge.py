@@ -33,8 +33,10 @@ None.
 """
 
 import logging
+import math
 import os
 import re
+from decimal import Decimal
 from xml.etree import ElementTree
 
 import attrs
@@ -42,6 +44,7 @@ import attrs
 from ..executors import render_exec_script
 from ..log_storage import get_log_paths
 from .base import BackendStatus, TrackingBackend
+from .exceptions import BackendError
 from .utils import call, has_exe
 
 logger = logging.getLogger(__name__)
@@ -65,6 +68,38 @@ OPTION_FLAGS = {
     "queue": "-q ",
     "account": "-P ",
 }
+
+
+MEMORY_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*([kmgKMG]?)[bB]?")
+
+# In SGE, lowercase memory units are powers of 1000 and uppercase units are
+# powers of 1024.
+MEMORY_UNITS = ("", "k", "m", "g")
+
+
+def per_core_memory(memory, cores):
+    """Return total `memory` divided between `cores` as an SGE memory value.
+
+    The result keeps the unit of `memory` when the division is exact.
+    Otherwise it moves to smaller units, rounding up to whole bytes so that the
+    job is never given less than the total memory requested.
+    """
+    match = MEMORY_PATTERN.fullmatch(str(memory).strip())
+    if match is None:
+        raise BackendError(f"Invalid memory value: {memory!r}")
+    amount, unit = match.groups()
+    base = 1024 if unit.isupper() else 1000
+
+    per_core = Decimal(amount) / cores
+    index = MEMORY_UNITS.index(unit.lower())
+    while index > 0 and per_core != per_core.to_integral_value():
+        per_core *= base
+        index -= 1
+
+    unit = MEMORY_UNITS[index]
+    if base == 1024:
+        unit = unit.upper()
+    return f"{math.ceil(per_core)}{unit}"
 
 
 @attrs.define
@@ -123,10 +158,9 @@ class SGEOps:
                     continue
                 # SGE wants per-core memory, but gwf wants total memory.
                 if option_name == "memory":
-                    number = int(re.sub(r"[^0-9]+", "", option_value))
-                    unit = re.sub(r"[0-9]+", "", option_value)
-                    cores = target.options["cores"]
-                    option_value = "{}{}".format(number // cores, unit)
+                    option_value = per_core_memory(
+                        option_value, target.options.get("cores", 1)
+                    )
                 print(option_str.format(OPTION_FLAGS[option_name], option_value), file=buf)
 
             stdout_path, stderr_path = get_log_paths(self.working_dir, target.name)
