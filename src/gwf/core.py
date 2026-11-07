@@ -101,6 +101,9 @@ class NoopSpecHashes:
 class FileSpecHashes:
     path: str = attrs.field()
     hashes: dict = attrs.field(factory=dict, init=False)
+    # Only write the hashes file if something changed, so that e.g. a
+    # concurrent `gwf status` cannot discard hashes written by `gwf run`.
+    _changed: bool = attrs.field(default=False, init=False, repr=False)
 
     def __attrs_post_init__(self):
         try:
@@ -121,14 +124,18 @@ class FileSpecHashes:
 
     def update(self, target):
         self.hashes[target.name] = hash_spec(target.spec)
+        self._changed = True
 
     def invalidate(self, target):
         try:
             del self.hashes[target.name]
+            self._changed = True
         except KeyError:
             pass
 
     def close(self):
+        if not self._changed:
+            return
         with open(self.path, "w") as hashes_file:
             json.dump(self.hashes, hashes_file)
 

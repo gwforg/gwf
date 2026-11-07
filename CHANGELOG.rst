@@ -89,6 +89,10 @@ Fixed
   ``working_dir`` in a template is likewise resolved against the workflow
   directory.
 
+* Running ``gwf status`` while ``gwf run`` is submitting targets no longer
+  discards the job ids and spec hashes recorded by ``gwf run``, which could
+  cause targets to be submitted twice.
+
 
 Version 2.1.1
 =============

@@ -80,6 +80,9 @@ class TrackingBackend:
 
     _tracked_jobs: dict = attrs.field(init=False, repr=False)
     _job_states: dict = attrs.field(init=False, repr=False)
+    # Only write the state file if something was submitted, so that e.g. a
+    # concurrent `gwf status` cannot discard jobs submitted by `gwf run`.
+    _changed: bool = attrs.field(init=False, repr=False, default=False)
 
     @_tracked_jobs.default
     def _init_tracked(self):
@@ -133,6 +136,7 @@ class TrackingBackend:
         dependency_ids = [self._tracked_jobs[dep.name] for dep in dependencies]
         job_id = self.ops.submit_target(target, dependency_ids)
         self._tracked_jobs[target.name] = job_id
+        self._changed = True
         self._job_states[job_id] = BackendStatus.SUBMITTED
 
     def get_tracked_id(self, target):
@@ -146,6 +150,8 @@ class TrackingBackend:
 
     def close(self):
         self.ops.close()
+        if not self._changed:
+            return
         with open(self._get_state_path(), "w") as state_file:
             json.dump(self._tracked_jobs, state_file, indent=4)
         with open(self._get_status_cache_path(), "w") as cache_file:
