@@ -2,10 +2,10 @@ import json
 import logging
 import os.path
 from enum import Enum
+from importlib.metadata import entry_points
 
 import attrs
 
-from ..utils import entry_points
 from .exceptions import TargetError
 
 logger = logging.getLogger(__name__)
