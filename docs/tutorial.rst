@@ -217,6 +217,29 @@ your :file:`workflow.py` as a normal Python script:
 In the end, there's not a big difference between debugging a *gwf* workflow
 and normal Python code.
 
+If a target fails and its logs don't explain why, set the
+``GWF_EXEC_DEBUG_MODE`` environment variable to see what happens when the
+target runs. The target's script is then run with ``set -x``, so each command
+is printed before it runs, and *gwf* logs details such as the exact command
+used to run the script. This output ends up in the target's standard error log,
+which you can view with ``gwf logs -e TARGET``:
+
+.. code-block:: console
+
+    $ GWF_EXEC_DEBUG_MODE=1 gwf run TARGET
+
+Setting the variable to *any* value enables debug mode, including ``0`` and
+``false``. To disable debug mode, the variable must be unset:
+
+.. code-block:: console
+
+    $ unset GWF_EXEC_DEBUG_MODE
+
+The variable must be set in the environment that the target runs in. With the
+local backend, set it when starting ``gwf workers``. The cluster backends pass
+your environment on to the job when you run ``gwf run``, except PBS, where you
+may need to add ``-V`` using the ``pbs_args`` option.
+
 Defining Targets with Dependencies
 ==================================
 
