@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from gwf import AnonymousTarget, Workflow
+from gwf import AnonymousTarget, TargetList, Workflow
 from gwf.exceptions import WorkflowError
 
 
@@ -352,3 +352,18 @@ def test_target_list():
 
     assert len(target_list.inputs) == 3
     assert target_list.inputs == [{"path": "a"}, {"path": "b"}, {"path": "c"}]
+
+
+def test_target_list_behaves_like_a_list():
+    workflow = Workflow(working_dir="/some/dir")
+    foo = workflow.target("Foo", inputs=["a"], outputs=["b"])
+    bar = workflow.target("Bar", inputs=["b"], outputs=["c"])
+
+    targets = TargetList([foo, bar])
+
+    assert list(targets) == [foo, bar]
+    assert targets == TargetList([foo, bar])
+    assert targets != TargetList()
+    assert "Foo" in repr(targets)
+    assert targets.inputs == [["a"], ["b"]]
+    assert targets.outputs == [["b"], ["c"]]

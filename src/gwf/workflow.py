@@ -93,7 +93,6 @@ def collect(lst, fields, rename=None):
     return dict(selected)
 
 
-@attrs.define
 class TargetList(list):
     """A list of target objects with access to all inputs and outputs.
 

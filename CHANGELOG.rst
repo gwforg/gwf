@@ -117,6 +117,10 @@ Fixed
 * ``gwf config unset`` no longer crashes for settings that have not been set
   explicitly, such as ``clean_logs``.
 
+* ``TargetList`` behaves like a normal list again: it can be created from an
+  iterable, its ``repr`` shows its contents, and it compares equal only to
+  lists with the same contents.
+
 
 Version 2.1.1
 =============
