@@ -77,12 +77,10 @@ class FileConfig:
         return self.data.items()
 
     def get_namespace(self, ns):
-        res = {}
-        for k, v in self.items():
-            if k.startswith(ns):
-                new_key = k[len(ns) + 1 :]
-                res[new_key] = v
-        return res
+        # Match on "ns." so that e.g. "backend.slurm" does not also pick up
+        # keys from "backend.slurmfoo".
+        prefix = f"{ns}."
+        return {k[len(prefix) :]: v for k, v in self.items() if k.startswith(prefix)}
 
     def dump(self):
         """Dump the configuration to disk."""

@@ -154,6 +154,10 @@ Fixed
 * The error shown when a workload manager command such as ``qsub`` cannot be
   found no longer claims that Slurm is required.
 
+* Backend options are no longer picked up from settings of other backends
+  whose name starts with the same letters, e.g. ``backend.slurmfoo.*`` for
+  the ``slurm`` backend.
+
 
 Version 2.1.1
 =============

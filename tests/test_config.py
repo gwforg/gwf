@@ -48,3 +48,16 @@ def test_unset_key_with_only_a_default_keeps_default(tmpdir):
     del c["clean_logs"]
 
     assert c["clean_logs"] is True
+
+
+def test_get_namespace_only_matches_whole_namespace(tmpdir):
+    config_path = tmpdir.join(".gwfconf.json")
+    config_path.write(
+        '{"backend.slurm.log_mode": "merged", '
+        '"backend.slurmish.log_mode": "none", '
+        '"backend.slurm": "oops"}\n'
+    )
+
+    c = FileConfig.load(config_path)
+
+    assert c.get_namespace("backend.slurm") == {"log_mode": "merged"}
