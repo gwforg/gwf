@@ -1,10 +1,11 @@
 import json
+import os
 from collections import OrderedDict
 
 import click
 
 from .. import Workflow
-from ..core import Graph, pass_context
+from ..core import Graph, _flatten, pass_context
 from ..filtering import filter_names
 
 
@@ -33,10 +34,12 @@ def print_pretty(targets, graph):
     for target in targets:
         print_label("Name:")
         print_value(target.name)
+        # Inputs and outputs may be a single path, a list, a dict or nested
+        # combinations of these.
         print_label("Inputs:")
-        print_list(target.inputs, as_filename=True)
+        print_list(_flatten(target.inputs), as_filename=True)
         print_label("Outputs:")
-        print_list(target.outputs, as_filename=True)
+        print_list(_flatten(target.outputs), as_filename=True)
         print_label("Dependents:")
         print_list([target.name for target in graph.dependents[target]])
         print_label("Spec:")
@@ -61,7 +64,15 @@ def print_json(targets, graph):
             ]
         )
 
-    print(json.dumps(obj, indent=4))
+    print(json.dumps(obj, indent=4, default=_json_default))
+
+
+def _json_default(value):
+    # Inputs and outputs may contain pathlib.Path objects, and options may
+    # contain arbitrary values.
+    if isinstance(value, os.PathLike):
+        return os.fspath(value)
+    return str(value)
 
 
 FORMATS = {

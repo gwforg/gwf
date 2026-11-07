@@ -105,6 +105,10 @@ Fixed
 * ``gwf run --no-deps`` no longer crashes when an input produced by another
   target is missing. Such targets are now skipped.
 
+* ``gwf info`` no longer crashes when inputs or outputs are
+  ``pathlib.Path`` objects. The pretty format now lists the files of named
+  (dictionary), nested and single-path inputs and outputs.
+
 
 Version 2.1.1
 =============
