@@ -1,5 +1,5 @@
 import copy
-import importlib
+import importlib.util
 import logging
 import os
 import os.path
@@ -129,7 +129,14 @@ def load_workflow(path: Path, obj: str):
     assert spec is not None, "Could not load workflow file"
     module = importlib.util.module_from_spec(spec)
     assert module is not None, "Could not load module from workflow file"
-    spec.loader.exec_module(module)
+    # Register the module like a normal import. Code that looks up a class's
+    # module, such as dataclasses and pickle, fails otherwise.
+    sys.modules[module_name] = module
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        del sys.modules[module_name]
+        raise
     if not hasattr(module, obj):
         raise GWFError(f"The module '{path.name}' does not have attribute '{obj}'")
     return getattr(module, obj)

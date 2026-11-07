@@ -138,6 +138,11 @@ Fixed
 
 * Target names ending in a newline are now rejected as invalid.
 
+* Workflow files are now registered as modules when loaded. This fixes
+  dataclasses with ``from __future__ import annotations`` and pickling of
+  targets that use classes defined in the workflow file, such as custom
+  executors.
+
 
 Version 2.1.1
 =============
