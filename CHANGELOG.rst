@@ -151,6 +151,9 @@ Fixed
   is a symlink or owned by another user, and makes sure that only the current
   user can access it.
 
+* The error shown when a workload manager command such as ``qsub`` cannot be
+  found no longer claims that Slurm is required.
+
 
 Version 2.1.1
 =============

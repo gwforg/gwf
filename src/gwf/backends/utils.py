@@ -8,8 +8,9 @@ def _find_exe(name):
     exe = shutil.which(name)
     if exe is None:
         raise BackendError(
-            f'Could not find executable "{name}". This backend requires Slurm '
-            f"to be installed on this host."
+            f'Could not find executable "{name}". Make sure that the workload '
+            f"manager used by this backend is installed on this host and that "
+            f'"{name}" is on your PATH.'
         )
     return exe
 
