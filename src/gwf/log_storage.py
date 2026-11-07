@@ -17,8 +17,10 @@ def _get_log_path_without_extension(working_dir: Path, name: str):
 
 def get_log_paths(working_dir: Path | str, name: str) -> tuple[Path, Path]:
     base_path = _get_log_path_without_extension(Path(working_dir), name)
-    stdout_path = base_path.with_suffix(".stdout")
-    stderr_path = base_path.with_suffix(".stderr")
+    # Append rather than use with_suffix(), which would replace the part of
+    # a dotted target name after the last dot (e.g. "sample.1").
+    stdout_path = base_path.with_name(f"{base_path.name}.stdout")
+    stderr_path = base_path.with_name(f"{base_path.name}.stderr")
     return stdout_path, stderr_path
 
 
@@ -42,10 +44,8 @@ def init_log_storage(working_dir: Path | str):
     if migrate_files:
         with click.progressbar(migrate_files, label="Migrating log files") as bar:
             for entry in bar:
-                new_path = prepare_log_storage_for_target(working_dir, entry.stem)
-                new_path = _get_log_path_without_extension(
-                    working_dir, entry.stem
-                ).with_suffix(entry.suffix)
+                stdout_path, stderr_path = get_log_paths(working_dir, entry.stem)
+                new_path = stdout_path if entry.suffix == ".stdout" else stderr_path
                 prepare_log_storage_for_target(working_dir, entry.stem)
                 entry.rename(new_path)
 
