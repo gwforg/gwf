@@ -147,6 +147,10 @@ Fixed
   recognise; such jobs are reported as unknown. LSF's ``PROV`` state is now
   reported as submitted.
 
+* The local backend now refuses to use a runtime directory for its socket that
+  is a symlink or owned by another user, and makes sure that only the current
+  user can access it.
+
 
 Version 2.1.1
 =============

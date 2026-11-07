@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shlex
 import socket
+import stat
 import tempfile
 import time
 
@@ -18,6 +19,7 @@ from gwf.backends.local import (
     LocalStatus,
     Scheduler,
     Server,
+    _get_runtime_directory,
     create_backend,
     decode,
     encode,
@@ -832,3 +834,44 @@ async def test_cancelled_task_writes_logs(s, tmp_path):
     assert s.get_task_state(tid) == LocalStatus.CANCELLED
     stdout_path, _ = get_log_paths(s.working_dir, "foo")
     assert stdout_path.read_text() == "before\n"
+
+
+@pytest.fixture
+def shared_tmp(tmp_path, monkeypatch):
+    """Make the local backend fall back to a runtime directory in tmp_path."""
+    monkeypatch.delenv("XDG_RUNTIME_DIR", raising=False)
+    monkeypatch.setattr(tempfile, "gettempdir", lambda: str(tmp_path))
+    return tmp_path.resolve() / f"gwf-{os.geteuid()}"
+
+
+def test_runtime_directory_is_private(shared_tmp):
+    assert _get_runtime_directory() == shared_tmp
+    assert stat.S_IMODE(shared_tmp.stat().st_mode) == 0o700
+
+
+def test_runtime_directory_permissions_are_tightened(shared_tmp):
+    shared_tmp.mkdir()
+    shared_tmp.chmod(0o777)
+
+    _get_runtime_directory()
+
+    assert stat.S_IMODE(shared_tmp.stat().st_mode) == 0o700
+
+
+def test_runtime_directory_rejects_symlink(shared_tmp, tmp_path):
+    target = tmp_path / "elsewhere"
+    target.mkdir()
+    shared_tmp.symlink_to(target)
+
+    with pytest.raises(BackendError, match="is not a directory"):
+        _get_runtime_directory()
+
+
+def test_runtime_directory_rejects_directory_owned_by_another_user(
+    shared_tmp, monkeypatch
+):
+    other_uid = os.geteuid() + 1
+    monkeypatch.setattr(os, "geteuid", lambda: other_uid)
+
+    with pytest.raises(BackendError, match="owned by another user"):
+        _get_runtime_directory()

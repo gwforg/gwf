@@ -60,6 +60,7 @@ import re
 import secrets
 import signal
 import socket
+import stat
 import sys
 import tempfile
 from enum import Enum
@@ -139,7 +140,28 @@ def _get_runtime_directory():
             Path(tempfile.gettempdir()).resolve() / f"gwf-{os.geteuid()}"
         )
     app_runtime_directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    _check_runtime_directory(app_runtime_directory)
     return app_runtime_directory
+
+
+def _check_runtime_directory(path):
+    # The directory may already exist, e.g. created by another user in a
+    # shared /tmp. Anyone who controls it could replace the socket and receive
+    # the job scripts submitted to the scheduler, so only use a real directory
+    # owned by the current user, and make sure that only they can access it.
+    st = os.lstat(path)
+    if not stat.S_ISDIR(st.st_mode):
+        raise BackendError(
+            f"Local backend runtime directory {path} is not a directory. "
+            "Remove it and try again."
+        )
+    if st.st_uid != os.geteuid():
+        raise BackendError(
+            f"Local backend runtime directory {path} is owned by another user. "
+            "Set XDG_RUNTIME_DIR to a private directory and try again."
+        )
+    if stat.S_IMODE(st.st_mode) & 0o077:
+        path.chmod(0o700)
 
 
 def get_socket_path(working_dir):
