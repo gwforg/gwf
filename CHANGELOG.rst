@@ -158,6 +158,11 @@ Fixed
   whose name starts with the same letters, e.g. ``backend.slurmfoo.*`` for
   the ``slurm`` backend.
 
+* ``--no-color``, the ``no_color`` setting and the ``NO_COLOR`` environment
+  variable now also disable colors in log messages. Log messages are no longer
+  colored when standard error is not a terminal, e.g. when redirected to a
+  file.
+
 * ``gwf workers`` now defaults to the number of cores the process may use,
   respecting CPU affinity (e.g. inside a Slurm allocation), instead of all
   cores on the machine.

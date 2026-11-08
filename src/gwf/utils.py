@@ -59,15 +59,21 @@ class ColorFormatter(logging.Formatter):
         "CRITICAL": dict(fg="magenta", bold=True),
     }
 
+    def __init__(self, *args, color=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.color = color
+
     def format(self, record):
         level = record.levelname
         color_record = copy.copy(record)
-        if record.levelname in self.STYLING:
-            styling = self.STYLING[level]
-            padded_level_name = "{:<10}".format(record.levelname.lower())
-            color_record.levelname = click.style(padded_level_name, **styling)
-            color_record.name = click.style(record.name, **styling)
-            color_record.msg = record.msg
+        if level in self.STYLING:
+            padded_level_name = f"{level.lower():<10}"
+            if self.color:
+                styling = self.STYLING[level]
+                color_record.levelname = click.style(padded_level_name, **styling)
+                color_record.name = click.style(record.name, **styling)
+            else:
+                color_record.levelname = padded_level_name
         return super().format(color_record)
 
 

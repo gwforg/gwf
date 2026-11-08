@@ -66,7 +66,16 @@ def configure_logging(level_name):
     root = logging.getLogger()
     root.addHandler(handler)
     root.setLevel(get_level(level_name))
-    return root
+    return handler
+
+
+def set_colors(ctx, log_handler, enabled):
+    """Enable or disable colors in command output and log messages."""
+    # Subcommand contexts inherit the color setting, so this applies to all
+    # output from click.echo() and friends. None lets click detect a terminal.
+    ctx.color = None if enabled else False
+    # Log messages are not written through click, so detect a terminal here.
+    log_handler.formatter.color = enabled and log_handler.stream.isatty()
 
 
 def init(project_dir):
@@ -143,7 +152,16 @@ def main(ctx, file, backend, verbose, no_color):
 
     Shows help for the status command.
     """
-    configure_logging(level_name=verbose)
+    log_handler = configure_logging(level_name=verbose)
+
+    # Colors can be disabled with --no-color, in the configuration file, or
+    # with the NO_COLOR environment variable, in that order of precedence.
+    # Decide now so that early log messages are covered, and apply the
+    # configuration file once it has been loaded.
+    if no_color is None:
+        set_colors(ctx, log_handler, enabled=not os.getenv("NO_COLOR"))
+    else:
+        set_colors(ctx, log_handler, enabled=not no_color)
 
     try:
         path, obj_name = find_workflow(file)
@@ -167,19 +185,8 @@ def main(ctx, file, backend, verbose, no_color):
 
     init_log_storage(working_dir)
 
-    # If the --use-color/--no-color argument is not set, get a value from the
-    # configuration file. If nothing has been configured, check if the NO_COLOR
-    # environment variable has been set.
-    if no_color is None:
-        if config.get("no_color") is None:
-            no_color = bool(os.getenv("NO_COLOR", False))
-        else:
-            no_color = config["no_color"]
-
-    if no_color:
-        # Hack for disabling all click colors. We basically lie to
-        # click and pretend that the shell is never a TTY.
-        click._compat.isatty = lambda s: False
+    if no_color is None and config.get("no_color") is not None:
+        set_colors(ctx, log_handler, enabled=not config["no_color"])
 
     backend = backend or config.get("backend")
     if backend is None:
