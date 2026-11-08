@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        environment: ["py310", "py311", "py312", "py313", "py314"]
+        environment: ["py311", "py312", "py313", "py314", "py315"]
 
     steps:
       - uses: actions/checkout@v7
@@ -26,3 +26,15 @@ jobs:
           environments: test-${{ matrix.environment }}
           cache: true
       - run: pixi run --environment test-${{ matrix.environment }} test
+
+  build-conda:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          pixi-version: v0.76.0
+          environments: build
+          cache: true
+      - run: pixi run --environment build build

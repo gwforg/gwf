@@ -45,8 +45,8 @@ Added
 Changed
 -------
 
-* Python 3.10 is now the minimum supported version. Python 3.8 and 3.9 are no
-  longer supported. Python 3.14 is now supported.
+* Python 3.11 is now the minimum supported version. Python 3.8, 3.9 and 3.10
+  are no longer supported. Python 3.14 and 3.15 are now supported.
 
 * The local backend now communicates through a per-workflow Unix
   domain socket instead of a TCP host and port. ``local.host``, ``local.port``,

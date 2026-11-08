@@ -1,0 +1,59 @@
+context:
+  name: gwf
+  # Read the version from the package so it's only defined in one place.
+  version: ${{ (load_from_file("src/gwf/__init__.py") | split('__version__ = "'))[1] | split('"') | first }}
+  python_min: "3.11"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  path: ../
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  python:
+    entry_points:
+      - gwf = gwf.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.2,<4
+  # Keep in sync with the dependencies in pyproject.toml.
+  run:
+    - python >=${{ python_min }}
+    - attrs >=21.3
+    - click >=8
+    - click-plugins >=1.1
+
+tests:
+  - python:
+      imports:
+        - gwf
+        - gwf.backends
+        - gwf.plugins
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - script:
+      - gwf --help
+      - gwf --version
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+
+about:
+  homepage: https://gwf.app/
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  summary: A flexible, pragmatic workflow tool.
+  documentation: https://gwf.app/
+  repository: https://github.com/gwforg/gwf
+
+extra:
+  recipe-maintainers:
+    - dansondergaard

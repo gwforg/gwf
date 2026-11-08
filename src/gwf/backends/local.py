@@ -674,7 +674,7 @@ class Scheduler:
                 asyncio.shield(communication_task),
                 timeout=grace_period,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             target_log.debug(
                 "process group %d did not exit after %d seconds",
                 process_group_id,
@@ -764,7 +764,7 @@ class Scheduler:
                         asyncio.shield(communication_task),
                         timeout=target.time_limit,
                     )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await self._cleanup_process(proc, communication_task, target.log)
                 self._write_logs(target, communication_task)
                 raise TimeLimitExceededError()

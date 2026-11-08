@@ -33,7 +33,7 @@ async def forward(src, dst, bufsize=2**16, flush_sec=10):
                     done = True
                 buf[buf_used : buf_used + len(data)] = data
                 buf_used += len(data)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
 
             now = time.monotonic()
@@ -76,7 +76,7 @@ async def execute_command(cmd, working_dir, environ=None):
         if proc.returncode is None:
             try:
                 await asyncio.wait_for(proc.wait(), timeout=5)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
         try:
             os.killpg(proc.pid, signal.SIGKILL)

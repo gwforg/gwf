@@ -12,10 +12,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up Python 3.10
+      - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
+
+      - name: Set up Pixi
+        uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          pixi-version: v0.76.0
+          environments: build
+
+      - name: Check that the tag matches the package version
+        run: |
+          version=$(python -c 'import re; print(re.search(r"__version__ = \"(.+)\"", open("src/gwf/__init__.py").read())[1])')
+          if [ "v$version" != "${{ github.ref_name }}" ]; then
+            echo "Tag ${{ github.ref_name }} does not match package version $version"
+            exit 1
+          fi
+
+      - name: Build Conda package
+        run: pixi run --environment build build
 
       - name: Extract changes for this release
         run: cat CHANGELOG.rst | python extract-changelog.py ${{ github.ref_name }} > ${{ github.workspace }}/changelog.md
@@ -24,3 +41,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body_path: ${{ github.workspace }}/changelog.md
+          files: output/noarch/gwf-*.conda
+
+      - name: Publish Conda package
+        run: pixi run --environment build publish
+        env:
+          ANACONDA_API_KEY: ${{ secrets.ANACONDA_API_KEY }}

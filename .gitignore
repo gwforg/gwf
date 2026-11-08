@@ -17,5 +17,6 @@ _build/
 *.pyc
 build/
 conda-bld/
+output/
 dist/
 gwf.egg*

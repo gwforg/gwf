@@ -19,8 +19,8 @@ classifiers = [
 dynamic = ["version", "description"]
 name = "gwf"
 readme = "README.rst"
-requires-python = ">=3.10"
-# Keep in sync with conda/meta.yaml and [tool.pixi.dependencies].
+requires-python = ">=3.11"
+# Keep in sync with conda/recipe.yaml and [tool.pixi.dependencies].
 dependencies = [
     "attrs>=21.3",
     "click>=8",
@@ -61,21 +61,19 @@ click-plugins = ">=1.1.1.2,<2"
 attrs = ">=26.1.0,<27"
 
 [tool.pixi.environments]
-default = { features = ["dev", "test"], solve-group = "default" }
-test-py310 = ["py310", "test"]
+default = { features = ["dev", "test", "build"], solve-group = "default" }
 test-py311 = ["py311", "test"]
 test-py312 = ["py312", "test"]
 test-py313 = ["py313", "test"]
 test-py314 = ["py314", "test"]
+test-py315 = ["py315", "test"]
+build = { features = ["build"], no-default-feature = true }
 
 [tool.pixi.feature.dev.dependencies]
 ruff = ">=0.16.1,<0.17"
 sphinx = ">=9.1.0,<10"
 sphinx-autobuild = ">=2025.8.25,<2026"
 furo = ">=2025.12.19,<2026"
-flit = ">=4.0.2,<5"
-anaconda-client = ">=1.14.1,<2"
-conda-build = ">=26.7.0,<27"
 
 [tool.pixi.feature.dev.pypi-dependencies]
 gwf = { path = ".", editable = true }
@@ -84,11 +82,15 @@ gwf = { path = ".", editable = true }
 format = "ruff format $PIXI_PROJECT_ROOT/src"
 lint = "ruff check $PIXI_PROJECT_ROOT/src"
 clean = "clean-workspace"
-
-build = { cmd = "conda build .", cwd = "conda/" }
-publish = { cmd = "anaconda --token ${ANACONDA_TOKEN_GWFORG} upload -u gwforg $(conda-build --output .)", cwd = "conda/" }
 build-docs = { cmd = "sphinx-build -b dirhtml . _build/dirhtml", cwd = "docs/" }
 preview-docs = { cmd = "sphinx-autobuild --open-browser -b dirhtml . _build/dirhtml", cwd = "docs/" }
+
+[tool.pixi.feature.build.dependencies]
+rattler-build = ">=0.80.0,<0.81"
+
+[tool.pixi.feature.build.tasks]
+build = "rm -rf output && rattler-build build --experimental --recipe conda/recipe.yaml --output-dir output/"
+publish = "rattler-build upload anaconda --owner gwforg output/noarch/gwf-*.conda"
 
 [tool.pixi.feature.test.dependencies]
 pytest = ">=9.1.1,<10"
@@ -99,8 +101,6 @@ pytest-asyncio = ">=1.4.0,<2"
 [tool.pixi.feature.test.pypi-dependencies]
 gwf = { path = ".", editable = true }
 
-[tool.pixi.feature.py310.dependencies]
-python = "3.10.*"
 [tool.pixi.feature.py311.dependencies]
 python = "3.11.*"
 [tool.pixi.feature.py312.dependencies]
@@ -109,6 +109,8 @@ python = "3.12.*"
 python = "3.13.*"
 [tool.pixi.feature.py314.dependencies]
 python = "3.14.*"
+[tool.pixi.feature.py315.dependencies]
+python = "3.15.*"
 
 [tool.pixi.feature.test.tasks]
 test = "pytest tests/"
