@@ -4,7 +4,7 @@ from .core import AnonymousTarget, Target
 from .exec import IsolationConfig
 from .workflow import TargetList, Workflow
 
-__version__ = "2.1.1"
+__version__ = "3.0.0"
 
 __all__ = (
     "Target",
