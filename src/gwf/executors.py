@@ -4,7 +4,7 @@ import io
 import logging
 import os
 import pickle
-import prettyprinter
+import pprint
 import shutil
 import sys
 from contextlib import contextmanager
@@ -12,8 +12,6 @@ from typing import Iterable, Optional, Protocol
 
 from .exceptions import GWFError
 
-
-prettyprinter.install_extras(["attrs"])
 
 logger = logging.getLogger(__name__)
 
@@ -252,9 +250,32 @@ def take(cond, lst):
     return buf, lst[i:]
 
 
+def _describe(obj, width=80):
+    """Return a readable, multi-line description of an attrs instance.
+
+    Fields that are hidden from ``repr`` or still have their default value are
+    left out.
+    """
+    lines = [f"{type(obj).__name__}("]
+    for field in attrs.fields(type(obj)):
+        if not field.repr:
+            continue
+        value = getattr(obj, field.name)
+        default = field.default
+        if isinstance(default, attrs.Factory):
+            default = default.factory(obj) if default.takes_self else default.factory()
+        if value == default:
+            continue
+        prefix = f"    {field.name}="
+        text = pprint.pformat(value, width=width - len(prefix), sort_dicts=False)
+        lines.append(prefix + text.replace("\n", "\n" + " " * len(prefix)) + ",")
+    lines.append(")")
+    return "\n".join(lines)
+
+
 def serialize(target, file):
     print("#GWF TARGET", file=file)
-    repr_str = prettyprinter.pformat(target)
+    repr_str = _describe(target)
     for line in repr_str.splitlines(keepends=False):
         print(f"#GWF COMMENT {line}", file=file)
     print("#GWF SPEC", file=file)
